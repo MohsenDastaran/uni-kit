@@ -1,3 +1,6 @@
+[build]
+jobs = 4
+
 [workspace]
 default-members = ["crates/story"]
 members = [

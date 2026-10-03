@@ -27,7 +27,11 @@ component DescriptionPair inherits Rectangle {
     // already has the full row is wider than the requested label, so a word
     // such as "Description" stays on one line.
     private property <length> term-width: min(label-width, max(72px, self.width * 0.45));
-    private property <length> term-text-width: max(0px, term-width - pad-x * 2);
+    // GPUI keeps the label cell's right border inside the label width, and
+    // paints both the border and the label fill only while bordered.
+    private property <length> divider: bordered ? 1px : 0px;
+    private property <color> label-fill: bordered ? Theme.description-label : transparent;
+    private property <length> term-text-width: max(0px, term-width - divider - pad-x * 2);
     private property <length> value-width: max(0px, self.width - term-width - pad-x * 2);
     private property <length> body-width: max(0px, self.width - pad-x * 2);
 
@@ -40,41 +44,62 @@ component DescriptionPair inherits Rectangle {
     clip: true;
     height: stack ? stacked.preferred-height : side.preferred-height;
 
-    if bordered && !stack: Rectangle {
-        width: root.term-width;
-        height: parent.height;
-        background: Theme.description-label;
-    }
-    if bordered && !stack: Rectangle {
-        x: root.term-width - 1px;
-        width: 1px;
-        height: parent.height;
-        background: Theme.border;
-    }
-
+    // The stacked form matches GPUI: the label cell fills the row, keeps the
+    // label fill, and closes with a border underneath it.
     stacked := VerticalLayout {
         visible: stack;
         y: 0;
         width: parent.width;
         height: self.preferred-height;
-        padding-left: pad-x;
-        padding-right: pad-x;
-        padding-top: pad-y;
-        padding-bottom: pad-y;
-        spacing: 2px;
-        Text {
-            text: root.term;
-            color: Theme.description-label-foreground;
-            font-size: root.text-size;
-            wrap: word-wrap;
-            width: root.body-width;
+        spacing: 0;
+
+        Rectangle {
+            width: parent.width;
+            horizontal-stretch: 1;
+            vertical-stretch: 0;
+            height: label-cell.preferred-height;
+            background: root.label-fill;
+            label-cell := VerticalLayout {
+                height: self.preferred-height;
+                padding-left: root.pad-x;
+                padding-right: root.pad-x;
+                padding-top: root.pad-y;
+                padding-bottom: root.pad-y;
+                Text {
+                    text: root.term;
+                    color: Theme.description-label-foreground;
+                    font-size: root.text-size;
+                    wrap: word-wrap;
+                    width: root.body-width;
+                }
+            }
+            if root.bordered: Rectangle {
+                y: parent.height - 1px;
+                width: parent.width;
+                height: 1px;
+                background: Theme.border;
+            }
         }
-        Text {
-            text: root.detail;
-            color: Theme.foreground;
-            font-size: root.text-size;
-            wrap: word-wrap;
-            width: root.body-width;
+
+        Rectangle {
+            width: parent.width;
+            horizontal-stretch: 1;
+            vertical-stretch: 0;
+            height: value-cell.preferred-height;
+            value-cell := VerticalLayout {
+                height: self.preferred-height;
+                padding-left: root.pad-x;
+                padding-right: root.pad-x;
+                padding-top: root.pad-y;
+                padding-bottom: root.pad-y;
+                Text {
+                    text: root.detail;
+                    color: Theme.foreground;
+                    font-size: root.text-size;
+                    wrap: word-wrap;
+                    width: root.body-width;
+                }
+            }
         }
     }
 
@@ -85,11 +110,14 @@ component DescriptionPair inherits Rectangle {
         height: self.preferred-height;
         alignment: start;
 
+        // The label fill sits on the cell itself. A plain rectangle beside the
+        // layout would be placed by that layout instead of the cell.
         Rectangle {
-            width: root.term-width;
+            width: root.term-width - root.divider;
             horizontal-stretch: 0;
-            vertical-stretch: 0;
+            vertical-stretch: 1;
             clip: true;
+            background: root.label-fill;
             VerticalLayout {
                 height: self.preferred-height;
                 padding-left: root.pad-x;
@@ -107,7 +135,17 @@ component DescriptionPair inherits Rectangle {
             }
         }
 
+        // GPUI's `border_r_1`, kept inside the label width so the value cell
+        // still starts at `term-width`.
+        Rectangle {
+            width: root.divider;
+            horizontal-stretch: 0;
+            vertical-stretch: 1;
+            background: Theme.border;
+        }
+
         VerticalLayout {
+            horizontal-stretch: 1;
             height: self.preferred-height;
             padding-left: root.pad-x;
             padding-right: root.pad-x;
@@ -230,6 +268,9 @@ export component DescriptionList {
         column := VerticalLayout {
             width: parent.width;
             height: self.preferred-height;
+            // `border-width` draws inside the container, so inset the rows by it;
+            // otherwise a row fill would paint over the container's border.
+            padding: bordered ? 1px : 0px;
             alignment: start;
 
             for item[index] in items: Rectangle {
@@ -241,7 +282,7 @@ export component DescriptionList {
                 if item.separator: Rectangle {
                     width: parent.width;
                     height: 8px;
-                    background: Theme.description-label;
+                    background: root.bordered ? Theme.description-label : transparent;
                 }
 
                 band := HorizontalLayout {
