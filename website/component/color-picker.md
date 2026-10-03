@@ -119,6 +119,14 @@ ColorPicker::new(&color_picker)
     .anchor(Anchor::TopRight) // Dropdown opens to top-right
 ```
 
+### Theme Color
+
+Select a color and preview the resulting value. The gallery opens on indigo.
+
+```rust
+ColorPicker::new(&self.color).with_size(self.size)
+```
+
 ### Color Select
 
 `ColorSelect` draws the picker as a framed field, like a `Select`: a swatch of

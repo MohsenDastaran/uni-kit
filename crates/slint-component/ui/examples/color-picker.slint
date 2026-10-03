@@ -4,18 +4,103 @@ import { ColorPicker } from "../color-picker.slint";
 
 export component ColorPickerExample inherits VerticalLayout {
     horizontal-stretch: 1;
+    private property <color> accent: #6366f1;
     padding: Theme.page-padding(Theme.viewport);
     spacing: 24px;
     alignment: start;
 
-    ColorPicker {
-        swatches: [
-            { name: "Ink", fill: #171717 },
-            { name: "Red", fill: #ef4444 },
-            { name: "Amber", fill: #eab308 },
-            { name: "Green", fill: #22c55e },
-            { name: "Cyan", fill: #06b6d4 },
-        ];
+    GroupBox {
+        title: "Theme Color";
+        variant: GroupBoxVariant.outline;
+        Rectangle {
+            border-width: 1px;
+            border-color: Theme.border;
+            border-radius: Theme.radius-lg;
+            VerticalLayout {
+                padding: 16px;
+                spacing: 16px;
+
+                HorizontalLayout {
+                    spacing: 16px;
+                    alignment: center;
+                    VerticalLayout {
+                        horizontal-stretch: 1;
+                        spacing: 4px;
+                        Text {
+                            text: "Accent color";
+                            color: Theme.foreground;
+                            font-size: Theme.font-size-sm;
+                            font-weight: 500;
+                        }
+                        Text {
+                            text: "Used for primary actions and highlights.";
+                            color: Theme.muted-foreground;
+                            font-size: Theme.font-size-sm;
+                            wrap: word-wrap;
+                        }
+                    }
+                    accent-picker := ColorPicker {
+                        value <=> root.accent;
+                    }
+                }
+
+                Rectangle {
+                    border-width: 1px;
+                    border-color: Theme.border;
+                    border-radius: Theme.radius-lg;
+                    clip: true;
+                    VerticalLayout {
+                        Rectangle {
+                            height: 96px;
+                            background: root.accent;
+                        }
+                        Rectangle {
+                            background: Theme.muted;
+                            HorizontalLayout {
+                                padding-left: 12px;
+                                padding-right: 12px;
+                                padding-top: 8px;
+                                padding-bottom: 8px;
+                                spacing: 8px;
+                                alignment: center;
+                                Text {
+                                    horizontal-stretch: 1;
+                                    text: "Selected color";
+                                    color: Theme.muted-foreground;
+                                    font-size: Theme.font-size-sm;
+                                    vertical-alignment: center;
+                                }
+                                Text {
+                                    text: accent-picker.hex(root.accent);
+                                    color: Theme.foreground;
+                                    font-size: Theme.font-size-sm;
+                                    font-weight: 500;
+                                    font-family: Theme.mono-font-family;
+                                    vertical-alignment: center;
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
     }
 
+    GroupBox {
+        title: "Color Select";
+        variant: GroupBoxVariant.outline;
+        VerticalLayout {
+            spacing: 12px;
+            alignment: start;
+            ColorPicker {
+                field: true;
+                value: #6366f1;
+            }
+            ColorPicker {
+                field: true;
+                empty: true;
+                placeholder: "Pick a color";
+            }
+        }
+    }
 }

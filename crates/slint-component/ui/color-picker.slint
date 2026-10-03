@@ -1,40 +1,590 @@
 import { Theme } from "theme.slint";
+import { Icon } from "icon.slint";
 
 export struct Swatch {
     name: string,
     fill: color,
 }
 
-// A swatch palette plus hex field. Mirrors GPUI Component's `ColorPicker`.
+component PaletteCell inherits Rectangle {
+    in property <color> fill;
+    in property <bool> selected;
+    callback picked();
+
+    width: 20px;
+    height: 20px;
+    border-radius: 4px;
+    background: fill;
+    border-width: selected ? 2px : 1px;
+    border-color: selected ? Theme.foreground : fill.darker(0.18);
+
+    TouchArea {
+        width: 100%;
+        height: 100%;
+        accessible-role: button;
+        clicked => { root.picked(); }
+    }
+}
+
+component ChannelSlider inherits Rectangle {
+    in property <float> at;
+    in property <color> from;
+    in property <color> to;
+    in property <color> mid;
+    in property <bool> rainbow;
+    in property <bool> has-mid;
+    callback moved(at: float);
+
+    height: 28px;
+    min-width: 80px;
+    horizontal-stretch: 1;
+
+    Rectangle {
+        y: (parent.height - self.height) / 2;
+        width: 100%;
+        height: 10px;
+        border-radius: 5px;
+        clip: true;
+
+        if root.rainbow: Rectangle {
+            width: 100%;
+            height: 100%;
+            background: @linear-gradient(90deg, #ff0000, #ffff00, #00ff00, #00ffff, #0000ff, #ff00ff, #ff0000);
+        }
+        if !root.rainbow && root.has-mid: Rectangle {
+            width: 100%;
+            height: 100%;
+            background: @linear-gradient(90deg, root.from, root.mid, root.to);
+        }
+        if !root.rainbow && !root.has-mid: Rectangle {
+            width: 100%;
+            height: 100%;
+            background: @linear-gradient(90deg, root.from, root.to);
+        }
+    }
+
+    Rectangle {
+        x: (parent.width - self.width) * clamp(root.at, 0, 1);
+        y: (parent.height - self.height) / 2;
+        width: 14px;
+        height: 14px;
+        border-radius: 7px;
+        background: Theme.background;
+        border-width: 2px;
+        border-color: Theme.foreground;
+    }
+
+    TouchArea {
+        width: 100%;
+        height: 100%;
+        clicked => { root.moved(clamp(self.mouse-x / self.width, 0, 1)); }
+        moved => {
+            if self.pressed {
+                root.moved(clamp(self.mouse-x / self.width, 0, 1));
+            }
+        }
+    }
+}
+
+// A compact color control. Mirrors GPUI Component's `ColorPicker` and
+// `ColorSelect`: a square trigger, or a framed field with the hex value.
+// The popup is the palette and HSLA panel.
 export component ColorPicker {
     in property <[Swatch]> swatches;
-    in-out property <color> value: #171717;
+    in-out property <color> value: #6366f1;
+    // No color yet. The field shows `placeholder` instead of a hex value.
+    in-out property <bool> empty: false;
+    in property <string> placeholder: "Pick a color";
+    // Draw the trigger as a framed field, like a Select.
+    in property <bool> field: false;
     callback changed(value: color);
 
-    VerticalLayout {
-        spacing: 12px;
+    private property <int> tab: 0;
+    private property <bool> applying;
+    private property <float> hue: 239;
+    private property <float> sat: 0.84;
+    private property <float> light: 0.67;
+    private property <float> alpha: 1;
+    private property <[color]> featured: [
+        #000000, #ef4444, #f97316, #eab308, #84cc16, #22c55e, #06b6d4, #3b82f6, #6366f1, #a855f7, #ec4899,
+    ];
+    private property <[color]> stone: [#0c0a09, #1c1917, #292524, #44403c, #57534e, #78716c, #a8a29e, #d6d3d1, #e7e5e4, #f5f5f4, #fafaf9];
+    private property <[color]> reds: [#450a0a, #7f1d1d, #991b1b, #b91c1c, #dc2626, #ef4444, #f87171, #fca5a5, #fecaca, #fee2e2, #fef2f2];
+    private property <[color]> oranges: [#431407, #7c2d12, #9a3412, #c2410c, #ea580c, #f97316, #fb923c, #fdba74, #fed7aa, #ffedd5, #fff7ed];
+    private property <[color]> yellows: [#422006, #713f12, #854d0e, #a16207, #ca8a04, #eab308, #facc15, #fde047, #fef08a, #fef9c3, #fefce8];
+    private property <[color]> greens: [#052e16, #14532d, #166534, #15803d, #16a34a, #22c55e, #4ade80, #86efac, #bbf7d0, #dcfce7, #f0fdf4];
+    private property <[color]> cyans: [#083344, #164e63, #155e75, #0e7490, #0891b2, #06b6d4, #22d3ee, #67e8f9, #a5f3fc, #cffafe, #ecfeff];
+    private property <[color]> blues: [#172554, #1e3a8a, #1e40af, #1d4ed8, #2563eb, #3b82f6, #60a5fa, #93c5fd, #bfdbfe, #dbeafe, #eff6ff];
+    private property <[color]> purples: [#3b0764, #581c87, #6b21a8, #7e22ce, #9333ea, #a855f7, #c084fc, #d8b4fe, #e9d5ff, #f3e8ff, #faf5ff];
+    private property <[color]> pinks: [#500724, #831843, #9d174d, #be185d, #db2777, #ec4899, #f472b6, #f9a8d4, #fbcfe8, #fce7f3, #fdf2f8];
 
-        Rectangle {
-            height: 48px;
+    private property <color> pure-hue: root.hsl(root.hue, 1, 0.5, 1);
+    private property <color> sat-from: root.hsl(root.hue, 0, root.light, 1);
+    private property <color> sat-to: root.hsl(root.hue, 1, root.light, 1);
+    private property <color> mixed: root.hsl(root.hue, root.sat, root.light, 1);
+
+    pure function nibble(n: int) -> string {
+        n == 10 ? "A" : n == 11 ? "B" : n == 12 ? "C" : n == 13 ? "D" : n == 14 ? "E" : n == 15 ? "F" : "\{n}"
+    }
+    public pure function hex(fill: color) -> string {
+        "#" + nibble(fill.red / 16) + nibble(mod(fill.red, 16))
+            + nibble(fill.green / 16) + nibble(mod(fill.green, 16))
+            + nibble(fill.blue / 16) + nibble(mod(fill.blue, 16))
+    }
+
+    pure function hsl(h: float, s: float, l: float, a: float) -> color {
+        if s <= 0.001 {
+            return rgba(round(l * 255), round(l * 255), round(l * 255), a);
+        }
+        let c = (1 - abs(2 * l - 1)) * s;
+        let hp = h / 60 - floor(h / 360) * 6;
+        let x = c * (1 - abs(hp - floor(hp / 2) * 2 - 1));
+        let m = l - c / 2;
+        let r = hp < 1 ? c : hp < 2 ? x : hp < 3 ? 0 : hp < 4 ? 0 : hp < 5 ? x : c;
+        let g = hp < 1 ? x : hp < 2 ? c : hp < 3 ? c : hp < 4 ? x : 0;
+        let b = hp < 1 ? 0 : hp < 2 ? 0 : hp < 3 ? x : hp < 4 ? c : hp < 5 ? c : x;
+        rgba(round((r + m) * 255), round((g + m) * 255), round((b + m) * 255), a)
+    }
+
+    pure function hue-of(fill: color) -> float {
+        let r = fill.red / 255.0;
+        let g = fill.green / 255.0;
+        let b = fill.blue / 255.0;
+        let maxv = max(r, max(g, b));
+        let minv = min(r, min(g, b));
+        let d = maxv - minv;
+        if d <= 0.0001 {
+            return 0;
+        }
+        let raw = maxv == r ? (g - b) / d : maxv == g ? (b - r) / d + 2 : (r - g) / d + 4;
+        (raw < 0 ? raw + 6 : raw) * 60
+    }
+    pure function light-of(fill: color) -> float {
+        let maxv = max(fill.red, max(fill.green, fill.blue));
+        let minv = min(fill.red, min(fill.green, fill.blue));
+        (maxv + minv) / 510.0
+    }
+    pure function sat-of(fill: color) -> float {
+        let maxv = max(fill.red, max(fill.green, fill.blue)) / 255.0;
+        let minv = min(fill.red, min(fill.green, fill.blue)) / 255.0;
+        let d = maxv - minv;
+        let l = (maxv + minv) / 2;
+        d <= 0.0001 ? 0 : l > 0.5 ? d / (2 - maxv - minv) : d / (maxv + minv)
+    }
+
+    function pick(fill: color) {
+        root.applying = true;
+        root.value = fill;
+        root.empty = false;
+        root.hue = root.hue-of(fill);
+        root.sat = root.sat-of(fill);
+        root.light = root.light-of(fill);
+        root.alpha = fill.alpha;
+        root.applying = false;
+        root.changed(fill);
+    }
+    function paint() {
+        if root.applying {
+            return;
+        }
+        root.applying = true;
+        root.value = root.hsl(root.hue, root.sat, root.light, root.alpha);
+        root.empty = false;
+        root.applying = false;
+        root.changed(root.value);
+    }
+
+    changed value => {
+        if root.applying || root.empty {
+            return;
+        }
+        root.applying = true;
+        root.hue = root.hue-of(root.value);
+        root.sat = root.sat-of(root.value);
+        root.light = root.light-of(root.value);
+        root.alpha = root.value.alpha;
+        root.applying = false;
+    }
+
+    horizontal-stretch: field ? 1 : 0;
+    vertical-stretch: 0;
+    min-width: field ? 0px : 32px;
+    max-width: field ? 10000px : 32px;
+    height: 32px;
+
+    trigger := TouchArea {
+        width: parent.width;
+        height: 32px;
+        accessible-role: button;
+        accessible-label: root.empty ? root.placeholder : root.hex(root.value);
+        clicked => { popup.show(); }
+
+        if !root.field: Rectangle {
+            width: parent.width;
+            height: parent.height;
             border-radius: Theme.radius-md;
-            background: value;
             border-width: 1px;
-            border-color: Theme.border;
+            border-color: Theme.input;
+            background: root.empty ? Theme.background : root.value;
         }
 
-        HorizontalLayout {
-            spacing: 8px;
-            for swatch in swatches: Rectangle {
-                width: 24px;
-                height: 24px;
-                border-radius: 12px;
-                background: swatch.fill;
-                border-width: value == swatch.fill ? 2px : 1px;
-                border-color: value == swatch.fill ? Theme.ring : Theme.border;
-                TouchArea {
-                    clicked => {
-                        root.value = swatch.fill;
-                        root.changed(swatch.fill);
+        if root.field: Rectangle {
+            width: parent.width;
+            height: parent.height;
+            border-radius: Theme.radius-md;
+            border-width: 1px;
+            border-color: Theme.input;
+            background: Theme.background;
+
+            VerticalLayout {
+                width: parent.width;
+                height: parent.height;
+                alignment: center;
+
+                HorizontalLayout {
+                    horizontal-stretch: 1;
+                    padding-left: 8px;
+                    padding-right: 8px;
+                    spacing: 8px;
+
+                    Rectangle {
+                        width: 16px;
+                        height: 16px;
+                        border-radius: Theme.radius-sm;
+                        border-width: 1px;
+                        border-color: root.empty ? Theme.input : root.value.darker(0.15);
+                        background: root.empty ? transparent : root.value;
+                    }
+                    Text {
+                        horizontal-stretch: 1;
+                        vertical-alignment: center;
+                        text: root.empty ? root.placeholder : root.hex(root.value);
+                        color: root.empty ? Theme.muted-foreground : Theme.foreground;
+                        font-size: Theme.font-size-sm;
+                        font-family: root.empty ? "" : Theme.mono-font-family;
+                        overflow: elide;
+                    }
+                    Icon {
+                        name: "chevron-down";
+                        size: 14px;
+                        color: Theme.muted-foreground;
+                    }
+                }
+            }
+        }
+    }
+
+    popup := PopupWindow {
+        y: root.height + 4px;
+        close-policy: close-on-click-outside;
+
+        Rectangle {
+            width: 292px;
+            border-radius: Theme.radius-lg;
+            border-width: 1px;
+            border-color: Theme.border;
+            background: Theme.popover;
+            drop-shadow-blur: 12px;
+            drop-shadow-offset-y: 4px;
+            drop-shadow-color: Theme.shadow;
+
+            VerticalLayout {
+                padding: 12px;
+                spacing: 10px;
+
+                Rectangle {
+                    height: 28px;
+                    border-radius: Theme.radius-md;
+                    background: Theme.muted;
+
+                    HorizontalLayout {
+                        padding: 2px;
+                        spacing: 2px;
+
+                        Rectangle {
+                            horizontal-stretch: 1;
+                            border-radius: Theme.radius-sm;
+                            background: root.tab == 0 ? Theme.background : transparent;
+                            Text {
+                                width: 100%;
+                                height: 100%;
+                                text: "Palette";
+                                color: root.tab == 0 ? Theme.foreground : Theme.muted-foreground;
+                                font-size: Theme.font-size-sm;
+                                font-weight: root.tab == 0 ? 500 : 400;
+                                horizontal-alignment: center;
+                                vertical-alignment: center;
+                            }
+                            TouchArea {
+                                clicked => { root.tab = 0; }
+                            }
+                        }
+                        Rectangle {
+                            horizontal-stretch: 1;
+                            border-radius: Theme.radius-sm;
+                            background: root.tab == 1 ? Theme.background : transparent;
+                            Text {
+                                width: 100%;
+                                height: 100%;
+                                text: "HSLA";
+                                color: root.tab == 1 ? Theme.foreground : Theme.muted-foreground;
+                                font-size: Theme.font-size-sm;
+                                font-weight: root.tab == 1 ? 500 : 400;
+                                horizontal-alignment: center;
+                                vertical-alignment: center;
+                            }
+                            TouchArea {
+                                clicked => { root.tab = 1; }
+                            }
+                        }
+                    }
+                }
+
+                if root.tab == 0: VerticalLayout {
+                    spacing: 8px;
+
+                    HorizontalLayout {
+                        spacing: 4px;
+                        if root.swatches.length > 0: HorizontalLayout {
+                            spacing: 4px;
+                            for swatch in root.swatches: PaletteCell {
+                                fill: swatch.fill;
+                                selected: !root.empty && root.value == swatch.fill;
+                                picked => { root.pick(swatch.fill); }
+                            }
+                        }
+                        if root.swatches.length == 0: HorizontalLayout {
+                            spacing: 4px;
+                            for fill in root.featured: PaletteCell {
+                                fill: fill;
+                                selected: !root.empty && root.value == fill;
+                                picked => { root.pick(fill); }
+                            }
+                        }
+                    }
+
+                    Rectangle {
+                        height: 1px;
+                        background: Theme.border;
+                    }
+
+                    HorizontalLayout {
+                        spacing: 4px;
+                        for fill in root.stone: PaletteCell {
+                            fill: fill;
+                            selected: !root.empty && root.value == fill;
+                            picked => { root.pick(fill); }
+                        }
+                    }
+                    HorizontalLayout {
+                        spacing: 4px;
+                        for fill in root.reds: PaletteCell {
+                            fill: fill;
+                            selected: !root.empty && root.value == fill;
+                            picked => { root.pick(fill); }
+                        }
+                    }
+                    HorizontalLayout {
+                        spacing: 4px;
+                        for fill in root.oranges: PaletteCell {
+                            fill: fill;
+                            selected: !root.empty && root.value == fill;
+                            picked => { root.pick(fill); }
+                        }
+                    }
+                    HorizontalLayout {
+                        spacing: 4px;
+                        for fill in root.yellows: PaletteCell {
+                            fill: fill;
+                            selected: !root.empty && root.value == fill;
+                            picked => { root.pick(fill); }
+                        }
+                    }
+                    HorizontalLayout {
+                        spacing: 4px;
+                        for fill in root.greens: PaletteCell {
+                            fill: fill;
+                            selected: !root.empty && root.value == fill;
+                            picked => { root.pick(fill); }
+                        }
+                    }
+                    HorizontalLayout {
+                        spacing: 4px;
+                        for fill in root.cyans: PaletteCell {
+                            fill: fill;
+                            selected: !root.empty && root.value == fill;
+                            picked => { root.pick(fill); }
+                        }
+                    }
+                    HorizontalLayout {
+                        spacing: 4px;
+                        for fill in root.blues: PaletteCell {
+                            fill: fill;
+                            selected: !root.empty && root.value == fill;
+                            picked => { root.pick(fill); }
+                        }
+                    }
+                    HorizontalLayout {
+                        spacing: 4px;
+                        for fill in root.purples: PaletteCell {
+                            fill: fill;
+                            selected: !root.empty && root.value == fill;
+                            picked => { root.pick(fill); }
+                        }
+                    }
+                    HorizontalLayout {
+                        spacing: 4px;
+                        for fill in root.pinks: PaletteCell {
+                            fill: fill;
+                            selected: !root.empty && root.value == fill;
+                            picked => { root.pick(fill); }
+                        }
+                    }
+                }
+
+                if root.tab == 1: VerticalLayout {
+                    spacing: 8px;
+
+                    HorizontalLayout {
+                        spacing: 8px;
+                        Text {
+                            width: 84px;
+                            text: "Hue";
+                            color: Theme.muted-foreground;
+                            font-size: Theme.font-size-xs;
+                            vertical-alignment: center;
+                        }
+                        ChannelSlider {
+                            rainbow: true;
+                            at: root.hue / 360;
+                            moved(at) => {
+                                root.hue = at * 360;
+                                root.paint();
+                            }
+                        }
+                        Text {
+                            width: 36px;
+                            text: "\{round(root.hue)}";
+                            color: Theme.muted-foreground;
+                            font-size: Theme.font-size-xs;
+                            horizontal-alignment: right;
+                            vertical-alignment: center;
+                        }
+                    }
+                    HorizontalLayout {
+                        spacing: 8px;
+                        Text {
+                            width: 84px;
+                            text: "Saturation";
+                            color: Theme.muted-foreground;
+                            font-size: Theme.font-size-xs;
+                            vertical-alignment: center;
+                        }
+                        ChannelSlider {
+                            from: root.sat-from;
+                            to: root.sat-to;
+                            at: root.sat;
+                            moved(at) => {
+                                root.sat = at;
+                                root.paint();
+                            }
+                        }
+                        Text {
+                            width: 36px;
+                            text: "\{round(root.sat * 100)}";
+                            color: Theme.muted-foreground;
+                            font-size: Theme.font-size-xs;
+                            horizontal-alignment: right;
+                            vertical-alignment: center;
+                        }
+                    }
+                    HorizontalLayout {
+                        spacing: 8px;
+                        Text {
+                            width: 84px;
+                            text: "Lightness";
+                            color: Theme.muted-foreground;
+                            font-size: Theme.font-size-xs;
+                            vertical-alignment: center;
+                        }
+                        ChannelSlider {
+                            from: #000000;
+                            mid: root.pure-hue;
+                            to: #ffffff;
+                            has-mid: true;
+                            at: root.light;
+                            moved(at) => {
+                                root.light = at;
+                                root.paint();
+                            }
+                        }
+                        Text {
+                            width: 36px;
+                            text: "\{round(root.light * 100)}";
+                            color: Theme.muted-foreground;
+                            font-size: Theme.font-size-xs;
+                            horizontal-alignment: right;
+                            vertical-alignment: center;
+                        }
+                    }
+                    HorizontalLayout {
+                        spacing: 8px;
+                        Text {
+                            width: 84px;
+                            text: "Alpha";
+                            color: Theme.muted-foreground;
+                            font-size: Theme.font-size-xs;
+                            vertical-alignment: center;
+                        }
+                        ChannelSlider {
+                            from: root.mixed.with-alpha(0);
+                            to: root.mixed;
+                            at: root.alpha;
+                            moved(at) => {
+                                root.alpha = at;
+                                root.paint();
+                            }
+                        }
+                        Text {
+                            width: 36px;
+                            text: "\{round(root.alpha * 100)}";
+                            color: Theme.muted-foreground;
+                            font-size: Theme.font-size-xs;
+                            horizontal-alignment: right;
+                            vertical-alignment: center;
+                        }
+                    }
+                }
+
+                Rectangle {
+                    height: 32px;
+                    border-radius: Theme.radius-md;
+                    border-width: 1px;
+                    border-color: Theme.input;
+                    background: Theme.background;
+
+                    HorizontalLayout {
+                        padding-left: 8px;
+                        padding-right: 4px;
+                        spacing: 8px;
+
+                        Rectangle {
+                            width: 16px;
+                            height: 16px;
+                            border-radius: Theme.radius-sm;
+                            border-width: 1px;
+                            border-color: root.empty ? Theme.input : root.value.darker(0.15);
+                            background: root.empty ? transparent : root.value;
+                        }
+                        Text {
+                            horizontal-stretch: 1;
+                            vertical-alignment: center;
+                            text: root.empty ? root.placeholder : root.hex(root.value);
+                            color: root.empty ? Theme.muted-foreground : Theme.foreground;
+                            font-size: Theme.font-size-sm;
+                            font-family: root.empty ? "" : Theme.mono-font-family;
+                            overflow: elide;
+                        }
                     }
                 }
             }

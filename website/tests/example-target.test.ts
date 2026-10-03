@@ -29,6 +29,7 @@ const FIRST_BATCH = [
   'chart',
   'checkbox',
   'collapsible',
+  'color-picker',
 ];
 
 function headingText(node) {
