@@ -1,12 +1,52 @@
-import { Theme, Status } from "../theme.slint";
+import { Theme, Status, ControlSize } from "../theme.slint";
 import { GroupBox, GroupBoxVariant } from "section.slint";
-import { DataTable, DataTableColumn, DataTableRow } from "../data-table.slint";
+import { DataTable, DataTableCell, DataTableRow } from "../data-table.slint";
+import { Button } from "../button.slint";
 
 export component DataTableExample inherits VerticalLayout {
     horizontal-stretch: 1;
     padding: Theme.page-padding(Theme.viewport);
     spacing: 24px;
     alignment: start;
+
+    function cell(text: string, status: Status) -> DataTableCell {
+        { text: text, status: status }
+    }
+    function invoice(id: string, status: string, tone: Status, amount: string) -> DataTableRow {
+        {
+            id: id,
+            cells: [
+                root.cell(id, Status.default),
+                root.cell(status, tone),
+                root.cell(amount, Status.default),
+            ],
+        }
+    }
+    function quote(symbol: string, name: string, price: string, change: string, up: bool, volume: string, cap: string) -> DataTableRow {
+        {
+            id: symbol,
+            cells: [
+                root.cell(symbol, Status.default),
+                root.cell(name, Status.default),
+                root.cell(price, Status.default),
+                root.cell(change, up ? Status.success : Status.danger),
+                root.cell(volume, Status.default),
+                root.cell(cap, Status.default),
+            ],
+        }
+    }
+    function person(name: string, email: string, role: string, status: string, tone: Status, seen: string) -> DataTableRow {
+        {
+            id: email,
+            cells: [
+                root.cell(name, Status.default),
+                root.cell(email, Status.default),
+                root.cell(role, Status.default),
+                root.cell(status, tone),
+                root.cell(seen, Status.default),
+            ],
+        }
+    }
 
     GroupBox {
         title: "Invoices";
@@ -19,31 +59,168 @@ export component DataTableExample inherits VerticalLayout {
                 { key: "amount", title: "Amount", width: 0, align: TextHorizontalAlignment.right, sortable: true, resizable: false },
             ];
             rows: [
-                {
-                    id: "1",
-                    cells: [
-                        { text: "INV001", status: Status.default },
-                        { text: "Paid", status: Status.success },
-                        { text: "$250", status: Status.default }
-                    ]
-                },
-                {
-                    id: "2",
-                    cells: [
-                        { text: "INV002", status: Status.default },
-                        { text: "Pending", status: Status.warning },
-                        { text: "$150", status: Status.default }
-                    ]
-                },
-                {
-                    id: "3",
-                    cells: [
-                        { text: "INV003", status: Status.default },
-                        { text: "Unpaid", status: Status.danger },
-                        { text: "$350", status: Status.default }
-                    ]
-                },
+                root.invoice("INV001", "Paid", Status.success, "$250"),
+                root.invoice("INV002", "Pending", Status.warning, "$150"),
+                root.invoice("INV003", "Unpaid", Status.danger, "$350"),
+                root.invoice("INV004", "Paid", Status.success, "$90"),
+                root.invoice("INV005", "Pending", Status.warning, "$1,200"),
             ];
+        }
+    }
+
+    GroupBox {
+        title: "Column Configuration";
+        variant: GroupBoxVariant.outline;
+        DataTable {
+            height: 180px;
+            columns: [
+                { key: "id", title: "ID", width: 64px, align: TextHorizontalAlignment.left, sortable: false, resizable: false },
+                { key: "name", title: "Name", width: 140px, align: TextHorizontalAlignment.left, sortable: true, resizable: true },
+                { key: "age", title: "Age", width: 72px, align: TextHorizontalAlignment.right, sortable: true, resizable: false },
+                { key: "email", title: "Email", width: 0, align: TextHorizontalAlignment.left, sortable: false, resizable: true },
+            ];
+            rows: [
+                { id: "1", cells: [root.cell("1", Status.default), root.cell("Ada Lovelace", Status.default), root.cell("36", Status.default), root.cell("ada@uni.dev", Status.default)] },
+                { id: "2", cells: [root.cell("2", Status.default), root.cell("Alan Turing", Status.default), root.cell("41", Status.default), root.cell("alan@uni.dev", Status.default)] },
+                { id: "3", cells: [root.cell("3", Status.default), root.cell("Grace Hopper", Status.default), root.cell("85", Status.default), root.cell("grace@uni.dev", Status.default)] },
+            ];
+        }
+    }
+
+    GroupBox {
+        title: "Virtual Scrolling for Large Datasets";
+        variant: GroupBoxVariant.outline;
+        DataTable {
+            height: 220px;
+            columns: [
+                { key: "invoice", title: "Invoice", width: 100px, align: TextHorizontalAlignment.left, sortable: true, resizable: false },
+                { key: "status", title: "Status", width: 100px, align: TextHorizontalAlignment.left, sortable: true, resizable: false },
+                { key: "amount", title: "Amount", width: 0, align: TextHorizontalAlignment.right, sortable: true, resizable: false },
+            ];
+            rows: [
+                root.invoice("INV001", "Paid", Status.success, "$250"),
+                root.invoice("INV002", "Pending", Status.warning, "$150"),
+                root.invoice("INV003", "Unpaid", Status.danger, "$350"),
+                root.invoice("INV004", "Paid", Status.success, "$90"),
+                root.invoice("INV005", "Pending", Status.warning, "$1,200"),
+                root.invoice("INV006", "Paid", Status.success, "$480"),
+                root.invoice("INV007", "Unpaid", Status.danger, "$75"),
+                root.invoice("INV008", "Paid", Status.success, "$2,040"),
+                root.invoice("INV009", "Pending", Status.warning, "$610"),
+                root.invoice("INV010", "Paid", Status.success, "$128"),
+                root.invoice("INV011", "Unpaid", Status.danger, "$990"),
+                root.invoice("INV012", "Pending", Status.warning, "$340"),
+                root.invoice("INV013", "Paid", Status.success, "$1,760"),
+                root.invoice("INV014", "Unpaid", Status.danger, "$55"),
+                root.invoice("INV015", "Paid", Status.success, "$870"),
+                root.invoice("INV016", "Pending", Status.warning, "$430"),
+            ];
+        }
+    }
+
+    GroupBox {
+        title: "Sorting Implementation";
+        variant: GroupBoxVariant.outline;
+        DataTable {
+            height: 200px;
+            columns: [
+                { key: "name", title: "Name", width: 160px, align: TextHorizontalAlignment.left, sortable: true, resizable: false },
+                { key: "age", title: "Age", width: 72px, align: TextHorizontalAlignment.right, sortable: true, resizable: false },
+                { key: "email", title: "Email", width: 0, align: TextHorizontalAlignment.left, sortable: true, resizable: false },
+            ];
+            rows: [
+                { id: "cara", cells: [root.cell("Cara", Status.default), root.cell("41", Status.default), root.cell("cara@uni.dev", Status.default)] },
+                { id: "bob", cells: [root.cell("Bob", Status.default), root.cell("22", Status.default), root.cell("bob@uni.dev", Status.default)] },
+                { id: "ada", cells: [root.cell("Ada", Status.default), root.cell("36", Status.default), root.cell("ada@uni.dev", Status.default)] },
+                { id: "dan", cells: [root.cell("Dan", Status.default), root.cell("27", Status.default), root.cell("dan@uni.dev", Status.default)] },
+            ];
+        }
+    }
+
+    GroupBox {
+        title: "Cell Rendering";
+        variant: GroupBoxVariant.outline;
+        DataTable {
+            height: 180px;
+            columns: [
+                { key: "symbol", title: "Symbol", width: 100px, align: TextHorizontalAlignment.left, sortable: true, resizable: false },
+                { key: "side", title: "Side", width: 80px, align: TextHorizontalAlignment.left, sortable: false, resizable: false },
+                { key: "pnl", title: "P&L", width: 0, align: TextHorizontalAlignment.right, sortable: true, resizable: false },
+            ];
+            rows: [
+                { id: "aapl", cells: [root.cell("AAPL", Status.default), root.cell("Long", Status.info), root.cell("+2.40%", Status.success)] },
+                { id: "nvda", cells: [root.cell("NVDA", Status.default), root.cell("Short", Status.warning), root.cell("-1.10%", Status.danger)] },
+                { id: "tsla", cells: [root.cell("TSLA", Status.default), root.cell("Long", Status.info), root.cell("+3.18%", Status.success)] },
+                { id: "amzn", cells: [root.cell("AMZN", Status.default), root.cell("Short", Status.warning), root.cell("-0.42%", Status.danger)] },
+            ];
+        }
+    }
+
+    GroupBox {
+        title: "Selection Modes";
+        variant: GroupBoxVariant.outline;
+        VerticalLayout {
+            spacing: 8px;
+            selectable := DataTable {
+                height: 180px;
+                row-selectable: true;
+                columns: [
+                    { key: "invoice", title: "Invoice", width: 100px, align: TextHorizontalAlignment.left, sortable: true, resizable: false },
+                    { key: "status", title: "Status", width: 100px, align: TextHorizontalAlignment.left, sortable: true, resizable: false },
+                    { key: "amount", title: "Amount", width: 0, align: TextHorizontalAlignment.right, sortable: true, resizable: false },
+                ];
+                rows: [
+                    root.invoice("INV001", "Paid", Status.success, "$250"),
+                    root.invoice("INV002", "Pending", Status.warning, "$150"),
+                    root.invoice("INV003", "Unpaid", Status.danger, "$350"),
+                    root.invoice("INV004", "Paid", Status.success, "$90"),
+                ];
+            }
+            Text {
+                text: selectable.selected-row < 0 ? "No row selected" : "Selected row \{selectable.selected-row + 1}";
+                color: Theme.muted-foreground;
+                font-size: Theme.font-size-sm;
+            }
+        }
+    }
+
+    GroupBox {
+        title: "Reading and Writing the Selection";
+        variant: GroupBoxVariant.outline;
+        VerticalLayout {
+            spacing: 8px;
+            HorizontalLayout {
+                spacing: 8px;
+                Button {
+                    text: "Select row 3";
+                    outline: true;
+                    clicked => { sheet.selected-row = 2; }
+                }
+                Button {
+                    text: "Clear";
+                    outline: true;
+                    clicked => { sheet.clear-selection(); }
+                }
+            }
+            sheet := DataTable {
+                height: 180px;
+                columns: [
+                    { key: "invoice", title: "Invoice", width: 100px, align: TextHorizontalAlignment.left, sortable: true, resizable: false },
+                    { key: "status", title: "Status", width: 100px, align: TextHorizontalAlignment.left, sortable: true, resizable: false },
+                    { key: "amount", title: "Amount", width: 0, align: TextHorizontalAlignment.right, sortable: true, resizable: false },
+                ];
+                rows: [
+                    root.invoice("INV001", "Paid", Status.success, "$250"),
+                    root.invoice("INV002", "Pending", Status.warning, "$150"),
+                    root.invoice("INV003", "Unpaid", Status.danger, "$350"),
+                    root.invoice("INV004", "Paid", Status.success, "$90"),
+                ];
+            }
+            Text {
+                text: sheet.selected-row < 0 ? "selected_row: none" : "selected_row: \{sheet.selected-row}";
+                color: Theme.muted-foreground;
+                font-size: Theme.font-size-sm;
+            }
         }
     }
 
@@ -52,20 +229,86 @@ export component DataTableExample inherits VerticalLayout {
         variant: GroupBoxVariant.outline;
         DataTable {
             height: 180px;
+            col-resizable: true;
             columns: [
                 { key: "invoice", title: "Invoice", width: 120px, align: TextHorizontalAlignment.left, sortable: true, resizable: true },
                 { key: "status", title: "Status", width: 120px, align: TextHorizontalAlignment.left, sortable: true, resizable: true },
-                { key: "amount", title: "Amount", width: 0, align: TextHorizontalAlignment.right, sortable: false, resizable: false },
+                { key: "amount", title: "Amount", width: 0, align: TextHorizontalAlignment.right, sortable: true, resizable: false },
             ];
             rows: [
-                {
-                    id: "1",
-                    cells: [
-                        { text: "INV001", status: Status.default },
-                        { text: "Paid", status: Status.success },
-                        { text: "$250", status: Status.default }
-                    ],
-                },
+                root.invoice("INV001", "Paid", Status.success, "$250"),
+                root.invoice("INV002", "Pending", Status.warning, "$150"),
+                root.invoice("INV003", "Unpaid", Status.danger, "$350"),
+            ];
+        }
+    }
+
+    GroupBox {
+        title: "Table Styling";
+        variant: GroupBoxVariant.outline;
+        DataTable {
+            height: 220px;
+            size: ControlSize.large;
+            stripe: true;
+            bordered: true;
+            columns: [
+                { key: "invoice", title: "Invoice", width: 100px, align: TextHorizontalAlignment.left, sortable: true, resizable: false },
+                { key: "status", title: "Status", width: 100px, align: TextHorizontalAlignment.left, sortable: true, resizable: false },
+                { key: "amount", title: "Amount", width: 0, align: TextHorizontalAlignment.right, sortable: true, resizable: false },
+            ];
+            rows: [
+                root.invoice("INV001", "Paid", Status.success, "$250"),
+                root.invoice("INV002", "Pending", Status.warning, "$150"),
+                root.invoice("INV003", "Unpaid", Status.danger, "$350"),
+                root.invoice("INV004", "Paid", Status.success, "$90"),
+            ];
+        }
+    }
+
+    GroupBox {
+        title: "Financial Data Table";
+        variant: GroupBoxVariant.outline;
+        DataTable {
+            height: 280px;
+            stripe: true;
+            col-resizable: true;
+            columns: [
+                { key: "symbol", title: "Symbol", width: 88px, align: TextHorizontalAlignment.left, sortable: true, resizable: true },
+                { key: "name", title: "Name", width: 180px, align: TextHorizontalAlignment.left, sortable: true, resizable: true },
+                { key: "price", title: "Price", width: 88px, align: TextHorizontalAlignment.right, sortable: true, resizable: true },
+                { key: "change", title: "Chg", width: 80px, align: TextHorizontalAlignment.right, sortable: true, resizable: true },
+                { key: "volume", title: "Volume", width: 120px, align: TextHorizontalAlignment.right, sortable: true, resizable: true },
+                { key: "market_cap", title: "Market Cap", width: 120px, align: TextHorizontalAlignment.right, sortable: true, resizable: true },
+            ];
+            rows: [
+                root.quote("AAPL", "Apple Inc.", "228.52", "+1.24", true, "52,430,100", "3,480,000"),
+                root.quote("NVDA", "NVIDIA Corporation", "134.81", "-0.62", false, "180,220,400", "3,310,000"),
+                root.quote("TSLA", "Tesla, Inc.", "251.44", "+3.18", true, "98,110,250", "802,000"),
+                root.quote("MSFT", "Microsoft Corporation", "428.02", "+0.41", true, "22,540,800", "3,180,000"),
+                root.quote("AMZN", "Amazon.com, Inc.", "186.33", "-1.07", false, "41,220,600", "1,950,000"),
+                root.quote("700.HK", "Tencent Holdings", "412.60", "+0.87", true, "18,440,200", "3,820,000"),
+            ];
+        }
+    }
+
+    GroupBox {
+        title: "User Management Table";
+        variant: GroupBoxVariant.outline;
+        DataTable {
+            height: 240px;
+            columns: [
+                { key: "name", title: "Name", width: 160px, align: TextHorizontalAlignment.left, sortable: true, resizable: true },
+                { key: "email", title: "Email", width: 180px, align: TextHorizontalAlignment.left, sortable: true, resizable: true },
+                { key: "role", title: "Role", width: 90px, align: TextHorizontalAlignment.left, sortable: true, resizable: false },
+                { key: "status", title: "Status", width: 100px, align: TextHorizontalAlignment.left, sortable: true, resizable: false },
+                { key: "last_login", title: "Last Login", width: 0, align: TextHorizontalAlignment.left, sortable: true, resizable: false },
+            ];
+            rows: [
+                root.person("Ada Lovelace", "ada@uni.dev", "Admin", "Active", Status.success, "2026-03-02"),
+                root.person("Grace Hopper", "grace@uni.dev", "Editor", "Invited", Status.info, "2026-01-18"),
+                root.person("Alan Turing", "alan@uni.dev", "Viewer", "Suspended", Status.danger, "2025-11-04"),
+                root.person("Katherine Johnson", "katherine@uni.dev", "Editor", "Active", Status.success, "2026-02-11"),
+                root.person("Edsger Dijkstra", "edsger@uni.dev", "Admin", "Active", Status.success, "2025-12-20"),
             ];
         }
     }

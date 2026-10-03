@@ -12,6 +12,7 @@ pub fn run(component: &str, dark: bool) -> Result<(), slint::PlatformError> {
     gallery.set_component(component.into());
     gallery.global::<Theme>().set_dark(dark);
     install_search(&gallery);
+    install_table_sort(&gallery);
     #[cfg(target_arch = "wasm32")]
     web::apply_host_palette(&gallery);
     #[cfg(target_arch = "wasm32")]
@@ -56,6 +57,49 @@ fn follow_frame(gallery: slint::Weak<Gallery>) {
 fn install_search(gallery: &Gallery) {
     gallery.global::<ComboSearch>().set_installed(true);
     gallery.global::<ComboSearch>().on_contains(|haystack, needle| haystack.contains(needle.as_str()));
+}
+
+fn install_table_sort(gallery: &Gallery) {
+    use slint::Model;
+
+    gallery.global::<TableSort>().set_installed(true);
+    gallery.global::<TableSort>().on_indices(|rows, column, descending| {
+        let count = rows.row_count();
+        let mut order: Vec<i32> = (0..count as i32).collect();
+        let column = column.max(0) as usize;
+        let text_at = |index: i32| -> slint::SharedString {
+            rows.row_data(index as usize)
+                .and_then(|row| row.cells.row_data(column))
+                .map(|cell| cell.text)
+                .unwrap_or_default()
+        };
+        order.sort_by(|&left, &right| {
+            let a = text_at(left);
+            let b = text_at(right);
+            let ordering = match (numeric_key(a.as_str()), numeric_key(b.as_str())) {
+                (Some(a), Some(b)) => a.partial_cmp(&b).unwrap_or(std::cmp::Ordering::Equal),
+                _ => a.to_lowercase().cmp(&b.to_lowercase()),
+            };
+            let ordering = if descending { ordering.reverse() } else { ordering };
+            ordering.then(left.cmp(&right))
+        });
+        slint::ModelRc::new(slint::VecModel::from(order))
+    });
+}
+
+/// A number hiding in a cell, so `$1,200` and `+1.24%` sort by value.
+/// Text with no number, including ISO dates, stays a string.
+fn numeric_key(text: &str) -> Option<f64> {
+    let mut cleaned = String::new();
+    for ch in text.chars() {
+        if ch.is_ascii_digit() || matches!(ch, '.' | '-' | '+') {
+            cleaned.push(ch);
+        }
+    }
+    if cleaned.is_empty() || cleaned.bytes().all(|byte| matches!(byte, b'.' | b'-' | b'+')) {
+        return None;
+    }
+    cleaned.parse().ok()
 }
 
 fn sync_frame(gallery: &Gallery) {

@@ -418,10 +418,6 @@ const ALIASES = {
     'In a Dialog': 'Dialog',
     'Quick Actions Without Search': 'Quick actions',
   },
-  'data-table': {
-    'Sorting Implementation': 'Invoices',
-    'Selection Modes': 'Invoices',
-  },
   'date-picker': {
     'With Initial Date': 'Date',
   },

@@ -93,11 +93,16 @@ export component CommandExample inherits VerticalLayout {
                     x: (parent.width - self.width) / 2;
                     y: 36px;
                     width: min(parent.width - 32px, 380px);
+                    height: menu.preferred-height;
+                    clip: true;
                     border-radius: Theme.radius-lg;
                     background: Theme.popover;
                     border-width: 1px;
                     border-color: Theme.border;
-                    Command {
+                    menu := Command {
+                        y: 0px;
+                        width: parent.width;
+                        height: self.preferred-height;
                         bordered: false;
                         heading: "Commands";
                         hints: true;
@@ -201,11 +206,16 @@ export component CommandExample inherits VerticalLayout {
                     x: (parent.width - self.width) / 2;
                     y: 28px;
                     width: min(parent.width - 32px, 380px);
+                    height: stocks.preferred-height;
+                    clip: true;
                     border-radius: Theme.radius-lg;
                     background: Theme.popover;
                     border-width: 1px;
                     border-color: Theme.border;
-                    Command {
+                    stocks := Command {
+                        y: 0px;
+                        width: parent.width;
+                        height: self.preferred-height;
                         bordered: false;
                         heading: "Stocks";
                         placeholder: "Search symbols or companies...";

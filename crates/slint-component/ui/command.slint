@@ -294,6 +294,7 @@ export component Command {
     }
 
     horizontal-stretch: 1;
+    vertical-stretch: 0;
     min-width: 0px;
     max-width: 380px;
     preferred-width: 380px;
@@ -302,7 +303,11 @@ export component Command {
         key-pressed(event) => { root.on-key(event) }
     }
 
-    Rectangle {
+    frame := Rectangle {
+        horizontal-stretch: 1;
+        vertical-stretch: 0;
+        width: parent.width;
+        height: column.preferred-height;
         border-radius: root.bordered ? Theme.radius-lg : 0;
         border-width: root.bordered ? 1px : 0;
         border-color: Theme.border;
@@ -311,20 +316,30 @@ export component Command {
         drop-shadow-offset-y: root.bordered ? 6px : 0;
         drop-shadow-color: Theme.shadow;
 
-        VerticalLayout {
+        column := VerticalLayout {
+            alignment: start;
+            width: parent.width;
+            height: self.preferred-height;
             if root.heading != "": Rectangle {
+                height: 40px;
+                vertical-stretch: 0;
+                horizontal-stretch: 1;
                 HorizontalLayout {
-                    height: 36px;
+                    width: parent.width;
+                    height: parent.height;
                     padding-left: 12px;
                     padding-right: 12px;
                     spacing: 8px;
                     cross-axis-alignment: center;
                     Text {
                         horizontal-stretch: 1;
+                        vertical-stretch: 1;
                         text: root.heading;
                         color: Theme.foreground;
                         font-size: Theme.font-size-sm;
+                        font-weight: 600;
                         vertical-alignment: center;
+                        overflow: elide;
                     }
                     Text {
                         text: "\{root.matched()} matches";
@@ -337,12 +352,17 @@ export component Command {
 
             if root.heading != "": Rectangle {
                 height: 1px;
+                vertical-stretch: 0;
                 background: Theme.border;
             }
 
             if root.searchable: Rectangle {
+                height: 36px;
+                vertical-stretch: 0;
+                horizontal-stretch: 1;
                 HorizontalLayout {
-                    height: 36px;
+                    width: parent.width;
+                    height: parent.height;
                     padding-left: 12px;
                     padding-right: 12px;
                     spacing: 8px;
@@ -382,6 +402,7 @@ export component Command {
 
             if root.searchable: Rectangle {
                 height: 1px;
+                vertical-stretch: 0;
                 background: Theme.border;
             }
 
@@ -425,10 +446,12 @@ export component Command {
 
             if root.hints: Rectangle {
                 height: 1px;
+                vertical-stretch: 0;
                 background: Theme.border;
             }
 
             if root.hints: HorizontalLayout {
+                vertical-stretch: 0;
                 padding-left: 12px;
                 padding-right: 12px;
                 padding-top: 8px;

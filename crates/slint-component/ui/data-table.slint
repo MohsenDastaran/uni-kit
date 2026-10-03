@@ -67,12 +67,22 @@ component TableScrollbar {
     }
 }
 
+// The gallery installs this and sorts by cell text: numbers by value, everything
+// else case-insensitively. An application that passes `row-order` keeps that
+// order instead.
+export global TableSort {
+    in-out property <bool> installed: false;
+    callback indices([DataTableRow], /* column */ int, /* descending */ bool) -> [int];
+}
+
 // A data table for large, interactive data sets. Mirrors GPUI Component's
 // `DataTable`: typed columns and rows, a fixed header over a virtualized body
 // (only the visible rows are instantiated, so thousands of rows stay cheap),
 // sortable and resizable columns, row selection with the keyboard
 // (Up/Down, Home/End, PageUp/PageDown, Escape), stripes, borders and sizes.
-// Sorting is owned by the application, as in GPUI's `perform_sort`: handle
+// A header click cycles Default → Descending → Ascending. When `TableSort` is
+// installed and `row-order` is empty, the table reorders itself. Otherwise
+// sorting stays with the application, as in GPUI's `perform_sort`: handle
 // `sort-changed` and either reorder `rows` or pass the display order in
 // `row-order` (indices into `rows`; empty means the natural order).
 export component DataTable inherits Rectangle {
@@ -95,9 +105,18 @@ export component DataTable inherits Rectangle {
     callback row-selected(/* display index */ int);
     callback row-double-clicked(/* display index */ int);
 
+    // Built-in order when `TableSort` is installed. Empty keeps the natural order.
+    private property <[int]> sorted-order;
+
     // The index into `rows` shown at a display position.
     public pure function data-index(display-index: int) -> int {
-        return row-order.length > 0 ? row-order[display-index] : display-index;
+        if row-order.length > 0 {
+            return row-order[display-index];
+        }
+        if sorted-order.length > display-index {
+            return sorted-order[display-index];
+        }
+        return display-index;
     }
 
     public function scroll-to-row(display-index: int) {
@@ -121,6 +140,14 @@ export component DataTable inherits Rectangle {
         root.row-selected(root.selected-row);
     }
 
+    function apply-sort() {
+        if root.row-order.length > 0 || !TableSort.installed || root.sort == ColumnSort.default || root.sort-column < 0 {
+            root.sorted-order = [];
+            return;
+        }
+        root.sorted-order = TableSort.indices(root.rows, root.sort-column, root.sort == ColumnSort.descending);
+    }
+
     function toggle-sort(column: int) {
         let next = sort-column != column || sort == ColumnSort.default ? ColumnSort.descending
             : sort == ColumnSort.descending ? ColumnSort.ascending
@@ -128,6 +155,13 @@ export component DataTable inherits Rectangle {
         root.sort-column = column;
         root.sort = next;
         root.sort-changed(column, next);
+        root.apply-sort();
+        root.selected-row = -1;
+        body.viewport-y = 0px;
+    }
+
+    changed rows => {
+        root.apply-sort();
     }
 
     private property <length> row-height: size == ControlSize.xsmall ? 26px : size == ControlSize.small ? 30px : size == ControlSize.large ? 40px : 32px;
@@ -138,6 +172,7 @@ export component DataTable inherits Rectangle {
     private property <int> first-row: clamp(floor(-body.viewport-y / row-height), 0, max(0, row-count - visible-count));
 
     accessible-role: table;
+    horizontal-stretch: 1;
 
     background: Theme.background;
     border-radius: bordered ? Theme.radius-md : 0;

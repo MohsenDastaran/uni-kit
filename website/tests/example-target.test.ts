@@ -32,6 +32,7 @@ const FIRST_BATCH = [
   'color-picker',
   'combobox',
   'command',
+  'data-table',
 ];
 
 function headingText(node) {

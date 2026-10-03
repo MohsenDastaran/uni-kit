@@ -146,7 +146,7 @@ The sample is the gallery example that is already running, not a separately writ
 - [x] Color picker
 - [x] Combobox
 - [x] Command
-- [ ] Data table
+- [x] Data table
 - [ ] Date picker
 - [ ] Description list
 - [ ] Dialog
