@@ -11,7 +11,8 @@ export component Collapsible {
     min-width: 0px;
 
     VerticalLayout {
-        Rectangle {
+        // An empty title means the caller draws the trigger and this is only the body.
+        if root.title != "": Rectangle {
             background: touch.has-hover ? Theme.accent : transparent;
             HorizontalLayout {
                 padding: 8px;

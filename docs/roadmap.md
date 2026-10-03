@@ -141,8 +141,8 @@ The sample is the gallery example that is already running, not a separately writ
 - [x] Carousel
 - [x] Chart
 - [x] Checkbox
-- [ ] Clipboard
-- [ ] Collapsible
+- [x] Clipboard
+- [x] Collapsible
 - [ ] Color picker
 - [ ] Combobox
 - [ ] Command

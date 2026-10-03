@@ -28,6 +28,7 @@ const FIRST_BATCH = [
   'carousel',
   'chart',
   'checkbox',
+  'collapsible',
 ];
 
 function headingText(node) {

@@ -1,12 +1,569 @@
-import { Theme } from "../theme.slint";
+import { Theme, ButtonVariant, ControlSize, Status } from "../theme.slint";
 import { GroupBox, GroupBoxVariant } from "section.slint";
 import { Collapsible } from "../collapsible.slint";
+import { Button } from "../button.slint";
+import { Tag, TagVariant } from "../tag.slint";
+import { Progress } from "../progress.slint";
+import { Checkbox } from "../checkbox.slint";
+import { Avatar, AvatarSize } from "../avatar.slint";
+import { Icon } from "../icon.slint";
 
 export component CollapsibleExample inherits VerticalLayout {
     horizontal-stretch: 1;
+    private property <bool> order-open: false;
+    private property <bool> usage-open: false;
+    private property <bool> settings-open: true;
+    private property <bool> push: true;
+    private property <bool> email: false;
+    private property <bool> sms: false;
+    private property <bool> keys-open: true;
+    private property <bool> components-open: true;
+    private property <bool> ui-open: false;
+    private property <bool> profile-open: true;
     padding: Theme.page-padding(Theme.viewport);
     spacing: 24px;
     alignment: start;
+
+    GroupBox {
+        title: "Basic";
+        variant: GroupBoxVariant.outline;
+        VerticalLayout {
+            spacing: 8px;
+            HorizontalLayout {
+                spacing: 8px;
+                alignment: center;
+                Text {
+                    horizontal-stretch: 1;
+                    text: "Order #4189";
+                    color: Theme.foreground;
+                    font-size: Theme.font-size-sm;
+                    font-weight: 600;
+                    vertical-alignment: center;
+                }
+                Button {
+                    icon: "chevrons-up-down";
+                    variant: ButtonVariant.ghost;
+                    size: ControlSize.xsmall;
+                    clicked => { root.order-open = !root.order-open; }
+                }
+            }
+            Rectangle {
+                border-width: 1px;
+                border-color: Theme.border;
+                border-radius: Theme.radius-lg;
+                background: Theme.muted.with-alpha(0.3);
+                HorizontalLayout {
+                    padding-left: 12px;
+                    padding-right: 12px;
+                    padding-top: 8px;
+                    padding-bottom: 8px;
+                    spacing: 8px;
+                    alignment: center;
+                    Text {
+                        horizontal-stretch: 1;
+                        text: "Status";
+                        color: Theme.muted-foreground;
+                        font-size: Theme.font-size-sm;
+                        vertical-alignment: center;
+                    }
+                    Tag {
+                        text: "Shipped";
+                        variant: TagVariant.status;
+                        status: Status.success;
+                        size: ControlSize.small;
+                    }
+                }
+            }
+            Collapsible {
+                open <=> root.order-open;
+                VerticalLayout {
+                    spacing: 8px;
+                    Rectangle {
+                        border-width: 1px;
+                        border-color: Theme.border;
+                        border-radius: Theme.radius-lg;
+                        VerticalLayout {
+                            padding: 8px;
+                            padding-left: 12px;
+                            padding-right: 12px;
+                            Text { text: "Shipping address"; color: Theme.foreground; font-size: Theme.font-size-sm; font-weight: 500; }
+                            Text { text: "100 Market St, San Francisco"; color: Theme.muted-foreground; font-size: Theme.font-size-sm; wrap: word-wrap; }
+                        }
+                    }
+                    Rectangle {
+                        border-width: 1px;
+                        border-color: Theme.border;
+                        border-radius: Theme.radius-lg;
+                        VerticalLayout {
+                            padding: 8px;
+                            padding-left: 12px;
+                            padding-right: 12px;
+                            Text { text: "Items"; color: Theme.foreground; font-size: Theme.font-size-sm; font-weight: 500; }
+                            Text { text: "2x Studio Headphones"; color: Theme.muted-foreground; font-size: Theme.font-size-sm; }
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    GroupBox {
+        title: "Row trigger";
+        variant: GroupBoxVariant.outline;
+        Collapsible {
+            title: "How do I reset my password?";
+            Text {
+                text: "Click the Forgot Password link on the sign in page, and we will send you an email with instructions to create a new one.";
+                color: Theme.muted-foreground;
+                font-size: Theme.font-size-sm;
+                wrap: word-wrap;
+            }
+        }
+    }
+
+    GroupBox {
+        title: "Bottom trigger";
+        variant: GroupBoxVariant.outline;
+        VerticalLayout {
+            spacing: 0px;
+            Rectangle {
+                border-width: 1px;
+                border-color: Theme.border;
+                border-radius: Theme.radius-lg;
+                VerticalLayout {
+                    padding: 12px;
+                    spacing: 12px;
+                    HorizontalLayout {
+                        spacing: 8px;
+                        alignment: center;
+                        Text {
+                            horizontal-stretch: 1;
+                            text: "3 days remaining in cycle";
+                            color: Theme.foreground;
+                            font-size: Theme.font-size-sm;
+                            vertical-alignment: center;
+                        }
+                        Button {
+                            text: "Billing";
+                            outline: true;
+                            size: ControlSize.xsmall;
+                        }
+                    }
+                    Rectangle {
+                        border-width: 1px;
+                        border-color: Theme.border;
+                        border-radius: Theme.radius-lg;
+                        background: Theme.muted.with-alpha(0.6);
+                        VerticalLayout {
+                            padding: 8px;
+                            padding-left: 12px;
+                            padding-right: 12px;
+                            spacing: 8px;
+                            HorizontalLayout {
+                                Text {
+                                    horizontal-stretch: 1;
+                                    text: "$18.08 / $20";
+                                    color: Theme.foreground;
+                                    font-size: Theme.font-size-sm;
+                                    font-weight: 500;
+                                }
+                                Text {
+                                    text: "$200";
+                                    color: Theme.foreground;
+                                    font-size: Theme.font-size-sm;
+                                    font-weight: 500;
+                                }
+                            }
+                            Progress { value: 90; }
+                        }
+                    }
+                    Collapsible {
+                        open <=> root.usage-open;
+                        VerticalLayout {
+                            spacing: 8px;
+                            HorizontalLayout {
+                                Text { horizontal-stretch: 1; text: "Requests"; color: Theme.muted-foreground; font-size: Theme.font-size-xs; font-weight: 500; }
+                                Text { text: "$210.84"; color: Theme.foreground; font-size: Theme.font-size-xs; font-weight: 500; }
+                            }
+                            HorizontalLayout {
+                                Text { horizontal-stretch: 1; text: "Active CPU"; color: Theme.muted-foreground; font-size: Theme.font-size-xs; font-weight: 500; }
+                                Text { text: "$21.95"; color: Theme.foreground; font-size: Theme.font-size-xs; font-weight: 500; }
+                            }
+                            HorizontalLayout {
+                                Text { horizontal-stretch: 1; text: "Events"; color: Theme.muted-foreground; font-size: Theme.font-size-xs; font-weight: 500; }
+                                Text { text: "$21.20"; color: Theme.foreground; font-size: Theme.font-size-xs; font-weight: 500; }
+                            }
+                            HorizontalLayout {
+                                Text { horizontal-stretch: 1; text: "Storage"; color: Theme.muted-foreground; font-size: Theme.font-size-xs; font-weight: 500; }
+                                Text { text: "$20.45"; color: Theme.foreground; font-size: Theme.font-size-xs; font-weight: 500; }
+                            }
+                        }
+                    }
+                }
+            }
+            Rectangle {
+                height: 0px;
+                horizontal-stretch: 1;
+                Button {
+                    x: (parent.width - self.width) / 2;
+                    y: -12px;
+                    icon: root.usage-open ? "chevron-up" : "chevron-down";
+                    outline: true;
+                    size: ControlSize.xsmall;
+                    clicked => { root.usage-open = !root.usage-open; }
+                }
+            }
+        }
+    }
+
+    GroupBox {
+        title: "Settings";
+        variant: GroupBoxVariant.outline;
+        VerticalLayout {
+            spacing: 8px;
+            Rectangle {
+                border-width: 1px;
+                border-color: Theme.border;
+                border-radius: Theme.radius-md;
+                background: settings-touch.has-hover ? Theme.accent : transparent;
+                HorizontalLayout {
+                    padding-left: 10px;
+                    padding-right: 10px;
+                    padding-top: 6px;
+                    padding-bottom: 6px;
+                    spacing: 8px;
+                    alignment: center;
+                    Icon {
+                        name: root.settings-open ? "chevron-down" : "chevron-right";
+                        size: 14px;
+                        color: Theme.muted-foreground;
+                    }
+                    Text {
+                        text: "Notification settings";
+                        color: Theme.foreground;
+                        font-size: Theme.font-size-sm;
+                        font-weight: 500;
+                        vertical-alignment: center;
+                    }
+                }
+                settings-touch := TouchArea {
+                    clicked => { root.settings-open = !root.settings-open; }
+                }
+            }
+            Collapsible {
+                open <=> root.settings-open;
+                Rectangle {
+                    border-width: 1px;
+                    border-color: Theme.border;
+                    border-radius: Theme.radius-lg;
+                    VerticalLayout {
+                        padding: 8px;
+                        padding-left: 12px;
+                        padding-right: 12px;
+                        spacing: 8px;
+                        Checkbox { label: "Push notifications"; checked <=> root.push; }
+                        Rectangle { height: 1px; background: Theme.border; }
+                        Checkbox { label: "Email notifications"; checked <=> root.email; }
+                        Rectangle { height: 1px; background: Theme.border; }
+                        Checkbox { label: "SMS notifications"; checked <=> root.sms; }
+                    }
+                }
+            }
+        }
+    }
+
+    GroupBox {
+        title: "Row actions";
+        variant: GroupBoxVariant.outline;
+        VerticalLayout {
+            spacing: 12px;
+            HorizontalLayout {
+                spacing: 8px;
+                alignment: center;
+                Rectangle {
+                    horizontal-stretch: 1;
+                    background: keys-touch.has-hover ? Theme.accent : transparent;
+                    border-radius: Theme.radius-sm;
+                    HorizontalLayout {
+                        padding-top: 4px;
+                        padding-bottom: 4px;
+                        spacing: 8px;
+                        alignment: center;
+                        Icon {
+                            name: root.keys-open ? "chevron-down" : "chevron-right";
+                            size: 14px;
+                            color: Theme.muted-foreground;
+                        }
+                        Text {
+                            text: "API Keys";
+                            color: Theme.foreground;
+                            font-size: Theme.font-size-sm;
+                            font-weight: 500;
+                            vertical-alignment: center;
+                        }
+                    }
+                    keys-touch := TouchArea {
+                        clicked => { root.keys-open = !root.keys-open; }
+                    }
+                }
+                Button {
+                    icon: "plus";
+                    variant: ButtonVariant.ghost;
+                    size: ControlSize.xsmall;
+                }
+            }
+            Collapsible {
+                open <=> root.keys-open;
+                VerticalLayout {
+                    spacing: 8px;
+                    HorizontalLayout {
+                        spacing: 8px;
+                        alignment: center;
+                        Rectangle {
+                            width: 20px;
+                            height: 20px;
+                            border-radius: Theme.radius-sm;
+                            background: Theme.muted;
+                            Icon {
+                                x: (parent.width - self.width) / 2;
+                                y: (parent.height - self.height) / 2;
+                                name: "hash";
+                                size: 12px;
+                                color: Theme.chart-2;
+                            }
+                        }
+                        Text { text: "Production"; color: Theme.foreground; font-size: Theme.font-size-xs; }
+                        Rectangle {
+                            horizontal-stretch: 1;
+                            border-radius: Theme.radius-sm;
+                            background: Theme.muted;
+                            Text {
+                                text: "PRDK230454*242SDIFPPL";
+                                color: Theme.foreground;
+                                font-size: Theme.font-size-xs;
+                                font-family: Theme.mono-font-family;
+                                vertical-alignment: center;
+                                overflow: elide;
+                            }
+                        }
+                        Button { icon: "ellipsis"; variant: ButtonVariant.ghost; size: ControlSize.xsmall; }
+                    }
+                    HorizontalLayout {
+                        spacing: 8px;
+                        alignment: center;
+                        Rectangle {
+                            width: 20px;
+                            height: 20px;
+                            border-radius: Theme.radius-sm;
+                            background: Theme.muted;
+                            Icon {
+                                x: (parent.width - self.width) / 2;
+                                y: (parent.height - self.height) / 2;
+                                name: "hash";
+                                size: 12px;
+                                color: Theme.chart-2;
+                            }
+                        }
+                        Text { text: "Development"; color: Theme.foreground; font-size: Theme.font-size-xs; }
+                        Rectangle {
+                            horizontal-stretch: 1;
+                            border-radius: Theme.radius-sm;
+                            background: Theme.muted;
+                            Text {
+                                text: "DUILO30454*242SDIFUIP";
+                                color: Theme.foreground;
+                                font-size: Theme.font-size-xs;
+                                font-family: Theme.mono-font-family;
+                                vertical-alignment: center;
+                                overflow: elide;
+                            }
+                        }
+                        Button { icon: "ellipsis"; variant: ButtonVariant.ghost; size: ControlSize.xsmall; }
+                    }
+                    HorizontalLayout {
+                        spacing: 8px;
+                        alignment: center;
+                        Rectangle {
+                            width: 20px;
+                            height: 20px;
+                            border-radius: Theme.radius-sm;
+                            background: Theme.muted;
+                            Icon {
+                                x: (parent.width - self.width) / 2;
+                                y: (parent.height - self.height) / 2;
+                                name: "hash";
+                                size: 12px;
+                                color: Theme.chart-2;
+                            }
+                        }
+                        Text { text: "Staging"; color: Theme.foreground; font-size: Theme.font-size-xs; }
+                        Rectangle {
+                            horizontal-stretch: 1;
+                            border-radius: Theme.radius-sm;
+                            background: Theme.muted;
+                            Text {
+                                text: "IPPODAS230454*242SDI";
+                                color: Theme.foreground;
+                                font-size: Theme.font-size-xs;
+                                font-family: Theme.mono-font-family;
+                                vertical-alignment: center;
+                                overflow: elide;
+                            }
+                        }
+                        Button { icon: "ellipsis"; variant: ButtonVariant.ghost; size: ControlSize.xsmall; }
+                    }
+                }
+            }
+        }
+    }
+
+    GroupBox {
+        title: "Nested";
+        variant: GroupBoxVariant.outline;
+        VerticalLayout {
+            Rectangle {
+                border-radius: Theme.radius-sm;
+                background: components-touch.has-hover ? Theme.accent : transparent;
+                HorizontalLayout {
+                    padding: 4px;
+                    padding-left: 8px;
+                    padding-right: 8px;
+                    spacing: 8px;
+                    alignment: center;
+                    Icon { name: root.components-open ? "chevron-down" : "chevron-right"; size: 14px; color: Theme.muted-foreground; }
+                    Icon { name: root.components-open ? "folder-open" : "folder"; size: 14px; color: Theme.muted-foreground; }
+                    Text { text: "components"; color: Theme.foreground; font-size: Theme.font-size-sm; vertical-alignment: center; }
+                }
+                components-touch := TouchArea {
+                    clicked => { root.components-open = !root.components-open; }
+                }
+            }
+            Collapsible {
+                open <=> root.components-open;
+                VerticalLayout {
+                    Rectangle {
+                        border-radius: Theme.radius-sm;
+                        background: ui-touch.has-hover ? Theme.accent : transparent;
+                        HorizontalLayout {
+                            padding: 4px;
+                            padding-left: 20px;
+                            padding-right: 8px;
+                            spacing: 8px;
+                            alignment: center;
+                            Icon { name: root.ui-open ? "chevron-down" : "chevron-right"; size: 14px; color: Theme.muted-foreground; }
+                            Icon { name: root.ui-open ? "folder-open" : "folder"; size: 14px; color: Theme.muted-foreground; }
+                            Text { text: "ui"; color: Theme.foreground; font-size: Theme.font-size-sm; vertical-alignment: center; }
+                        }
+                        ui-touch := TouchArea {
+                            clicked => { root.ui-open = !root.ui-open; }
+                        }
+                    }
+                    Collapsible {
+                        open <=> root.ui-open;
+                        VerticalLayout {
+                            spacing: 2px;
+                            HorizontalLayout {
+                                padding-left: 48px;
+                                spacing: 8px;
+                                alignment: center;
+                                Icon { name: "file"; size: 14px; color: Theme.muted-foreground; }
+                                Text { text: "button.rs"; color: Theme.foreground; font-size: Theme.font-size-sm; }
+                            }
+                            HorizontalLayout {
+                                padding-left: 48px;
+                                spacing: 8px;
+                                alignment: center;
+                                Icon { name: "file"; size: 14px; color: Theme.muted-foreground; }
+                                Text { text: "card.rs"; color: Theme.foreground; font-size: Theme.font-size-sm; }
+                            }
+                            HorizontalLayout {
+                                padding-left: 48px;
+                                spacing: 8px;
+                                alignment: center;
+                                Icon { name: "file"; size: 14px; color: Theme.muted-foreground; }
+                                Text { text: "dialog.rs"; color: Theme.foreground; font-size: Theme.font-size-sm; }
+                            }
+                        }
+                    }
+                    HorizontalLayout {
+                        padding-left: 32px;
+                        spacing: 8px;
+                        alignment: center;
+                        Icon { name: "file"; size: 14px; color: Theme.muted-foreground; }
+                        Text { text: "login_form.rs"; color: Theme.foreground; font-size: Theme.font-size-sm; }
+                    }
+                }
+            }
+            HorizontalLayout {
+                padding-left: 22px;
+                spacing: 8px;
+                alignment: center;
+                Icon { name: "file"; size: 14px; color: Theme.muted-foreground; }
+                Text { text: "main.rs"; color: Theme.foreground; font-size: Theme.font-size-sm; }
+            }
+        }
+    }
+
+    GroupBox {
+        title: "Profile";
+        variant: GroupBoxVariant.outline;
+        VerticalLayout {
+            spacing: 12px;
+            Rectangle {
+                border-radius: Theme.radius-sm;
+                background: profile-touch.has-hover ? Theme.accent : transparent;
+                HorizontalLayout {
+                    padding: 4px;
+                    spacing: 8px;
+                    alignment: center;
+                    Avatar { initials: "JL"; size: AvatarSize.xsmall; }
+                    Text {
+                        horizontal-stretch: 1;
+                        text: "@huacnlee";
+                        color: Theme.foreground;
+                        font-size: Theme.font-size-sm;
+                        font-weight: 500;
+                        vertical-alignment: center;
+                    }
+                    Icon {
+                        name: root.profile-open ? "chevron-down" : "chevron-right";
+                        size: 14px;
+                        color: Theme.muted-foreground;
+                    }
+                }
+                profile-touch := TouchArea {
+                    clicked => { root.profile-open = !root.profile-open; }
+                }
+            }
+            Collapsible {
+                open <=> root.profile-open;
+                VerticalLayout {
+                    spacing: 8px;
+                    HorizontalLayout {
+                        spacing: 8px;
+                        alignment: center;
+                        Icon { name: "inbox"; size: 14px; color: Theme.muted-foreground; }
+                        Text { text: "Last activity"; color: Theme.muted-foreground; font-size: Theme.font-size-xs; }
+                        Text { text: "2 hours ago"; color: Theme.foreground; font-size: Theme.font-size-xs; font-weight: 500; }
+                    }
+                    HorizontalLayout {
+                        spacing: 8px;
+                        alignment: center;
+                        Icon { name: "calendar"; size: 14px; color: Theme.muted-foreground; }
+                        Text { text: "Online since"; color: Theme.muted-foreground; font-size: Theme.font-size-xs; }
+                        Text { text: "Today, 9:00 AM"; color: Theme.foreground; font-size: Theme.font-size-xs; font-weight: 500; }
+                    }
+                    HorizontalLayout {
+                        spacing: 8px;
+                        alignment: center;
+                        Icon { name: "globe"; size: 14px; color: Theme.muted-foreground; }
+                        Text { text: "Location"; color: Theme.muted-foreground; font-size: Theme.font-size-xs; }
+                        Text { text: "Hong Kong"; color: Theme.foreground; font-size: Theme.font-size-xs; font-weight: 500; }
+                    }
+                }
+            }
+        }
+    }
 
     GroupBox {
         title: "Details";
@@ -17,8 +574,8 @@ export component CollapsibleExample inherits VerticalLayout {
             Text {
                 text: "These options are for power users.";
                 color: Theme.foreground;
+                wrap: word-wrap;
             }
         }
     }
-
 }

@@ -66,4 +66,119 @@ Collapsible::new()
 
 The content remains mounted while closed so it can be measured and immediately reverse if toggled mid-animation. Without `motion_id`, the component keeps the immediate mount/unmount behavior. See the [GPUI Base Motion guide](../base/motion.md) for timing, reduced-motion, and performance details.
 
+### Basic
+
+A trigger beside the title, with a summary that stays visible.
+
+```rust
+Collapsible::new()
+    .open(self.is_open("order"))
+    .child(
+        h_flex()
+            .justify_between()
+            .child("Order #4189")
+            .child(
+                Button::new("order")
+                    .ghost()
+                    .xsmall()
+                    .icon(IconName::ChevronsUpDown)
+                    .on_click(cx.listener(|this, _, _, cx| this.toggle("order", cx))),
+            ),
+    )
+    .child(status_row)
+    .content(order_details)
+```
+
+### Row trigger
+
+The whole row is the trigger.
+
+```rust
+Collapsible::new()
+    .open(self.is_open("faq"))
+    .child(
+        h_flex()
+            .id("faq")
+            .justify_between()
+            .on_click(cx.listener(|this, _, _, cx| this.toggle("faq", cx)))
+            .child("How do I reset my password?")
+            .child(chevron),
+    )
+    .content("Click the Forgot Password link on the sign in page.")
+```
+
+### Bottom trigger
+
+The trigger sits on the bottom edge of the card it opens.
+
+```rust
+Collapsible::new()
+    .open(self.is_open("usage"))
+    .child(usage_summary)
+    .content(usage_breakdown)
+```
+
+### Settings
+
+Holds optional controls, keeping the default view short.
+
+```rust
+Collapsible::new()
+    .open(self.is_open("settings"))
+    .child(
+        Button::new("settings")
+            .outline()
+            .label("Notification settings")
+            .on_click(cx.listener(|this, _, _, cx| this.toggle("settings", cx))),
+    )
+    .content(notification_checkboxes)
+```
+
+### Row actions
+
+Actions live beside the trigger, in the header and in every row.
+
+```rust
+Collapsible::new()
+    .open(self.is_open("api-keys"))
+    .child(
+        h_flex()
+            .child(api_keys_trigger)
+            .child(Button::new("add-key").ghost().xsmall().icon(IconName::Plus)),
+    )
+    .content(api_key_rows)
+```
+
+### Nested
+
+Panels nest to any depth.
+
+```rust
+Collapsible::new()
+    .open(self.is_open("components-dir"))
+    .child(folder_row("components"))
+    .content(
+        Collapsible::new()
+            .open(self.is_open("ui-dir"))
+            .child(folder_row("ui"))
+            .content(v_flex().children(["button.rs", "card.rs", "dialog.rs"])),
+    )
+```
+
+### Profile
+
+Shows who someone is, and their details only on request.
+
+```rust
+Collapsible::new()
+    .open(self.is_open("profile"))
+    .child(
+        h_flex()
+            .child(Avatar::new().name("Jason Lee").xsmall())
+            .child("@huacnlee")
+            .child(chevron),
+    )
+    .content(profile_fields)
+```
+
 [Collapsible]: https://docs.rs/gpui-component/latest/gpui_component/collapsible/struct.Collapsible.html
