@@ -197,22 +197,20 @@ export component Combobox {
         }
 
         if root.trigger == ComboboxTrigger.count && root.tally() > 0: Rectangle {
+            horizontal-stretch: 0;
+            vertical-stretch: 0;
             height: 16px;
-            min-width: 16px;
+            width: max(16px, count-num.preferred-width + 8px);
             border-radius: 8px;
             background: Theme.danger;
-            HorizontalLayout {
-                padding-left: 4px;
-                padding-right: 4px;
-                alignment: center;
-                Text {
-                    text: root.tally() > 99 ? "99+" : "\{root.tally()}";
-                    color: Theme.primary-foreground;
-                    font-size: 10px;
-                    font-weight: 600;
-                    horizontal-alignment: center;
-                    vertical-alignment: center;
-                }
+
+            count-num := Text {
+                x: (parent.width - self.width) / 2;
+                y: (parent.height - self.height) / 2;
+                text: root.tally() > 99 ? "99+" : "\{root.tally()}";
+                color: Theme.primary-foreground;
+                font-size: 10px;
+                font-weight: 600;
             }
         }
 
@@ -307,7 +305,7 @@ export component Combobox {
             font-size: Theme.font-size-sm;
         }
 
-        if root.trigger == ComboboxTrigger.chip || root.trigger == ComboboxTrigger.badges || root.trigger == ComboboxTrigger.overflow || (root.trigger == ComboboxTrigger.count && root.tally() == 0): Rectangle {
+        if root.trigger == ComboboxTrigger.chip || root.trigger == ComboboxTrigger.badges || root.trigger == ComboboxTrigger.overflow || root.trigger == ComboboxTrigger.count: Rectangle {
             horizontal-stretch: 1;
         }
 
