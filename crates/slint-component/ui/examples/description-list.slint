@@ -1,6 +1,6 @@
-import { Theme } from "../theme.slint";
+import { Theme, ControlSize } from "../theme.slint";
 import { GroupBox, GroupBoxVariant } from "section.slint";
-import { DescriptionList, DescriptionLayout } from "../description-list.slint";
+import { DescriptionList, DescriptionItem, DescriptionLayout } from "../description-list.slint";
 
 export component DescriptionListExample inherits VerticalLayout {
     horizontal-stretch: 1;
@@ -8,13 +8,229 @@ export component DescriptionListExample inherits VerticalLayout {
     spacing: 24px;
     alignment: start;
 
-    DescriptionList {
-        bordered: true;
-        items: [
-            { term: "Name", detail: "Ada Lovelace" },
-            { term: "Role", detail: "Mathematician" },
-            { term: "Born", detail: "1815" },
-        ];
+    function entry(term: string, detail: string, span: int) -> DescriptionItem {
+        { term: term, detail: detail, span: span, separator: false }
+    }
+    function rule() -> DescriptionItem {
+        { term: "", detail: "", span: 1, separator: true }
     }
 
+    GroupBox {
+        title: "Basic Description List";
+        variant: GroupBoxVariant.outline;
+        DescriptionList {
+            bordered: true;
+            items: [
+                root.entry("Name", "GPUI Kit", 1),
+                root.entry("Version", "0.1.0", 1),
+                root.entry("License", "Apache-2.0", 1),
+            ];
+        }
+    }
+
+    GroupBox {
+        title: "Different Layouts";
+        variant: GroupBoxVariant.outline;
+        VerticalLayout {
+            spacing: 16px;
+            Text {
+                text: "Horizontal";
+                color: Theme.muted-foreground;
+                font-size: Theme.font-size-xs;
+                font-weight: 500;
+            }
+            DescriptionList {
+                layout: DescriptionLayout.horizontal;
+                bordered: true;
+                items: [
+                    root.entry("Platform", "macOS, Windows, Linux", 1),
+                    root.entry("Repository", "https://github.com/longbridge/gpui-kit", 1),
+                ];
+            }
+            Text {
+                text: "Vertical";
+                color: Theme.muted-foreground;
+                font-size: Theme.font-size-xs;
+                font-weight: 500;
+            }
+            DescriptionList {
+                layout: DescriptionLayout.vertical;
+                bordered: true;
+                items: [
+                    root.entry("Name", "GPUI Kit", 1),
+                    root.entry("Description", "A comprehensive Rust desktop framework", 1),
+                ];
+            }
+        }
+    }
+
+    GroupBox {
+        title: "Multiple Columns with Spans";
+        variant: GroupBoxVariant.outline;
+        DescriptionList {
+            columns: 3;
+            bordered: true;
+            items: [
+                root.entry("Name", "GPUI Kit", 1),
+                root.entry("Version", "0.1.0", 1),
+                root.entry("License", "Apache-2.0", 1),
+                root.entry("Description", "Full-featured UI components for desktop applications", 3),
+                root.entry("Repository", "https://github.com/longbridge/gpui-kit", 2),
+                root.entry("Author", "Longbridge", 1),
+            ];
+        }
+    }
+
+    GroupBox {
+        title: "With Separators";
+        variant: GroupBoxVariant.outline;
+        DescriptionList {
+            bordered: true;
+            items: [
+                root.entry("Name", "GPUI Kit", 1),
+                root.entry("Version", "0.1.0", 1),
+                root.rule(),
+                root.entry("Author", "Longbridge", 1),
+                root.entry("License", "Apache-2.0", 1),
+            ];
+        }
+    }
+
+    GroupBox {
+        title: "Different Sizes";
+        variant: GroupBoxVariant.outline;
+        VerticalLayout {
+            spacing: 16px;
+            DescriptionList {
+                size: ControlSize.large;
+                bordered: true;
+                items: [root.entry("Title", "Large Description List", 1)];
+            }
+            DescriptionList {
+                bordered: true;
+                items: [root.entry("Title", "Medium Description List", 1)];
+            }
+            DescriptionList {
+                size: ControlSize.small;
+                bordered: true;
+                items: [root.entry("Title", "Small Description List", 1)];
+            }
+        }
+    }
+
+    GroupBox {
+        title: "Without Borders";
+        variant: GroupBoxVariant.outline;
+        DescriptionList {
+            bordered: false;
+            items: [
+                root.entry("Name", "GPUI Kit", 1),
+                root.entry("Type", "UI Library", 1),
+            ];
+        }
+    }
+
+    GroupBox {
+        title: "Custom Label Width (Horizontal Layout)";
+        variant: GroupBoxVariant.outline;
+        DescriptionList {
+            label-width: 200px;
+            bordered: true;
+            items: [
+                root.entry("Very Long Label Name", "Short Value", 1),
+                root.entry("Short", "Very long value that needs more space", 1),
+            ];
+        }
+    }
+
+    GroupBox {
+        title: "Complex Example with Mixed Content";
+        variant: GroupBoxVariant.outline;
+        DescriptionList {
+            columns: 3;
+            label-width: 150px;
+            bordered: true;
+            items: [
+                root.entry("Project Name", "GPUI Kit", 1),
+                root.entry("Version", "0.1.0", 1),
+                root.entry("Status", "Active", 1),
+                root.rule(),
+                root.entry("Description", "A comprehensive Rust desktop framework built on GPUI", 3),
+                root.entry("Repository", "https://github.com/longbridge/gpui-kit", 2),
+                root.entry("License", "Apache-2.0", 1),
+                root.entry("Platforms", "macOS, Windows, Linux", 2),
+                root.entry("Language", "Rust", 1),
+            ];
+        }
+    }
+
+    GroupBox {
+        title: "User Profile Information";
+        variant: GroupBoxVariant.outline;
+        DescriptionList {
+            columns: 2;
+            bordered: true;
+            items: [
+                root.entry("Full Name", "Ada Lovelace", 1),
+                root.entry("Email", "ada@uni.dev", 1),
+                root.entry("Phone", "+1 (555) 123-4567", 1),
+                root.entry("Department", "Engineering", 1),
+                root.rule(),
+                root.entry("Bio", "Senior software engineer with 10+ years of experience in Rust and system programming.", 2),
+            ];
+        }
+    }
+
+    GroupBox {
+        title: "System Information";
+        variant: GroupBoxVariant.outline;
+        DescriptionList {
+            layout: DescriptionLayout.vertical;
+            size: ControlSize.small;
+            bordered: false;
+            items: [
+                root.entry("Operating System", "macOS 14.0", 1),
+                root.entry("Architecture", "Apple Silicon (M2)", 1),
+                root.entry("Memory", "16 GB", 1),
+                root.entry("Storage", "512 GB SSD", 1),
+                root.entry("GPU", "Apple M2 10-core GPU", 1),
+            ];
+        }
+    }
+
+    GroupBox {
+        title: "Product Specifications";
+        variant: GroupBoxVariant.outline;
+        DescriptionList {
+            columns: 3;
+            size: ControlSize.large;
+            bordered: true;
+            items: [
+                root.entry("Model", "MacBook Pro", 1),
+                root.entry("Year", "2023", 1),
+                root.entry("Screen Size", "14-inch", 1),
+                root.entry("Processor", "Apple M2 Pro", 2),
+                root.entry("Base Price", "$1,999", 1),
+                root.rule(),
+                root.entry("Key Features", "Liquid Retina XDR display, ProMotion technology, P3 wide color gamut", 3),
+            ];
+        }
+    }
+
+    GroupBox {
+        title: "Configuration Settings";
+        variant: GroupBoxVariant.outline;
+        DescriptionList {
+            layout: DescriptionLayout.horizontal;
+            label-width: 180px;
+            bordered: false;
+            items: [
+                root.entry("Theme", "Dark Mode", 1),
+                root.entry("Font Size", "14px", 1),
+                root.entry("Auto Save", "Enabled", 1),
+                root.entry("Backup Frequency", "Every 30 minutes", 1),
+                root.entry("Language", "English (US)", 1),
+            ];
+        }
+    }
 }

@@ -86,6 +86,10 @@ export global Theme {
         return chart-1;
     }
 
+    // GPUI `description_list_label`: a solid label cell, not a translucent wash.
+    out property <color> description-label: dark ? #171717 : #f5f5f5;
+    out property <color> description-label-foreground: dark ? #f5f5f5 : #171717;
+
     out property <color> popover: palette ? palette-popover : (dark ? #171717 : #ffffff);
     out property <color> sidebar: palette ? palette-sidebar : (dark ? #111111 : #fafafa);
     out property <color> overlay: dark ? #000000a0 : #0000004d;

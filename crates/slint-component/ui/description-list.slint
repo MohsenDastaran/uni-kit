@@ -1,61 +1,293 @@
-import { Theme } from "theme.slint";
+import { Theme, ControlSize } from "theme.slint";
 
 export struct DescriptionItem {
     term: string,
     detail: string,
+    span: int,
+    separator: bool,
 }
 
 export enum DescriptionLayout { vertical, horizontal }
 
-// Term/detail pairs. Mirrors GPUI Component's `DescriptionList`.
-export component DescriptionList {
-    in property <[DescriptionItem]> items;
-    in property <DescriptionLayout> layout: DescriptionLayout.vertical;
+// One term and its detail. The row assigns this cell's width through stretch.
+// The inner layouts are placed by hand, so their text width does not flow back
+// into the row's preferred width.
+component DescriptionPair inherits Rectangle {
+    in property <string> term;
+    in property <string> detail;
+    in property <bool> stack;
     in property <bool> bordered;
+    in property <length> label-width;
+    in property <length> pad-x;
+    in property <length> pad-y;
+    in property <length> text-size;
+    in property <float> cell-stretch: 1;
 
-    private property <bool> stack: layout == DescriptionLayout.vertical || Theme.viewport < 480px;
-    horizontal-stretch: 1;
+    // A shared cell keeps the label to about half of the cell. A cell that
+    // already has the full row is wider than the requested label, so a word
+    // such as "Description" stays on one line.
+    private property <length> term-width: min(label-width, max(72px, self.width * 0.45));
+    private property <length> term-text-width: max(0px, term-width - pad-x * 2);
+    private property <length> value-width: max(0px, self.width - term-width - pad-x * 2);
+    private property <length> body-width: max(0px, self.width - pad-x * 2);
 
-    VerticalLayout {
-        spacing: 0;
+    // Preferred width stays 0 so the row can share its width by stretch.
+    // Reading self.width from a content-sized child would loop.
+    horizontal-stretch: cell-stretch;
+    vertical-stretch: 0;
+    min-width: 0px;
+    preferred-width: 0px;
+    clip: true;
+    height: stack ? stacked.preferred-height : side.preferred-height;
 
-        for item[index] in items: Rectangle {
-            border-width: bordered ? 1px : 0;
-            border-color: Theme.border;
-            background: bordered && mod(index, 2) == 1 ? Theme.muted.with-alpha(0.35) : transparent;
+    if bordered && !stack: Rectangle {
+        width: root.term-width;
+        height: parent.height;
+        background: Theme.description-label;
+    }
+    if bordered && !stack: Rectangle {
+        x: root.term-width - 1px;
+        width: 1px;
+        height: parent.height;
+        background: Theme.border;
+    }
 
-            if stack: VerticalLayout {
-                padding: bordered ? 12px : 8px;
-                spacing: 4px;
+    stacked := VerticalLayout {
+        visible: stack;
+        y: 0;
+        width: parent.width;
+        height: self.preferred-height;
+        padding-left: pad-x;
+        padding-right: pad-x;
+        padding-top: pad-y;
+        padding-bottom: pad-y;
+        spacing: 2px;
+        Text {
+            text: root.term;
+            color: Theme.description-label-foreground;
+            font-size: root.text-size;
+            wrap: word-wrap;
+            width: root.body-width;
+        }
+        Text {
+            text: root.detail;
+            color: Theme.foreground;
+            font-size: root.text-size;
+            wrap: word-wrap;
+            width: root.body-width;
+        }
+    }
+
+    side := HorizontalLayout {
+        visible: !stack;
+        y: 0;
+        width: parent.width;
+        height: self.preferred-height;
+        alignment: start;
+
+        Rectangle {
+            width: root.term-width;
+            horizontal-stretch: 0;
+            vertical-stretch: 0;
+            clip: true;
+            VerticalLayout {
+                height: self.preferred-height;
+                padding-left: root.pad-x;
+                padding-right: root.pad-x;
+                padding-top: root.pad-y;
+                padding-bottom: root.pad-y;
                 Text {
-                    text: item.term;
-                    color: Theme.muted-foreground;
-                    font-size: Theme.font-size-xs;
-                    font-weight: 500;
-                }
-                Text {
-                    text: item.detail;
-                    color: Theme.foreground;
-                    font-size: Theme.font-size-sm;
-                    wrap: word-wrap;
+                    width: root.term-text-width;
+                    text: root.term;
+                    color: Theme.description-label-foreground;
+                    font-size: root.text-size;
+                    overflow: elide;
+                    vertical-alignment: center;
                 }
             }
+        }
 
-            if !stack: HorizontalLayout {
-                padding: bordered ? 12px : 8px;
-                spacing: 16px;
-                Text {
-                    width: 140px;
-                    text: item.term;
-                    color: Theme.muted-foreground;
-                    font-size: Theme.font-size-sm;
+        VerticalLayout {
+            height: self.preferred-height;
+            padding-left: root.pad-x;
+            padding-right: root.pad-x;
+            padding-top: root.pad-y;
+            padding-bottom: root.pad-y;
+            Text {
+                width: root.value-width;
+                text: root.detail;
+                color: Theme.foreground;
+                font-size: root.text-size;
+                wrap: word-wrap;
+                vertical-alignment: center;
+            }
+        }
+    }
+}
+
+// Term/detail pairs. Mirrors GPUI Component's `DescriptionList`: a horizontal
+// label column by default, a vertical stack, borders, separators, and up to
+// three columns with spans.
+export component DescriptionList {
+    in property <[DescriptionItem]> items;
+    in property <DescriptionLayout> layout: DescriptionLayout.horizontal;
+    in property <bool> bordered: true;
+    in property <int> columns: 1;
+    in property <length> label-width: 140px;
+    in property <ControlSize> size: ControlSize.medium;
+
+    private property <int> cols: columns < 1 ? 1 : columns > 3 ? 3 : columns;
+    private property <bool> stack: layout == DescriptionLayout.vertical || Theme.viewport < 480px;
+    // Same insets as GPUI Component: small 4×2, medium 8×4, large 12×6.
+    private property <length> pad-x: size == ControlSize.large ? 12px : size == ControlSize.small || size == ControlSize.xsmall ? 4px : 8px;
+    private property <length> pad-y: size == ControlSize.large ? 6px : size == ControlSize.small || size == ControlSize.xsmall ? 2px : 4px;
+    private property <length> text-size: size == ControlSize.large ? Theme.font-size-md : size == ControlSize.small || size == ControlSize.xsmall ? Theme.font-size-xs : Theme.font-size-sm;
+
+    pure function take(index: int) -> int {
+        if index < 0 || index >= root.items.length {
+            return 0;
+        }
+        if root.items[index].separator {
+            return root.cols;
+        }
+        let span = root.items[index].span < 1 ? 1 : root.items[index].span;
+        span > root.cols ? root.cols : span
+    }
+    pure function advance(used: int, index: int) -> int {
+        let next = used + root.take(index);
+        next >= root.cols ? 0 : next
+    }
+    // Space already used in the current row before this item. A chain, not a
+    // loop: Slint rejects a function that calls itself.
+    pure function used(index: int) -> int {
+        if root.stack || index <= 0 {
+            return 0;
+        }
+        let u1 = root.advance(0, 0);
+        if index == 1 { return u1; }
+        let u2 = root.advance(u1, 1);
+        if index == 2 { return u2; }
+        let u3 = root.advance(u2, 2);
+        if index == 3 { return u3; }
+        let u4 = root.advance(u3, 3);
+        if index == 4 { return u4; }
+        let u5 = root.advance(u4, 4);
+        if index == 5 { return u5; }
+        let u6 = root.advance(u5, 5);
+        if index == 6 { return u6; }
+        let u7 = root.advance(u6, 6);
+        if index == 7 { return u7; }
+        let u8 = root.advance(u7, 7);
+        if index == 8 { return u8; }
+        let u9 = root.advance(u8, 8);
+        if index == 9 { return u9; }
+        let u10 = root.advance(u9, 9);
+        if index == 10 { return u10; }
+        let u11 = root.advance(u10, 10);
+        if index == 11 { return u11; }
+        let u12 = root.advance(u11, 11);
+        if index == 12 { return u12; }
+        let u13 = root.advance(u12, 12);
+        if index == 13 { return u13; }
+        let u14 = root.advance(u13, 13);
+        if index == 14 { return u14; }
+        let u15 = root.advance(u14, 14);
+        if index == 15 { return u15; }
+        0
+    }
+    pure function starts(index: int) -> bool {
+        root.stack || root.used(index) == 0
+    }
+    pure function last-row(index: int) -> bool {
+        if index + 1 >= root.items.length {
+            return true;
+        }
+        if root.starts(index + 1) {
+            return false;
+        }
+        if index + 2 < root.items.length && root.starts(index + 2) {
+            return false;
+        }
+        if index + 3 < root.items.length && root.starts(index + 3) {
+            return false;
+        }
+        true
+    }
+
+    horizontal-stretch: 1;
+    vertical-stretch: 0;
+    min-width: 0px;
+
+    Rectangle {
+        width: parent.width;
+        vertical-stretch: 0;
+        height: column.preferred-height;
+        border-width: bordered ? 1px : 0;
+        border-color: Theme.border;
+        border-radius: bordered ? Theme.radius-md : 0;
+        clip: true;
+
+        column := VerticalLayout {
+            width: parent.width;
+            height: self.preferred-height;
+            alignment: start;
+
+            for item[index] in items: Rectangle {
+                visible: root.starts(index);
+                vertical-stretch: 0;
+                horizontal-stretch: 1;
+                height: !root.starts(index) ? 0px : item.separator ? 8px : band.preferred-height;
+
+                if item.separator: Rectangle {
+                    width: parent.width;
+                    height: 8px;
+                    background: Theme.description-label;
                 }
-                Text {
-                    horizontal-stretch: 1;
-                    text: item.detail;
-                    color: Theme.foreground;
-                    font-size: Theme.font-size-sm;
-                    wrap: word-wrap;
+
+                band := HorizontalLayout {
+                    visible: !item.separator;
+                    width: parent.width;
+
+                    DescriptionPair {
+                        term: item.term;
+                        detail: item.detail;
+                        stack: root.stack;
+                        bordered: root.bordered;
+                        label-width: root.label-width;
+                        pad-x: root.pad-x;
+                        pad-y: root.pad-y;
+                        text-size: root.text-size;
+                        cell-stretch: root.stack ? 1 : root.take(index);
+                    }
+                    if !root.stack && index + 1 < root.items.length && !root.starts(index + 1) && !root.items[index + 1].separator: DescriptionPair {
+                        term: root.items[index + 1].term;
+                        detail: root.items[index + 1].detail;
+                        stack: false;
+                        bordered: root.bordered;
+                        label-width: root.label-width;
+                        pad-x: root.pad-x;
+                        pad-y: root.pad-y;
+                        text-size: root.text-size;
+                        cell-stretch: root.take(index + 1);
+                    }
+                    if !root.stack && index + 2 < root.items.length && !root.starts(index + 1) && !root.starts(index + 2) && !root.items[index + 2].separator: DescriptionPair {
+                        term: root.items[index + 2].term;
+                        detail: root.items[index + 2].detail;
+                        stack: false;
+                        bordered: root.bordered;
+                        label-width: root.label-width;
+                        pad-x: root.pad-x;
+                        pad-y: root.pad-y;
+                        text-size: root.text-size;
+                        cell-stretch: root.take(index + 2);
+                    }
+                }
+
+                if root.bordered && root.starts(index) && !root.last-row(index): Rectangle {
+                    y: parent.height - 1px;
+                    width: parent.width;
+                    height: 1px;
+                    background: Theme.border;
                 }
             }
         }
