@@ -1,42 +1,325 @@
 import { Theme, ControlSize } from "theme.slint";
 import { Icon } from "icon.slint";
-import { Input } from "input.slint";
-import { SelectItem } from "select.slint";
 
-// A searchable list. Mirrors GPUI Component's `Combobox`.
+export struct ComboItem {
+    label: string,
+    value: string,
+    icon: string,
+    group: string,
+    badge: string,
+    disabled: bool,
+    pinned: bool,
+}
+
+export enum ComboboxTrigger { text, icon, chip, badges, overflow, count }
+
+// Case-insensitive search. Slint has no substring test, so the gallery host
+// installs `contains`. Until then, a typed query leaves the full list visible.
+export global ComboSearch {
+    in-out property <bool> installed;
+    pure callback contains(haystack: string, needle: string) -> bool;
+}
+
+// A searchable list. Mirrors GPUI Component's `Combobox`: a select-like
+// trigger, a search field in the popup, and one or many selected rows.
 export component Combobox {
-    in property <[SelectItem]> items;
-    in-out property <string> text;
+    in property <[ComboItem]> items;
+    in-out property <[bool]> picked;
     in-out property <int> selected: -1;
+    in-out property <string> query;
+    in property <string> placeholder: "Select…";
+    in property <string> search-placeholder: "Search…";
+    in property <bool> multiple;
+    in property <int> max-selected;
+    in property <string> check-icon: "check";
+    in property <string> footer;
+    in property <ComboboxTrigger> trigger: ComboboxTrigger.text;
+    in property <bool> searchable: true;
+    in property <bool> enabled: true;
     in property <ControlSize> size: ControlSize.medium;
     callback changed(index: int);
+    callback footer-clicked();
 
-    height: Theme.control-height(size);
+    pure function on(index: int) -> bool {
+        root.multiple && index >= 0 && index < root.picked.length && root.picked[index]
+    }
+    pure function tally() -> int {
+        (root.on(0) ? 1 : 0) + (root.on(1) ? 1 : 0) + (root.on(2) ? 1 : 0) + (root.on(3) ? 1 : 0) + (root.on(4) ? 1 : 0)
+            + (root.on(5) ? 1 : 0) + (root.on(6) ? 1 : 0) + (root.on(7) ? 1 : 0) + (root.on(8) ? 1 : 0) + (root.on(9) ? 1 : 0)
+    }
+    pure function label-at(index: int) -> string {
+        index >= 0 && index < root.items.length ? root.items[index].label : ""
+    }
+    pure function comma(so-far: string, next: string) -> string {
+        next == "" ? so-far : so-far == "" ? next : so-far + ", " + next
+    }
+    pure function joined() -> string {
+        let a = root.comma("", root.on(0) ? root.label-at(0) : "");
+        let b = root.comma(a, root.on(1) ? root.label-at(1) : "");
+        let c = root.comma(b, root.on(2) ? root.label-at(2) : "");
+        let d = root.comma(c, root.on(3) ? root.label-at(3) : "");
+        let e = root.comma(d, root.on(4) ? root.label-at(4) : "");
+        let f = root.comma(e, root.on(5) ? root.label-at(5) : "");
+        let g = root.comma(f, root.on(6) ? root.label-at(6) : "");
+        let h = root.comma(g, root.on(7) ? root.label-at(7) : "");
+        let i = root.comma(h, root.on(8) ? root.label-at(8) : "");
+        root.comma(i, root.on(9) ? root.label-at(9) : "")
+    }
+    public pure function current-label() -> string {
+        if !root.multiple {
+            return root.selected >= 0 ? root.label-at(root.selected) : "";
+        }
+        root.joined()
+    }
+    pure function first-on() -> int {
+        if root.on(0) { return 0; }
+        if root.on(1) { return 1; }
+        if root.on(2) { return 2; }
+        if root.on(3) { return 3; }
+        if root.on(4) { return 4; }
+        if root.on(5) { return 5; }
+        if root.on(6) { return 6; }
+        if root.on(7) { return 7; }
+        if root.on(8) { return 8; }
+        if root.on(9) { return 9; }
+        -1
+    }
+    pure function second-on() -> int {
+        let skip = root.first-on();
+        if root.on(0) && 0 != skip { return 0; }
+        if root.on(1) && 1 != skip { return 1; }
+        if root.on(2) && 2 != skip { return 2; }
+        if root.on(3) && 3 != skip { return 3; }
+        if root.on(4) && 4 != skip { return 4; }
+        if root.on(5) && 5 != skip { return 5; }
+        if root.on(6) && 6 != skip { return 6; }
+        if root.on(7) && 7 != skip { return 7; }
+        if root.on(8) && 8 != skip { return 8; }
+        if root.on(9) && 9 != skip { return 9; }
+        -1
+    }
+    pure function hit(label: string) -> bool {
+        if root.query == "" || !ComboSearch.installed {
+            return true;
+        }
+        ComboSearch.contains(label.to-lowercase(), root.query.to-lowercase())
+    }
+    pure function show-header(index: int) -> bool {
+        if index < 0 || index >= root.items.length || root.items[index].group == "" || !root.hit(root.items[index].label) {
+            return false;
+        }
+        if index == 0 || root.items[index - 1].group != root.items[index].group {
+            return true;
+        }
+        if root.hit(root.items[index - 1].label) {
+            return false;
+        }
+        index < 2 || root.items[index - 2].group != root.items[index].group || !root.hit(root.items[index - 2].label)
+    }
+    pure function at-capacity(index: int) -> bool {
+        root.multiple && root.max-selected > 0 && root.tally() >= root.max-selected && !root.on(index)
+    }
+    pure function dimmed(index: int) -> bool {
+        index >= 0 && index < root.items.length && (root.items[index].disabled || root.at-capacity(index))
+    }
+    pure function blocked(index: int) -> bool {
+        root.dimmed(index) || (index >= 0 && index < root.items.length && root.items[index].pinned)
+    }
+    pure function row-checked(index: int) -> bool {
+        index >= 0 && index < root.items.length && (root.items[index].pinned || (root.multiple ? root.on(index) : root.selected == index))
+    }
+    pure function empty-selection() -> bool {
+        root.multiple ? root.tally() == 0 : root.selected < 0
+    }
+
+    function toggle(index: int) {
+        if !root.enabled || root.blocked(index) {
+            return;
+        }
+        if root.multiple {
+            if index >= root.picked.length {
+                return;
+            }
+            root.picked[index] = !root.picked[index];
+            root.changed(index);
+            return;
+        }
+        root.selected = index;
+        root.query = "";
+        root.changed(index);
+        popup.close();
+    }
+
+    height: Theme.input-height(size);
     min-width: 0px;
-    preferred-width: 200px;
+    preferred-width: 280px;
+    max-width: 280px;
     horizontal-stretch: 1;
+    vertical-stretch: 0;
+    opacity: enabled ? 1 : 0.5;
 
-    Input {
-        text <=> root.text;
-        placeholder: "Search…";
-        suffix-icon: "chevrons-up-down";
-        size: root.size;
-        accepted => {
-            pop.show();
+    Rectangle {
+        width: parent.width;
+        height: parent.height;
+        border-radius: Theme.radius-md;
+        border-width: 1px;
+        border-color: Theme.input;
+        background: Theme.background;
+    }
+
+    opener := TouchArea {
+        width: parent.width;
+        height: parent.height;
+        enabled: root.enabled;
+        accessible-role: button;
+        accessible-label: root.empty-selection() ? root.placeholder : root.current-label();
+        clicked => { popup.show(); }
+    }
+
+    HorizontalLayout {
+        width: parent.width;
+        height: parent.height;
+        padding-left: 10px;
+        padding-right: 8px;
+        spacing: 8px;
+        cross-axis-alignment: center;
+
+        if root.trigger == ComboboxTrigger.icon && root.selected >= 0 && root.selected < root.items.length && root.items[root.selected].icon != "": Icon {
+            name: root.items[root.selected].icon;
+            size: 16px;
+            color: Theme.muted-foreground;
+        }
+
+        if root.trigger == ComboboxTrigger.chip: Icon {
+            name: "palette";
+            size: 16px;
+            color: Theme.primary;
+        }
+
+        if root.trigger == ComboboxTrigger.count && root.tally() > 0: Rectangle {
+            height: 16px;
+            min-width: 16px;
+            border-radius: 8px;
+            background: Theme.danger;
+            HorizontalLayout {
+                padding-left: 4px;
+                padding-right: 4px;
+                alignment: center;
+                Text {
+                    text: root.tally() > 99 ? "99+" : "\{root.tally()}";
+                    color: Theme.primary-foreground;
+                    font-size: 10px;
+                    font-weight: 600;
+                    horizontal-alignment: center;
+                    vertical-alignment: center;
+                }
+            }
+        }
+
+        if (root.trigger == ComboboxTrigger.badges || root.trigger == ComboboxTrigger.overflow) && root.tally() > 0: Rectangle {
+            border-width: 1px;
+            border-color: Theme.border;
+            border-radius: Theme.radius-sm;
+            HorizontalLayout {
+                padding-left: 6px;
+                padding-right: root.trigger == ComboboxTrigger.badges ? 2px : 6px;
+                spacing: 2px;
+                alignment: center;
+                Text {
+                    text: root.label-at(root.first-on());
+                    color: Theme.foreground;
+                    font-size: Theme.font-size-xs;
+                    vertical-alignment: center;
+                }
+                if root.trigger == ComboboxTrigger.badges: TouchArea {
+                    width: 16px;
+                    height: 16px;
+                    accessible-role: button;
+                    accessible-label: "Remove";
+                    clicked => { root.toggle(root.first-on()); }
+                    Icon {
+                        name: "x";
+                        size: 12px;
+                        color: Theme.muted-foreground;
+                    }
+                }
+            }
+        }
+
+        if root.trigger == ComboboxTrigger.overflow && root.tally() > 1: Rectangle {
+            border-width: 1px;
+            border-color: Theme.border;
+            border-radius: Theme.radius-sm;
+            HorizontalLayout {
+                padding-left: 6px;
+                padding-right: 6px;
+                alignment: center;
+                Text {
+                    text: root.label-at(root.second-on());
+                    color: Theme.foreground;
+                    font-size: Theme.font-size-xs;
+                    vertical-alignment: center;
+                }
+            }
+        }
+
+        if root.trigger == ComboboxTrigger.chip && !root.empty-selection(): Rectangle {
+            border-radius: 10px;
+            background: Theme.primary;
+            HorizontalLayout {
+                padding-left: 8px;
+                padding-right: 8px;
+                alignment: center;
+                Text {
+                    text: root.current-label();
+                    color: Theme.primary-foreground;
+                    font-size: Theme.font-size-xs;
+                    vertical-alignment: center;
+                }
+            }
+        }
+
+        if root.trigger == ComboboxTrigger.badges && root.tally() > 1: Text {
+            text: "+\{root.tally() - 1}";
+            color: Theme.muted-foreground;
+            font-size: Theme.font-size-xs;
+            vertical-alignment: center;
+        }
+        if root.trigger == ComboboxTrigger.overflow && root.tally() > 2: Text {
+            text: "+\{root.tally() - 2} more";
+            color: Theme.muted-foreground;
+            font-size: Theme.font-size-xs;
+            vertical-alignment: center;
+        }
+        if root.trigger == ComboboxTrigger.count && root.tally() > 0: Text {
+            text: "frameworks selected";
+            color: Theme.foreground;
+            font-size: Theme.font-size-sm;
+            vertical-alignment: center;
+        }
+
+        if root.empty-selection() || (root.trigger != ComboboxTrigger.chip && root.trigger != ComboboxTrigger.badges && root.trigger != ComboboxTrigger.overflow && root.trigger != ComboboxTrigger.count): Text {
+            horizontal-stretch: 1;
+            vertical-alignment: center;
+            overflow: elide;
+            text: root.empty-selection() ? root.placeholder : root.current-label();
+            color: root.empty-selection() ? Theme.muted-foreground : Theme.foreground;
+            font-size: Theme.font-size-sm;
+        }
+
+        if root.trigger == ComboboxTrigger.chip || root.trigger == ComboboxTrigger.badges || root.trigger == ComboboxTrigger.overflow || (root.trigger == ComboboxTrigger.count && root.tally() == 0): Rectangle {
+            horizontal-stretch: 1;
+        }
+
+        if root.trigger != ComboboxTrigger.count || root.tally() == 0: Icon {
+            name: "chevrons-up-down";
+            size: 16px;
+            color: Theme.muted-foreground;
         }
     }
 
-    TouchArea {
-        x: parent.width - 28px;
-        width: 28px;
-        height: 100%;
-        clicked => {
-            pop.show();
-        }
-    }
-
-    pop := PopupWindow {
-        y: Theme.control-height(size) + 4px;
+    popup := PopupWindow {
+        y: root.height + 4px;
         width: root.width;
         close-policy: close-on-click-outside;
 
@@ -50,27 +333,153 @@ export component Combobox {
             drop-shadow-color: Theme.shadow;
 
             VerticalLayout {
-                padding: 4px;
-                for item[index] in root.items: Rectangle {
-                    visible: true;
-                    border-radius: Theme.radius-sm;
-                    background: touch.has-hover ? Theme.accent : transparent;
+                if root.searchable: Rectangle {
                     HorizontalLayout {
-                        padding: 8px;
-                        Text {
-                            horizontal-stretch: 1;
-                            text: item.label;
-                            color: Theme.foreground;
-                            font-size: Theme.font-size-sm;
+                        height: 36px;
+                        padding-left: 12px;
+                        padding-right: 12px;
+                        spacing: 8px;
+                        cross-axis-alignment: center;
+
+                        Icon {
+                            name: "search";
+                            size: 14px;
+                            color: Theme.muted-foreground;
                         }
-                        if selected == index: Icon { name: "check"; size: 14px; color: Theme.foreground; }
+
+                        Rectangle {
+                            horizontal-stretch: 1;
+                            height: parent.height;
+                            min-width: 0px;
+                            clip: true;
+
+                            Text {
+                                width: parent.width;
+                                height: parent.height;
+                                text: search-field.text == "" ? root.search-placeholder : "";
+                                color: Theme.muted-foreground;
+                                font-size: Theme.font-size-sm;
+                                vertical-alignment: center;
+                                overflow: elide;
+                            }
+
+                            search-field := TextInput {
+                                width: parent.width;
+                                height: parent.height;
+                                text <=> root.query;
+                                single-line: true;
+                                vertical-alignment: center;
+                                font-size: Theme.font-size-sm;
+                                color: Theme.foreground;
+                            }
+                        }
                     }
-                    touch := TouchArea {
-                        clicked => {
-                            root.selected = index;
-                            root.text = item.label;
-                            root.changed(index);
-                            pop.close();
+                }
+
+                if root.searchable: Rectangle {
+                    height: 1px;
+                    background: Theme.border;
+                }
+
+                VerticalLayout {
+                    padding: 4px;
+                    spacing: 2px;
+
+                    for item[index] in root.items: VerticalLayout {
+                        spacing: 2px;
+
+                        if root.show-header(index): HorizontalLayout {
+                            padding-left: 8px;
+                            padding-right: 8px;
+                            padding-top: 10px;
+                            padding-bottom: 4px;
+                            cross-axis-alignment: center;
+
+                            Text {
+                                text: item.group;
+                                color: Theme.muted-foreground;
+                                font-size: Theme.font-size-xs;
+                                font-weight: 500;
+                                vertical-alignment: center;
+                            }
+                        }
+
+                        if root.hit(item.label): Rectangle {
+                            border-radius: Theme.radius-sm;
+                            opacity: root.dimmed(index) ? 0.45 : 1;
+                            background: row-touch.has-hover && !root.blocked(index) ? Theme.accent : transparent;
+
+                            HorizontalLayout {
+                                padding: 8px;
+                                spacing: 8px;
+
+                                if item.icon != "": Icon {
+                                    name: item.icon;
+                                    size: 14px;
+                                    color: Theme.muted-foreground;
+                                }
+                                Text {
+                                    horizontal-stretch: 1;
+                                    text: item.label;
+                                    color: Theme.foreground;
+                                    font-size: Theme.font-size-sm;
+                                    vertical-alignment: center;
+                                    overflow: elide;
+                                }
+                                if root.row-checked(index): Icon {
+                                    name: root.check-icon;
+                                    size: 14px;
+                                    color: Theme.foreground;
+                                }
+                                if item.badge != "": Rectangle {
+                                    border-radius: Theme.radius-sm;
+                                    background: Theme.primary;
+                                    HorizontalLayout {
+                                        padding-left: 6px;
+                                        padding-right: 6px;
+                                        padding-top: 2px;
+                                        padding-bottom: 2px;
+                                        Text {
+                                            text: item.badge;
+                                            color: Theme.primary-foreground;
+                                            font-size: Theme.font-size-xs;
+                                            vertical-alignment: center;
+                                        }
+                                    }
+                                }
+                            }
+
+                            row-touch := TouchArea {
+                                enabled: root.enabled && !root.blocked(index);
+                                accessible-role: button;
+                                accessible-label: item.label;
+                                clicked => { root.toggle(index); }
+                            }
+                        }
+                    }
+                }
+
+                if root.footer != "": Rectangle {
+                    border-width: 1px;
+                    border-color: Theme.border;
+                    TouchArea {
+                        accessible-role: button;
+                        accessible-label: root.footer;
+                        clicked => { root.footer-clicked(); }
+                        HorizontalLayout {
+                            padding: 8px;
+                            spacing: 8px;
+                            Icon {
+                                name: "plus";
+                                size: 14px;
+                                color: Theme.foreground;
+                            }
+                            Text {
+                                text: root.footer;
+                                color: Theme.foreground;
+                                font-size: Theme.font-size-sm;
+                                vertical-alignment: center;
+                            }
                         }
                     }
                 }

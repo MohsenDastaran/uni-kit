@@ -1,19 +1,285 @@
 import { Theme } from "../theme.slint";
 import { GroupBox, GroupBoxVariant } from "section.slint";
-import { Combobox } from "../combobox.slint";
+import { Combobox, ComboItem, ComboboxTrigger } from "../combobox.slint";
 
 export component ComboboxExample inherits VerticalLayout {
     horizontal-stretch: 1;
+    private property <[ComboItem]> frameworks: [
+        { label: "Next.js", value: "next", icon: "", group: "", badge: "", disabled: false, pinned: false },
+        { label: "SvelteKit", value: "svelte", icon: "", group: "", badge: "", disabled: false, pinned: false },
+        { label: "Nuxt.js", value: "nuxt", icon: "", group: "", badge: "", disabled: false, pinned: false },
+        { label: "Remix", value: "remix", icon: "", group: "", badge: "", disabled: false, pinned: false },
+        { label: "Astro", value: "astro", icon: "", group: "", badge: "", disabled: false, pinned: false },
+    ];
+    private property <[ComboItem]> many: [
+        { label: "React", value: "react", icon: "", group: "", badge: "", disabled: false, pinned: false },
+        { label: "Nextjs", value: "next", icon: "", group: "", badge: "", disabled: false, pinned: false },
+        { label: "Angular", value: "angular", icon: "", group: "", badge: "", disabled: false, pinned: false },
+        { label: "VueJS", value: "vue", icon: "", group: "", badge: "", disabled: false, pinned: false },
+        { label: "Django", value: "django", icon: "", group: "", badge: "", disabled: false, pinned: false },
+        { label: "Astro", value: "astro", icon: "", group: "", badge: "", disabled: false, pinned: false },
+        { label: "Remix", value: "remix", icon: "", group: "", badge: "", disabled: false, pinned: false },
+        { label: "Svelte", value: "svelte", icon: "", group: "", badge: "", disabled: false, pinned: false },
+        { label: "SolidJS", value: "solid", icon: "", group: "", badge: "", disabled: false, pinned: false },
+        { label: "Qwik", value: "qwik", icon: "", group: "", badge: "", disabled: false, pinned: false },
+    ];
+    private property <[ComboItem]> schools: [
+        { label: "Harvard University", value: "harvard", icon: "", group: "", badge: "", disabled: false, pinned: false },
+        { label: "MIT", value: "mit", icon: "", group: "", badge: "", disabled: false, pinned: false },
+        { label: "Stanford", value: "stanford", icon: "", group: "", badge: "", disabled: false, pinned: false },
+        { label: "Cambridge", value: "cambridge", icon: "", group: "", badge: "", disabled: false, pinned: false },
+    ];
+    private property <string> school-query;
+
+    function school(index: int) -> ComboItem {
+        root.schools[index]
+    }
+    function added(label: string) -> ComboItem {
+        { label: label, value: label, icon: "", group: "", badge: "", disabled: false, pinned: false }
+    }
+    function add-school(label: string) {
+        if root.schools.length == 4 {
+            root.schools = [root.school(0), root.school(1), root.school(2), root.school(3), root.added(label)];
+        } else if root.schools.length == 5 {
+            root.schools = [root.school(0), root.school(1), root.school(2), root.school(3), root.school(4), root.added(label)];
+        } else if root.schools.length == 6 {
+            root.schools = [root.school(0), root.school(1), root.school(2), root.school(3), root.school(4), root.school(5), root.added(label)];
+        }
+    }
     padding: Theme.page-padding(Theme.viewport);
     spacing: 24px;
     alignment: start;
 
-    Combobox {
-        items: [
-            { label: "Button", value: "button" },
-            { label: "Input", value: "input" },
-            { label: "Dialog", value: "dialog" },
-        ];
+    GroupBox {
+        title: "Default";
+        variant: GroupBoxVariant.outline;
+        default-box := Combobox {
+            items: root.frameworks;
+            placeholder: "Select framework...";
+            search-placeholder: "Search…";
+        }
     }
 
+    GroupBox {
+        title: "Multiple";
+        variant: GroupBoxVariant.outline;
+        multiple-box := Combobox {
+            items: root.frameworks;
+            multiple: true;
+            picked: [false, false, false, false, false];
+            placeholder: "Select frameworks...";
+            search-placeholder: "Search…";
+        }
+    }
+
+    GroupBox {
+        title: "Groups";
+        variant: GroupBoxVariant.outline;
+        grouped-box := Combobox {
+            selected: 0;
+            placeholder: "Select item...";
+            search-placeholder: "Search…";
+            items: [
+                { label: "Apples", value: "apples", icon: "", group: "Fruits", badge: "", disabled: false, pinned: false },
+                { label: "Bananas", value: "bananas", icon: "", group: "Fruits", badge: "", disabled: false, pinned: false },
+                { label: "Cherries", value: "cherries", icon: "", group: "Fruits", badge: "", disabled: false, pinned: false },
+                { label: "Carrots", value: "carrots", icon: "", group: "Vegetables", badge: "", disabled: false, pinned: false },
+                { label: "Broccoli", value: "broccoli", icon: "", group: "Vegetables", badge: "", disabled: true, pinned: false },
+                { label: "Spinach", value: "spinach", icon: "", group: "Vegetables", badge: "", disabled: false, pinned: false },
+                { label: "Tea", value: "tea", icon: "", group: "Beverages", badge: "", disabled: false, pinned: false },
+                { label: "Coffee", value: "coffee", icon: "", group: "Beverages", badge: "", disabled: true, pinned: false },
+                { label: "Juice", value: "juice", icon: "", group: "Beverages", badge: "", disabled: false, pinned: false },
+            ];
+        }
+    }
+
+    GroupBox {
+        title: "Disabled items";
+        variant: GroupBoxVariant.outline;
+        Combobox {
+            placeholder: "Select item...";
+            search-placeholder: "Search…";
+            items: [
+                { label: "Apples", value: "apples", icon: "", group: "", badge: "", disabled: false, pinned: false },
+                { label: "Bananas", value: "bananas", icon: "", group: "", badge: "", disabled: true, pinned: false },
+                { label: "Cherries", value: "cherries", icon: "", group: "", badge: "", disabled: false, pinned: false },
+                { label: "Carrots", value: "carrots", icon: "", group: "", badge: "", disabled: false, pinned: false },
+                { label: "Broccoli", value: "broccoli", icon: "", group: "", badge: "", disabled: true, pinned: false },
+            ];
+        }
+    }
+
+    GroupBox {
+        title: "Icons";
+        variant: GroupBoxVariant.outline;
+        Combobox {
+            trigger: ComboboxTrigger.icon;
+            placeholder: "Select industry category";
+            search-placeholder: "Search…";
+            items: [
+                { label: "Information Technology", value: "it", icon: "cpu", group: "", badge: "", disabled: false, pinned: false },
+                { label: "Healthcare", value: "health", icon: "heart", group: "", badge: "", disabled: false, pinned: false },
+                { label: "Finance", value: "finance", icon: "globe", group: "", badge: "", disabled: false, pinned: false },
+                { label: "Education", value: "education", icon: "book-open", group: "", badge: "", disabled: false, pinned: false },
+                { label: "Entertainment", value: "entertainment", icon: "star", group: "", badge: "", disabled: false, pinned: false },
+            ];
+        }
+    }
+
+    GroupBox {
+        title: "Check icon";
+        variant: GroupBoxVariant.outline;
+        Combobox {
+            items: root.frameworks;
+            check-icon: "circle-check";
+            placeholder: "Select framework...";
+            search-placeholder: "Search…";
+        }
+    }
+
+    GroupBox {
+        title: "Footer";
+        variant: GroupBoxVariant.outline;
+        Combobox {
+            items <=> root.schools;
+            query <=> root.school-query;
+            selected: 0;
+            footer: "New university";
+            placeholder: "Select university";
+            search-placeholder: "Search…";
+            footer-clicked => {
+                if root.school-query != "" {
+                    root.add-school(root.school-query);
+                    root.school-query = "";
+                }
+            }
+        }
+    }
+
+    GroupBox {
+        title: "Custom trigger";
+        variant: GroupBoxVariant.outline;
+        Combobox {
+            items: root.frameworks;
+            trigger: ComboboxTrigger.chip;
+            placeholder: "Select framework";
+            search-placeholder: "Search…";
+        }
+    }
+
+    GroupBox {
+        title: "Badges";
+        variant: GroupBoxVariant.outline;
+        badges-box := Combobox {
+            items: root.many;
+            multiple: true;
+            trigger: ComboboxTrigger.badges;
+            picked: [true, false, true, false, false, false, false, false, false, false];
+            placeholder: "Select frameworks";
+            search-placeholder: "Search…";
+        }
+    }
+
+    GroupBox {
+        title: "Maximum selections";
+        variant: GroupBoxVariant.outline;
+        Combobox {
+            items: root.many;
+            multiple: true;
+            max-selected: 2;
+            picked: [false, false, false, false, false, false, false, false, false, false];
+            placeholder: "Select up to 2 frameworks";
+            search-placeholder: "Search…";
+        }
+    }
+
+    GroupBox {
+        title: "Pinned items";
+        variant: GroupBoxVariant.outline;
+        Combobox {
+            placeholder: "Select framework...";
+            search-placeholder: "Search…";
+            items: [
+                { label: "Next.js", value: "next", icon: "", group: "", badge: "", disabled: false, pinned: true },
+                { label: "SvelteKit", value: "svelte", icon: "", group: "", badge: "", disabled: false, pinned: true },
+                { label: "Nuxt.js", value: "nuxt", icon: "", group: "", badge: "", disabled: false, pinned: false },
+                { label: "Remix", value: "remix", icon: "", group: "", badge: "", disabled: false, pinned: false },
+                { label: "Astro", value: "astro", icon: "", group: "", badge: "", disabled: false, pinned: false },
+            ];
+        }
+    }
+
+    GroupBox {
+        title: "Rich items";
+        variant: GroupBoxVariant.outline;
+        Combobox {
+            placeholder: "Select framework...";
+            search-placeholder: "Search…";
+            items: [
+                { label: "Next.js", value: "next", icon: "", group: "", badge: "Featured", disabled: false, pinned: false },
+                { label: "SvelteKit", value: "svelte", icon: "", group: "", badge: "", disabled: false, pinned: false },
+                { label: "Nuxt.js", value: "nuxt", icon: "", group: "", badge: "", disabled: false, pinned: false },
+                { label: "Remix", value: "remix", icon: "", group: "", badge: "", disabled: false, pinned: false },
+                { label: "Astro", value: "astro", icon: "", group: "", badge: "", disabled: false, pinned: false },
+            ];
+        }
+    }
+
+    GroupBox {
+        title: "Overflow";
+        variant: GroupBoxVariant.outline;
+        Combobox {
+            items: root.many;
+            multiple: true;
+            trigger: ComboboxTrigger.overflow;
+            picked: [true, false, true, false, false, true, false, false, true, true];
+            placeholder: "Select frameworks";
+            search-placeholder: "Search…";
+        }
+    }
+
+    GroupBox {
+        title: "Count";
+        variant: GroupBoxVariant.outline;
+        count-box := Combobox {
+            items: root.many;
+            multiple: true;
+            trigger: ComboboxTrigger.count;
+            picked: [true, true, true, true, true, true, false, false, false, false];
+            placeholder: "Select frameworks";
+            search-placeholder: "Search…";
+        }
+    }
+
+    GroupBox {
+        title: "Values";
+        variant: GroupBoxVariant.outline;
+        VerticalLayout {
+            spacing: 4px;
+            Text {
+                text: "basic: " + (default-box.current-label() == "" ? "none" : default-box.current-label());
+                color: Theme.foreground;
+                font-size: Theme.font-size-sm;
+                font-family: Theme.mono-font-family;
+            }
+            Text {
+                text: "grouped: " + grouped-box.current-label();
+                color: Theme.foreground;
+                font-size: Theme.font-size-sm;
+                font-family: Theme.mono-font-family;
+            }
+            Text {
+                text: "badges: " + (badges-box.current-label() == "" ? "none" : badges-box.current-label());
+                color: Theme.foreground;
+                font-size: Theme.font-size-sm;
+                font-family: Theme.mono-font-family;
+            }
+            Text {
+                text: "count: " + count-box.current-label();
+                color: Theme.foreground;
+                font-size: Theme.font-size-sm;
+                font-family: Theme.mono-font-family;
+            }
+        }
+    }
 }

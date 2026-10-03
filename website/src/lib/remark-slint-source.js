@@ -407,6 +407,13 @@ const ALIASES = {
   collapsible: {
     'Animated reveal': 'Details',
   },
+  combobox: {
+    'Basic Single-Select': 'Default',
+    'Multi-Select': 'Multiple',
+    'Grouped Items': 'Groups',
+    'Custom Check Icon': 'Check icon',
+    'Footer Action': 'Footer',
+  },
   'data-table': {
     'Sorting Implementation': 'Invoices',
     'Selection Modes': 'Invoices',

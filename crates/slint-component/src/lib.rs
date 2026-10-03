@@ -11,6 +11,7 @@ pub fn run(component: &str, dark: bool) -> Result<(), slint::PlatformError> {
     let gallery = Gallery::new()?;
     gallery.set_component(component.into());
     gallery.global::<Theme>().set_dark(dark);
+    install_search(&gallery);
     #[cfg(target_arch = "wasm32")]
     web::apply_host_palette(&gallery);
     #[cfg(target_arch = "wasm32")]
@@ -50,6 +51,11 @@ fn follow_frame(gallery: slint::Weak<Gallery>) {
         },
     );
     Box::leak(Box::new(timer));
+}
+
+fn install_search(gallery: &Gallery) {
+    gallery.global::<ComboSearch>().set_installed(true);
+    gallery.global::<ComboSearch>().on_contains(|haystack, needle| haystack.contains(needle.as_str()));
 }
 
 fn sync_frame(gallery: &Gallery) {

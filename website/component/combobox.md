@@ -196,6 +196,69 @@ Combobox::new(&state)
     })
 ```
 
+### Icons
+
+```rust
+Combobox::new(&state)
+    .placeholder("Select industry category")
+    .search_placeholder("Search…")
+```
+
+### Badges
+
+```rust
+Combobox::new(&state)
+    .placeholder("Select frameworks")
+    .search_placeholder("Search…")
+```
+
+### Maximum selections
+
+```rust
+Combobox::new(&state)
+    .placeholder("Select up to 2 frameworks")
+    .search_placeholder("Search…")
+```
+
+### Pinned items
+
+```rust
+Combobox::new(&state)
+    .placeholder("Select framework...")
+    .search_placeholder("Search…")
+```
+
+### Rich items
+
+```rust
+Combobox::new(&state)
+    .placeholder("Select framework...")
+    .search_placeholder("Search…")
+```
+
+### Overflow
+
+```rust
+Combobox::new(&state)
+    .placeholder("Select frameworks")
+    .search_placeholder("Search…")
+```
+
+### Count
+
+```rust
+Combobox::new(&state)
+    .placeholder("Select frameworks")
+    .search_placeholder("Search…")
+```
+
+### Values
+
+```rust
+let basic = state.read(cx).selected_values();
+let grouped = grouped.read(cx).selected_values();
+```
+
 ### Sizes
 
 ```rust

@@ -144,7 +144,7 @@ The sample is the gallery example that is already running, not a separately writ
 - [x] Clipboard
 - [x] Collapsible
 - [x] Color picker
-- [ ] Combobox
+- [x] Combobox
 - [ ] Command
 - [ ] Data table
 - [ ] Date picker

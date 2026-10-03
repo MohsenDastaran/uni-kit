@@ -30,6 +30,7 @@ const FIRST_BATCH = [
   'checkbox',
   'collapsible',
   'color-picker',
+  'combobox',
 ];
 
 function headingText(node) {
