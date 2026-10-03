@@ -7,6 +7,10 @@ component CalendarMonth {
     in property <bool> show-previous;
     in property <bool> show-next;
     in property <int> marked-day;
+    // Inclusive yyyymmdd keys. `from-key` of 0 keeps the single `marked-day`.
+    in property <int> from-key;
+    in property <int> to-key;
+    in property <bool> block-weekends;
     callback previous();
     callback next();
     callback picked(int);
@@ -98,23 +102,28 @@ component CalendarMonth {
             for col in 7: Rectangle {
                 property <int> day: week * 7 + col - root.first-weekday(show-year, show-month) + 1;
                 property <bool> in-month: day >= 1 && day <= root.days-in-month(show-year, show-month);
+                property <int> key: show-year * 10000 + show-month * 100 + day;
+                property <bool> blocked: in-month && root.block-weekends && (col == 0 || col == 6);
+                property <bool> marked: in-month && root.from-key == 0 && day == root.marked-day;
+                property <bool> endpoint: in-month && root.from-key > 0 && (key == root.from-key || (root.to-key > 0 && key == root.to-key));
+                property <bool> inside: in-month && root.from-key > 0 && root.to-key > 0 && key > min(root.from-key, root.to-key) && key < max(root.from-key, root.to-key);
                 width: root.cell;
                 height: 32px;
                 border-radius: Theme.radius-md;
-                background: in-month && day == marked-day ? Theme.primary : (touch.has-hover && in-month ? Theme.accent : transparent);
+                background: endpoint || marked ? Theme.primary : inside ? Theme.primary.with-alpha(0.16) : touch.has-hover && in-month && !blocked ? Theme.accent : transparent;
 
                 if in-month: Text {
                     width: 100%;
                     height: 100%;
                     text: "\{day}";
-                    color: day == marked-day ? Theme.primary-foreground : Theme.foreground;
+                    color: blocked ? Theme.muted-foreground.with-alpha(0.4) : endpoint || marked ? Theme.primary-foreground : Theme.foreground;
                     font-size: Theme.font-size-sm;
                     horizontal-alignment: center;
                     vertical-alignment: center;
                 }
 
                 touch := TouchArea {
-                    enabled: in-month;
+                    enabled: in-month && !blocked;
                     clicked => { root.picked(day); }
                 }
             }
@@ -130,6 +139,9 @@ export component Calendar {
     in-out property <int> month: 9;
     in-out property <int> selected-day: 26;
     in property <int> columns: 1;
+    in property <int> range-from;
+    in property <int> range-to;
+    in property <bool> block-weekends;
     callback changed(year: int, month: int, day: int);
 
     private property <bool> has-pick;
@@ -175,6 +187,9 @@ export component Calendar {
             show-month: mod(absolute, 12) + 1;
             show-previous: offset == 0;
             show-next: offset == root.count - 1;
+            from-key: root.range-from;
+            to-key: root.range-to;
+            block-weekends: root.block-weekends;
             marked-day: (!root.has-pick && offset == 0) || (root.has-pick && floor(absolute / 12) == root.pick-year && mod(absolute, 12) + 1 == root.pick-month)
                 ? (root.has-pick ? root.pick-day : root.selected-day)
                 : 0;

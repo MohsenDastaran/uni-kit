@@ -11,7 +11,57 @@ export component DatePickerExample inherits VerticalLayout {
     GroupBox {
         title: "Date";
         variant: GroupBoxVariant.outline;
-        DatePicker {}
+        DatePicker {
+            year: 2026;
+            month: 10;
+            day: 2;
+        }
+    }
+
+    GroupBox {
+        title: "Date and Time";
+        variant: GroupBoxVariant.outline;
+        VerticalLayout {
+            spacing: 8px;
+            when := DatePicker {
+                with-time: true;
+                year: 2026;
+                month: 10;
+                day: 2;
+                hour: 9;
+                minute: 30;
+            }
+            Text {
+                text: "Value: \{when.year}-\{when.month < 10 ? "0" : ""}\{when.month}-\{when.day < 10 ? "0" : ""}\{when.day} \{when.hour < 10 ? "0" : ""}\{when.hour}:\{when.minute < 10 ? "0" : ""}\{when.minute}";
+                color: Theme.muted-foreground;
+                font-size: Theme.font-size-sm;
+            }
+        }
+    }
+
+    GroupBox {
+        title: "Date Range Picker";
+        variant: GroupBoxVariant.outline;
+        DatePicker {
+            range: true;
+            months: 2;
+            empty: true;
+            placeholder: "Select a range";
+            year: 2026;
+            month: 10;
+            day: 2;
+        }
+    }
+
+    GroupBox {
+        title: "Disabled Weekends";
+        variant: GroupBoxVariant.outline;
+        DatePicker {
+            block-weekends: true;
+            year: 2026;
+            month: 10;
+            day: 2;
+        }
     }
 
     GroupBox {
@@ -19,11 +69,20 @@ export component DatePickerExample inherits VerticalLayout {
         variant: GroupBoxVariant.outline;
         DatePicker {
             size: ControlSize.small;
+            year: 2026;
+            month: 10;
+            day: 2;
         }
-        DatePicker {}
+        DatePicker {
+            year: 2026;
+            month: 10;
+            day: 2;
+        }
         DatePicker {
             size: ControlSize.large;
+            year: 2026;
+            month: 10;
+            day: 2;
         }
     }
-
 }

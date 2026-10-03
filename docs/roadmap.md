@@ -147,8 +147,8 @@ The sample is the gallery example that is already running, not a separately writ
 - [x] Combobox
 - [x] Command
 - [x] Data table
-- [ ] Date picker
-- [ ] Description list
+- [x] Date picker
+- [x] Description list
 - [ ] Dialog
 - [ ] Dock
 - [ ] Dropdown button

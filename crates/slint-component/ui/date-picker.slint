@@ -2,20 +2,132 @@ import { Theme, ControlSize } from "theme.slint";
 import { Icon } from "icon.slint";
 import { Calendar } from "calendar.slint";
 
-// An input that opens a calendar. Mirrors GPUI Component's `DatePicker`.
+// An input that opens a calendar. Mirrors GPUI Component's `DatePicker`:
+// a single date, an optional time of day, a two-month range, and weekends
+// that cannot be picked. The calendar icon sits on the trailing edge,
+// vertically centered with the value.
 export component DatePicker {
     in-out property <int> year: 2026;
-    in-out property <int> month: 9;
-    in-out property <int> day: 26;
+    in-out property <int> month: 10;
+    in-out property <int> day: 2;
+    in-out property <int> hour: 9;
+    in-out property <int> minute: 0;
+    in-out property <int> end-year;
+    in-out property <int> end-month;
+    in-out property <int> end-day;
+    in-out property <bool> empty;
     in property <ControlSize> size: ControlSize.medium;
+    in property <bool> with-time;
+    in property <bool> range;
+    in property <int> months: range ? 2 : 1;
+    in property <bool> block-weekends;
+    in property <string> placeholder: "";
     callback changed(year: int, month: int, day: int);
+
+    private property <int> view-year;
+    private property <int> view-month;
+    private property <bool> picking-end;
+    private property <int> anchor-year;
+    private property <int> anchor-month;
+    private property <int> anchor-day;
+    private property <string> hour-text: "09";
+    private property <string> minute-text: "00";
+    private property <int> from-key: !range || empty ? 0 : root.stamp-key(year, month, day);
+    private property <int> to-key: !range || end-year == 0 ? 0 : root.stamp-key(end-year, end-month, end-day);
+
+    pure function pad(n: int) -> string {
+        n < 10 ? "0\{n}" : "\{n}"
+    }
+    pure function stamp(y: int, m: int, d: int) -> string {
+        "\{y}-\{root.pad(m)}-\{root.pad(d)}"
+    }
+    pure function stamp-key(y: int, m: int, d: int) -> int {
+        y * 10000 + m * 100 + d
+    }
+    pure function label() -> string {
+        if root.empty && root.placeholder != "" {
+            return root.placeholder;
+        }
+        if root.range && root.end-year > 0 {
+            return root.stamp(root.year, root.month, root.day) + " – " + root.stamp(root.end-year, root.end-month, root.end-day);
+        }
+        if root.with-time {
+            return root.stamp(root.year, root.month, root.day) + " \{root.pad(root.hour)}:\{root.pad(root.minute)}";
+        }
+        root.stamp(root.year, root.month, root.day)
+    }
+
+    function commit-time() {
+        if root.hour-text != "" {
+            root.hour = clamp(floor(root.hour-text.to-float()), 0, 23);
+        }
+        if root.minute-text != "" {
+            root.minute = clamp(floor(root.minute-text.to-float()), 0, 59);
+        }
+    }
+
+    function choose(y: int, m: int, d: int) {
+        if !root.range {
+            root.year = y;
+            root.month = m;
+            root.day = d;
+            root.empty = false;
+            root.changed(y, m, d);
+            if !root.with-time {
+                pop.close();
+            }
+            return;
+        }
+        if !root.picking-end {
+            root.anchor-year = y;
+            root.anchor-month = m;
+            root.anchor-day = d;
+            root.year = y;
+            root.month = m;
+            root.day = d;
+            root.end-year = 0;
+            root.end-month = 0;
+            root.end-day = 0;
+            root.empty = false;
+            root.picking-end = true;
+            return;
+        }
+        if root.stamp-key(y, m, d) < root.stamp-key(root.anchor-year, root.anchor-month, root.anchor-day) {
+            root.year = y;
+            root.month = m;
+            root.day = d;
+            root.end-year = root.anchor-year;
+            root.end-month = root.anchor-month;
+            root.end-day = root.anchor-day;
+        } else {
+            root.year = root.anchor-year;
+            root.month = root.anchor-month;
+            root.day = root.anchor-day;
+            root.end-year = y;
+            root.end-month = m;
+            root.end-day = d;
+        }
+        root.picking-end = false;
+        root.changed(root.year, root.month, root.day);
+        pop.close();
+    }
+
+    init => {
+        root.hour-text = root.pad(root.hour);
+        root.minute-text = root.pad(root.minute);
+        root.view-year = root.year;
+        root.view-month = root.month;
+    }
 
     height: Theme.control-height(size);
     min-width: 0px;
-    preferred-width: 180px;
+    preferred-width: range || with-time ? 260px : 200px;
     horizontal-stretch: 1;
+    vertical-stretch: 0;
 
     Rectangle {
+        width: 100%;
+        height: 100%;
         border-radius: Theme.radius-md;
         border-width: 1px;
         border-color: Theme.input;
@@ -23,31 +135,44 @@ export component DatePicker {
     }
 
     HorizontalLayout {
+        width: parent.width;
+        height: parent.height;
         padding-left: Theme.control-padding(size);
         padding-right: Theme.control-padding(size);
         spacing: 8px;
+        cross-axis-alignment: center;
+
         Text {
             horizontal-stretch: 1;
-            text: "\{year}-\{month < 10 ? "0" : ""}\{month}-\{day < 10 ? "0" : ""}\{day}";
-            color: Theme.foreground;
+            vertical-stretch: 1;
+            text: root.label();
+            color: root.empty && root.placeholder != "" ? Theme.muted-foreground : Theme.foreground;
             font-size: Theme.control-font-size(size);
             vertical-alignment: center;
+            overflow: elide;
         }
-        Icon {
-            name: "calendar";
-            size: Theme.icon-size(size);
-            color: Theme.muted-foreground;
+
+        VerticalLayout {
+            alignment: center;
+            horizontal-stretch: 0;
+            Icon {
+                name: "calendar";
+                size: 16px;
+                color: Theme.muted-foreground;
+            }
         }
     }
 
     TouchArea {
+        width: 100%;
+        height: 100%;
         clicked => {
             pop.show();
         }
     }
 
     pop := PopupWindow {
-        y: Theme.control-height(size) + 4px;
+        y: root.height + 4px;
         close-policy: close-on-click-outside;
 
         Rectangle {
@@ -60,13 +185,76 @@ export component DatePicker {
             drop-shadow-color: Theme.shadow;
             VerticalLayout {
                 padding: 12px;
+                spacing: 12px;
                 Calendar {
-                    year <=> root.year;
-                    month <=> root.month;
-                    selected-day <=> root.day;
+                    year <=> root.view-year;
+                    month <=> root.view-month;
+                    selected-day: root.range ? 0 : root.day;
+                    columns: root.months;
+                    block-weekends: root.block-weekends;
+                    range-from: root.from-key;
+                    range-to: root.to-key;
                     changed(y, m, d) => {
-                        root.changed(y, m, d);
-                        pop.close();
+                        root.choose(y, m, d);
+                    }
+                }
+
+                if root.with-time: Rectangle {
+                    height: 1px;
+                    background: Theme.border;
+                }
+
+                if root.with-time: HorizontalLayout {
+                    spacing: 8px;
+                    alignment: center;
+                    cross-axis-alignment: center;
+                    Text {
+                        text: "Time";
+                        color: Theme.muted-foreground;
+                        font-size: Theme.font-size-sm;
+                        vertical-alignment: center;
+                    }
+                    Rectangle {
+                        width: 44px;
+                        height: 28px;
+                        border-radius: Theme.radius-md;
+                        border-width: 1px;
+                        border-color: Theme.input;
+                        background: Theme.background;
+                        hour-field := TextInput {
+                            width: 100%;
+                            height: 100%;
+                            text <=> root.hour-text;
+                            horizontal-alignment: center;
+                            vertical-alignment: center;
+                            font-size: Theme.font-size-sm;
+                            color: Theme.foreground;
+                            edited => { root.commit-time(); }
+                        }
+                    }
+                    Text {
+                        text: ":";
+                        color: Theme.foreground;
+                        font-size: Theme.font-size-sm;
+                        vertical-alignment: center;
+                    }
+                    Rectangle {
+                        width: 44px;
+                        height: 28px;
+                        border-radius: Theme.radius-md;
+                        border-width: 1px;
+                        border-color: Theme.input;
+                        background: Theme.background;
+                        minute-field := TextInput {
+                            width: 100%;
+                            height: 100%;
+                            text <=> root.minute-text;
+                            horizontal-alignment: center;
+                            vertical-alignment: center;
+                            font-size: Theme.font-size-sm;
+                            color: Theme.foreground;
+                            edited => { root.commit-time(); }
+                        }
                     }
                 }
             }

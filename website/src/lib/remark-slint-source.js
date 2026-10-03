@@ -562,6 +562,14 @@ const SHARED = {
     'Multiple months': 'Two columns',
     'Disabled dates': 'Disabled Weekends',
   },
+  'date-picker': {
+    Default: 'Date',
+    'Date range': 'Date Range Picker',
+    'Disabled dates': 'Disabled Weekends',
+    'Empty range': 'Date Range Picker',
+    'Year range': 'Custom Year Range',
+    'Custom style': 'Custom Appearance',
+  },
   carousel: {
     Basic: 'Usage',
     Vertical: 'Orientation',

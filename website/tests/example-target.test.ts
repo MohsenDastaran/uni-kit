@@ -33,6 +33,8 @@ const FIRST_BATCH = [
   'combobox',
   'command',
   'data-table',
+  'date-picker',
+  'description-list',
 ];
 
 function headingText(node) {
