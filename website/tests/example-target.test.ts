@@ -31,6 +31,7 @@ const FIRST_BATCH = [
   'collapsible',
   'color-picker',
   'combobox',
+  'command',
 ];
 
 function headingText(node) {

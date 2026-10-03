@@ -1,19 +1,246 @@
 import { Theme } from "../theme.slint";
 import { GroupBox, GroupBoxVariant } from "section.slint";
-import { Command } from "../command.slint";
+import { Command, CommandItem } from "../command.slint";
+import { Button } from "../button.slint";
 
 export component CommandExample inherits VerticalLayout {
     horizontal-stretch: 1;
+    private property <string> last: "none";
+    private property <bool> menu-open;
+    private property <bool> stocks-open;
     padding: Theme.page-padding(Theme.viewport);
     spacing: 24px;
     alignment: start;
 
-    Command {
-        items: [
-            { label: "New file", icon: "file", shortcut: "⌘N", group: "File" },
-            { label: "Open settings", icon: "settings", shortcut: "⌘,", group: "App" },
-            { label: "Toggle theme", icon: "sun", shortcut: "⌘D", group: "App" },
-        ];
+    function command(label: string, icon: string, shortcut: string, group: string) -> CommandItem {
+        {
+            label: label, icon: icon, shortcut: shortcut, group: group,
+            detail: "", keywords: "", meta: "", change: "", up: false,
+            disabled: false, checked: false, separator: false,
+        }
+    }
+    function marked(label: string, icon: string, group: string, keywords: string, disabled: bool, checked: bool) -> CommandItem {
+        {
+            label: label, icon: icon, shortcut: "", group: group,
+            detail: "", keywords: keywords, meta: "", change: "", up: false,
+            disabled: disabled, checked: checked, separator: false,
+        }
+    }
+    function rule() -> CommandItem {
+        {
+            label: "", icon: "", shortcut: "", group: "",
+            detail: "", keywords: "", meta: "", change: "", up: false,
+            disabled: false, checked: false, separator: true,
+        }
+    }
+    function note(label: string, detail: string) -> CommandItem {
+        {
+            label: label, icon: "", shortcut: "", group: "",
+            detail: detail, keywords: "", meta: "", change: "", up: false,
+            disabled: false, checked: false, separator: false,
+        }
+    }
+    function stock(symbol: string, name: string, price: string, change: string, up: bool, popular: bool) -> CommandItem {
+        {
+            label: name, icon: "", shortcut: "", group: popular ? "Popular" : "",
+            detail: "", keywords: symbol, meta: price, change: change, up: up,
+            disabled: false, checked: false, separator: false,
+        }
+    }
+    function remember(index: int, label: string) {
+        root.last = "row \{index} — " + label;
     }
 
+    GroupBox {
+        title: "Inline";
+        variant: GroupBoxVariant.outline;
+        Command {
+            items: [
+                root.command("Calendar", "calendar", "", "Suggestions"),
+                root.marked("Search Emoji", "search", "Suggestions", "smile icon", false, true),
+                root.marked("Calculator", "frame", "Suggestions", "", true, false),
+                root.rule(),
+                root.command("Profile", "user", "⌘P", "Settings"),
+                root.command("Billing", "circle-user", "⌘B", "Settings"),
+                root.command("Settings", "settings", "⌘S", "Settings"),
+            ];
+            chosen(index) => { root.remember(index, "inline"); }
+        }
+    }
+
+    GroupBox {
+        title: "Dialog";
+        variant: GroupBoxVariant.outline;
+        Rectangle {
+            height: 420px;
+            border-width: 1px;
+            border-color: Theme.border;
+            border-radius: Theme.radius-lg;
+            clip: true;
+            Button {
+                x: 16px;
+                y: 16px;
+                text: "Open Menu";
+                outline: true;
+                clicked => { root.menu-open = true; }
+            }
+            if root.menu-open: Rectangle {
+                width: 100%;
+                height: 100%;
+                background: Theme.overlay;
+                TouchArea { clicked => { root.menu-open = false; } }
+                Rectangle {
+                    x: (parent.width - self.width) / 2;
+                    y: 36px;
+                    width: min(parent.width - 32px, 380px);
+                    border-radius: Theme.radius-lg;
+                    background: Theme.popover;
+                    border-width: 1px;
+                    border-color: Theme.border;
+                    Command {
+                        bordered: false;
+                        heading: "Commands";
+                        hints: true;
+                        placeholder: "Type a command or search...";
+                        items: [
+                            root.command("Calendar", "calendar", "", "Suggestions"),
+                            root.marked("Search Emoji", "search", "Suggestions", "smile icon", false, true),
+                            root.marked("Calculator", "frame", "Suggestions", "", true, false),
+                            root.rule(),
+                            root.command("Profile", "user", "⌘P", "Settings"),
+                            root.command("Billing", "circle-user", "⌘B", "Settings"),
+                            root.command("Settings", "settings", "⌘S", "Settings"),
+                        ];
+                        chosen(index) => {
+                            root.remember(index, "dialog");
+                            root.menu-open = false;
+                        }
+                        cancelled => { root.menu-open = false; }
+                    }
+                }
+            }
+        }
+    }
+
+    GroupBox {
+        title: "Quick actions";
+        variant: GroupBoxVariant.outline;
+        Command {
+            searchable: false;
+            items: [
+                root.command("New File", "plus", "", ""),
+                root.command("Duplicate", "copy", "", ""),
+                root.command("Move to Trash", "trash", "", ""),
+            ];
+            chosen(index) => { root.remember(index, "quick"); }
+        }
+    }
+
+    GroupBox {
+        title: "Scrollable";
+        variant: GroupBoxVariant.outline;
+        Command {
+            max-list-height: 220px;
+            items: [
+                root.command("Home", "layout-dashboard", "⌘H", "Navigation"),
+                root.command("Inbox", "inbox", "⌘I", "Navigation"),
+                root.command("Documents", "file", "⌘D", "Navigation"),
+                root.command("Folders", "folder", "⌘F", "Navigation"),
+                root.rule(),
+                root.command("New File", "plus", "⌘N", "Actions"),
+                root.command("Copy", "copy", "⌘C", "Actions"),
+                root.command("Delete", "trash", "⌫", "Actions"),
+                root.rule(),
+                root.command("Profile", "user", "", "Account"),
+                root.command("Notifications", "bell", "", "Account"),
+                root.command("Help & Support", "info", "", "Account"),
+                root.rule(),
+                root.command("Palette", "palette", "", "Tools"),
+                root.command("Terminal", "square-terminal", "", "Tools"),
+                root.command("Globe", "globe", "", "Tools"),
+            ];
+            chosen(index) => { root.remember(index, "scroll"); }
+        }
+    }
+
+    GroupBox {
+        title: "Variable-height rows";
+        variant: GroupBoxVariant.outline;
+        Command {
+            custom-rows: true;
+            items: [
+                root.note("Compact custom row", ""),
+                root.note("Expanded custom row", "Its extra detail gives this row a different height."),
+            ];
+            chosen(index) => { root.remember(index, "rows"); }
+        }
+    }
+
+    GroupBox {
+        title: "Search panel";
+        variant: GroupBoxVariant.outline;
+        Rectangle {
+            height: 460px;
+            border-width: 1px;
+            border-color: Theme.border;
+            border-radius: Theme.radius-lg;
+            clip: true;
+            Button {
+                x: 16px;
+                y: 16px;
+                text: "Search Stocks";
+                outline: true;
+                clicked => { root.stocks-open = true; }
+            }
+            if root.stocks-open: Rectangle {
+                width: 100%;
+                height: 100%;
+                background: Theme.overlay;
+                TouchArea { clicked => { root.stocks-open = false; } }
+                Rectangle {
+                    x: (parent.width - self.width) / 2;
+                    y: 28px;
+                    width: min(parent.width - 32px, 380px);
+                    border-radius: Theme.radius-lg;
+                    background: Theme.popover;
+                    border-width: 1px;
+                    border-color: Theme.border;
+                    Command {
+                        bordered: false;
+                        heading: "Stocks";
+                        placeholder: "Search symbols or companies...";
+                        preview-count: 5;
+                        items: [
+                            root.stock("AAPL.US", "Apple Inc.", "228.52", "+1.24%", true, true),
+                            root.stock("NVDA.US", "NVIDIA Corporation", "134.81", "-0.62%", false, true),
+                            root.stock("TSLA.US", "Tesla, Inc.", "251.44", "+3.18%", true, true),
+                            root.stock("MSFT.US", "Microsoft Corporation", "428.02", "+0.41%", true, true),
+                            root.stock("AMZN.US", "Amazon.com, Inc.", "186.33", "-1.07%", false, true),
+                            root.stock("700.HK", "Tencent Holdings Ltd.", "412.60", "+0.87%", true, false),
+                            root.stock("9988.HK", "Alibaba Group Holding Ltd.", "82.15", "-2.31%", false, false),
+                            root.stock("3690.HK", "Meituan", "128.90", "+1.66%", true, false),
+                            root.stock("600519.SH", "Kweichow Moutai Co., Ltd.", "1482.00", "-0.34%", false, false),
+                            root.stock("000858.SZ", "Wuliangye Yibin Co., Ltd.", "142.77", "+0.19%", true, false),
+                        ];
+                        chosen(index) => {
+                            root.remember(index, "stock");
+                            root.stocks-open = false;
+                        }
+                        cancelled => { root.stocks-open = false; }
+                    }
+                }
+            }
+        }
+    }
+
+    GroupBox {
+        title: "Last confirmed";
+        variant: GroupBoxVariant.outline;
+        Text {
+            text: root.last;
+            color: Theme.foreground;
+            font-size: Theme.font-size-sm;
+            font-family: Theme.mono-font-family;
+        }
+    }
 }

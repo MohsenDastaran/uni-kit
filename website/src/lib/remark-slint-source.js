@@ -414,6 +414,10 @@ const ALIASES = {
     'Custom Check Icon': 'Check icon',
     'Footer Action': 'Footer',
   },
+  command: {
+    'In a Dialog': 'Dialog',
+    'Quick Actions Without Search': 'Quick actions',
+  },
   'data-table': {
     'Sorting Implementation': 'Invoices',
     'Selection Modes': 'Invoices',

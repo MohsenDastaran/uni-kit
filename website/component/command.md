@@ -244,6 +244,36 @@ scrolling change, so those interactions do not need an owner rerender. A later
 owner render installs the new model, preserves the selected `IndexPath` when it is
 still present, and remeasures rows.
 
+### Scrollable
+
+```rust
+Command::new(&state)
+    .max_h(px(220.))
+    .w(px(380.))
+```
+
+### Variable-height rows
+
+```rust
+Command::new(&state)
+    .items(variable_rows())
+    .w(px(380.))
+```
+
+### Search panel
+
+```rust
+Command::new(&state)
+    .placeholder("Search symbols or companies...")
+    .w(px(380.))
+```
+
+### Last confirmed
+
+```rust
+let value = self.last_command.clone();
+```
+
 ## Searching
 
 Command uses a case-insensitive substring match against each item's label and

@@ -1,75 +1,460 @@
-import { Theme } from "theme.slint";
+import { Theme, ControlSize } from "theme.slint";
 import { Icon } from "icon.slint";
-import { Input } from "input.slint";
 import { Kbd } from "kbd.slint";
+import { Scrollable } from "scrollable.slint";
+import { ComboSearch } from "combobox.slint";
 
 export struct CommandItem {
     label: string,
     icon: string,
     shortcut: string,
     group: string,
+    detail: string,
+    keywords: string,
+    meta: string,
+    change: string,
+    up: bool,
+    disabled: bool,
+    checked: bool,
+    separator: bool,
 }
 
-// A command palette. Mirrors GPUI Component's `Command`.
+component CommandRows inherits VerticalLayout {
+    in property <[CommandItem]> items;
+    in property <string> query;
+    in property <int> active;
+    in property <int> preview-count;
+    in property <bool> custom-rows;
+    callback pick(index: int);
+
+    pure function matches(index: int) -> bool {
+        if index < 0 || index >= root.items.length || root.items[index].separator {
+            return false;
+        }
+        if root.query == "" || !ComboSearch.installed {
+            return true;
+        }
+        let item = root.items[index];
+        ComboSearch.contains(
+            (item.label + " " + item.detail + " " + item.keywords + " " + item.meta).to-lowercase(),
+            root.query.to-lowercase(),
+        )
+    }
+    pure function shown(index: int) -> bool {
+        if index < 0 || index >= root.items.length {
+            return false;
+        }
+        if root.items[index].separator {
+            return root.query == "";
+        }
+        if root.query == "" && root.preview-count > 0 {
+            return index < root.preview-count;
+        }
+        root.matches(index)
+    }
+    pure function header(index: int) -> bool {
+        if !root.shown(index) || root.items[index].group == "" {
+            return false;
+        }
+        if index == 0 || root.items[index - 1].group != root.items[index].group {
+            return true;
+        }
+        if root.shown(index - 1) {
+            return false;
+        }
+        index < 2 || root.items[index - 2].group != root.items[index].group || !root.shown(index - 2)
+    }
+
+    padding: 4px;
+    spacing: 2px;
+
+    for item[index] in root.items: VerticalLayout {
+        spacing: 2px;
+
+        if root.header(index): HorizontalLayout {
+            padding-left: 8px;
+            padding-right: 8px;
+            padding-top: 10px;
+            padding-bottom: 4px;
+            Text {
+                text: item.group;
+                color: Theme.muted-foreground;
+                font-size: Theme.font-size-xs;
+                font-weight: 500;
+                vertical-alignment: center;
+            }
+        }
+
+        if item.separator && root.shown(index): Rectangle {
+            height: 1px;
+            background: Theme.border;
+        }
+
+        if !item.separator && root.shown(index): Rectangle {
+            border-radius: Theme.radius-sm;
+            opacity: item.disabled ? 0.45 : 1;
+            background: root.active == index && !item.disabled ? Theme.accent : row-touch.has-hover && !item.disabled ? Theme.accent.with-alpha(0.6) : transparent;
+            vertical-stretch: 0;
+            height: max(32px, body.preferred-height);
+
+            body := VerticalLayout {
+                width: parent.width;
+                height: self.preferred-height;
+            if root.custom-rows: VerticalLayout {
+                padding-left: 8px;
+                padding-right: 8px;
+                padding-top: item.detail == "" ? 6px : 12px;
+                padding-bottom: item.detail == "" ? 6px : 12px;
+                spacing: 4px;
+                Text {
+                    text: item.label;
+                    color: Theme.foreground;
+                    font-size: Theme.font-size-sm;
+                }
+                if item.detail != "": Text {
+                    text: item.detail;
+                    color: Theme.muted-foreground;
+                    font-size: Theme.font-size-xs;
+                    wrap: word-wrap;
+                }
+            }
+
+            if !root.custom-rows && item.meta != "": HorizontalLayout {
+                padding: 8px;
+                spacing: 12px;
+                VerticalLayout {
+                    horizontal-stretch: 1;
+                    spacing: 2px;
+                    Text {
+                        text: item.keywords;
+                        color: Theme.foreground;
+                        font-size: Theme.font-size-sm;
+                    }
+                    Text {
+                        text: item.label;
+                        color: Theme.muted-foreground;
+                        font-size: Theme.font-size-xs;
+                    }
+                }
+                VerticalLayout {
+                    spacing: 2px;
+                    cross-axis-alignment: end;
+                    Text {
+                        text: item.meta;
+                        color: Theme.foreground;
+                        font-size: Theme.font-size-sm;
+                        horizontal-alignment: right;
+                    }
+                    Text {
+                        text: item.change;
+                        color: item.up ? Theme.success : Theme.danger;
+                        font-size: Theme.font-size-xs;
+                        horizontal-alignment: right;
+                    }
+                }
+            }
+
+            if !root.custom-rows && item.meta == "": HorizontalLayout {
+                padding: 8px;
+                spacing: 8px;
+                cross-axis-alignment: center;
+                if item.icon != "": Icon {
+                    name: item.icon;
+                    size: 16px;
+                    color: Theme.muted-foreground;
+                }
+                Text {
+                    horizontal-stretch: 1;
+                    text: item.label;
+                    color: Theme.foreground;
+                    font-size: Theme.font-size-sm;
+                    vertical-alignment: center;
+                    overflow: elide;
+                }
+                if item.checked: Icon {
+                    name: "check";
+                    size: 14px;
+                    color: Theme.foreground;
+                }
+                if item.shortcut != "": Kbd {
+                    text: item.shortcut;
+                    size: ControlSize.small;
+                }
+            }
+            }
+
+            row-touch := TouchArea {
+                width: 100%;
+                height: 100%;
+                enabled: !item.disabled;
+                accessible-role: button;
+                accessible-label: item.label;
+                clicked => { root.pick(index); }
+            }
+        }
+    }
+}
+
+// A command palette. Mirrors GPUI Component's `Command`: groups, shortcuts,
+// an optional search field, and a list that can scroll.
 export component Command {
     in property <[CommandItem]> items;
     in-out property <string> query;
     in-out property <int> active: 0;
+    in property <string> placeholder: "Type a command or search...";
+    in property <bool> searchable: true;
+    in property <bool> bordered: true;
+    in property <string> heading;
+    in property <bool> hints;
+    // Show only this many rows until the query is non-empty. Zero shows every row.
+    in property <int> preview-count;
+    in property <bool> custom-rows;
+    in property <length> max-list-height: 0px;
     callback chosen(index: int);
+    callback cancelled();
+
+    pure function counts(index: int) -> bool {
+        if index < 0 || index >= root.items.length || root.items[index].separator {
+            return false;
+        }
+        if root.query == "" && root.preview-count > 0 {
+            return index < root.preview-count;
+        }
+        if root.query == "" || !ComboSearch.installed {
+            return true;
+        }
+        let item = root.items[index];
+        ComboSearch.contains(
+            (item.label + " " + item.detail + " " + item.keywords + " " + item.meta).to-lowercase(),
+            root.query.to-lowercase(),
+        )
+    }
+    public pure function matched() -> int {
+        (root.counts(0) ? 1 : 0) + (root.counts(1) ? 1 : 0) + (root.counts(2) ? 1 : 0) + (root.counts(3) ? 1 : 0)
+            + (root.counts(4) ? 1 : 0) + (root.counts(5) ? 1 : 0) + (root.counts(6) ? 1 : 0) + (root.counts(7) ? 1 : 0)
+            + (root.counts(8) ? 1 : 0) + (root.counts(9) ? 1 : 0) + (root.counts(10) ? 1 : 0) + (root.counts(11) ? 1 : 0)
+            + (root.counts(12) ? 1 : 0) + (root.counts(13) ? 1 : 0) + (root.counts(14) ? 1 : 0) + (root.counts(15) ? 1 : 0)
+            + (root.counts(16) ? 1 : 0) + (root.counts(17) ? 1 : 0) + (root.counts(18) ? 1 : 0) + (root.counts(19) ? 1 : 0)
+    }
+
+    function selectable(index: int) -> bool {
+        index >= 0 && index < root.items.length && root.counts(index) && !root.items[index].disabled
+    }
+    function land(from: int, dir: int) {
+        if root.selectable(from + dir) { root.active = from + dir; return; }
+        if root.selectable(from + dir * 2) { root.active = from + dir * 2; return; }
+        if root.selectable(from + dir * 3) { root.active = from + dir * 3; return; }
+        if root.selectable(from + dir * 4) { root.active = from + dir * 4; return; }
+        if root.selectable(from + dir * 5) { root.active = from + dir * 5; return; }
+        if root.selectable(from + dir * 6) { root.active = from + dir * 6; return; }
+        if root.selectable(from + dir * 7) { root.active = from + dir * 7; return; }
+        if root.selectable(from + dir * 8) { root.active = from + dir * 8; return; }
+        if root.selectable(from + dir * 9) { root.active = from + dir * 9; return; }
+        if root.selectable(from + dir * 10) { root.active = from + dir * 10; return; }
+        if root.selectable(from + dir * 11) { root.active = from + dir * 11; return; }
+        if root.selectable(from + dir * 12) { root.active = from + dir * 12; return; }
+        if root.selectable(from + dir * 13) { root.active = from + dir * 13; return; }
+        if root.selectable(from + dir * 14) { root.active = from + dir * 14; return; }
+        if root.selectable(from + dir * 15) { root.active = from + dir * 15; return; }
+        if root.selectable(from + dir * 16) { root.active = from + dir * 16; return; }
+    }
+    function move(dir: int) {
+        root.land(root.active, dir);
+    }
+    function confirm() {
+        if root.selectable(root.active) {
+            root.chosen(root.active);
+        }
+    }
+    function on-key(event: KeyEvent) -> EventResult {
+        if event.text == Key.UpArrow {
+            root.move(-1);
+            return accept;
+        }
+        if event.text == Key.DownArrow {
+            root.move(1);
+            return accept;
+        }
+        if event.text == Key.Return {
+            root.confirm();
+            return accept;
+        }
+        if event.text == Key.Escape {
+            root.cancelled();
+            return accept;
+        }
+        reject
+    }
+
+    changed query => {
+        root.active = 0;
+        if !root.selectable(0) {
+            root.land(-1, 1);
+        }
+    }
 
     horizontal-stretch: 1;
     min-width: 0px;
-    max-width: 420px;
-    preferred-width: 420px;
+    max-width: 380px;
+    preferred-width: 380px;
+
+    focus := FocusScope {
+        key-pressed(event) => { root.on-key(event) }
+    }
 
     Rectangle {
-        border-radius: Theme.radius-lg;
-        border-width: 1px;
+        border-radius: root.bordered ? Theme.radius-lg : 0;
+        border-width: root.bordered ? 1px : 0;
         border-color: Theme.border;
-        background: Theme.popover;
-        drop-shadow-blur: 20px;
-        drop-shadow-offset-y: 8px;
+        background: root.bordered ? Theme.popover : transparent;
+        drop-shadow-blur: root.bordered ? 16px : 0;
+        drop-shadow-offset-y: root.bordered ? 6px : 0;
         drop-shadow-color: Theme.shadow;
 
         VerticalLayout {
-            Input {
-                text <=> root.query;
-                placeholder: "Type a command…";
-                prefix-icon: "search";
-                appearance: false;
+            if root.heading != "": Rectangle {
+                HorizontalLayout {
+                    height: 36px;
+                    padding-left: 12px;
+                    padding-right: 12px;
+                    spacing: 8px;
+                    cross-axis-alignment: center;
+                    Text {
+                        horizontal-stretch: 1;
+                        text: root.heading;
+                        color: Theme.foreground;
+                        font-size: Theme.font-size-sm;
+                        vertical-alignment: center;
+                    }
+                    Text {
+                        text: "\{root.matched()} matches";
+                        color: Theme.muted-foreground;
+                        font-size: Theme.font-size-sm;
+                        vertical-alignment: center;
+                    }
+                }
             }
 
-            Rectangle { height: 1px; background: Theme.border; }
+            if root.heading != "": Rectangle {
+                height: 1px;
+                background: Theme.border;
+            }
 
-            VerticalLayout {
-                padding: 4px;
-                for item[index] in items: Rectangle {
-                    visible: true;
-                    border-radius: Theme.radius-sm;
-                    background: active == index ? Theme.accent : transparent;
-                    HorizontalLayout {
-                        padding: 8px;
-                        spacing: 8px;
-                        Icon {
-                            name: item.icon;
-                            size: 14px;
-                            color: Theme.foreground;
-                        }
+            if root.searchable: Rectangle {
+                HorizontalLayout {
+                    height: 36px;
+                    padding-left: 12px;
+                    padding-right: 12px;
+                    spacing: 8px;
+                    cross-axis-alignment: center;
+                    Icon {
+                        name: "search";
+                        size: 14px;
+                        color: Theme.muted-foreground;
+                    }
+                    Rectangle {
+                        horizontal-stretch: 1;
+                        height: parent.height;
+                        min-width: 0px;
+                        clip: true;
                         Text {
-                            horizontal-stretch: 1;
-                            text: item.label;
-                            color: Theme.foreground;
+                            width: parent.width;
+                            height: parent.height;
+                            text: search-field.text == "" ? root.placeholder : "";
+                            color: Theme.muted-foreground;
                             font-size: Theme.font-size-sm;
                             vertical-alignment: center;
+                            overflow: elide;
                         }
-                        if item.shortcut != "": Kbd { text: item.shortcut; }
-                    }
-                    TouchArea {
-                        clicked => {
-                            root.active = index;
-                            root.chosen(index);
+                        search-field := TextInput {
+                            width: parent.width;
+                            height: parent.height;
+                            text <=> root.query;
+                            single-line: true;
+                            vertical-alignment: center;
+                            font-size: Theme.font-size-sm;
+                            color: Theme.foreground;
+                            key-pressed(event) => { root.on-key(event) }
                         }
                     }
+                }
+            }
+
+            if root.searchable: Rectangle {
+                height: 1px;
+                background: Theme.border;
+            }
+
+            if root.max-list-height > 0px: Scrollable {
+                height: root.max-list-height;
+                CommandRows {
+                    items: root.items;
+                    query: root.query;
+                    active: root.active;
+                    preview-count: root.preview-count;
+                    custom-rows: root.custom-rows;
+                    pick(index) => {
+                        root.active = index;
+                        root.chosen(index);
+                    }
+                }
+            }
+
+            if root.max-list-height <= 0px: CommandRows {
+                items: root.items;
+                query: root.query;
+                active: root.active;
+                preview-count: root.preview-count;
+                custom-rows: root.custom-rows;
+                pick(index) => {
+                    root.active = index;
+                    root.chosen(index);
+                }
+            }
+
+            if root.query != "" && root.matched() == 0: HorizontalLayout {
+                padding: 16px;
+                alignment: center;
+                Text {
+                    text: "No results found.";
+                    color: Theme.muted-foreground;
+                    font-size: Theme.font-size-sm;
+                    horizontal-alignment: center;
+                }
+            }
+
+            if root.hints: Rectangle {
+                height: 1px;
+                background: Theme.border;
+            }
+
+            if root.hints: HorizontalLayout {
+                padding-left: 12px;
+                padding-right: 12px;
+                padding-top: 8px;
+                padding-bottom: 8px;
+                spacing: 12px;
+                cross-axis-alignment: center;
+                Kbd { text: "↑↓"; size: ControlSize.xsmall; }
+                Text {
+                    text: "Navigate";
+                    color: Theme.muted-foreground;
+                    font-size: Theme.font-size-xs;
+                    vertical-alignment: center;
+                }
+                Kbd { text: "Enter"; size: ControlSize.xsmall; }
+                Text {
+                    text: "Select";
+                    color: Theme.muted-foreground;
+                    font-size: Theme.font-size-xs;
+                    vertical-alignment: center;
+                }
+                Kbd { text: "Esc"; size: ControlSize.xsmall; }
+                Text {
+                    text: "Close";
+                    color: Theme.muted-foreground;
+                    font-size: Theme.font-size-xs;
+                    vertical-alignment: center;
                 }
             }
         }
