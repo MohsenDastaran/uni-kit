@@ -1,6 +1,7 @@
-import { Theme } from "../theme.slint";
+import { Theme, ButtonVariant } from "../theme.slint";
 import { GroupBox, GroupBoxVariant } from "section.slint";
 import { Editor } from "../editor.slint";
+import { Button } from "../button.slint";
 
 export component EditorExample inherits VerticalLayout {
     horizontal-stretch: 1;
@@ -8,9 +9,82 @@ export component EditorExample inherits VerticalLayout {
     spacing: 24px;
     alignment: start;
 
-    Editor {
-        height: 200px;
-        text: "fn main() {\n    println!(\"hello\");\n}\n";
+    private property <string> basic-text: "fn main() {\n    let name = \"GPUI Kit\";\n    println!(\"Hello, {name}!\");\n}\n";
+    private property <string> options-text: "{\n  \"theme\": \"dark\",\n  \"fontSize\": 14,\n  \"lineNumbers\": true,\n  \"autoSave\": \"afterDelay\"\n}\n";
+    private property <string> font-text: "# Release notes\n\n## 0.6.4\n\n- Add the Slint editor\n- Sharpen the gutter and the status bar\n- Measure the line count from the text\n";
+    private property <string> events-text: "fn main() {\n    println!(\"Edit me\");\n}\n";
+    private property <bool> events-dirty: false;
+
+    GroupBox {
+        title: "Basic usage";
+        variant: GroupBoxVariant.outline;
+        Editor {
+            height: 220px;
+            text <=> root.basic-text;
+            filename: "main.rs";
+            language: "Rust";
+        }
     }
 
+    GroupBox {
+        title: "Editor options";
+        variant: GroupBoxVariant.outline;
+        Editor {
+            height: 220px;
+            text <=> root.options-text;
+            filename: "settings.json";
+            language: "JSON";
+            indent-label: "Spaces: 2";
+            read-only: true;
+        }
+    }
+
+    GroupBox {
+        title: "Font";
+        variant: GroupBoxVariant.outline;
+        Editor {
+            height: 220px;
+            text <=> root.font-text;
+            filename: "CHANGELOG.md";
+            language: "Markdown";
+            font-size: 16px;
+        }
+    }
+
+    GroupBox {
+        title: "Value and events";
+        variant: GroupBoxVariant.outline;
+        VerticalLayout {
+            spacing: 12px;
+            Editor {
+                height: 200px;
+                text <=> root.events-text;
+                filename: "events.rs";
+                language: "Rust";
+                dirty: root.events-dirty;
+                edited(text) => {
+                    root.events-dirty = true;
+                }
+            }
+            HorizontalLayout {
+                spacing: 8px;
+                alignment: center;
+                Text {
+                    text: root.events-dirty ? "Unsaved changes" : "All changes saved";
+                    color: Theme.muted-foreground;
+                    font-size: Theme.font-size-xs;
+                    vertical-alignment: center;
+                }
+                Rectangle { horizontal-stretch: 1; }
+                Button {
+                    text: "Save";
+                    variant: ButtonVariant.primary;
+                    enabled: root.events-dirty;
+                    clicked => {
+                        root.events-dirty = false;
+                    }
+                }
+            }
+        }
+    }
 }

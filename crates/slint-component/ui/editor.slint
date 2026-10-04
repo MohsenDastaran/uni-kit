@@ -1,52 +1,298 @@
 import { Theme } from "theme.slint";
+import { Icon } from "icon.slint";
 
-// A code editor look. Mirrors GPUI Component's `Editor` at a visual level:
-// line numbers and a monospace field. Syntax highlighting stays on the host.
+// A code editor: a tab-like header, a line-number gutter, a monospace field, and
+// a status bar. Mirrors GPUI Component's `Editor` at a visual level; syntax
+// highlighting stays on the host, which owns the grammar.
+//
+// Slint's text engine shapes this file in two ways. A string cannot be indexed,
+// split, or measured, so the line count is measured from `text` through parked
+// `Text` probes: a no-wrap `Text` grows by exactly one line height per newline,
+// so two probes give the line height and a third gives the row count. Taking the
+// height as a difference cancels any constant font padding, which keeps the
+// count exact. And a `TextInput` cannot tint runs of its own text, so the field
+// is plain; a highlighted pane has to be painted by the host, which owns the
+// language grammar.
 export component Editor {
     in-out property <string> text;
     in property <bool> enabled: true;
+    in property <bool> read-only: false;
+    // Header labels. The language is a label here, nothing more.
+    in property <string> filename: "main.rs";
+    in property <string> language: "Rust";
+    // Shows the unsaved-changes dot in the header.
+    in property <bool> dirty: false;
+    in property <string> indent-label: "Spaces: 4";
+    // The code size. The gutter and the measured line height follow it.
+    in property <length> font-size: Theme.font-size-mono;
+    in property <bool> show-header: true;
+    in property <bool> show-status: true;
+    in property <bool> show-gutter: true;
+    // Rows the gutter numbers and the status bar report. Measured from `text`,
+    // so it follows edits without the host keeping it in sync.
+    out property <int> line-count: root.line-height > 0px
+        ? max(1, round((measure-text.preferred-height - measure-one.preferred-height) / root.line-height) + 1)
+        : 1;
     callback edited(text: string);
 
-
     min-height: 160px;
-    preferred-height: 220px;
+    preferred-height: 260px;
     horizontal-stretch: 1;
 
+    // The gutter numbers up to this row. Past it the field still renders and the
+    // gutter stops numbering rather than inventing rows.
+    private property <int> max-rows: 200;
+
+    // One line's height, from the difference between a two-line probe and a
+    // one-line probe. The difference cancels the font's constant padding.
+    private property <length> line-height: measure-two.preferred-height - measure-one.preferred-height;
+    private property <length> gutter-width: root.font-size * 1.2 + 8px
+        + (root.line-count > 9 ? root.font-size * 0.62 : 0px)
+        + (root.line-count > 99 ? root.font-size * 0.62 : 0px);
+
     Rectangle {
-        border-radius: Theme.radius-md;
+        border-radius: Theme.radius-lg;
         border-width: 1px;
-        border-color: Theme.border;
+        border-color: field.has-focus ? Theme.ring : Theme.border;
         background: Theme.background;
         clip: true;
+        animate border-color { duration: 120ms; }
 
-        HorizontalLayout {
-            Rectangle {
-                width: 44px;
-                background: Theme.muted.with-alpha(0.4);
-                VerticalLayout {
-                    padding-top: 8px;
-                    padding-right: 8px;
-                    Text {
-                        text: "1\n2\n3\n4\n5\n6\n7\n8\n9\n10";
+        // Parked off-canvas, clipped and never painted: it only measures text.
+        measure := VerticalLayout {
+            x: 0px;
+            y: 0px;
+            width: 1px;
+            height: 1px;
+            spacing: 0px;
+            opacity: 0;
+
+            measure-one := Text {
+                text: "0";
+                wrap: no-wrap;
+                font-family: Theme.mono-font-family;
+                font-size: root.font-size;
+                accessible-role: none;
+            }
+            measure-two := Text {
+                text: "0\n0";
+                wrap: no-wrap;
+                font-family: Theme.mono-font-family;
+                font-size: root.font-size;
+                accessible-role: none;
+            }
+            measure-text := Text {
+                text: root.text;
+                wrap: no-wrap;
+                font-family: Theme.mono-font-family;
+                font-size: root.font-size;
+                accessible-role: none;
+            }
+        }
+
+        VerticalLayout {
+            spacing: 0;
+
+            // Header: the open file as a tab, its unsaved state, and its language.
+            if root.show-header: Rectangle {
+                height: 34px;
+                background: Theme.sidebar;
+                border-width: 1px;
+                border-color: Theme.border;
+
+                HorizontalLayout {
+                    padding-left: 12px;
+                    padding-right: 10px;
+                    spacing: 8px;
+                    alignment: center;
+
+                    Icon {
+                        name: "file-text";
+                        size: 14px;
                         color: Theme.muted-foreground;
-                        font-family: Theme.mono-font-family;
-                        font-size: Theme.font-size-mono;
-                        horizontal-alignment: right;
+                    }
+
+                    Text {
+                        text: root.filename;
+                        color: Theme.foreground;
+                        font-size: Theme.font-size-xs;
+                        font-weight: 600;
+                        vertical-alignment: center;
+                    }
+
+                    if root.dirty: Rectangle {
+                        width: 7px;
+                        height: 7px;
+                        border-radius: 3.5px;
+                        background: Theme.warning;
+                    }
+
+                    Rectangle { horizontal-stretch: 1; }
+
+                    if root.language != "": Rectangle {
+                        height: 20px;
+                        border-radius: 10px;
+                        background: Theme.muted;
+                        border-width: 1px;
+                        border-color: Theme.border;
+
+                        HorizontalLayout {
+                            padding-left: 8px;
+                            padding-right: 8px;
+                            spacing: 6px;
+                            alignment: center;
+
+                            Rectangle {
+                                width: 6px;
+                                height: 6px;
+                                border-radius: 3px;
+                                background: Theme.success;
+                            }
+
+                            Text {
+                                text: root.language;
+                                color: Theme.muted-foreground;
+                                font-size: 11px;
+                                vertical-alignment: center;
+                            }
+                        }
                     }
                 }
             }
 
-            TextInput {
-                text <=> root.text;
-                enabled: root.enabled;
-                single-line: false;
-                wrap: no-wrap;
-                color: Theme.foreground;
-                font-family: Theme.mono-font-family;
-                font-size: Theme.font-size-mono;
-                selection-background-color: Theme.selection.with-alpha(0.35);
-                edited => {
-                    root.edited(self.text);
+            // Code. The gutter and the field share one scroll, so a number stays
+            // beside its line.
+            Rectangle {
+                vertical-stretch: 1;
+                min-height: 0px;
+                background: Theme.background;
+
+                Flickable {
+                    x: 0px;
+                    y: 0px;
+                    width: parent.width;
+                    height: parent.height;
+                    viewport-width: self.width;
+                    viewport-height: max(self.height, code.preferred-height);
+
+                    code := HorizontalLayout {
+                        spacing: 0px;
+
+                        if root.show-gutter: Rectangle {
+                            width: root.gutter-width;
+                            background: Theme.muted.with-alpha(0.4);
+
+                            Rectangle {
+                                x: parent.width - 1px;
+                                width: 1px;
+                                height: 100%;
+                                background: Theme.border;
+                            }
+
+                            // One number per row, placed at the shared line
+                            // height, so the gutter stays in step with the code.
+                            for i in root.max-rows: Text {
+                                visible: i < root.line-count;
+                                x: 0px;
+                                y: i * root.line-height;
+                                width: parent.width - 8px;
+                                height: root.line-height;
+                                text: "\{i + 1}";
+                                color: Theme.muted-foreground.with-alpha(0.8);
+                                font-family: Theme.mono-font-family;
+                                font-size: root.font-size;
+                                horizontal-alignment: right;
+                                vertical-alignment: center;
+                            }
+                        }
+
+                        field := TextInput {
+                            horizontal-stretch: 1;
+                            text <=> root.text;
+                            enabled: root.enabled;
+                            read-only: root.read-only;
+                            single-line: false;
+                            wrap: no-wrap;
+                            vertical-alignment: top;
+                            color: root.enabled ? Theme.foreground : Theme.muted-foreground;
+                            font-family: Theme.mono-font-family;
+                            font-size: root.font-size;
+                            selection-background-color: Theme.selection.with-alpha(0.35);
+                            selection-foreground-color: Theme.foreground;
+                            edited => {
+                                root.edited(self.text);
+                            }
+                        }
+                    }
+                }
+            }
+
+            // Status bar: the language, the size of the file, and how it is written.
+            if root.show-status: Rectangle {
+                height: 28px;
+                background: Theme.sidebar;
+                border-width: 1px;
+                border-color: Theme.border;
+
+                HorizontalLayout {
+                    padding-left: 12px;
+                    padding-right: 12px;
+                    spacing: 14px;
+                    alignment: center;
+
+                    Text {
+                        text: root.language;
+                        color: Theme.muted-foreground;
+                        font-size: 11px;
+                        vertical-alignment: center;
+                    }
+
+                    Text {
+                        text: root.line-count + (root.line-count == 1 ? " line" : " lines");
+                        color: Theme.muted-foreground;
+                        font-size: 11px;
+                        vertical-alignment: center;
+                    }
+
+                    Rectangle { horizontal-stretch: 1; }
+
+                    Text {
+                        text: root.indent-label;
+                        color: Theme.muted-foreground;
+                        font-size: 11px;
+                        vertical-alignment: center;
+                    }
+
+                    Text {
+                        text: "UTF-8";
+                        color: Theme.muted-foreground;
+                        font-size: 11px;
+                        vertical-alignment: center;
+                    }
+
+                    if root.read-only: HorizontalLayout {
+                        spacing: 4px;
+                        alignment: center;
+
+                        Icon {
+                            name: "lock";
+                            size: 11px;
+                            color: Theme.muted-foreground;
+                        }
+                        Text {
+                            text: "Read only";
+                            color: Theme.muted-foreground;
+                            font-size: 11px;
+                            vertical-alignment: center;
+                        }
+                    }
+
+                    if !root.read-only: Text {
+                        text: root.enabled ? "Editable" : "Disabled";
+                        color: Theme.muted-foreground;
+                        font-size: 11px;
+                        vertical-alignment: center;
+                    }
                 }
             }
         }
