@@ -4,11 +4,11 @@
 // SLINT_GALLERY_ONLY is set, so this is a development build with
 // 1 of the pages.
 
-import { EmptyExample } from "examples/empty.slint";
+import { FormExample } from "examples/form.slint";
 
 export component GalleryCatalog inherits VerticalLayout {
     in property <string> component;
     alignment: start;
 
-    if component == "empty": EmptyExample { }
+    if component == "form": FormExample { }
 }

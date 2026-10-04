@@ -1,8 +1,13 @@
-import { Theme } from "../theme.slint";
+import { Theme, ButtonVariant, ControlSize } from "../theme.slint";
 import { GroupBox, GroupBoxVariant } from "section.slint";
-import { Form, FormField } from "../form.slint";
+import {
+    Form, FormGrid, FormField, FormRow, FormSection, FormSeparator,
+} from "../form.slint";
 import { Input } from "../input.slint";
-import { ButtonVariant } from "../theme.slint";
+import { Textarea } from "../textarea.slint";
+import { Checkbox } from "../checkbox.slint";
+import { Switch } from "../switch.slint";
+import { Select, SelectItem } from "../select.slint";
 import { Button } from "../button.slint";
 
 export component FormExample inherits VerticalLayout {
@@ -11,10 +16,405 @@ export component FormExample inherits VerticalLayout {
     spacing: 24px;
     alignment: start;
 
-    Form {
-        FormField { label: "Name"; required: true; Input { placeholder: "Ada Lovelace"; } }
-        FormField { label: "Email"; description: "We will never share this."; Input { placeholder: "ada@example.com"; } }
-        Button { text: "Save"; variant: ButtonVariant.primary; }
+    private property <string> name;
+    private property <string> email;
+    private property <string> first;
+    private property <string> last;
+    private property <string> m-first;
+    private property <string> m-last;
+    private property <string> m-bio;
+    private property <string> r-first;
+    private property <string> r-last;
+    private property <string> r-email;
+    private property <string> r-password;
+    private property <string> r-confirm;
+    private property <bool> r-terms;
+    private property <string> s-display;
+    private property <string> s-email;
+    private property <string> s-bio;
+    private property <int> s-theme;
+    private property <int> s-language;
+    private property <bool> s-notify: true;
+    private property <bool> s-marketing;
+    private property <int> c-prefix;
+    private property <string> c-name;
+    private property <string> c-email;
+    private property <int> c-subject;
+    private property <string> c-message;
+    private property <bool> c-copy;
+    private property <int> account-type;
+    private property <bool> is-business: root.account-type == 1;
+    private property <string> company;
+    private property <string> tax-id;
+    private property <string> col-a;
+    private property <string> col-b;
+    private property <string> col-c;
+    private property <string> col-full;
+    private property <string> addr-street;
+    private property <string> addr-city;
+    private property <string> addr-zip;
+    private property <string> required-email;
+    private property <string> big-title;
+    private property <string> small-code;
+
+    private property <[SelectItem]> theme-items: [
+        { label: "Light", value: "light" },
+        { label: "Dark", value: "dark" },
+        { label: "System", value: "system" },
+    ];
+    private property <[SelectItem]> language-items: [
+        { label: "English", value: "en" },
+        { label: "Chinese", value: "zh" },
+        { label: "Japanese", value: "ja" },
+    ];
+    private property <[SelectItem]> prefix-items: [
+        { label: "+1", value: "us" },
+        { label: "+44", value: "uk" },
+        { label: "+86", value: "cn" },
+    ];
+    private property <[SelectItem]> subject-items: [
+        { label: "General", value: "general" },
+        { label: "Billing", value: "billing" },
+        { label: "Bug report", value: "bug" },
+    ];
+    private property <[SelectItem]> account-items: [
+        { label: "Personal", value: "personal" },
+        { label: "Business", value: "business" },
+    ];
+
+    GroupBox {
+        title: "Basic Form";
+        variant: GroupBoxVariant.outline;
+        Form {
+            FormField {
+                label: "Name";
+                Input { text <=> root.name; placeholder: "Ada Lovelace"; }
+            }
+            FormField {
+                label: "Email";
+                required: true;
+                Input { text <=> root.email; placeholder: "ada@example.com"; }
+            }
+            HorizontalLayout {
+                alignment: end;
+                Button { text: "Save"; variant: ButtonVariant.primary; }
+            }
+        }
     }
 
+    GroupBox {
+        title: "Horizontal Form Layout";
+        variant: GroupBoxVariant.outline;
+        Form {
+            FormRow {
+                label: "First Name";
+                label-width: 120px;
+                Input { text <=> root.first; placeholder: "Ada"; }
+            }
+            FormRow {
+                label: "Last Name";
+                label-width: 120px;
+                Input { text <=> root.last; placeholder: "Lovelace"; }
+            }
+        }
+    }
+
+    GroupBox {
+        title: "Multi-Column Form";
+        variant: GroupBoxVariant.outline;
+        FormGrid {
+            FormField {
+                row: 0;
+                col: 0;
+                label: "First Name";
+                Input { text <=> root.m-first; placeholder: "Ada"; }
+            }
+            FormField {
+                row: 0;
+                col: 1;
+                label: "Last Name";
+                Input { text <=> root.m-last; placeholder: "Lovelace"; }
+            }
+            FormField {
+                row: 1;
+                col: 0;
+                colspan: 2;
+                label: "Bio";
+                Textarea { text <=> root.m-bio; placeholder: "Tell us about yourself"; }
+            }
+        }
+    }
+
+    GroupBox {
+        title: "User Registration Form";
+        variant: GroupBoxVariant.outline;
+        Form {
+            FormField {
+                label: "Personal Information";
+                HorizontalLayout {
+                    spacing: 12px;
+                    cross-axis-alignment: start;
+                    Input { text <=> root.r-first; placeholder: "First name"; }
+                    Input { text <=> root.r-last; placeholder: "Last name"; }
+                }
+            }
+            FormField {
+                label: "Email";
+                required: true;
+                Input { text <=> root.r-email; placeholder: "you@example.com"; }
+            }
+            FormField {
+                label: "Password";
+                required: true;
+                description: "Must be at least 8 characters";
+                Input { text <=> root.r-password; masked: true; mask-toggle: true; placeholder: "Password"; }
+            }
+            FormField {
+                label: "Confirm Password";
+                required: true;
+                Input { text <=> root.r-confirm; masked: true; mask-toggle: true; placeholder: "Confirm password"; }
+            }
+            Checkbox {
+                checked <=> root.r-terms;
+                label: "I agree to the Terms of Service";
+            }
+            Button {
+                text: "Create Account";
+                variant: ButtonVariant.primary;
+                horizontal-stretch: 1;
+            }
+        }
+    }
+
+    GroupBox {
+        title: "Settings Form with Sections";
+        variant: GroupBoxVariant.outline;
+        Form {
+            FormSection {
+                title: "Profile";
+                description: "How you appear to others.";
+            }
+            FormSeparator { }
+            FormRow {
+                label: "Display Name";
+                label-width: 160px;
+                Input { text <=> root.s-display; placeholder: "Ada Lovelace"; }
+            }
+            FormRow {
+                label: "Email";
+                label-width: 160px;
+                Input { text <=> root.s-email; placeholder: "ada@example.com"; }
+            }
+            FormField {
+                label: "Bio";
+                Textarea { text <=> root.s-bio; placeholder: "A short bio"; }
+            }
+            FormSection {
+                title: "Preferences";
+                description: "Choose how the app behaves.";
+            }
+            FormSeparator { }
+            FormRow {
+                label: "Theme";
+                label-width: 160px;
+                Select { items: root.theme-items; selected <=> root.s-theme; }
+            }
+            FormRow {
+                label: "Language";
+                label-width: 160px;
+                Select { items: root.language-items; selected <=> root.s-language; }
+            }
+            Switch {
+                checked <=> root.s-notify;
+                label: "Enable notifications";
+            }
+            Switch {
+                checked <=> root.s-marketing;
+                label: "Marketing emails";
+            }
+        }
+    }
+
+    GroupBox {
+        title: "Contact Form";
+        variant: GroupBoxVariant.outline;
+        Form {
+            FormField {
+                label: "Contact Information";
+                HorizontalLayout {
+                    spacing: 8px;
+                    cross-axis-alignment: center;
+                    Select {
+                        preferred-width: 90px;
+                        horizontal-stretch: 0;
+                        items: root.prefix-items;
+                        selected <=> root.c-prefix;
+                    }
+                    Input { text <=> root.c-name; placeholder: "Your name"; }
+                }
+            }
+            FormField {
+                label: "Email";
+                required: true;
+                Input { text <=> root.c-email; placeholder: "you@example.com"; }
+            }
+            FormField {
+                label: "Subject";
+                Select { items: root.subject-items; selected <=> root.c-subject; }
+            }
+            FormField {
+                label: "Message";
+                required: true;
+                description: "Please describe your inquiry in detail";
+                Textarea { text <=> root.c-message; placeholder: "How can we help?"; }
+            }
+            HorizontalLayout {
+                alignment: space-between;
+                cross-axis-alignment: center;
+                Checkbox {
+                    checked <=> root.c-copy;
+                    label: "Send me a copy";
+                }
+                HorizontalLayout {
+                    spacing: 8px;
+                    Button { text: "Cancel"; }
+                    Button { text: "Send Message"; variant: ButtonVariant.primary; }
+                }
+            }
+        }
+    }
+
+    GroupBox {
+        title: "Related Fields";
+        variant: GroupBoxVariant.outline;
+        Form {
+            FormField {
+                label: "Name";
+                HorizontalLayout {
+                    spacing: 12px;
+                    cross-axis-alignment: start;
+                    Input { text <=> root.first; placeholder: "First name"; }
+                    Input { text <=> root.last; placeholder: "Last name"; }
+                }
+            }
+            FormField {
+                label: "Address";
+                VerticalLayout {
+                    spacing: 8px;
+                    Input { text <=> root.addr-street; placeholder: "Street address"; }
+                    HorizontalLayout {
+                        spacing: 12px;
+                        cross-axis-alignment: start;
+                        Input { text <=> root.addr-city; placeholder: "City"; }
+                        Input {
+                            preferred-width: 120px;
+                            horizontal-stretch: 0;
+                            text <=> root.addr-zip;
+                            placeholder: "ZIP";
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    GroupBox {
+        title: "Conditional Fields";
+        variant: GroupBoxVariant.outline;
+        Form {
+            FormField {
+                label: "Account Type";
+                Select { items: root.account-items; selected <=> root.account-type; }
+            }
+            if root.is-business: FormField {
+                label: "Company Name";
+                Input { text <=> root.company; placeholder: "Acme Inc."; }
+            }
+            if root.is-business: FormField {
+                label: "Tax ID";
+                required: true;
+                Input { text <=> root.tax-id; placeholder: "US-0000000"; }
+            }
+        }
+    }
+
+    GroupBox {
+        title: "Column Spanning";
+        variant: GroupBoxVariant.outline;
+        FormGrid {
+            FormField {
+                row: 0;
+                col: 0;
+                label: "First";
+                Input { text <=> root.col-a; placeholder: "One"; }
+            }
+            FormField {
+                row: 0;
+                col: 1;
+                label: "Second";
+                Input { text <=> root.col-b; placeholder: "Two"; }
+            }
+            FormField {
+                row: 0;
+                col: 2;
+                label: "Third";
+                Input { text <=> root.col-c; placeholder: "Three"; }
+            }
+            FormField {
+                row: 1;
+                col: 0;
+                colspan: 3;
+                label: "Full Width";
+                Input { text <=> root.col-full; placeholder: "Spans all three columns"; }
+            }
+        }
+    }
+
+    GroupBox {
+        title: "Required Fields";
+        variant: GroupBoxVariant.outline;
+        Form {
+            FormField {
+                label: "Email";
+                required: true;
+                error: "Enter a valid email address.";
+                Input {
+                    text <=> root.required-email;
+                    invalid: true;
+                    placeholder: "you@example.com";
+                }
+            }
+            FormField {
+                label: "Password";
+                required: true;
+                description: "Must be at least 8 characters long";
+                Input { masked: true; mask-toggle: true; placeholder: "Password"; }
+            }
+        }
+    }
+
+    GroupBox {
+        title: "Custom Sizing";
+        variant: GroupBoxVariant.outline;
+        Form {
+            FormField {
+                label: "Title";
+                size: ControlSize.large;
+                Input {
+                    size: ControlSize.large;
+                    text <=> root.big-title;
+                    placeholder: "Large field";
+                }
+            }
+            FormField {
+                label: "Code";
+                size: ControlSize.small;
+                Input {
+                    size: ControlSize.small;
+                    text <=> root.small-code;
+                    placeholder: "Small field";
+                }
+            }
+        }
+    }
 }
