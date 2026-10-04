@@ -68,7 +68,7 @@ export component EditorExample inherits VerticalLayout {
             }
             HorizontalLayout {
                 spacing: 8px;
-                alignment: center;
+                cross-axis-alignment: center;
                 Text {
                     text: root.events-dirty ? "Unsaved changes" : "All changes saved";
                     color: Theme.muted-foreground;
