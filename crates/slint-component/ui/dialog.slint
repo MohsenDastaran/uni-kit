@@ -11,6 +11,18 @@ export component Dialog {
     in property <string> title;
     in property <string> description;
     in property <bool> show-close: true;
+    // Clicking the dimmed backdrop closes the dialog, like GPUI's
+    // `overlay_closable`.
+    in property <bool> overlay-closable: true;
+    // Styling overrides, mirroring GPUI's `bg`, `text_color`, `rounded` and
+    // `p_*`. The defaults keep the built-in popover look.
+    in property <color> panel-background: Theme.popover;
+    in property <color> title-color: Theme.foreground;
+    in property <color> description-color: Theme.muted-foreground;
+    in property <color> panel-border-color: Theme.border;
+    in property <length> radius: Theme.radius-lg;
+    // A negative value keeps the default inset, which narrows in a small frame.
+    in property <length> content-padding: -1px;
     callback closed();
 
     visible: open;
@@ -20,6 +32,7 @@ export component Dialog {
         height: 100%;
         background: Theme.overlay;
         TouchArea {
+            enabled: root.overlay-closable;
             clicked => {
                 root.open = false;
                 root.closed();
@@ -32,16 +45,16 @@ export component Dialog {
         y: (parent.height - self.height) / 2;
         width: min(parent.width - (parent.width < 420px ? 16px : 48px), 440px);
         height: content.preferred-height;
-        border-radius: Theme.radius-lg;
+        border-radius: root.radius;
         border-width: 1px;
-        border-color: Theme.border;
-        background: Theme.popover;
+        border-color: root.panel-border-color;
+        background: root.panel-background;
         drop-shadow-blur: 24px;
         drop-shadow-offset-y: 8px;
         drop-shadow-color: Theme.shadow;
 
         content := VerticalLayout {
-            padding: parent.width < 420px ? 16px : 20px;
+            padding: root.content-padding >= 0px ? root.content-padding : (parent.width < 420px ? 16px : 20px);
             spacing: 16px;
 
             HorizontalLayout {
@@ -51,13 +64,13 @@ export component Dialog {
                     spacing: 4px;
                     if title != "": Text {
                         text: title;
-                        color: Theme.foreground;
+                        color: root.title-color;
                         font-size: Theme.font-size-lg;
                         font-weight: 600;
                     }
                     if description != "": Text {
                         text: description;
-                        color: Theme.muted-foreground;
+                        color: root.description-color;
                         font-size: Theme.font-size-sm;
                         wrap: word-wrap;
                     }

@@ -1,8 +1,36 @@
-import { Theme } from "../theme.slint";
+import { Theme, ButtonVariant } from "../theme.slint";
 import { GroupBox, GroupBoxVariant } from "section.slint";
 import { Dialog, DialogFooter } from "../dialog.slint";
-import { ButtonVariant } from "../theme.slint";
 import { Button } from "../button.slint";
+import { Icon } from "../icon.slint";
+import { Input } from "../input.slint";
+import { Scrollable } from "../scrollable.slint";
+
+// A clipped frame with the trigger centered. The dialog fills the frame so
+// the overlay stays inside the example.
+component Preview inherits Rectangle {
+    in property <string> label;
+    in property <ButtonVariant> variant: ButtonVariant.default;
+    callback clicked();
+
+    horizontal-stretch: 1;
+    height: 320px;
+    border-width: 1px;
+    border-color: Theme.border;
+    border-radius: Theme.radius-lg;
+    clip: true;
+
+    Button {
+        x: (parent.width - self.width) / 2;
+        y: (parent.height - self.height) / 2;
+        text: root.label;
+        outline: true;
+        variant: root.variant;
+        clicked => { root.clicked(); }
+    }
+
+    @children
+}
 
 export component DialogExample inherits VerticalLayout {
     horizontal-stretch: 1;
@@ -10,21 +38,405 @@ export component DialogExample inherits VerticalLayout {
     spacing: 24px;
     alignment: start;
 
-    private property <bool> open: true;
-    Rectangle {
-        width: 100%;
-        height: Theme.viewport < 480px ? 280px : 360px; border-width: 1px; border-color: Theme.border; border-radius: Theme.radius-lg; clip: true;
-        Button { x: 16px; y: 16px; text: "Open"; clicked => { root.open = true; } }
-        Dialog {
-            width: 100%; height: 100%;
-            open <=> root.open;
-            title: "Edit profile";
-            description: "Make changes to your profile here.";
-            DialogFooter {
-                Button { text: "Cancel"; clicked => { root.open = false; } }
-                Button { text: "Save"; variant: ButtonVariant.primary; clicked => { root.open = false; } }
+    private property <int> columns: Theme.viewport < 720px ? 1 : 2;
+    private property <bool> basic-open;
+    private property <bool> form-open;
+    private property <bool> icon-open;
+    private property <bool> scroll-open;
+    private property <bool> options-open;
+    private property <bool> nested-open;
+    private property <bool> nested-second-open;
+    private property <bool> style-open;
+    private property <bool> padding-open;
+    private property <string> name;
+    private property <string> email;
+
+    GridLayout {
+        spacing: 16px;
+
+        GroupBox {
+            row: root.row-of(0);
+            col: root.col-of(0);
+            title: "Basic Dialog";
+            variant: GroupBoxVariant.outline;
+            Preview {
+                label: "Open Dialog";
+                clicked => {
+                    root.basic-open = true;
+                }
+                Dialog {
+                    width: 100%;
+                    height: 100%;
+                    open <=> root.basic-open;
+                    title: "Welcome";
+                    description: "This is a basic dialog with a title, a description, and footer actions.";
+                    DialogFooter {
+                        Button {
+                            text: "Cancel";
+                            outline: true;
+                            clicked => {
+                                root.basic-open = false;
+                            }
+                        }
+                        Button {
+                            text: "Continue";
+                            variant: ButtonVariant.primary;
+                            clicked => {
+                                root.basic-open = false;
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
+        GroupBox {
+            row: root.row-of(1);
+            col: root.col-of(1);
+            title: "Form Dialog";
+            variant: GroupBoxVariant.outline;
+            Preview {
+                label: "Edit Profile";
+                clicked => {
+                    root.form-open = true;
+                }
+                Dialog {
+                    width: 100%;
+                    height: 100%;
+                    open <=> root.form-open;
+                    title: "User Information";
+                    description: "Please enter your details.";
+                    VerticalLayout {
+                        spacing: 8px;
+                        Text {
+                            text: "Name";
+                            color: Theme.muted-foreground;
+                            font-size: Theme.font-size-xs;
+                        }
+                        Input {
+                            text <=> root.name;
+                            placeholder: "Enter your name";
+                        }
+                        Text {
+                            text: "Email";
+                            color: Theme.muted-foreground;
+                            font-size: Theme.font-size-xs;
+                        }
+                        Input {
+                            text <=> root.email;
+                            placeholder: "Enter your email";
+                        }
+                    }
+                    DialogFooter {
+                        Button {
+                            text: "Cancel";
+                            outline: true;
+                            clicked => {
+                                root.form-open = false;
+                            }
+                        }
+                        Button {
+                            text: "Submit";
+                            variant: ButtonVariant.primary;
+                            clicked => {
+                                root.form-open = false;
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
+        GroupBox {
+            row: root.row-of(2);
+            col: root.col-of(2);
+            title: "Dialog with Icon";
+            variant: GroupBoxVariant.outline;
+            Preview {
+                label: "Discard Draft";
+                clicked => {
+                    root.icon-open = true;
+                }
+                Dialog {
+                    width: 100%;
+                    height: 100%;
+                    open <=> root.icon-open;
+                    HorizontalLayout {
+                        spacing: 12px;
+                        Icon {
+                            name: "triangle-alert";
+                            size: 20px;
+                            color: Theme.warning;
+                        }
+                        VerticalLayout {
+                            horizontal-stretch: 1;
+                            spacing: 4px;
+                            Text {
+                                text: "Unsaved Changes";
+                                color: Theme.foreground;
+                                font-size: Theme.font-size-lg;
+                                font-weight: 600;
+                            }
+                            Text {
+                                text: "This action cannot be undone.";
+                                color: Theme.muted-foreground;
+                                font-size: Theme.font-size-sm;
+                                wrap: word-wrap;
+                            }
+                        }
+                    }
+                    DialogFooter {
+                        Button {
+                            text: "Cancel";
+                            outline: true;
+                            clicked => {
+                                root.icon-open = false;
+                            }
+                        }
+                        Button {
+                            text: "Discard";
+                            variant: ButtonVariant.danger;
+                            clicked => {
+                                root.icon-open = false;
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
+        GroupBox {
+            row: root.row-of(3);
+            col: root.col-of(3);
+            title: "Scrollable Dialog";
+            variant: GroupBoxVariant.outline;
+            Preview {
+                label: "Long Content";
+                clicked => {
+                    root.scroll-open = true;
+                }
+                Dialog {
+                    width: 100%;
+                    height: 100%;
+                    open <=> root.scroll-open;
+                    title: "Long Content";
+                    description: "The body scrolls inside a fixed height.";
+                    Rectangle {
+                        height: 140px;
+                        Scrollable {
+                            Text {
+                                text: "A dialog never grows past the frame. When the body is taller than the space between the header and the footer, it scrolls instead of pushing the actions off screen.";
+                                color: Theme.foreground;
+                                font-size: Theme.font-size-sm;
+                                wrap: word-wrap;
+                            }
+                            Text {
+                                text: "Keep the title and the action row visible while the rest of the content moves. This is how long documents, tables, and settings panels stay usable in a small dialog.";
+                                color: Theme.muted-foreground;
+                                font-size: Theme.font-size-sm;
+                                wrap: word-wrap;
+                            }
+                            Text {
+                                text: "The scrollbar appears on the trailing edge and stays thin until the pointer is over it.";
+                                color: Theme.foreground;
+                                font-size: Theme.font-size-sm;
+                                wrap: word-wrap;
+                            }
+                            Text {
+                                text: "Set an explicit height on the scrolling region so Slint does not copy the content height onto the viewport.";
+                                color: Theme.muted-foreground;
+                                font-size: Theme.font-size-sm;
+                                wrap: word-wrap;
+                            }
+                            Text {
+                                text: "Everything below the fold is reachable with the wheel, the trackpad, or the scrollbar.";
+                                color: Theme.foreground;
+                                font-size: Theme.font-size-sm;
+                                wrap: word-wrap;
+                            }
+                        }
+                    }
+                    DialogFooter {
+                        Button {
+                            text: "Cancel";
+                            outline: true;
+                            clicked => {
+                                root.scroll-open = false;
+                            }
+                        }
+                        Button {
+                            text: "Confirm";
+                            variant: ButtonVariant.primary;
+                            clicked => {
+                                root.scroll-open = false;
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
+        GroupBox {
+            row: root.row-of(4);
+            col: root.col-of(4);
+            title: "Dialog Options";
+            variant: GroupBoxVariant.outline;
+            Preview {
+                label: "Open Options Dialog";
+                clicked => {
+                    root.options-open = true;
+                }
+                Dialog {
+                    width: 100%;
+                    height: 100%;
+                    open <=> root.options-open;
+                    show-close: false;
+                    overlay-closable: false;
+                    title: "Dialog Options";
+                    description: "This dialog hides the close button and ignores clicks on the overlay.";
+                    DialogFooter {
+                        Button {
+                            text: "Got It";
+                            variant: ButtonVariant.primary;
+                            clicked => {
+                                root.options-open = false;
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
+        GroupBox {
+            row: root.row-of(5);
+            col: root.col-of(5);
+            title: "Nested Dialogs";
+            variant: GroupBoxVariant.outline;
+            Preview {
+                label: "Open First Dialog";
+                clicked => {
+                    root.nested-open = true;
+                }
+                Dialog {
+                    width: 100%;
+                    height: 100%;
+                    open <=> root.nested-open;
+                    title: "First Dialog";
+                    description: "This dialog opens another dialog on top of it.";
+                    DialogFooter {
+                        Button {
+                            text: "Close";
+                            outline: true;
+                            clicked => {
+                                root.nested-open = false;
+                            }
+                        }
+                        Button {
+                            text: "Open Another";
+                            variant: ButtonVariant.primary;
+                            clicked => {
+                                root.nested-second-open = true;
+                            }
+                        }
+                    }
+                }
+                Dialog {
+                    width: 100%;
+                    height: 100%;
+                    open <=> root.nested-second-open;
+                    title: "Second Dialog";
+                    description: "This is the nested dialog.";
+                    DialogFooter {
+                        Button {
+                            text: "Done";
+                            variant: ButtonVariant.primary;
+                            clicked => {
+                                root.nested-second-open = false;
+                                root.nested-open = false;
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
+        GroupBox {
+            row: root.row-of(6);
+            col: root.col-of(6);
+            title: "Custom Styling";
+            variant: GroupBoxVariant.outline;
+            Preview {
+                label: "Custom Style";
+                clicked => {
+                    root.style-open = true;
+                }
+                Dialog {
+                    width: 100%;
+                    height: 100%;
+                    open <=> root.style-open;
+                    panel-background: Theme.primary;
+                    panel-border-color: Theme.primary;
+                    title-color: Theme.primary-foreground;
+                    description-color: Theme.primary-foreground.with-alpha(0.8);
+                    title: "Custom Dialog";
+                    description: "Background, border, and text colors all come from properties.";
+                    DialogFooter {
+                        Button {
+                            text: "Cancel";
+                            outline: true;
+                            clicked => {
+                                root.style-open = false;
+                            }
+                        }
+                        Button {
+                            text: "Confirm";
+                            variant: ButtonVariant.secondary;
+                            clicked => {
+                                root.style-open = false;
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
+        GroupBox {
+            row: root.row-of(7);
+            col: root.col-of(7);
+            title: "Custom Padding";
+            variant: GroupBoxVariant.outline;
+            Preview {
+                label: "Custom Padding";
+                clicked => {
+                    root.padding-open = true;
+                }
+                Dialog {
+                    width: 100%;
+                    height: 100%;
+                    open <=> root.padding-open;
+                    content-padding: 12px;
+                    title: "Custom Padding";
+                    description: "The content inset is controlled by content-padding.";
+                    DialogFooter {
+                        Button {
+                            text: "Close";
+                            variant: ButtonVariant.primary;
+                            clicked => {
+                                root.padding-open = false;
+                            }
+                        }
+                    }
+                }
             }
         }
     }
 
+    pure function row-of(index: int) -> int {
+        if root.columns < 1 { return index; }
+        return index / root.columns;
+    }
+    pure function col-of(index: int) -> int {
+        if root.columns < 1 { return 0; }
+        return mod(index, root.columns);
+    }
 }

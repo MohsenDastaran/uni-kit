@@ -1,33 +1,93 @@
 import { Theme, ButtonVariant, ControlSize } from "theme.slint";
 import { Button } from "button.slint";
 import { Menu, MenuEntry } from "menu.slint";
+import { Tooltip } from "tooltip.slint";
 
-// A button that opens a menu. Mirrors GPUI Component's `DropdownButton`.
+export enum DropdownButtonAction { main, menu }
+
+// A split button: the main half runs its own action, the trailing half opens a
+// menu. Mirrors GPUI Component's `DropdownButton`.
+//
+// The variant and size belong to the whole control, and the main half redeclares
+// them when it has its own. Action options - the label, the icon, a tooltip, the
+// loading state - belong to that main half.
 export component DropdownButton {
     in property <string> text;
+    in property <string> icon;
+    in property <string> tooltip;
     in property <ButtonVariant> variant: ButtonVariant.default;
     in property <ControlSize> size: ControlSize.medium;
+    in property <bool> outline;
+    in property <bool> enabled: true;
+    in property <bool> loading;
+    in property <bool> selected;
+    // Squares the leading or trailing edge so several controls share one
+    // outline, as the two halves of this split button do.
+    in property <bool> group-start;
+    in property <bool> group-end;
     in property <[MenuEntry]> items;
-    callback chosen(index: int);
+    // The menu's preferred width. Zero keeps the menu at its own width.
+    in property <length> menu-width: 0px;
+    // A menu item, or the main half, reports itself by index and event.
+    callback chosen(index: int, event: DropdownButtonAction);
 
-    Button {
-        text: root.text;
-        variant: root.variant;
-        size: root.size;
-        suffix-icon: "chevron-down";
-        clicked => {
-            menu.show();
+    horizontal-stretch: 0;
+    vertical-stretch: 0;
+    // The popup is a child of this root and reports no size, so the control
+    // measures the two halves directly.
+    width: halves.preferred-width;
+    height: halves.preferred-height;
+
+    // The two halves share one outline, so the layout joins them with a
+    // negative gap and each half squares the edge that meets the other.
+    halves := HorizontalLayout {
+        spacing: -1px;
+        alignment: center;
+
+        // The tooltip belongs to the main half, like GPUI's inner Button.
+        Tooltip {
+            text: root.tooltip;
+
+            main := Button {
+                text: root.text;
+                icon: root.icon;
+                variant: root.variant;
+                size: root.size;
+                outline: root.outline;
+                enabled: root.enabled;
+                loading: root.loading;
+                selected: root.selected;
+                group-start: root.group-start;
+                group-end: true;
+                clicked => { root.chosen(-1, DropdownButtonAction.main); }
+            }
+        }
+
+        trigger := Button {
+            icon: "chevron-down";
+            variant: root.variant;
+            size: root.size;
+            outline: root.outline;
+            enabled: root.enabled;
+            group-start: true;
+            group-end: root.group-end;
+            selected: root.selected || menu.is-open;
+            clicked => { menu.show(); }
         }
     }
 
+    // The trigger grows to the control's height, and the menu hangs from the
+    // split button's trailing edge.
     menu := PopupWindow {
-        y: Theme.control-height(size) + 4px;
+        x: parent.width - self.width;
+        y: root.height + 4px;
+        width: root.menu-width;
         close-policy: close-on-click-outside;
 
         Menu {
             items: root.items;
             chosen(index) => {
-                root.chosen(index);
+                root.chosen(index, DropdownButtonAction.menu);
                 menu.close();
             }
         }

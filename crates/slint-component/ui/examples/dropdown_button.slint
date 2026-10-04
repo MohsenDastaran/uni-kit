@@ -1,6 +1,10 @@
-import { Theme } from "../theme.slint";
+// The DropdownButton gallery page: the states the documentation describes, each
+// with a code icon that scrolls to the matching section. The titles below are
+// the page's headings, so the icons land on the right sample.
+
+import { Theme, ButtonVariant, ControlSize } from "../theme.slint";
 import { GroupBox, GroupBoxVariant } from "section.slint";
-import { DropdownButton } from "../dropdown_button.slint";
+import { DropdownButton, DropdownButtonAction } from "../dropdown_button.slint";
 
 export component DropdownButtonExample inherits VerticalLayout {
     horizontal-stretch: 1;
@@ -8,13 +12,206 @@ export component DropdownButtonExample inherits VerticalLayout {
     spacing: 24px;
     alignment: start;
 
-    DropdownButton {
-        text: "Actions";
-        items: [
-            { label: "Edit", icon: "pencil", shortcut: "", disabled: false, checked: false, separator: false },
-            { label: "Duplicate", icon: "copy", shortcut: "", disabled: false, checked: false, separator: false },
-            { label: "Delete", icon: "trash", shortcut: "", disabled: false, checked: false, separator: false },
-        ];
+    private property <string> last-action: "Nothing yet.";
+
+    Text {
+        text: "Last action: \{root.last-action}";
+        color: Theme.muted-foreground;
+        font-size: Theme.font-size-xs;
+        font-weight: 500;
     }
 
+    // The main half runs its own action; the trailing half opens the menu.
+    GroupBox {
+        title: "Basic split";
+        variant: GroupBoxVariant.outline;
+
+        DropdownButton {
+            text: "Export";
+            variant: ButtonVariant.primary;
+            width: 132px;
+            items: [
+                { label: "Export all rows (.csv)", icon: "download", shortcut: "⌘E", disabled: false, checked: false, separator: false },
+                { label: "Download report (.pdf)", icon: "file-text", shortcut: "", disabled: false, checked: false, separator: false },
+                { label: "", icon: "", shortcut: "", disabled: false, checked: false, separator: true },
+                { label: "Copy as Markdown", icon: "copy", shortcut: "", disabled: false, checked: false, separator: false },
+            ];
+            chosen(index, event) => {
+                root.last-action = event == DropdownButtonAction.menu
+                    ? "Exported menu item \{index + 1}."
+                    : "Exported the current view.";
+            }
+        }
+    }
+
+    // One variant or size on the control styles both halves.
+    GroupBox {
+        title: "Variants";
+        variant: GroupBoxVariant.outline;
+
+        HorizontalLayout {
+            spacing: 12px;
+            alignment: start;
+
+            DropdownButton {
+                text: "Default";
+                items: [
+                    { label: "Rename", icon: "pencil", shortcut: "", disabled: false, checked: false, separator: false },
+                    { label: "Duplicate", icon: "copy", shortcut: "", disabled: false, checked: false, separator: false },
+                ];
+                chosen(index, event) => {
+                    root.last-action = event == DropdownButtonAction.menu
+                        ? "Renamed from the default variant."
+                        : "Default variant clicked.";
+                }
+            }
+
+            DropdownButton {
+                text: "Primary";
+                variant: ButtonVariant.primary;
+                items: [
+                    { label: "Publish now", icon: "upload", shortcut: "", disabled: false, checked: false, separator: false },
+                    { label: "Schedule…", icon: "clock", shortcut: "", disabled: false, checked: false, separator: false },
+                ];
+                chosen(index, event) => {
+                    root.last-action = event == DropdownButtonAction.menu
+                        ? "Scheduled a publish."
+                        : "Published.";
+                }
+            }
+
+            DropdownButton {
+                text: "Outline";
+                variant: ButtonVariant.primary;
+                outline: true;
+                selected: true;
+                items: [
+                    { label: "Export all rows (.csv)", icon: "download", shortcut: "", disabled: false, checked: true, separator: false },
+                    { label: "Export selection", icon: "file-text", shortcut: "", disabled: false, checked: false, separator: false },
+                ];
+                chosen(index, event) => {
+                    root.last-action = event == DropdownButtonAction.menu
+                        ? "Outlined export chosen."
+                        : "Outlined export clicked.";
+                }
+            }
+
+            DropdownButton {
+                text: "Small";
+                size: ControlSize.small;
+                variant: ButtonVariant.secondary;
+                items: [
+                    { label: "Compact view", icon: "list", shortcut: "", disabled: false, checked: false, separator: false },
+                    { label: "Comfortable view", icon: "table", shortcut: "", disabled: false, checked: false, separator: false },
+                ];
+                chosen(index, event) => {
+                    root.last-action = "Density changed.";
+                }
+            }
+
+            DropdownButton {
+                text: "Ghost";
+                variant: ButtonVariant.ghost;
+                items: [
+                    { label: "Duplicate", icon: "copy", shortcut: "", disabled: false, checked: false, separator: false },
+                    { label: "Delete", icon: "trash", shortcut: "", disabled: false, checked: false, separator: false },
+                ];
+                chosen(index, event) => {
+                    root.last-action = "Ghost action.";
+                }
+            }
+        }
+    }
+
+    // The main half owns its label, icon, tooltip and loading state.
+    GroupBox {
+        title: "Inner button options";
+        variant: GroupBoxVariant.outline;
+
+        HorizontalLayout {
+            spacing: 12px;
+            alignment: start;
+
+            DropdownButton {
+                text: "Save";
+                icon: "download";
+                tooltip: "Save the current document";
+                variant: ButtonVariant.primary;
+                items: [
+                    { label: "Save as new file…", icon: "file", shortcut: "⌘S", disabled: false, checked: false, separator: false },
+                    { label: "Save as template…", icon: "copy", shortcut: "", disabled: false, checked: false, separator: false },
+                ];
+                chosen(index, event) => {
+                    root.last-action = "Document saved.";
+                }
+            }
+
+            DropdownButton {
+                text: "Saving…";
+                variant: ButtonVariant.primary;
+                loading: true;
+                items: [
+                    { label: "Save as new file…", icon: "file", shortcut: "", disabled: false, checked: false, separator: false },
+                ];
+                chosen(index, event) => {
+                    root.last-action = "Still saving…";
+                }
+            }
+
+            DropdownButton {
+                text: "Unavailable";
+                variant: ButtonVariant.primary;
+                enabled: false;
+                items: [
+                    { label: "Export all rows (.csv)", icon: "download", shortcut: "", disabled: false, checked: false, separator: false },
+                ];
+                chosen(index, event) => {
+                    root.last-action = "Disabled.";
+                }
+            }
+        }
+    }
+
+    // An icon-only main half, and a menu wider than its button.
+    GroupBox {
+        title: "With custom anchor";
+        variant: GroupBoxVariant.outline;
+
+        HorizontalLayout {
+            spacing: 12px;
+            alignment: start;
+
+            DropdownButton {
+                text: "";
+                icon: "play";
+                tooltip: "Run the current file";
+                variant: ButtonVariant.secondary;
+                size: ControlSize.small;
+                menu-width: 240px;
+                items: [
+                    { label: "Run with release profile", icon: "zap", shortcut: "⇧⌘R", disabled: false, checked: false, separator: false },
+                    { label: "Run with debugger", icon: "bot", shortcut: "", disabled: false, checked: false, separator: false },
+                    { label: "", icon: "", shortcut: "", disabled: false, checked: false, separator: true },
+                    { label: "Stop", icon: "square", shortcut: "", disabled: true, checked: false, separator: false },
+                ];
+                chosen(index, event) => {
+                    root.last-action = event == DropdownButtonAction.menu
+                        ? "Started run \{index + 1}."
+                        : "Running the current file.";
+                }
+            }
+
+            DropdownButton {
+                text: "Disabled";
+                variant: ButtonVariant.secondary;
+                enabled: false;
+                items: [
+                    { label: "Open recent", icon: "clock", shortcut: "", disabled: false, checked: false, separator: false },
+                ];
+                chosen(index, event) => {
+                    root.last-action = "Disabled control.";
+                }
+            }
+        }
+    }
 }

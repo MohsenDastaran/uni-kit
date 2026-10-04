@@ -30,6 +30,22 @@ DropdownButton::new("dropdown")
     })
 ```
 
+## Basic split
+
+The control is two buttons sharing one outline. The leading half runs its own
+action; the trailing half opens the menu, so a click on the label never opens
+the menu by accident.
+
+```rust
+DropdownButton::new("dropdown")
+    .primary()
+    .button(Button::new("btn").label("Export").on_click(|_, _, _| println!("Export")))
+    .dropdown_menu(|menu, _, _| {
+        menu.menu("Export all rows (.csv)", Box::new(MyAction))
+            .menu("Download report (.pdf)", Box::new(MyAction))
+    })
+```
+
 ### Variants
 
 Same as [Button], DropdownButton supports different variants.
@@ -62,7 +78,10 @@ DropdownButton::new("dropdown")
     })
 ```
 
-### With custom anchor
+## With custom anchor
+
+The menu's anchor and width belong to the menu, not to the button. Set them on
+the DropdownButton when the default placement does not fit.
 
 ```rust
 DropdownButton::new("dropdown")

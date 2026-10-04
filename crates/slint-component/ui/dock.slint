@@ -1,84 +1,1087 @@
-import { Theme } from "theme.slint";
+// A dock workspace: tab groups, draggable tabs, resizable edge docks,
+// per-panel close, region collapse, panel zoom and layout lock. It mirrors GPUI
+// Component's `Dock` for the centre area plus the left, right and bottom docks.
+//
+// The view declares every panel up front. Dragging a tab's label reorders its
+// group, drops it on another group's tab strip to join that group, or drops it
+// on that group's left or right edge to dock the panel beside it.
+//
+// Slint notes that shape this file:
+//   * a function body has no `for` loop, and a function cannot call itself;
+//   * arrays have no `push`, `remove`, or `insert`, so the model keeps a fixed
+//     number of slots and rewrites them with literal assignments;
+//   * a property assigned a function call becomes a binding, not a copy, so the
+//     model is reset from array literals;
+//   * `DropArea` needs a `DragArea` payload, and Slint code cannot build a
+//     `data-transfer`, so the drag runs on pointer events and shares its state
+//     through `DockDragState`.
 
-export struct DockTab {
+import { Theme } from "theme.slint";
+import { Icon } from "icon.slint";
+
+export enum DockRegion { left, center, right, bottom }
+
+export struct DockPanelDef {
+    name: string,
     title: string,
+    content: string,
+    region: DockRegion,
+    closable: bool,
 }
 
-// A dock layout preview. Mirrors GPUI Component's `Dock` without drag-and-drop.
-export component Dock {
-    in property <[DockTab]> tabs;
-    in-out property <int> selected: 0;
-    in-out property <length> side: 200px;
+// Which panel a drag carries, and the drop zone the pointer last entered.
+export global DockDragState {
+    in-out property <bool> dragging: false;
+    in-out property <int> panel: -1;
+    // `group * 4 + edge`: edge 0 is the tab strip, 1 the left strip, 2 the right
+    // strip, 3 the bottom strip.
+    in-out property <int> zone: -1;
+}
 
+// The dock model: sixteen groups of four slots, four groups per region. Group 0
+// of a region is its main group; the centre also renders group 1, which is how
+// a left or right edge drop splits the workspace.
+export global DockState {
+    in-out property <[DockPanelDef]> defs: [];
+    in-out property <bool> locked: false;
+    in-out property <bool> zoomed: false;
+    in-out property <int> split-side: 0;
+    in-out property <[length]> region-size: [208px, 480px, 208px, 176px];
+    in-out property <[bool]> collapsed: [false, false, false, false];
+
+    // `place[panel]` is `group * 4 + slot`, or -1 when the panel has no slot.
+    in-out property <[int]> place: [
+        -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1,
+    ];
+    // `slot-panel[group * 4 + slot]` is the panel in that slot, or -1.
+    in-out property <[int]> slot-panel: [
+        -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1,
+        -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1,
+        -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1,
+        -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1,
+    ];
+    in-out property <[int]> active-slot: [
+        -1, -1, -1, -1, -1, -1, -1, -1,
+        -1, -1, -1, -1, -1, -1, -1, -1,
+    ];
+
+    // -- queries -----------------------------------------------------------
+
+    public pure function group-of(region: int, index: int) -> int {
+        return region * 4 + index;
+    }
+
+    public pure function in-group(group: int, panel: int) -> bool {
+        if panel < 0 || panel >= 16 || group < 0 || group >= 16 { return false; }
+        return place[panel] >= 0 && place[panel] / 4 == group;
+    }
+
+    public pure function slot-of(group: int, panel: int) -> int {
+        if in-group(group, panel) { return mod(place[panel], 4); }
+        return -1;
+    }
+
+    public pure function group-panel(group: int, slot: int) -> int {
+        if group < 0 || group >= 16 || slot < 0 || slot > 3 { return -1; }
+        return slot-panel[group * 4 + slot];
+    }
+
+    public pure function group-count(group: int) -> int {
+        if group < 0 || group >= 16 { return 0; }
+        return (slot-panel[group * 4 + 0] >= 0 ? 1 : 0)
+             + (slot-panel[group * 4 + 1] >= 0 ? 1 : 0)
+             + (slot-panel[group * 4 + 2] >= 0 ? 1 : 0)
+             + (slot-panel[group * 4 + 3] >= 0 ? 1 : 0);
+    }
+
+    public pure function region-count(region: int) -> int {
+        return group-count(group-of(region, 0))
+             + group-count(group-of(region, 1))
+             + group-count(group-of(region, 2))
+             + group-count(group-of(region, 3));
+    }
+
+    public pure function region-empty(region: int) -> bool {
+        return region-count(region) == 0;
+    }
+
+    public pure function active-panel(group: int) -> int {
+        if group < 0 || group >= 16 || active-slot[group] < 0 { return -1; }
+        return group-panel(group, active-slot[group]);
+    }
+
+    public pure function is-active(group: int, slot: int) -> bool {
+        return active-slot[group] == slot && group-count(group) > 0;
+    }
+
+    public pure function panel-region(panel: int) -> int {
+        if panel < 0 || panel >= defs.length { return 1; }
+        if defs[panel].region == DockRegion.left { return 0; }
+        if defs[panel].region == DockRegion.right { return 2; }
+        if defs[panel].region == DockRegion.bottom { return 3; }
+        return 1;
+    }
+
+    public pure function title(panel: int) -> string {
+        return panel >= 0 && panel < defs.length ? defs[panel].title : "";
+    }
+
+    public pure function content(panel: int) -> string {
+        return panel >= 0 && panel < defs.length ? defs[panel].content : "";
+    }
+
+    public pure function closable(panel: int) -> bool {
+        return panel >= 0 && panel < defs.length ? defs[panel].closable : false;
+    }
+
+    // The first free slot of `group`, or -1.
+    public pure function free-slot(group: int) -> int {
+        if group < 0 || group >= 16 { return -1; }
+        if slot-panel[group * 4 + 0] < 0 { return 0; }
+        if slot-panel[group * 4 + 1] < 0 { return 1; }
+        if slot-panel[group * 4 + 2] < 0 { return 2; }
+        if slot-panel[group * 4 + 3] < 0 { return 3; }
+        return -1;
+    }
+
+    // The first free slot of a region, or -1.
+    public pure function region-free(region: int) -> int {
+        if free-slot(group-of(region, 0)) >= 0 { return group-of(region, 0) * 4 + free-slot(group-of(region, 0)); }
+        if free-slot(group-of(region, 1)) >= 0 { return group-of(region, 1) * 4 + free-slot(group-of(region, 1)); }
+        if free-slot(group-of(region, 2)) >= 0 { return group-of(region, 2) * 4 + free-slot(group-of(region, 2)); }
+        if free-slot(group-of(region, 3)) >= 0 { return group-of(region, 3) * 4 + free-slot(group-of(region, 3)); }
+        return -1;
+    }
+
+    // The group a drop that docks beside the region's main group should use.
+    public pure function split-group(region: int) -> int {
+        if free-slot(group-of(region, 1)) >= 0 { return group-of(region, 1); }
+        return group-of(region, 0);
+    }
+
+    public pure function hovered-zone(zone: int) -> bool {
+        return DockDragState.dragging && DockDragState.zone == zone;
+    }
+
+    // The centre only splits when there is room for two panes.
+    public pure function can-split() -> bool {
+        return Theme.viewport >= 880px;
+    }
+
+    // Below this the docks would squeeze the centre to nothing, so they show
+    // as their rail instead. The toolbar still switches them back on.
+    public pure function narrow() -> bool {
+        return Theme.viewport < 660px;
+    }
+
+    // -- updates -----------------------------------------------------------
+
+    // Rebuild group `group` from the panels that stay, then place `panel` in
+    // `at`, or in the first free slot when `at` is -1.
+    function rebuild(group: int, panel: int, at: int, keep-a: int, keep-b: int, keep-c: int, keep-d: int) {
+        slot-panel[group * 4 + 0] = keep-a;
+        slot-panel[group * 4 + 1] = keep-b;
+        slot-panel[group * 4 + 2] = keep-c;
+        slot-panel[group * 4 + 3] = keep-d;
+        if keep-a >= 0 { place[keep-a] = group * 4 + 0; }
+        if keep-b >= 0 { place[keep-b] = group * 4 + 1; }
+        if keep-c >= 0 { place[keep-c] = group * 4 + 2; }
+        if keep-d >= 0 { place[keep-d] = group * 4 + 3; }
+
+        let where = at >= 0 ? at
+            : keep-a < 0 ? 0
+            : keep-b < 0 ? 1
+            : keep-c < 0 ? 2
+            : keep-d < 0 ? 3
+            : -1;
+        if panel >= 0 && where >= 0 && where < 4 {
+            slot-panel[group * 4 + where] = panel;
+            place[panel] = group * 4 + where;
+            active-slot[group] = where;
+        }
+        if group-count(group) == 0 { active-slot[group] = -1; }
+        if active-slot[group] >= group-count(group) { active-slot[group] = max(0, group-count(group) - 1); }
+    }
+
+    // Detach `panel` from its group, keeping the others in place.
+    function detach(panel: int) {
+        if panel < 0 || panel >= 16 || place[panel] < 0 { return; }
+        let group = place[panel] / 4;
+        if group < 0 || group >= 16 { return; }
+        let was = mod(place[panel], 4);
+        let keep-a = group-panel(group, 0) == panel ? -1 : group-panel(group, 0);
+        let keep-b = group-panel(group, 1) == panel ? -1 : group-panel(group, 1);
+        let keep-c = group-panel(group, 2) == panel ? -1 : group-panel(group, 2);
+        let keep-d = group-panel(group, 3) == panel ? -1 : group-panel(group, 3);
+        place[panel] = -1;
+        active-slot[group] = was;
+        rebuild(group, -1, -1, keep-a, keep-b, keep-c, keep-d);
+    }
+
+    public function close(panel: int) {
+        if panel < 0 || panel >= 16 || place[panel] < 0 { return; }
+        detach(panel);
+    }
+
+    public function select(group: int, slot: int) {
+        if group < 0 || group >= 16 { return; }
+        if slot < 0 || slot > 3 { return; }
+        if group-panel(group, slot) < 0 { return; }
+        active-slot[group] = slot;
+    }
+
+    // Move `panel` into `group` at `at` (or at the end when `at` is -1). A move
+    // inside its own group reorders it.
+    public function move-panel(panel: int, group: int, at: int) {
+        if panel < 0 || panel >= 16 || place[panel] < 0 { return; }
+        if group < 0 || group >= 16 { return; }
+
+        let from = place[panel] / 4;
+        if from == group {
+            let from-slot = mod(place[panel], 4);
+            let keep-a = group-panel(group, 0) == panel ? -1 : group-panel(group, 0);
+            let keep-b = group-panel(group, 1) == panel ? -1 : group-panel(group, 1);
+            let keep-c = group-panel(group, 2) == panel ? -1 : group-panel(group, 2);
+            let keep-d = group-panel(group, 3) == panel ? -1 : group-panel(group, 3);
+            place[panel] = -1;
+            rebuild(group, panel, at > from-slot ? at - 1 : at, keep-a, keep-b, keep-c, keep-d);
+            return;
+        }
+
+        detach(panel);
+        rebuild(group, panel, at, group-panel(group, 0), group-panel(group, 1), group-panel(group, 2), group-panel(group, 3));
+    }
+
+    // Dock `panel` beside the group it was dropped on: the region's second
+    // group when there is one, or the same group when there is no room.
+    function dock-beside(panel: int, group: int, side: int) {
+        let region = panel-region(panel);
+        if !can-split() || region != 1 {
+            move-panel(panel, group, -1);
+            return;
+        }
+        let split = split-group(region);
+        split-side = side;
+        move-panel(panel, split, -1);
+    }
+
+    public function toggle-region(region: int) {
+        if region < 0 || region > 3 || region-empty(region) { return; }
+        collapsed[region] = !collapsed[region];
+    }
+
+    public function set-region-size(region: int, size: length) {
+        if region == 0 { region-size[region] = clamp(size, 140px, 420px); }
+        else if region == 1 { region-size[region] = clamp(size, 280px, 960px); }
+        else if region == 2 { region-size[region] = clamp(size, 140px, 420px); }
+        else if region == 3 { region-size[region] = clamp(size, 96px, 420px); }
+    }
+
+    public function toggle-zoom() {
+        if region-empty(1) { return; }
+        zoomed = !zoomed;
+        if zoomed {
+            collapsed[0] = true;
+            collapsed[2] = true;
+            collapsed[3] = true;
+        }
+    }
+
+    // The drop ended: `DockDragState.zone` names the target and `panel` names
+    // what moved. The tab that started the drag calls this on release.
+    public function apply-drop() {
+        let panel = DockDragState.panel;
+        let zone = DockDragState.zone;
+        DockDragState.panel = -1;
+        DockDragState.zone = -1;
+        if panel < 0 || zone < 0 || place[panel] < 0 { return; }
+
+        let group = zone / 5;
+        let edge = mod(zone, 5);
+        if group < 0 || group >= 16 { return; }
+
+        if edge == 0 { move-panel(panel, group, -1); }
+        else if edge == 1 || edge == 2 { dock-beside(panel, group, edge); }
+        else { move-panel(panel, group, -1); }
+    }
+
+    // The view's declaration is the model. `DockArea::init` calls this.
+    public function reset(defs-in: [DockPanelDef]) {
+        defs = defs-in;
+        locked = false;
+        zoomed = false;
+        split-side = 0;
+        collapsed = [false, false, false, false];
+        region-size = [208px, 480px, 208px, 176px];
+        place = [-1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1];
+        slot-panel = [
+            -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1,
+            -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1,
+            -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1,
+            -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1,
+        ];
+        active-slot = [
+            -1, -1, -1, -1, -1, -1, -1, -1,
+            -1, -1, -1, -1, -1, -1, -1, -1,
+        ];
+
+        // Up to four declared panels fill group 0 of a region; the rest go to
+        // group 1. One branch per panel: a body has no loop.
+        if defs.length > 0 { put(0); }
+        if defs.length > 1 { put(1); }
+        if defs.length > 2 { put(2); }
+        if defs.length > 3 { put(3); }
+        if defs.length > 4 { put(4); }
+        if defs.length > 5 { put(5); }
+        if defs.length > 6 { put(6); }
+        if defs.length > 7 { put(7); }
+        if defs.length > 8 { put(8); }
+        if defs.length > 9 { put(9); }
+        if defs.length > 10 { put(10); }
+        if defs.length > 11 { put(11); }
+        if defs.length > 12 { put(12); }
+        if defs.length > 13 { put(13); }
+        if defs.length > 14 { put(14); }
+        if defs.length > 15 { put(15); }
+    }
+
+    // Give one declared panel its first slot.
+    function put(panel: int) {
+        let at = region-free(panel-region(panel));
+        if at < 0 { return; }
+        slot-panel[at] = panel;
+        place[panel] = at;
+        if active-slot[at / 4] < 0 { active-slot[at / 4] = mod(at, 4); }
+    }
+}
+
+// One tab. The whole tab starts a drag and selects on click; the close button
+// sits above it and takes its own clicks.
+component DockTab inherits Rectangle {
+    in property <int> group;
+    in property <int> panel;
+    in property <bool> active;
+    private property <string> label: DockState.title(root.panel);
+
+    height: 30px;
+    horizontal-stretch: 0;
+    background: tab-hover.has-hover ? Theme.muted.with-alpha(0.55) : transparent;
+    border-width: 1px;
+    border-color: tab-hover.has-hover || active ? Theme.border : transparent;
+    animate background { duration: 90ms; }
+    accessible-role: tab;
+    accessible-label: root.label;
+    accessible-item-selectable: true;
+    accessible-item-selected: active;
+
+    tab-body := HorizontalLayout {
+        height: parent.height;
+        padding-left: 12px;
+        padding-right: root.panel >= 0 && DockState.closable(root.panel) ? 8px : 12px;
+        spacing: 6px;
+        alignment: center;
+
+        Text {
+            text: root.label;
+            color: active ? Theme.foreground : Theme.muted-foreground;
+            font-size: Theme.font-size-xs;
+            font-weight: active ? 600 : 500;
+            vertical-alignment: center;
+            overflow: elide;
+        }
+    }
+
+    if root.panel >= 0 && DockState.closable(root.panel) && (active || tab-hover.has-hover): Rectangle {
+        x: parent.width - self.width - 5px;
+        y: (parent.height - self.height) / 2;
+        width: 16px;
+        height: 16px;
+        border-radius: Theme.radius-sm;
+        background: close-hit.has-hover ? Theme.accent : transparent;
+        accessible-role: button;
+        accessible-label: "Close panel";
+
+        Icon {
+            x: (parent.width - self.width) / 2;
+            y: (parent.height - self.height) / 2;
+            name: "x";
+            size: 12px;
+            color: Theme.muted-foreground;
+        }
+
+        close-hit := TouchArea {
+            width: 100%;
+            height: 100%;
+            mouse-cursor: pointer;
+            clicked => { DockState.close(root.panel); }
+        }
+    }
+
+    tab-hover := TouchArea {
+        width: 100%;
+        height: 100%;
+        enabled: false;
+    }
+
+    // One touch area runs the whole gesture. A press that moves past the
+    // threshold starts a drag; a release without movement selects the tab.
+    tab-hit := TouchArea {
+        width: 100%;
+        height: 100%;
+        enabled: !DockState.locked;
+
+        private property <bool> moved-away: false;
+
+        private property <bool> held: false;
+
+        pointer-event(event) => {
+            if event.kind == PointerEventKind.down {
+                self.held = true;
+                self.moved-away = false;
+            }
+            if event.kind == PointerEventKind.move && self.held {
+                let dx = abs(self.mouse-x - self.pressed-x);
+                let dy = abs(self.mouse-y - self.pressed-y);
+                if !self.moved-away && (dx > 4px || dy > 4px) {
+                    self.moved-away = true;
+                    DockDragState.dragging = true;
+                    DockDragState.panel = root.panel;
+                    DockDragState.zone = -1;
+                }
+            }
+            if event.kind == PointerEventKind.up {
+                self.held = false;
+                if self.moved-away {
+                    DockState.apply-drop();
+                    DockDragState.dragging = false;
+                } else if root.panel >= 0 {
+                    DockState.select(root.group, DockState.slot-of(root.group, root.panel));
+                }
+            }
+        }
+        double-clicked => { DockState.toggle-zoom(); }
+    }
+}
+
+// A group's tab strip plus its controls: collapse for the edge docks and zoom
+// for the centre.
+component DockHeader inherits Rectangle {
+    in property <int> group;
+    in property <int> region;
+    in property <bool> main: false;
+
+    height: 30px;
     horizontal-stretch: 1;
-    min-width: 0px;
-    min-height: 200px;
+    background: Theme.sidebar;
+    border-width: 1px;
+    border-color: Theme.border;
 
     HorizontalLayout {
         spacing: 0;
 
-        Rectangle {
-            width: min(side, Theme.viewport < 520px ? 140px : side);
+        if root.region != 1: Rectangle {
+            width: 26px;
+            background: toggle-hit.has-hover ? Theme.accent : transparent;
+            accessible-role: button;
+            accessible-label: "Collapse dock";
+
+            Icon {
+                x: (parent.width - self.width) / 2;
+                y: (parent.height - self.height) / 2;
+                name: "panel-left";
+                size: 14px;
+                color: Theme.muted-foreground;
+                transform-rotation: root.region == 2 ? 180deg : (root.region == 3 ? 90deg : 0deg);
+            }
+            toggle-hit := TouchArea {
+                width: 100%;
+                height: 100%;
+                mouse-cursor: pointer;
+                clicked => { DockState.toggle-region(root.region); }
+            }
+        }
+
+        if root.region == 1 && root.main: Rectangle {
+            width: 26px;
+            background: zoom-hit.has-hover ? Theme.accent : transparent;
+            accessible-role: button;
+            accessible-label: DockState.zoomed ? "Restore panel" : "Zoom panel";
+
+            Icon {
+                x: (parent.width - self.width) / 2;
+                y: (parent.height - self.height) / 2;
+                name: DockState.zoomed ? "minimize-2" : "maximize-2";
+                size: 14px;
+                color: Theme.muted-foreground;
+            }
+            zoom-hit := TouchArea {
+                width: 100%;
+                height: 100%;
+                mouse-cursor: pointer;
+                clicked => { DockState.toggle-zoom(); }
+            }
+        }
+
+        strip := Rectangle {
+            horizontal-stretch: 1;
+            clip: true;
+
+            HorizontalLayout {
+
+            if DockState.group-panel(root.group, 0) >= 0: DockTab {
+                group: root.group;
+                panel: DockState.group-panel(root.group, 0);
+                active: DockState.is-active(root.group, 0);
+            }
+            if DockState.group-panel(root.group, 1) >= 0: DockTab {
+                group: root.group;
+                panel: DockState.group-panel(root.group, 1);
+                active: DockState.is-active(root.group, 1);
+            }
+            if DockState.group-panel(root.group, 2) >= 0: DockTab {
+                group: root.group;
+                panel: DockState.group-panel(root.group, 2);
+                active: DockState.is-active(root.group, 2);
+            }
+            if DockState.group-panel(root.group, 3) >= 0: DockTab {
+                group: root.group;
+                panel: DockState.group-panel(root.group, 3);
+                active: DockState.is-active(root.group, 3);
+            }
+            Rectangle { horizontal-stretch: 1; }
+            }
+        }
+    }
+}
+
+// The five drop zones over a group. They are plain touch areas: Slint's
+// `DropArea` needs a `DragArea` payload, and Slint code cannot build a
+// `data-transfer`. The dragged tab publishes the panel; a zone publishes itself
+// while the pointer is over it, and the tab applies the drop on release.
+component DockDropZones {
+    in property <int> group;
+    in property <bool> enabled;
+
+    private property <int> base: group * 4;
+
+    join-zone := TouchArea {
+        x: 30px;
+        y: 0px;
+        width: max(0px, parent.width - 60px);
+        height: 30px;
+        enabled: root.enabled;
+
+        pointer-event(event) => {
+            if event.kind == PointerEventKind.up { DockState.apply-drop(); }
+            else { DockDragState.zone = root.base; }
+        }
+        if DockState.hovered-zone(root.base): Rectangle {
+            background: Theme.primary.with-alpha(0.14);
+            border-width: 2px;
+            border-color: Theme.primary.with-alpha(0.7);
+        }
+    }
+
+    left-zone := TouchArea {
+        x: 0px;
+        y: 30px;
+        width: 34px;
+        height: max(0px, parent.height - 30px);
+        enabled: root.enabled;
+
+        pointer-event(event) => {
+            if event.kind == PointerEventKind.up { DockState.apply-drop(); }
+            else { DockDragState.zone = root.base + 1; }
+        }
+        if DockState.hovered-zone(root.base + 1): Rectangle {
+            background: Theme.primary.with-alpha(0.22);
+            border-width: 2px;
+            border-color: Theme.primary.with-alpha(0.75);
+        }
+    }
+
+    right-zone := TouchArea {
+        x: parent.width - self.width;
+        y: 30px;
+        width: 34px;
+        height: max(0px, parent.height - 30px);
+        enabled: root.enabled;
+
+        pointer-event(event) => {
+            if event.kind == PointerEventKind.up { DockState.apply-drop(); }
+            else { DockDragState.zone = root.base + 2; }
+        }
+        if DockState.hovered-zone(root.base + 2): Rectangle {
+            background: Theme.primary.with-alpha(0.22);
+            border-width: 2px;
+            border-color: Theme.primary.with-alpha(0.75);
+        }
+    }
+
+    bottom-zone := TouchArea {
+        x: 34px;
+        y: parent.height - 30px;
+        width: max(0px, parent.width - 68px);
+        height: 30px;
+        enabled: root.enabled;
+
+        pointer-event(event) => {
+            if event.kind == PointerEventKind.up { DockState.apply-drop(); }
+            else { DockDragState.zone = root.base + 3; }
+        }
+        if DockState.hovered-zone(root.base + 3): Rectangle {
+            background: Theme.primary.with-alpha(0.22);
+            border-width: 2px;
+            border-color: Theme.primary.with-alpha(0.75);
+        }
+    }
+}
+
+// A group's body: the active panel's content, with the drop zones over it.
+component DockBody inherits Rectangle {
+    in property <int> group;
+    in property <bool> zones: true;
+
+    background: Theme.background;
+    clip: true;
+    min-width: 0px;
+    min-height: 0px;
+
+    private property <int> panel: DockState.active-panel(root.group);
+
+    if panel >= 0: Rectangle {
+        background: Theme.background;
+
+        HorizontalLayout {
+            padding-left: 12px;
+            padding-right: 12px;
+            spacing: 8px;
+            alignment: center;
+
+            Text {
+                text: DockState.content(panel);
+                color: Theme.muted-foreground;
+                font-size: Theme.font-size-xs;
+                vertical-alignment: center;
+                overflow: elide;
+            }
+        }
+    }
+
+    if panel < 0: Text {
+        x: 16px;
+        y: 14px;
+        text: "Drop a panel here";
+        color: Theme.muted-foreground.with-alpha(0.65);
+        font-size: Theme.font-size-xs;
+    }
+
+    if root.zones: DockDropZones {
+        group: root.group;
+        enabled: !DockState.locked && DockDragState.dragging;
+    }
+}
+
+// A group: its tab strip over its body.
+component DockPane inherits Rectangle {
+    in property <int> group;
+    in property <int> region;
+    in property <bool> main: false;
+    in property <int> stretch: 1;
+
+    horizontal-stretch: root.stretch;
+    vertical-stretch: 1;
+    min-width: 200px;
+    min-height: 0px;
+    background: Theme.background;
+
+    VerticalLayout {
+        spacing: 0;
+        DockHeader { group: root.group; region: root.region; main: root.main; }
+        DockBody {
+            group: root.group;
+            vertical-stretch: 1;
+        }
+    }
+}
+
+// A splitter between two dock regions. `invert` keeps the dragged edge under
+// the pointer for the right and bottom docks.
+component DockSplitter {
+    in property <int> region;
+    in property <bool> vertical: false;
+    in property <bool> invert: false;
+    in property <bool> enabled: true;
+
+    private property <length> start-size: 0px;
+
+    if vertical: Rectangle {
+        width: 5px;
+        height: 100%;
+        background: vhit.has-hover || vhit.pressed ? Theme.primary.with-alpha(0.5) : Theme.border;
+
+        vhit := TouchArea {
+            width: 100%;
+            height: 100%;
+            enabled: root.enabled;
+            mouse-cursor: ew-resize;
+            pointer-event(event) => {
+                if event.kind == PointerEventKind.down { root.start-size = DockState.region-size[root.region]; }
+            }
+            moved => {
+                if self.pressed {
+                    let delta = self.mouse-x - self.pressed-x;
+                    DockState.set-region-size(root.region, root.start-size + (root.invert ? -delta : delta));
+                }
+            }
+        }
+    }
+
+    if !vertical: Rectangle {
+        width: 100%;
+        height: 5px;
+        background: hhit.has-hover || hhit.pressed ? Theme.primary.with-alpha(0.5) : Theme.border;
+
+        hhit := TouchArea {
+            width: 100%;
+            height: 100%;
+            enabled: root.enabled;
+            mouse-cursor: ns-resize;
+            pointer-event(event) => {
+                if event.kind == PointerEventKind.down { root.start-size = DockState.region-size[root.region]; }
+            }
+            moved => {
+                if self.pressed {
+                    let delta = self.mouse-y - self.pressed-y;
+                    DockState.set-region-size(root.region, root.start-size + (root.invert ? -delta : delta));
+                }
+            }
+        }
+    }
+}
+
+// A collapsed edge dock: a strip of tab buttons that reopens it.
+component DockRail inherits Rectangle {
+    in property <int> region;
+    in property <int> group;
+
+    width: 34px;
+    background: Theme.sidebar;
+    border-width: 1px;
+    border-color: Theme.border;
+
+    VerticalLayout {
+        spacing: 0;
+        alignment: start;
+
+        for slot in 4: Rectangle {
+            visible: DockState.group-panel(root.group, slot) >= 0;
+            width: 100%;
+            height: 34px;
+            background: DockState.is-active(root.group, slot) ? Theme.accent : (rail-hit.has-hover ? Theme.muted : transparent);
+            accessible-role: button;
+            accessible-label: DockState.title(DockState.group-panel(root.group, slot));
+
+            Icon {
+                x: (parent.width - self.width) / 2;
+                y: (parent.height - self.height) / 2;
+                name: "panel-left";
+                size: 14px;
+                color: Theme.muted-foreground;
+                transform-rotation: root.region == 2 ? 180deg : 0deg;
+            }
+            rail-hit := TouchArea {
+                width: 100%;
+                height: 100%;
+                mouse-cursor: pointer;
+                clicked => {
+                    DockState.collapsed[root.region] = false;
+                    DockState.select(root.group, slot);
+                }
+            }
+        }
+    }
+}
+
+// A toolbar button, so a view can open and close docks and lock the layout.
+component DockToolButton {
+    in property <string> icon;
+    in property <string> label;
+    in property <bool> checked: false;
+    in property <bool> enabled: true;
+    callback clicked;
+
+    height: 28px;
+    horizontal-stretch: 0;
+
+    Rectangle {
+        width: tool-body.preferred-width;
+        border-radius: Theme.radius-md;
+        background: !root.enabled ? transparent
+            : tool-hit.pressed ? Theme.accent
+            : tool-hit.has-hover || root.checked ? Theme.muted
+            : transparent;
+        border-width: 1px;
+        border-color: root.checked ? Theme.border : transparent;
+        animate background { duration: 90ms; }
+
+        tool-body := HorizontalLayout {
+            padding-left: 8px;
+            padding-right: 8px;
+            spacing: 6px;
+            alignment: center;
+
+            Icon {
+                name: root.icon;
+                size: 14px;
+                color: root.enabled ? Theme.foreground : Theme.muted-foreground.with-alpha(0.45);
+            }
+            Text {
+                text: root.label;
+                color: root.enabled ? Theme.foreground : Theme.muted-foreground.with-alpha(0.45);
+                font-size: Theme.font-size-xs;
+                vertical-alignment: center;
+            }
+        }
+
+        tool-hit := TouchArea {
+            width: 100%;
+            height: 100%;
+            enabled: root.enabled;
+            mouse-cursor: pointer;
+            clicked => { root.clicked(); }
+        }
+    }
+}
+
+// The dock: a centre area with left, right and bottom docks, all resizable,
+// collapsible and rearrangeable by dragging tabs.
+//
+// `DockState` is shared, so a view shows one `DockArea`. Two areas would
+// overwrite each other's panels.
+export component DockArea inherits Rectangle {
+    in property <[DockPanelDef]> panels;
+    // The toolbar is a gallery convenience: open and close docks, zoom the
+    // centre and lock the layout without a menu.
+    in property <bool> toolbar: true;
+
+    clip: true;
+    background: Theme.background;
+    min-width: 0px;
+    min-height: 0px;
+    horizontal-stretch: 1;
+    vertical-stretch: 1;
+
+    init => { DockState.reset(root.panels); }
+
+    VerticalLayout {
+        spacing: 0;
+
+        if root.toolbar: Rectangle {
+            height: 38px;
             background: Theme.sidebar;
             border-width: 1px;
             border-color: Theme.border;
-            VerticalLayout {
-                padding: 8px;
-                spacing: 4px;
-                Text {
-                    text: "Explorer";
-                    color: Theme.muted-foreground;
-                    font-size: Theme.font-size-xs;
-                    font-weight: 600;
+
+            HorizontalLayout {
+                padding-left: 8px;
+                padding-right: 8px;
+                spacing: 2px;
+                alignment: center;
+
+                DockToolButton {
+                    icon: "panel-left";
+                    label: "Left";
+                    checked: !DockState.collapsed[0];
+                    enabled: !DockState.region-empty(0);
+                    clicked => { DockState.toggle-region(0); }
                 }
-                @children
+                DockToolButton {
+                    icon: "panel-left";
+                    label: "Bottom";
+                    checked: !DockState.collapsed[3];
+                    enabled: !DockState.region-empty(3);
+                    clicked => { DockState.toggle-region(3); }
+                }
+                DockToolButton {
+                    icon: "panel-left";
+                    label: "Right";
+                    checked: !DockState.collapsed[2];
+                    enabled: !DockState.region-empty(2);
+                    clicked => { DockState.toggle-region(2); }
+                }
+
+                Rectangle { horizontal-stretch: 1; }
+
+                DockToolButton {
+                    icon: DockState.zoomed ? "minimize-2" : "maximize-2";
+                    label: DockState.zoomed ? "Restore" : "Zoom";
+                    checked: DockState.zoomed;
+                    enabled: !DockState.region-empty(1);
+                    clicked => { DockState.toggle-zoom(); }
+                }
+                DockToolButton {
+                    icon: "lock";
+                    label: "Lock";
+                    checked: DockState.locked;
+                    clicked => { DockState.locked = !DockState.locked; }
+                }
             }
         }
 
         Rectangle {
-            width: 4px;
-            background: Theme.border;
-            TouchArea {
-                mouse-cursor: ew-resize;
-                moved => {
-                    if self.pressed {
-                        root.side = max(120px, root.side + (self.mouse-x - self.pressed-x));
+            vertical-stretch: 1;
+            min-height: 0px;
+            background: Theme.background;
+            border-width: 1px;
+            border-color: Theme.border;
+
+            if DockState.zoomed: DockPane {
+                group: DockState.group-of(1, 0);
+                region: 1;
+                main: true;
+            }
+
+            if !DockState.zoomed: HorizontalLayout {
+                spacing: 0;
+
+                if !DockState.region-empty(0) && (DockState.collapsed[0] || DockState.narrow()): DockRail {
+                    region: 0;
+                    group: DockState.group-of(0, 0);
+                }
+                if !DockState.region-empty(0) && !DockState.collapsed[0] && !DockState.narrow(): Rectangle {
+                    width: max(120px, DockState.region-size[0]);
+                    background: Theme.sidebar;
+
+                    DockPane {
+                        group: DockState.group-of(0, 0);
+                        region: 0;
                     }
                 }
-            }
-        }
+                if !DockState.region-empty(0) && !DockState.collapsed[0] && !DockState.narrow(): DockSplitter {
+                    region: 0;
+                    vertical: true;
+                    enabled: !DockState.locked;
+                }
 
-        VerticalLayout {
-            horizontal-stretch: 1;
-            HorizontalLayout {
-                height: 32px;
-                for tab[index] in tabs: Rectangle {
-                    background: selected == index ? Theme.background : Theme.muted;
-                    border-width: 1px;
-                    border-color: Theme.border;
-                    HorizontalLayout {
-                        padding-left: 12px;
-                        padding-right: 12px;
-                        Text {
-                            text: tab.title;
-                            color: Theme.foreground;
-                            font-size: Theme.font-size-xs;
-                            vertical-alignment: center;
+                // Centre column: the main centre group, with the second centre
+                // group beside it when an edge drop split the workspace.
+                Rectangle {
+                    horizontal-stretch: 1;
+                    min-width: 0px;
+
+                    VerticalLayout {
+                        spacing: 0;
+
+                        Rectangle {
+                            vertical-stretch: 1;
+                            min-height: 0px;
+                            background: Theme.background;
+
+                            HorizontalLayout {
+                                spacing: 0;
+
+                                if DockState.split-side == 1 && DockState.group-count(DockState.group-of(1, 1)) > 0: DockPane {
+                                    group: DockState.group-of(1, 1);
+                                    region: 1;
+                                    stretch: 1;
+                                }
+
+                                DockPane {
+                                    group: DockState.group-of(1, 0);
+                                    region: 1;
+                                    main: true;
+                                    stretch: 3;
+                                }
+
+                                if DockState.split-side == 2 && DockState.group-count(DockState.group-of(1, 1)) > 0: DockPane {
+                                    group: DockState.group-of(1, 1);
+                                    region: 1;
+                                    stretch: 1;
+                                }
+                            }
+                        }
+
+                        if !DockState.region-empty(3) && !DockState.collapsed[3] && !DockState.narrow(): DockSplitter {
+                            region: 3;
+                            vertical: false;
+                            invert: true;
+                            enabled: !DockState.locked;
+                        }
+
+                        if !DockState.region-empty(3) && DockState.collapsed[3]: Rectangle {
+                            height: 30px;
+                            background: Theme.sidebar;
+                            border-width: 1px;
+                            border-color: Theme.border;
+
+                            HorizontalLayout {
+                                padding-left: 10px;
+                                padding-right: 10px;
+                                spacing: 8px;
+                                alignment: center;
+
+                                Icon {
+                                    name: "panel-left";
+                                    size: 14px;
+                                    color: Theme.muted-foreground;
+                                    transform-rotation: 270deg;
+                                }
+                                Text {
+                                    text: DockState.title(DockState.active-panel(DockState.group-of(3, 0)));
+                                    color: Theme.muted-foreground;
+                                    font-size: Theme.font-size-xs;
+                                    vertical-alignment: center;
+                                }
+                                Rectangle { horizontal-stretch: 1; }
+                                Icon { name: "chevron-up"; size: 14px; color: Theme.muted-foreground; }
+                                Text {
+                                    text: "Expand";
+                                    color: Theme.muted-foreground;
+                                    font-size: Theme.font-size-xs;
+                                    vertical-alignment: center;
+                                }
+                            }
+                            restore-hit := TouchArea {
+                                width: 100%;
+                                height: 100%;
+                                mouse-cursor: pointer;
+                                clicked => { DockState.collapsed[3] = false; }
+                            }
+                        }
+
+                        if !DockState.region-empty(3) && !DockState.collapsed[3] && !DockState.narrow(): Rectangle {
+                            height: min(DockState.region-size[3], max(120px, Theme.viewport * 0.34));
+                            background: Theme.background;
+
+                            DockPane {
+                                group: DockState.group-of(3, 0);
+                                region: 3;
+                            }
                         }
                     }
-                    TouchArea {
-                        clicked => { root.selected = index; }
-                    }
                 }
-            }
-            Rectangle {
-                vertical-stretch: 1;
-                background: Theme.background;
-                Text {
-                    x: 16px;
-                    y: 16px;
-                    text: tabs.length > 0 ? tabs[selected].title : "";
-                    color: Theme.muted-foreground;
+
+                if !DockState.region-empty(2) && !DockState.collapsed[2] && !DockState.narrow(): DockSplitter {
+                    region: 2;
+                    vertical: true;
+                    invert: true;
+                    enabled: !DockState.locked;
+                }
+
+                if !DockState.region-empty(2) && (DockState.collapsed[2] || DockState.narrow()): DockRail {
+                    region: 2;
+                    group: DockState.group-of(2, 0);
+                }
+
+                if !DockState.region-empty(2) && !DockState.collapsed[2] && !DockState.narrow(): Rectangle {
+                    width: max(120px, DockState.region-size[2]);
+                    background: Theme.sidebar;
+
+                    DockPane {
+                        group: DockState.group-of(2, 0);
+                        region: 2;
+                    }
                 }
             }
         }

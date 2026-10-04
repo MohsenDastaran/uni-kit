@@ -1,23 +1,87 @@
+// The Dock gallery page: a full workspace preview plus the interaction samples.
+// Each GroupBox title paints a code icon that scrolls the documentation page to
+// the matching section, so the titles below are the headings on that page.
+
 import { Theme } from "../theme.slint";
 import { GroupBox, GroupBoxVariant } from "section.slint";
-import { Dock } from "../dock.slint";
-import { List } from "../list.slint";
+import { DockArea, DockPanelDef, DockRegion } from "../dock.slint";
 
 export component DockExample inherits VerticalLayout {
     horizontal-stretch: 1;
+    vertical-stretch: 1;
     padding: Theme.page-padding(Theme.viewport);
     spacing: 24px;
     alignment: start;
 
-    Dock {
-        height: 280px;
-        tabs: [{ title: "main.rs" }, { title: "lib.rs" }];
-        List {
-            items: [
-                { title: "src", description: "", icon: "folder" },
-                { title: "Cargo.toml", description: "", icon: "file" },
+    GroupBox {
+        title: "Create a dock area";
+        variant: GroupBoxVariant.outline;
+
+        DockArea {
+            height: Theme.viewport < 560px ? 420px : 460px;
+            panels: [
+                {
+                    name: "explorer",
+                    title: "Explorer",
+                    content: "src/ · Cargo.toml · README.md",
+                    region: DockRegion.left,
+                    closable: true,
+                },
+                {
+                    name: "search",
+                    title: "Search",
+                    content: "12 results in 4 files",
+                    region: DockRegion.left,
+                    closable: true,
+                },
+                {
+                    name: "editor",
+                    title: "main.rs",
+                    content: "fn main() { app::run(); }",
+                    region: DockRegion.center,
+                    closable: false,
+                },
+                {
+                    name: "lib",
+                    title: "lib.rs",
+                    content: "pub mod dock; pub mod theme;",
+                    region: DockRegion.center,
+                    closable: true,
+                },
+                {
+                    name: "terminal",
+                    title: "Terminal",
+                    content: "$ cargo run -p example-dock",
+                    region: DockRegion.bottom,
+                    closable: true,
+                },
+                {
+                    name: "problems",
+                    title: "Problems",
+                    content: "No problems detected",
+                    region: DockRegion.bottom,
+                    closable: true,
+                },
+                {
+                    name: "outline",
+                    title: "Outline",
+                    content: "DockArea · DockPanelDef · DockRegion",
+                    region: DockRegion.right,
+                    closable: true,
+                },
             ];
         }
     }
 
+    GroupBox {
+        title: "Move a panel to another group";
+        variant: GroupBoxVariant.outline;
+
+        Text {
+            text: "Drag a tab onto another group's tab strip to join that group. Drop it on the group's left or right edge to dock it beside the group, which splits the centre into two panes. The toolbar opens and closes each dock, zooms the centre, and locks the layout; the X on a tab closes that panel.";
+            color: Theme.muted-foreground;
+            font-size: Theme.font-size-sm;
+            wrap: word-wrap;
+        }
+    }
 }

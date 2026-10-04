@@ -421,6 +421,9 @@ const ALIASES = {
   'date-picker': {
     'With Initial Date': 'Date',
   },
+  dropdown_button: {
+    'Basic split': 'Usage',
+  },
   'hover-card': {
     'User Profile Preview': 'Hover',
   },

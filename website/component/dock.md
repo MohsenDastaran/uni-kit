@@ -136,6 +136,33 @@ register_panel(cx, "FilesPanel", |state, window, cx| {
 
 Dock state retains compatibility with layouts saved by earlier releases. Keep a sensible fallback layout for removed application panels or deliberate schema changes.
 
+## Move a panel to another group
+
+The panel list is the layout's source of truth. Each panel names its title, its
+body, the dock it starts in, and whether its tab can be closed. The Slint sample
+below is the workspace the gallery at the top of this page runs.
+
+```rust
+// Panels start in the left, centre, right, or bottom dock.
+let workspace = DockLayout::h_split()
+    .child(DockLayout::tabs().panel_view(panel_handle(explorer), cx), Some(px(240.)))
+    .child(DockLayout::tabs().panel_view(panel_handle(editor), cx), None);
+```
+
+Dragging a tab rearranges the workspace. A drop on a group's tab strip joins
+that group; a drop on its left or right edge docks the panel beside it, which
+splits the centre into two panes. Close a panel with the tab's close button,
+collapse a dock with the chevron in its tab bar, and zoom the centre with the
+tab bar's zoom button.
+
+```rust
+// The same operations the pointer performs are available on the area.
+area.update(cx, |area, cx| {
+    area.add_panel(panel_handle(outline), DockPlacement::Right, None, window, cx);
+    area.toggle_dock(DockPlacement::Bottom, window, cx);
+});
+```
+
 ## Style the workspace
 
 `DockSkin` keeps rendering decisions outside the layout engine. You can configure the common panel presentation without changing Dock behavior:

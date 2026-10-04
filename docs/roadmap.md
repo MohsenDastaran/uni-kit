@@ -150,8 +150,8 @@ The sample is the gallery example that is already running, not a separately writ
 - [x] Date picker
 - [x] Description list
 - [ ] Dialog
-- [ ] Dock
-- [ ] Dropdown button
+- [x] Dock
+- [x] Dropdown button
 - [ ] Editor
 - [ ] Empty
 - [ ] Focus trap
