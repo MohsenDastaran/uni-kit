@@ -1,6 +1,7 @@
 import { Theme } from "../theme.slint";
 import { GroupBox, GroupBoxVariant } from "section.slint";
-import { Empty } from "../empty.slint";
+import { Empty, EmptyMediaVariant, EmptyAlign } from "../empty.slint";
+import { Input } from "../input.slint";
 
 export component EmptyExample inherits VerticalLayout {
     horizontal-stretch: 1;
@@ -8,11 +9,119 @@ export component EmptyExample inherits VerticalLayout {
     spacing: 24px;
     alignment: start;
 
-    Empty {
-        icon: "inbox";
-        title: "No messages";
-        description: "When someone writes to you, it will show up here.";
-        action: "Compose";
+    private property <string> search;
+
+    GroupBox {
+        title: "Basic usage";
+        variant: GroupBoxVariant.outline;
+        Empty {
+            height: 260px;
+            icon: "folder";
+            title: "No projects yet";
+            description: "You haven't created any projects yet. Get started by creating your first project.";
+            action: "Create project";
+            secondary-action: "Import sample";
+            Text {
+                text: "Learn more";
+                color: Theme.primary;
+                font-size: Theme.font-size-sm;
+                horizontal-alignment: center;
+            }
+        }
     }
 
+    GroupBox {
+        title: "Outline";
+        variant: GroupBoxVariant.outline;
+        Empty {
+            height: 240px;
+            bordered: true;
+            icon: "box";
+            title: "Cloud storage is empty";
+            description: "Upload files to your cloud storage to access them anywhere.";
+            secondary-action: "Upload files…";
+        }
+    }
+
+    GroupBox {
+        title: "Background";
+        variant: GroupBoxVariant.outline;
+        Empty {
+            height: 240px;
+            background: Theme.muted.with-alpha(0.35);
+            icon: "bell";
+            title: "No notifications";
+            description: "You're all caught up. New notifications will appear here.";
+            secondary-action: "Refresh";
+        }
+    }
+
+    GroupBox {
+        title: "Avatar";
+        variant: GroupBoxVariant.outline;
+        Empty {
+            height: 240px;
+            avatars: ["AM"];
+            title: "Alex is offline";
+            description: "You can leave a message for Alex to read when they're back.";
+            action: "Leave a message…";
+        }
+    }
+
+    GroupBox {
+        title: "Avatar group";
+        variant: GroupBoxVariant.outline;
+        Empty {
+            height: 240px;
+            avatars: ["AM", "TL", "SC"];
+            title: "No team members";
+            description: "Invite your team to collaborate on this project.";
+            action: "Invite members…";
+        }
+    }
+
+    GroupBox {
+        title: "Inputs and custom content";
+        variant: GroupBoxVariant.outline;
+        Empty {
+            height: 280px;
+            media-variant: EmptyMediaVariant.none;
+            title: "Looking for a project?";
+            description: "The page you're looking for doesn't exist. Try searching for another page.";
+            Input {
+                text <=> root.search;
+                placeholder: "Search projects";
+                prefix-icon: "search";
+                cleanable: true;
+            }
+            Text {
+                text: "Search by name or try a different keyword.";
+                color: Theme.muted-foreground;
+                font-size: Theme.font-size-xs;
+                horizontal-alignment: center;
+                wrap: word-wrap;
+            }
+        }
+    }
+
+    GroupBox {
+        title: "Constrained layouts";
+        variant: GroupBoxVariant.outline;
+        HorizontalLayout {
+            alignment: start;
+            Empty {
+                preferred-width: 340px;
+                horizontal-stretch: 0;
+                height: 240px;
+                bordered: true;
+                content-padding: 16px;
+                text-max-width: 300px;
+                align: EmptyAlign.start;
+                icon: "inbox";
+                title: "No shared files";
+                description: "Add files so your team can review and edit them together.";
+                secondary-action: "Add files…";
+            }
+        }
+    }
 }

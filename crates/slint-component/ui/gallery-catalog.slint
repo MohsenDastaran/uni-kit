@@ -4,11 +4,11 @@
 // SLINT_GALLERY_ONLY is set, so this is a development build with
 // 1 of the pages.
 
-import { EditorExample } from "examples/editor.slint";
+import { EmptyExample } from "examples/empty.slint";
 
 export component GalleryCatalog inherits VerticalLayout {
     in property <string> component;
     alignment: start;
 
-    if component == "editor": EditorExample { }
+    if component == "empty": EmptyExample { }
 }

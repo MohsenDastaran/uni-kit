@@ -1,52 +1,169 @@
 import { Theme, ButtonVariant } from "theme.slint";
 import { Icon } from "icon.slint";
 import { Button } from "button.slint";
+import { Avatar, AvatarGroup, AvatarSize } from "avatar.slint";
 
-// An empty-state panel. Mirrors GPUI Component's `Empty`.
+// Visual treatment for the media of an `Empty` state.
+export enum EmptyMediaVariant {
+    // A muted, rounded frame around an icon. GPUI's `EmptyMediaVariant::Icon`.
+    icon,
+    // Unframed content: a bare icon, an avatar, or a group. The `default` variant.
+    plain,
+    // No media at all.
+    none,
+}
+
+// Horizontal packing of the content: centered, or leading-aligned.
+export enum EmptyAlign { center, start }
+
+// An empty-state panel. Mirrors GPUI Component's `Empty`: an optional media
+// slot (an icon badge, a plain icon, or initials rendered as avatars), a title,
+// a wrapping description, up to two actions, and extra children.
+//
+// The content sits in a fixed-width column centered by a wrapping row. A
+// wrapping `Text` reports its longest word as its preferred width, so sizing the
+// column to its content would squeeze the text to a few characters; the explicit
+// column width is what lets the description wrap.
+//
+// Slint cannot draw a dashed border, so `bordered` draws the same rectangle with
+// a solid one-pixel border in the theme's border color.
 export component Empty inherits VerticalLayout {
+    in property <EmptyMediaVariant> media-variant: EmptyMediaVariant.icon;
     in property <string> icon: "inbox";
+    // Non-empty initials render an avatar group in the media slot instead of an
+    // icon.
+    in property <[string]> avatars;
     in property <string> title;
     in property <string> description;
+    // A primary action.
     in property <string> action;
+    // An outline action shown beside the primary one.
+    in property <string> secondary-action;
+    in property <bool> bordered;
+    in property <color> background: transparent;
+    in property <length> content-padding: 24px;
+    // Widest the title and description wrap to.
+    in property <length> text-max-width: 384px;
+    in property <EmptyAlign> align: EmptyAlign.center;
     callback clicked();
+    callback secondary-clicked();
 
-    padding: 32px;
-    spacing: 8px;
-    alignment: center;
+    private property <bool> centered: align == EmptyAlign.center;
+    // Fixed content width, clamped so it still fits a narrow frame.
+    private property <length> column-width: min(root.text-max-width + root.content-padding * 2, Theme.viewport - 80px);
 
-    Icon {
-        name: icon;
-        size: 32px;
-        color: Theme.muted-foreground;
-    }
+    horizontal-stretch: 1;
+    spacing: 0px;
 
-    if title != "": Text {
-        text: title;
-        color: Theme.foreground;
-        font-size: Theme.font-size-md;
-        font-weight: 600;
-        horizontal-alignment: center;
-    }
+    Rectangle {
+        width: 100%;
+        vertical-stretch: 1;
+        border-radius: Theme.radius-xl;
+        border-width: root.bordered ? 1px : 0px;
+        border-color: Theme.border;
+        background: root.background;
+        clip: true;
 
-    if description != "": Text {
-        text: description;
-        color: Theme.muted-foreground;
-        font-size: Theme.font-size-sm;
-        wrap: word-wrap;
-        horizontal-alignment: center;
-    }
+        // A fixed-width column placed by hand. A wrapping `Text` reports its
+        // longest word as preferred width, and layout sizing follows that, so
+        // the column is positioned rather than laid out.
+        VerticalLayout {
+            x: root.centered ? (parent.width - self.width) / 2 : 0px;
+            y: 0px;
+            width: root.column-width;
+            height: parent.height;
+            padding: root.content-padding;
+            spacing: 16px;
+            alignment: root.centered ? center : start;
+            cross-axis-alignment: stretch;
 
-    if action != "": HorizontalLayout {
-        alignment: center;
-        padding-top: 8px;
-        Button {
-            text: action;
-            variant: ButtonVariant.primary;
-            clicked => {
-                root.clicked();
+            // Header: media, title, description. A nested layout sizes to its
+            // content unless it is told to fill, so this column sets 100%.
+            VerticalLayout {
+                width: 100%;
+                spacing: 8px;
+
+                // Media: avatars, a framed icon, or a bare icon. The extra
+                // bottom inset separates it from the title, as in GPUI.
+                if root.avatars.length > 0 || root.media-variant != EmptyMediaVariant.none: VerticalLayout {
+                    width: 100%;
+                    padding-bottom: 8px;
+                    cross-axis-alignment: root.centered ? center : start;
+
+                    if root.avatars.length > 0: AvatarGroup {
+                        spacing: -10px;
+                        for initials in root.avatars: Avatar {
+                            initials: initials;
+                            size: AvatarSize.medium;
+                        }
+                    }
+
+                    if root.avatars.length == 0 && root.media-variant == EmptyMediaVariant.icon: Rectangle {
+                        width: 32px;
+                        height: 32px;
+                        border-radius: Theme.radius-lg;
+                        background: Theme.muted;
+
+                        Icon {
+                            x: (parent.width - self.width) / 2;
+                            y: (parent.height - self.height) / 2;
+                            name: root.icon;
+                            size: 16px;
+                            color: Theme.foreground;
+                        }
+                    }
+
+                    if root.avatars.length == 0 && root.media-variant == EmptyMediaVariant.plain: Icon {
+                        name: root.icon;
+                        size: 32px;
+                        color: Theme.muted-foreground;
+                    }
+                }
+
+                if root.title != "": Text {
+                    text: root.title;
+                    color: Theme.foreground;
+                    font-size: Theme.font-size-sm;
+                    font-weight: 500;
+                    horizontal-alignment: root.centered ? center : left;
+                    wrap: word-wrap;
+                }
+
+                if root.description != "": Text {
+                    text: root.description;
+                    color: Theme.muted-foreground;
+                    font-size: Theme.font-size-sm;
+                    horizontal-alignment: root.centered ? center : left;
+                    wrap: word-wrap;
+                }
             }
+
+            // Actions.
+            if root.action != "" || root.secondary-action != "": HorizontalLayout {
+                width: 100%;
+                spacing: 8px;
+                alignment: root.centered ? center : start;
+                cross-axis-alignment: center;
+
+                if root.action != "": Button {
+                    text: root.action;
+                    variant: ButtonVariant.primary;
+                    clicked => {
+                        root.clicked();
+                    }
+                }
+
+                if root.secondary-action != "": Button {
+                    text: root.secondary-action;
+                    outline: true;
+                    clicked => {
+                        root.secondary-clicked();
+                    }
+                }
+            }
+
+            // Custom content (inputs, links, rich supporting text).
+            @children
         }
     }
-
-    @children
 }
