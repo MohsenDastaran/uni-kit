@@ -1,7 +1,6 @@
 import { Theme, ButtonVariant, ControlSize } from "theme.slint";
 import { Button } from "button.slint";
 import { Menu, MenuEntry } from "menu.slint";
-import { Tooltip } from "tooltip.slint";
 
 export enum DropdownButtonAction { main, menu }
 
@@ -44,22 +43,25 @@ export component DropdownButton {
         spacing: -1px;
         alignment: center;
 
-        // The tooltip belongs to the main half, like GPUI's inner Button.
-        Tooltip {
-            text: root.tooltip;
+        // The tooltip belongs to the main half, like GPUI's inner Button. A
+        // horizontal `Tooltip` would stack its children in a column, so the
+        // delay and popup live here.
+        main := Button {
+            text: root.text;
+            icon: root.icon;
+            variant: root.variant;
+            size: root.size;
+            outline: root.outline;
+            enabled: root.enabled;
+            loading: root.loading;
+            selected: root.selected;
+            group-start: root.group-start;
+            group-end: true;
+            clicked => { root.chosen(-1, DropdownButtonAction.main); }
 
-            main := Button {
-                text: root.text;
-                icon: root.icon;
-                variant: root.variant;
-                size: root.size;
-                outline: root.outline;
-                enabled: root.enabled;
-                loading: root.loading;
-                selected: root.selected;
-                group-start: root.group-start;
-                group-end: true;
-                clicked => { root.chosen(-1, DropdownButtonAction.main); }
+            changed has-hover => {
+                tip-wait.running = self.has-hover && root.tooltip != "";
+                if !self.has-hover { tip.close(); }
             }
         }
 
@@ -73,6 +75,43 @@ export component DropdownButton {
             group-end: root.group-end;
             selected: root.selected || menu.is-open;
             clicked => { menu.show(); }
+        }
+    }
+
+    tip-wait := Timer {
+        interval: 400ms;
+        running: false;
+        triggered => {
+            self.running = false;
+            if main.has-hover && root.tooltip != "" { tip.show(); }
+        }
+    }
+
+    tip := PopupWindow {
+        close-policy: no-auto-close;
+        x: (halves.width - self.width) / 2;
+        y: -self.height - 6px;
+
+        Rectangle {
+            border-radius: Theme.radius-md;
+            background: Theme.foreground;
+            drop-shadow-blur: 8px;
+            drop-shadow-offset-y: 2px;
+            drop-shadow-color: Theme.shadow;
+
+            HorizontalLayout {
+                padding-left: 8px;
+                padding-right: 8px;
+                padding-top: 4px;
+                padding-bottom: 4px;
+
+                Text {
+                    text: root.tooltip;
+                    color: Theme.background;
+                    font-size: Theme.font-size-xs;
+                    wrap: no-wrap;
+                }
+            }
         }
     }
 

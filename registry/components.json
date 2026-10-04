@@ -2446,6 +2446,10 @@
           "target": "icons/bold.svg"
         },
         {
+          "src": "crates/slint-component/ui/icons/book-open.svg",
+          "target": "icons/book-open.svg"
+        },
+        {
           "src": "crates/slint-component/ui/icons/bookmark.svg",
           "target": "icons/bookmark.svg"
         },
@@ -2502,6 +2506,10 @@
           "target": "icons/circle-check.svg"
         },
         {
+          "src": "crates/slint-component/ui/icons/circle-user.svg",
+          "target": "icons/circle-user.svg"
+        },
+        {
           "src": "crates/slint-component/ui/icons/circle-x.svg",
           "target": "icons/circle-x.svg"
         },
@@ -2512,6 +2520,10 @@
         {
           "src": "crates/slint-component/ui/icons/clock.svg",
           "target": "icons/clock.svg"
+        },
+        {
+          "src": "crates/slint-component/ui/icons/code-xml.svg",
+          "target": "icons/code-xml.svg"
         },
         {
           "src": "crates/slint-component/ui/icons/code.svg",
@@ -2572,6 +2584,10 @@
         {
           "src": "crates/slint-component/ui/icons/folder.svg",
           "target": "icons/folder.svg"
+        },
+        {
+          "src": "crates/slint-component/ui/icons/frame.svg",
+          "target": "icons/frame.svg"
         },
         {
           "src": "crates/slint-component/ui/icons/funnel.svg",
@@ -2642,6 +2658,10 @@
           "target": "icons/loader-circle.svg"
         },
         {
+          "src": "crates/slint-component/ui/icons/lock-open.svg",
+          "target": "icons/lock-open.svg"
+        },
+        {
           "src": "crates/slint-component/ui/icons/lock.svg",
           "target": "icons/lock.svg"
         },
@@ -2686,8 +2706,16 @@
           "target": "icons/palette.svg"
         },
         {
+          "src": "crates/slint-component/ui/icons/panel-bottom.svg",
+          "target": "icons/panel-bottom.svg"
+        },
+        {
           "src": "crates/slint-component/ui/icons/panel-left.svg",
           "target": "icons/panel-left.svg"
+        },
+        {
+          "src": "crates/slint-component/ui/icons/panel-right.svg",
+          "target": "icons/panel-right.svg"
         },
         {
           "src": "crates/slint-component/ui/icons/paperclip.svg",
@@ -2730,8 +2758,16 @@
           "target": "icons/share-2.svg"
         },
         {
+          "src": "crates/slint-component/ui/icons/shield.svg",
+          "target": "icons/shield.svg"
+        },
+        {
           "src": "crates/slint-component/ui/icons/sparkles.svg",
           "target": "icons/sparkles.svg"
+        },
+        {
+          "src": "crates/slint-component/ui/icons/square-terminal.svg",
+          "target": "icons/square-terminal.svg"
         },
         {
           "src": "crates/slint-component/ui/icons/square.svg",
@@ -7036,6 +7072,10 @@
           "target": "icons/loader-circle.svg"
         },
         {
+          "src": "crates/slint-component/ui/icons/lock-open.svg",
+          "target": "icons/lock-open.svg"
+        },
+        {
           "src": "crates/slint-component/ui/icons/lock.svg",
           "target": "icons/lock.svg"
         },
@@ -7080,8 +7120,16 @@
           "target": "icons/palette.svg"
         },
         {
+          "src": "crates/slint-component/ui/icons/panel-bottom.svg",
+          "target": "icons/panel-bottom.svg"
+        },
+        {
           "src": "crates/slint-component/ui/icons/panel-left.svg",
           "target": "icons/panel-left.svg"
+        },
+        {
+          "src": "crates/slint-component/ui/icons/panel-right.svg",
+          "target": "icons/panel-right.svg"
         },
         {
           "src": "crates/slint-component/ui/icons/paperclip.svg",
@@ -7246,6 +7294,10 @@
           "target": "icons/bold.svg"
         },
         {
+          "src": "crates/slint-component/ui/icons/book-open.svg",
+          "target": "icons/book-open.svg"
+        },
+        {
           "src": "crates/slint-component/ui/icons/bookmark.svg",
           "target": "icons/bookmark.svg"
         },
@@ -7302,6 +7354,10 @@
           "target": "icons/circle-check.svg"
         },
         {
+          "src": "crates/slint-component/ui/icons/circle-user.svg",
+          "target": "icons/circle-user.svg"
+        },
+        {
           "src": "crates/slint-component/ui/icons/circle-x.svg",
           "target": "icons/circle-x.svg"
         },
@@ -7312,6 +7368,10 @@
         {
           "src": "crates/slint-component/ui/icons/clock.svg",
           "target": "icons/clock.svg"
+        },
+        {
+          "src": "crates/slint-component/ui/icons/code-xml.svg",
+          "target": "icons/code-xml.svg"
         },
         {
           "src": "crates/slint-component/ui/icons/code.svg",
@@ -7372,6 +7432,10 @@
         {
           "src": "crates/slint-component/ui/icons/folder.svg",
           "target": "icons/folder.svg"
+        },
+        {
+          "src": "crates/slint-component/ui/icons/frame.svg",
+          "target": "icons/frame.svg"
         },
         {
           "src": "crates/slint-component/ui/icons/funnel.svg",
@@ -7442,6 +7506,10 @@
           "target": "icons/loader-circle.svg"
         },
         {
+          "src": "crates/slint-component/ui/icons/lock-open.svg",
+          "target": "icons/lock-open.svg"
+        },
+        {
           "src": "crates/slint-component/ui/icons/lock.svg",
           "target": "icons/lock.svg"
         },
@@ -7486,8 +7554,16 @@
           "target": "icons/palette.svg"
         },
         {
+          "src": "crates/slint-component/ui/icons/panel-bottom.svg",
+          "target": "icons/panel-bottom.svg"
+        },
+        {
           "src": "crates/slint-component/ui/icons/panel-left.svg",
           "target": "icons/panel-left.svg"
+        },
+        {
+          "src": "crates/slint-component/ui/icons/panel-right.svg",
+          "target": "icons/panel-right.svg"
         },
         {
           "src": "crates/slint-component/ui/icons/paperclip.svg",
@@ -7530,8 +7606,16 @@
           "target": "icons/share-2.svg"
         },
         {
+          "src": "crates/slint-component/ui/icons/shield.svg",
+          "target": "icons/shield.svg"
+        },
+        {
           "src": "crates/slint-component/ui/icons/sparkles.svg",
           "target": "icons/sparkles.svg"
+        },
+        {
+          "src": "crates/slint-component/ui/icons/square-terminal.svg",
+          "target": "icons/square-terminal.svg"
         },
         {
           "src": "crates/slint-component/ui/icons/square.svg",

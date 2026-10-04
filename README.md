@@ -141,6 +141,44 @@ make dev:website
 make dev:website-slint
 ```
 
+`make dev` is the recommended one for Slint work: it rebuilds the gallery wasm
+and then starts the site, so a refresh shows the change. It is the same as
+`make dev:website-slint`.
+
+```bash
+make dev
+```
+
+Name the page you are working on to compile only that page:
+
+```bash
+make dev SLUGS=dock
+make dev SLUGS=dock,dropdown_button
+```
+
+Each page is a separate component type in one generated tree, so the full set is
+a ~97 MB Rust file that takes a wasm `rustc` tens of minutes and peaks near
+13 GiB. One page is a couple of MB and finishes in seconds. A filtered build
+produces a gallery that only contains those pages, so run plain `make dev` once
+before publishing or testing other components.
+
+The rebuild is capped in a memory cgroup, because that 13 GiB peak will swap the
+whole desktop to a halt before the kernel kills it. With the cap, an oversized
+build dies on its own and the machine stays usable. Tune the cap with
+`GUARD_MEMORY_MAX` (systemd size, default `9G`):
+
+```bash
+GUARD_MEMORY_MAX=12G make dev
+```
+
+A soft `GUARD_MEMORY_HIGH` ceiling defaults to that same value on purpose. Set
+below it, the kernel reclaims continuously and the build stalls at a fraction of
+one CPU: a 6G high / 9G max pair made one wasm build take 36 minutes at 37% CPU,
+without ever reaching the hard cap.
+
+`crates/slint-component/scripts/guard.sh` is that wrapper; run any heavy command
+through it. It falls back to `ulimit -v` where `systemd-run` is unavailable.
+
 Larger GPUI examples run as their own packages: `cargo run -p example-dock`, `example-editor`, `example-markdown`, `system_monitor`. See [CONTRIBUTING.md](CONTRIBUTING.md).
 
 ## License

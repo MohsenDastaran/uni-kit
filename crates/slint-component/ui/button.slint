@@ -60,6 +60,13 @@ export component Button {
         : variant == ButtonVariant.primary ? Theme.primary.mix(Theme.background, 0.9)
         : variant == ButtonVariant.secondary ? Theme.secondary.mix(Theme.background, 0.1)
         : Theme.input.mix(Theme.background, 0.5);
+    // A selected control stays visibly on, not pressed: the same fill at a
+    // lighter weight. GPUI's outlined primary header button reads this way.
+    private property <color> selected-fill: variant == ButtonVariant.primary ? Theme.primary.with-alpha(0.10)
+        : status-variant ? tone.with-alpha(0.12)
+        : outline ? (variant == ButtonVariant.secondary ? Theme.accent : Theme.primary.with-alpha(0.10))
+        : transparent-fill ? Theme.primary.with-alpha(0.10)
+        : Theme.secondary;
     private property <color> press-fill: variant == ButtonVariant.ghost ? Theme.input.mix(Theme.background, 0.3)
         : transparent-fill ? transparent
         : outline ? (status-variant || variant == ButtonVariant.primary ? tone.with-alpha(0.2) : Theme.hovered(Theme.accent))
@@ -107,7 +114,8 @@ export component Button {
         border-width: !transparent-fill && (variant == ButtonVariant.default || outline) ? 1px : 0px;
         border-color: enabled ? border-tone : border-tone.with-alpha(0.5);
         background: !enabled ? disabled-fill
-            : touch.pressed || selected ? press-fill
+            : touch.pressed ? press-fill
+            : selected ? selected-fill
             : touch.has-hover ? hover-fill
             : fill;
         animate background { duration: 100ms; }

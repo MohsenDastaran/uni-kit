@@ -15,7 +15,7 @@ export component Menu {
     in property <[MenuEntry]> items;
     callback chosen(index: int);
 
-    preferred-width: 220px;
+    preferred-width: 280px;
 
     Rectangle {
         border-radius: Theme.radius-lg;
@@ -39,16 +39,25 @@ export component Menu {
                     background: Theme.border;
                 }
 
+                // Every row keeps the same columns: a leading icon slot, the
+                // label, the shortcut, and a trailing check slot. A row that
+                // leaves a column empty still occupies it, so labels and
+                // shortcuts line up down the menu.
                 if !item.separator: HorizontalLayout {
                     padding-left: 8px;
                     padding-right: 8px;
                     spacing: 8px;
                     opacity: item.disabled ? 0.45 : 1;
 
-                    if item.icon != "": Icon {
-                        name: item.icon;
-                        size: 14px;
-                        color: Theme.foreground;
+                    Rectangle {
+                        width: 16px;
+
+                        if item.icon != "": Icon {
+                            x: (parent.width - self.width) / 2;
+                            name: item.icon;
+                            size: 14px;
+                            color: Theme.foreground;
+                        }
                     }
 
                     Text {
@@ -57,20 +66,28 @@ export component Menu {
                         color: Theme.foreground;
                         font-size: Theme.font-size-sm;
                         vertical-alignment: center;
+                        overflow: elide;
                     }
 
-                    if item.shortcut != "": Text {
+                    Text {
+                        width: 48px;
                         text: item.shortcut;
                         color: Theme.muted-foreground;
                         font-size: Theme.font-size-xs;
                         font-family: Theme.mono-font-family;
+                        horizontal-alignment: right;
                         vertical-alignment: center;
                     }
 
-                    if item.checked: Icon {
-                        name: "check";
-                        size: 14px;
-                        color: Theme.foreground;
+                    Rectangle {
+                        width: 16px;
+
+                        if item.checked: Icon {
+                            x: (parent.width - self.width) / 2;
+                            name: "check";
+                            size: 14px;
+                            color: Theme.foreground;
+                        }
                     }
                 }
 

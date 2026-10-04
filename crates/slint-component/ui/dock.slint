@@ -365,9 +365,9 @@ component DockTab inherits Rectangle {
 
     height: 30px;
     horizontal-stretch: 0;
-    background: tab-hover.has-hover ? Theme.muted.with-alpha(0.55) : transparent;
-    border-width: 1px;
-    border-color: tab-hover.has-hover || active ? Theme.border : transparent;
+    background: active ? Theme.background
+        : tab-hover.has-hover ? Theme.muted.with-alpha(0.6)
+        : transparent;
     animate background { duration: 90ms; }
     accessible-role: tab;
     accessible-label: root.label;
@@ -415,6 +415,14 @@ component DockTab inherits Rectangle {
             mouse-cursor: pointer;
             clicked => { DockState.close(root.panel); }
         }
+    }
+
+    if active: Rectangle {
+        x: 10px;
+        y: parent.height - 2px;
+        width: parent.width - 20px;
+        height: 2px;
+        background: Theme.primary;
     }
 
     tab-hover := TouchArea {
@@ -473,8 +481,6 @@ component DockHeader inherits Rectangle {
     height: 30px;
     horizontal-stretch: 1;
     background: Theme.sidebar;
-    border-width: 1px;
-    border-color: Theme.border;
 
     HorizontalLayout {
         spacing: 0;
@@ -488,10 +494,9 @@ component DockHeader inherits Rectangle {
             Icon {
                 x: (parent.width - self.width) / 2;
                 y: (parent.height - self.height) / 2;
-                name: "panel-left";
+                name: root.region == 2 ? "panel-right" : (root.region == 3 ? "panel-bottom" : "panel-left");
                 size: 14px;
                 color: Theme.muted-foreground;
-                transform-rotation: root.region == 2 ? 180deg : (root.region == 3 ? 90deg : 0deg);
             }
             toggle-hit := TouchArea {
                 width: 100%;
@@ -525,6 +530,9 @@ component DockHeader inherits Rectangle {
         strip := Rectangle {
             horizontal-stretch: 1;
             clip: true;
+            background: Theme.muted;
+            border-width: 1px;
+            border-color: Theme.border;
 
             HorizontalLayout {
 
@@ -785,10 +793,9 @@ component DockRail inherits Rectangle {
             Icon {
                 x: (parent.width - self.width) / 2;
                 y: (parent.height - self.height) / 2;
-                name: "panel-left";
+                name: root.region == 2 ? "panel-right" : "panel-left";
                 size: 14px;
                 color: Theme.muted-foreground;
-                transform-rotation: root.region == 2 ? 180deg : 0deg;
             }
             rail-hit := TouchArea {
                 width: 100%;
@@ -804,6 +811,8 @@ component DockRail inherits Rectangle {
 }
 
 // A toolbar button, so a view can open and close docks and lock the layout.
+// The icon sits over the label, and the active state is a filled chip, so the
+// row reads at a glance in both palettes.
 component DockToolButton {
     in property <string> icon;
     in property <string> label;
@@ -811,36 +820,64 @@ component DockToolButton {
     in property <bool> enabled: true;
     callback clicked;
 
-    height: 28px;
+    height: 38px;
     horizontal-stretch: 0;
+    width: max(tool-body.preferred-width, 46px);
 
     Rectangle {
-        width: tool-body.preferred-width;
+        width: parent.width;
         border-radius: Theme.radius-md;
         background: !root.enabled ? transparent
-            : tool-hit.pressed ? Theme.accent
-            : tool-hit.has-hover || root.checked ? Theme.muted
+            : tool-hit.pressed ? Theme.primary.with-alpha(0.18)
+            : root.checked ? Theme.primary.with-alpha(Theme.dark ? 0.28 : 0.12)
+            : tool-hit.has-hover ? Theme.muted
             : transparent;
         border-width: 1px;
-        border-color: root.checked ? Theme.border : transparent;
+        border-color: root.checked ? Theme.primary.with-alpha(0.45) : transparent;
         animate background { duration: 90ms; }
+        animate border-color { duration: 90ms; }
 
-        tool-body := HorizontalLayout {
-            padding-left: 8px;
-            padding-right: 8px;
-            spacing: 6px;
+        tool-body := VerticalLayout {
             alignment: center;
+            spacing: 1px;
 
-            Icon {
-                name: root.icon;
-                size: 14px;
-                color: root.enabled ? Theme.foreground : Theme.muted-foreground.with-alpha(0.45);
+            // Both slots have a fixed height, so the icon and the label always
+            // land on the same two rows. Sized to their own content, a label's
+            // descender can shift the whole stack inside its chip, which reads
+            // as one button sitting lower than its neighbours.
+            Rectangle {
+                height: 15px;
+
+                VerticalLayout {
+                    alignment: center;
+
+                    Icon {
+                        name: root.icon;
+                        size: 14px;
+                        color: !root.enabled ? Theme.muted-foreground.with-alpha(0.4)
+                            : root.checked ? Theme.foreground
+                            : Theme.muted-foreground;
+                    }
+                }
             }
-            Text {
-                text: root.label;
-                color: root.enabled ? Theme.foreground : Theme.muted-foreground.with-alpha(0.45);
-                font-size: Theme.font-size-xs;
-                vertical-alignment: center;
+
+            Rectangle {
+                height: 12px;
+
+                VerticalLayout {
+                    alignment: center;
+
+                    Text {
+                        text: root.label;
+                        color: !root.enabled ? Theme.muted-foreground.with-alpha(0.4)
+                            : root.checked || tool-hit.has-hover ? Theme.foreground
+                            : Theme.muted-foreground;
+                        font-size: 9px;
+                        font-weight: root.checked ? 600 : 500;
+                        horizontal-alignment: center;
+                        vertical-alignment: center;
+                    }
+                }
             }
         }
 
@@ -878,7 +915,7 @@ export component DockArea inherits Rectangle {
         spacing: 0;
 
         if root.toolbar: Rectangle {
-            height: 38px;
+            height: 46px;
             background: Theme.sidebar;
             border-width: 1px;
             border-color: Theme.border;
@@ -886,43 +923,51 @@ export component DockArea inherits Rectangle {
             HorizontalLayout {
                 padding-left: 8px;
                 padding-right: 8px;
-                spacing: 2px;
+                spacing: 4px;
                 alignment: center;
 
                 DockToolButton {
                     icon: "panel-left";
-                    label: "Left";
-                    checked: !DockState.collapsed[0];
+                    label: "LEFT";
+                    checked: !DockState.region-empty(0) && !DockState.collapsed[0];
                     enabled: !DockState.region-empty(0);
                     clicked => { DockState.toggle-region(0); }
                 }
                 DockToolButton {
-                    icon: "panel-left";
-                    label: "Bottom";
-                    checked: !DockState.collapsed[3];
+                    icon: "panel-bottom";
+                    label: "BOTTOM";
+                    checked: !DockState.region-empty(3) && !DockState.collapsed[3];
                     enabled: !DockState.region-empty(3);
                     clicked => { DockState.toggle-region(3); }
                 }
                 DockToolButton {
-                    icon: "panel-left";
-                    label: "Right";
-                    checked: !DockState.collapsed[2];
+                    icon: "panel-right";
+                    label: "RIGHT";
+                    checked: !DockState.region-empty(2) && !DockState.collapsed[2];
                     enabled: !DockState.region-empty(2);
                     clicked => { DockState.toggle-region(2); }
                 }
 
                 Rectangle { horizontal-stretch: 1; }
 
+                Rectangle { width: 6px; }
+                Rectangle {
+                    width: 1px;
+                    height: 24px;
+                    background: Theme.border;
+                }
+                Rectangle { width: 6px; }
+
                 DockToolButton {
                     icon: DockState.zoomed ? "minimize-2" : "maximize-2";
-                    label: DockState.zoomed ? "Restore" : "Zoom";
+                    label: DockState.zoomed ? "RESTORE" : "ZOOM";
                     checked: DockState.zoomed;
                     enabled: !DockState.region-empty(1);
                     clicked => { DockState.toggle-zoom(); }
                 }
                 DockToolButton {
-                    icon: "lock";
-                    label: "Lock";
+                    icon: DockState.locked ? "lock" : "lock-open";
+                    label: DockState.locked ? "LOCKED" : "LOCK";
                     checked: DockState.locked;
                     clicked => { DockState.locked = !DockState.locked; }
                 }
