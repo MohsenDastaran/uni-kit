@@ -8,32 +8,47 @@ export component OtpInputExample inherits VerticalLayout {
     spacing: 24px;
     alignment: start;
 
-    private property <string> code;
+    // The cells report every change, so the host owns both the storage and the
+    // decision that a code is complete.
+    private property <[string]> code: ["", "", "", "", "", ""];
+    private property <string> last: "nothing yet";
+
     GroupBox {
         title: "Verification";
         variant: GroupBoxVariant.outline;
+
         OtpInput {
-            value <=> root.code;
+            digits <=> root.code;
+            edited(index, text) => {
+                root.last = "cell \{index + 1} → \{text == "" ? "(cleared)" : text}";
+            }
         }
         Text {
-            text: root.code == "" ? "Enter the 6-digit code." : "Code: \{root.code}";
+            text: "Enter the 6-digit code.";
             color: Theme.muted-foreground;
+        }
+        Text {
+            text: "Last edit: " + root.last;
+            color: Theme.muted-foreground;
+            font-size: Theme.font-size-xs;
         }
     }
 
     GroupBox {
         title: "With Default Value";
         variant: GroupBoxVariant.outline;
+
         OtpInput {
-            value: "123456";
+            digits: ["1", "2", "3", "4", "5", "6"];
         }
     }
 
     GroupBox {
         title: "Masked OTP Input";
         variant: GroupBoxVariant.outline;
+
         OtpInput {
-            value: "123456";
+            digits: ["1", "2", "3", "4", "5", "6"];
             masked: true;
         }
     }
@@ -41,16 +56,16 @@ export component OtpInputExample inherits VerticalLayout {
     GroupBox {
         title: "Different Sizes";
         variant: GroupBoxVariant.outline;
+
         OtpInput {
-            value: "1234";
-            length: 4;
+            digits: ["1", "2", "3", "4"];
             size: ControlSize.small;
         }
         OtpInput {
-            value: "123456";
+            digits: ["1", "2", "3", "4", "5", "6"];
         }
         OtpInput {
-            value: "123456";
+            digits: ["1", "2", "3", "4", "5", "6"];
             size: ControlSize.large;
         }
     }
@@ -58,22 +73,24 @@ export component OtpInputExample inherits VerticalLayout {
     GroupBox {
         title: "Disabled State";
         variant: GroupBoxVariant.outline;
+
         OtpInput {
-            value: "123456";
+            digits: ["1", "2", "3", "4", "5", "6"];
             enabled: false;
         }
     }
 
+    // The cell count is `digits.length`, so a four-cell code is just a
+    // four-entry array.
     GroupBox {
         title: "Different Length Codes";
         variant: GroupBoxVariant.outline;
+
         OtpInput {
-            length: 4;
-            value: "1234";
+            digits: ["1", "2", "3", "4"];
         }
         OtpInput {
-            length: 6;
+            digits: ["", "", "", "", "", ""];
         }
     }
-
 }

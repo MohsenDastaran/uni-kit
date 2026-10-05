@@ -24,6 +24,144 @@ export component NumberInputExample inherits VerticalLayout {
         }
     }
 
+    // The narrow shape. A counter gives the steppers the work and leaves the
+    // field only wide enough for the number, which is what an inline quantity
+    // control needs.
+    GroupBox {
+        title: "Integer Counter";
+        variant: GroupBoxVariant.outline;
+
+        VerticalLayout {
+            spacing: 14px;
+
+            HorizontalLayout {
+                spacing: 10px;
+                Text {
+                    horizontal-stretch: 1;
+                    horizontal-alignment: left;
+                    text: "Quantity";
+                    color: Theme.foreground;
+                    font-size: Theme.font-size-sm;
+                    vertical-alignment: center;
+                }
+                NumberInput {
+                    width: 96px;
+                    value: 3;
+                    minimum: 0;
+                    maximum: 99;
+                }
+            }
+
+            HorizontalLayout {
+                spacing: 10px;
+                Text {
+                    horizontal-stretch: 1;
+                    horizontal-alignment: left;
+                    text: "Seats, in twos";
+                    color: Theme.foreground;
+                    font-size: Theme.font-size-sm;
+                    vertical-alignment: center;
+                }
+                NumberInput {
+                    width: 96px;
+                    value: 12;
+                    minimum: 0;
+                    maximum: 20;
+                    step: 2;
+                }
+            }
+
+            // At the bound, the stepper that would cross it is disabled.
+            HorizontalLayout {
+                spacing: 10px;
+                Text {
+                    horizontal-stretch: 1;
+                    horizontal-alignment: left;
+                    text: "At the minimum";
+                    color: Theme.foreground;
+                    font-size: Theme.font-size-sm;
+                    vertical-alignment: center;
+                }
+                NumberInput {
+                    width: 96px;
+                    value: 0;
+                    minimum: 0;
+                    maximum: 99;
+                }
+            }
+
+            HorizontalLayout {
+                spacing: 10px;
+                Text {
+                    horizontal-stretch: 1;
+                    horizontal-alignment: left;
+                    text: "Disabled";
+                    color: Theme.muted-foreground;
+                    font-size: Theme.font-size-sm;
+                    vertical-alignment: center;
+                }
+                NumberInput {
+                    width: 96px;
+                    value: 8;
+                    enabled: false;
+                }
+            }
+        }
+    }
+
+    // The stepper shape: the value is centred and the buttons sit at the two
+    // ends, so the control reads `− 3 +` rather than `3 − +`.
+    GroupBox {
+        title: "Without Default Styling";
+        description: "The value is centred, with a stepper at each end.";
+        variant: GroupBoxVariant.outline;
+
+        VerticalLayout {
+            spacing: 12px;
+
+            NumberInput {
+                centered: true;
+                value: 3;
+                minimum: 0;
+                maximum: 99;
+            }
+
+            NumberInput {
+                centered: true;
+                value: 42;
+                minimum: 0;
+                maximum: 99;
+                prefix: "$";
+            }
+
+            NumberInput {
+                centered: true;
+                value: 8;
+                size: ControlSize.large;
+            }
+
+            HorizontalLayout {
+                spacing: 10px;
+                Text {
+                    horizontal-stretch: 1;
+                    horizontal-alignment: left;
+                    text: "Seats, in twos";
+                    color: Theme.foreground;
+                    font-size: Theme.font-size-sm;
+                    vertical-alignment: center;
+                }
+                NumberInput {
+                    centered: true;
+                    width: 140px;
+                    value: 6;
+                    minimum: 0;
+                    maximum: 20;
+                    step: 2;
+                }
+            }
+        }
+    }
+
     GroupBox {
         title: "Different Sizes";
         variant: GroupBoxVariant.outline;

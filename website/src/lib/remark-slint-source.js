@@ -427,30 +427,10 @@ const ALIASES = {
   'hover-card': {
     'User Profile Preview': 'Hover',
   },
-  questionnaire: {
-    'Complete flow': 'Usage',
-  },
   // The Shimmer page groups several knobs under one heading, so its cards name
   // the section that documents them.
   // The Marker page names these two sections in a sentence rather than as
   // headings, so the cards point at the heading that covers them.
-  marker: {
-    'With icon': 'Icons, content, and interactive children',
-    'Links and buttons': 'Icons, content, and interactive children',
-  },
-  shimmer: {
-    'Basic': 'Basic usage',
-    'Timing, spread and color': 'Duration',
-    'Play once': 'Direction and play-once',
-    'In context': 'Compose with Marker',
-  },
-  'message-scroller': {
-    'Conversation': 'Create state and choose the starting position',
-    'Streaming responses': 'Append, streaming, and follow-tail behavior',
-    'Empty conversation': 'Render rows and an empty state',
-    // A host-drawn jump control is the "style slot" that section documents.
-    'Custom jump button': 'Scrollbar and style slots',
-  },
   icon: {
     'Basic Icon': 'Icons',
     'Icon with Custom Color': 'Icons',
@@ -542,6 +522,31 @@ const SHARED = {
   accordion: {
     Default: 'Single',
     'Custom style': 'Icons and custom content',
+  },
+  // Box title -> heading. Cards use readable titles, so they resolve here in
+  // phase 2, which inserts one sample per section. Putting them in `ALIASES`
+  // instead would insert a copy after every Rust snippet in the section.
+  shimmer: {
+    Basic: 'Basic usage',
+    'Timing, spread and color': 'Duration',
+    'Play once': 'Direction and play-once',
+    'In context': 'Compose with Marker',
+  },
+  questionnaire: {
+    'Complete flow': 'Usage',
+  },
+  marker: {
+    'With icon': 'Icons, content, and interactive children',
+    'Links and buttons': 'Icons, content, and interactive children',
+  },
+  'message-scroller': {
+    Conversation: 'Create state and choose the starting position',
+    'Streaming responses': 'Append, streaming, and follow-tail behavior',
+    'Jump controls': 'Jump-to-latest controls',
+    // A host-drawn jump control is the "style slot" that section documents.
+    'Custom jump button': 'Scrollbar and style slots',
+    'Empty conversation': 'Render rows and an empty state',
+    'Earlier history': 'Prepend earlier history',
   },
   'alert-dialog': {
     'Imperative API': 'Delete file',
@@ -928,9 +933,13 @@ export function remarkSlintSource({ root = process.cwd() } = {}) {
       const used = new Set();
       assigned.forEach((value, index) => {
         const sample = rust[index + 1];
-        after(sample, code(value));
         const title = aliases[sample.heading] ?? sample.heading;
         const box = boxes.findIndex((item) => sameTitle(title, item.title));
+        // A section can hold several Rust snippets, and every one of them
+        // carries the section's heading. The sample belongs to the first; the
+        // rest would repeat the same source down the section.
+        if (box >= 0 && used.has(box)) return;
+        after(sample, code(value));
         if (box >= 0) used.add(box);
         if (sample.headingNode) tagExample(sample.headingNode, title);
       });

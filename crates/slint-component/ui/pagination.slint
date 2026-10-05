@@ -6,7 +6,24 @@ export component Pagination {
     in-out property <int> page: 1;
     in property <int> pages: 10;
     in property <ControlSize> size: ControlSize.small;
+    // Icon-only previous and next buttons, which is how GPUI's `compact()`
+    // renders them. Setting it false labels the pair "Previous" and "Next",
+    // which is what GPUI's plain `Pagination` shows.
+    in property <bool> compact: true;
     callback changed(page: int);
+
+    // The run of page numbers is five wide and always contains `page`, so the
+    // selected page can never scroll out of the control. Pages outside the run
+    // are reached through the first and last buttons and their ellipses.
+    private property <int> window-size: 5;
+    // `window-size / 2` is a float division in Slint, which truncates and shifts
+    // the run by one on odd pages, so the half-width is its own integer.
+    private property <int> window-half: 2;
+    private property <int> window-start: clamp(
+        root.page - root.window-half,
+        1,
+        max(1, root.pages - root.window-size + 1));
+    private property <int> window-end: min(root.pages, root.window-start + root.window-size - 1);
 
     function go(next: int) {
         let clamped = clamp(next, 1, pages);
@@ -17,9 +34,11 @@ export component Pagination {
     HorizontalLayout {
         spacing: 4px;
         alignment: start;
+        cross-axis-alignment: center;
 
         Button {
             icon: "chevron-left";
+            text: root.compact ? "" : "Previous";
             variant: ButtonVariant.ghost;
             size: root.size;
             enabled: page > 1;
@@ -29,32 +48,49 @@ export component Pagination {
             }
         }
 
-        for n in [1, 2, 3]: Button {
-            text: "\{n}";
-            variant: page == n ? ButtonVariant.primary : ButtonVariant.ghost;
+        // Page one sits outside the run once the run has moved past it.
+        if root.window-start > 1: Button {
+            text: "1";
+            variant: page == 1 ? ButtonVariant.primary : ButtonVariant.ghost;
             size: root.size;
             clicked => {
-                root.go(n);
+                root.go(1);
             }
         }
-
-        if pages > 5: Text {
+        if root.window-start > 2: Text {
             text: "…";
             color: Theme.muted-foreground;
             vertical-alignment: center;
         }
 
-        if pages > 3: Button {
-            text: "\{pages}";
-            variant: page == pages ? ButtonVariant.primary : ButtonVariant.ghost;
+        for _[index] in root.window-size: Button {
+            visible: root.window-start + index <= root.window-end;
+            text: "\{root.window-start + index}";
+            variant: page == root.window-start + index ? ButtonVariant.primary : ButtonVariant.ghost;
             size: root.size;
             clicked => {
-                root.go(pages);
+                root.go(root.window-start + index);
+            }
+        }
+
+        if root.window-end < root.pages - 1: Text {
+            text: "…";
+            color: Theme.muted-foreground;
+            vertical-alignment: center;
+        }
+        if root.window-end < root.pages: Button {
+            text: "\{root.pages}";
+            variant: page == root.pages ? ButtonVariant.primary : ButtonVariant.ghost;
+            size: root.size;
+            clicked => {
+                root.go(root.pages);
             }
         }
 
         Button {
-            icon: "chevron-right";
+            icon: root.compact ? "chevron-right" : "";
+            suffix-icon: root.compact ? "" : "chevron-right";
+            text: root.compact ? "" : "Next";
             variant: ButtonVariant.ghost;
             size: root.size;
             enabled: page < pages;

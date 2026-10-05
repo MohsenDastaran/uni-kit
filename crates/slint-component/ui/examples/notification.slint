@@ -1,12 +1,19 @@
-import { Theme, Status } from "../theme.slint";
+import { Theme, Status, ButtonVariant, ControlSize } from "../theme.slint";
 import { GroupBox, GroupBoxVariant } from "section.slint";
-import { Notification } from "../notification.slint";
+import { Button } from "../button.slint";
+import { Notice, Notification, NotificationLayer, NotificationPlacement } from "../notification.slint";
 
 export component NotificationExample inherits VerticalLayout {
     horizontal-stretch: 1;
     padding: Theme.page-padding(Theme.viewport);
     spacing: 24px;
     alignment: start;
+
+    // Two independent stacks: one the placement selector drives, one the
+    // trigger buttons drive.
+    private property <[Notice]> placed: [];
+    private property <[Notice]> clicked: [];
+    private property <NotificationPlacement> place: NotificationPlacement.top-right;
 
     GroupBox {
         title: "Basic Notification";
@@ -20,31 +27,6 @@ export component NotificationExample inherits VerticalLayout {
 
     // `status` picks the glyph and its colour; the layout is the same for all
     // four.
-    // A notice that cannot be dismissed is the shape for a state the person
-    // must resolve.
-    GroupBox {
-        title: "Auto-hide Control";
-        variant: GroupBoxVariant.outline;
-
-        VerticalLayout {
-            spacing: 12px;
-            alignment: start;
-            Notification { title: "Closable"; message: "This one has a dismiss button."; closable: true; }
-            Notification { title: "Sticky"; message: "No dismiss button; the application decides."; closable: false; }
-        }
-    }
-
-    GroupBox {
-        title: "With Action Button";
-        variant: GroupBoxVariant.outline;
-
-        Notification {
-            status: Status.warning;
-            title: "Unsaved changes";
-            message: "Leaving now discards the draft.";
-        }
-    }
-
     GroupBox {
         title: "Notification Types";
         variant: GroupBoxVariant.outline;
@@ -59,25 +41,41 @@ export component NotificationExample inherits VerticalLayout {
         }
     }
 
+    // Auto-hide Control
     GroupBox {
-        title: "Placement";
+        title: "Auto-hide Control";
         variant: GroupBoxVariant.outline;
 
-        Rectangle {
-            width: 100%; height: 220px; border-width: 1px; border-color: Theme.border; border-radius: Theme.radius-lg; background: Theme.muted.with-alpha(0.3); clip: true;
-            Rectangle { width: 100%; height: 100%; }
-            VerticalLayout {
-                x: parent.width - 300px;
-                y: 12px;
-                width: 288px;
+        VerticalLayout {
+            spacing: 12px;
+            alignment: start;
+            Notification { title: "Closable"; message: "This one has a dismiss button."; closable: true; }
+            Notification { title: "Sticky"; message: "No dismiss button; the application decides."; closable: false; }
+        }
+    }
+
+    // A notification carrying an action the person can take from the toast.
+    GroupBox {
+        title: "With Action Button";
+        variant: GroupBoxVariant.outline;
+
+        VerticalLayout {
+            spacing: 12px;
+            alignment: start;
+            Notification {
+                status: Status.warning;
+                title: "Unsaved changes";
+                message: "Leaving now discards the draft.";
+            }
+            HorizontalLayout {
                 spacing: 8px;
-                Notification { status: Status.success; title: "Deployed"; message: "The build is live."; }
-                Notification { status: Status.info; title: "New comment"; message: "On the dock example."; }
+                alignment: start;
+                Button { text: "Discard"; outline: true; }
+                Button { text: "Keep editing"; variant: ButtonVariant.primary; }
             }
         }
     }
 
-    // A title with no message is a single-line notice.
     GroupBox {
         title: "Notification with Title";
         variant: GroupBoxVariant.outline;
@@ -85,6 +83,160 @@ export component NotificationExample inherits VerticalLayout {
         Notification {
             title: "Copied to clipboard";
             message: "";
+        }
+    }
+
+    // The six anchors GPUI's `Anchor` names. Pick one and press Show to watch
+    // the stack slide in from that edge.
+    GroupBox {
+        title: "Placement";
+        variant: GroupBoxVariant.outline;
+
+        VerticalLayout {
+            spacing: 12px;
+
+            HorizontalLayout {
+                horizontal-stretch: 1;
+                spacing: 6px;
+                Button {
+                    text: "Top left";
+                    size: ControlSize.xsmall;
+                    selected: root.place == NotificationPlacement.top-left;
+                    clicked => { root.place = NotificationPlacement.top-left; }
+                }
+                Button {
+                    text: "Top centre";
+                    size: ControlSize.xsmall;
+                    selected: root.place == NotificationPlacement.top-center;
+                    clicked => { root.place = NotificationPlacement.top-center; }
+                }
+                Button {
+                    text: "Top right";
+                    size: ControlSize.xsmall;
+                    selected: root.place == NotificationPlacement.top-right;
+                    clicked => { root.place = NotificationPlacement.top-right; }
+                }
+                Button {
+                    text: "Bottom left";
+                    size: ControlSize.xsmall;
+                    selected: root.place == NotificationPlacement.bottom-left;
+                    clicked => { root.place = NotificationPlacement.bottom-left; }
+                }
+                Button {
+                    text: "Bottom centre";
+                    size: ControlSize.xsmall;
+                    selected: root.place == NotificationPlacement.bottom-center;
+                    clicked => { root.place = NotificationPlacement.bottom-center; }
+                }
+                Button {
+                    text: "Bottom right";
+                    size: ControlSize.xsmall;
+                    selected: root.place == NotificationPlacement.bottom-right;
+                    clicked => { root.place = NotificationPlacement.bottom-right; }
+                }
+            }
+
+            HorizontalLayout {
+                spacing: 8px;
+                alignment: start;
+                Button {
+                    text: "Show";
+                    variant: ButtonVariant.primary;
+                    clicked => {
+                        root.placed = [{ title: "Placed", message: "The stack slides in from the chosen edge.", status: Status.info }];
+                    }
+                }
+                Button {
+                    text: "Clear";
+                    clicked => { root.placed = []; }
+                }
+            }
+
+            Rectangle {
+                width: 100%;
+                height: 320px;
+                border-radius: Theme.radius-lg;
+                border-width: 1px;
+                border-color: Theme.border;
+                background: Theme.muted.with-alpha(0.25);
+                clip: true;
+
+                // Always mounted: the layer measures its corner against this
+                // frame, and it slides in whenever `placed` gains an item.
+                NotificationLayer {
+                    items: root.placed;
+                    placement: root.place;
+                    dismissed(index) => { root.placed = []; }
+                }
+            }
+        }
+    }
+
+    // Press a button and the toast animates in: the stack slides down from the
+    // edge while the card fades up.
+    GroupBox {
+        title: "Clickable Notifications";
+        variant: GroupBoxVariant.outline;
+
+        VerticalLayout {
+            spacing: 12px;
+
+            HorizontalLayout {
+                spacing: 8px;
+                alignment: start;
+                Button {
+                    text: "Success";
+                    icon: "circle-check";
+                    clicked => {
+                        root.clicked = [{ title: "Deployed", message: "The build is live.", status: Status.success }];
+                    }
+                }
+                Button {
+                    text: "Info";
+                    icon: "info";
+                    clicked => {
+                        root.clicked = [{ title: "Update available", message: "Version 0.6.5 is ready.", status: Status.info }];
+                    }
+                }
+                Button {
+                    text: "Warning";
+                    icon: "triangle-alert";
+                    clicked => {
+                        root.clicked = [{ title: "Slow request", message: "The last query took 4.2s.", status: Status.warning }];
+                    }
+                }
+                Button {
+                    text: "Error";
+                    icon: "circle-x";
+                    clicked => {
+                        root.clicked = [{ title: "Upload failed", message: "The connection dropped.", status: Status.danger }];
+                    }
+                }
+            }
+
+            Rectangle {
+                width: 100%;
+                height: 240px;
+                border-radius: Theme.radius-lg;
+                border-width: 1px;
+                border-color: Theme.border;
+                background: Theme.muted.with-alpha(0.25);
+                clip: true;
+
+                if root.clicked.length == 0: Text {
+                    text: "Press a button to raise a notification.";
+                    color: Theme.muted-foreground;
+                    font-size: Theme.font-size-xs;
+                    x: (parent.width - self.width) / 2;
+                    y: (parent.height - self.height) / 2;
+                }
+
+                NotificationLayer {
+                    items: root.clicked;
+                    placement: NotificationPlacement.top-right;
+                    dismissed(index) => { root.clicked = []; }
+                }
+            }
         }
     }
 }

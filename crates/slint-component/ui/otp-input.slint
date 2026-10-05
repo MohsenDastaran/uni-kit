@@ -1,19 +1,140 @@
 import { Theme, ControlSize } from "theme.slint";
 
+// One cell of an `OtpInput`.
+//
+// Two things make a cell behave the way a one-time-password field is expected
+// to, and both exist because Slint strings cannot be sliced or truncated:
+//
+//  * A new character *replaces* what is in the cell. Selecting the cell's whole
+//    content when it takes focus is what produces that: the field's own editing
+//    then overwrites the selection. Classifying the key instead would not work,
+//    because a special key such as an arrow carries a character too, and there
+//    is no way to read a character's code in Slint.
+//  * Backspace clears the cell. The key is recognised by its exact text, and it
+//    is accepted here so the field does not do its own deleting on top.
+component OtpCell {
+    in-out property <string> char;
+    in property <length> cell: 36px;
+    in property <ControlSize> size: ControlSize.medium;
+    in property <bool> masked;
+    in property <bool> enabled: true;
+    // The cell's new content; empty means it was cleared.
+    callback typed(text: string);
+    // Backspace: the caller always steps back. `cleared` says whether this cell
+    // had something to clear; when it did not, the step back is what clears the
+    // previous cell instead.
+    callback erased(cleared: bool);
+
+    // Named `focus` would clash with the built-in, which only exists on
+    // focusable elements — and this component is not one.
+    public function take-focus() {
+        field.focus();
+    }
+
+    width: cell;
+    height: cell;
+
+    Rectangle {
+        border-radius: Theme.radius-md;
+        border-width: 1px;
+        border-color: field.has-focus ? Theme.ring : Theme.input;
+        background: Theme.background;
+
+        field := TextInput {
+            width: 100%;
+            height: 100%;
+            text <=> root.char;
+            enabled: root.enabled;
+            single-line: true;
+            // A masked cell is a password field; it only ever holds one
+            // character, so the renderer hides it for us.
+            input-type: root.masked ? InputType.password : InputType.text;
+            horizontal-alignment: center;
+            // `TextInput` aligns to the top by default, which floats the
+            // character above the middle of the cell.
+            vertical-alignment: center;
+            color: Theme.foreground;
+            font-size: Theme.control-font-size(root.size);
+            font-weight: 600;
+            selection-background-color: Theme.selection.with-alpha(0.35);
+
+            // Taking focus selects whatever is there, so the next character
+            // replaces it instead of appending to it.
+            changed has-focus => {
+                if self.has-focus {
+                    self.select-all();
+                }
+            }
+
+            key-pressed(event) => {
+                // U+0008 is how Slint spells Backspace.
+                if event.text == "\u{8}" {
+                    // One press clears this cell and steps back.
+                    if root.char != "" {
+                        root.char = "";
+                        root.typed("");
+                        root.erased(true);
+                    } else {
+                        root.erased(false);
+                    }
+                    return EventResult.accept;
+                }
+                return EventResult.reject;
+            }
+
+            edited => {
+                if self.text.character-count <= 1 {
+                    root.typed(self.text);
+                } else {
+                    // Only a paste reaches here. The cell cannot hold more than
+                    // one character and a string cannot be cut, so the whole
+                    // thing is refused.
+                    root.char = "";
+                    root.typed("");
+                }
+            }
+        }
+    }
+}
+
 // A one-time-password field. Mirrors GPUI Component's `OtpInput`: a row of
-// single-character cells that share one string value.
+// single-character cells that make up one code.
+//
+// The cells cannot be derived from a single code string. Slint gives a string
+// no indexing and no `substring`, an array only `length`, and a function body
+// neither loops nor recursion — so `["1","2"]` cannot be joined into `"12"` and
+// a `value: string` could never be split across cells. `digits` is therefore the
+// source of truth, one entry per cell, and the host assembles the code itself.
+//
+// The cells are named rather than built by a `for` loop for one reason: typing a
+// character has to move focus to the next cell, that needs a reference to it,
+// and Slint has no focus-by-index.
+//
+// Up to six cells are supported; a longer `digits` array simply does not render
+// its extra entries.
 export component OtpInput {
-    in-out property <string> value;
-    in property <int> length: 6;
+    // One entry per cell. The cells copy it when they are created; a host that
+    // replaces the array afterwards moves each cell through `set-digits`.
+    in-out property <[string]> digits: ["", "", "", "", "", ""];
     in property <bool> masked;
     in property <bool> enabled: true;
     in property <ControlSize> size: ControlSize.medium;
-    callback completed(value: string);
+    // Reports the cell that changed so the host can join `digits` and decide
+    // whether the code is complete.
+    callback edited(index: int, text: string);
 
     private property <length> cell: Theme.control-height(size);
 
-    function digit(index: int) -> string {
-        return "";
+    // Writes a whole code in at once, for a host that clears or restores the
+    // field. The cells own their text, so setting `digits` alone is not enough.
+    public function set-digits(values: [string]) {
+        root.digits = values;
+        c0.char = values[0];
+        c1.char = values[1];
+        c2.char = values[2];
+        c3.char = values[3];
+        c4.char = values[4];
+        c5.char = values[5];
     }
 
     height: cell;
@@ -22,48 +143,143 @@ export component OtpInput {
     HorizontalLayout {
         spacing: 8px;
 
-        for _[index] in length: Rectangle {
-            width: cell;
-            height: cell;
-            border-radius: Theme.radius-md;
-            border-width: 1px;
-            border-color: field.has-focus && index == min(value.character-count, length - 1) ? Theme.ring : Theme.input;
-            background: Theme.background;
-
-            Text {
-                width: 100%;
-                height: 100%;
-                text: root.digit(index) == "" ? "" : (root.masked ? "•" : root.digit(index));
-                color: Theme.foreground;
-                font-size: Theme.control-font-size(size);
-                font-weight: 600;
-                horizontal-alignment: center;
-                vertical-alignment: center;
+        c0 := OtpCell {
+            visible: root.digits.length > 0;
+            init => { self.char = root.digits[0]; }
+            typed(text) => {
+                root.digits[0] = text;
+                root.edited(0, text);
+                if text.character-count == 1 && root.digits.length > 1 {
+                    c1.take-focus();
+                }
             }
-        }
-    }
-
-    field := TextInput {
-        x: 0;
-        y: 0;
-        width: 1px;
-        height: 1px;
-        opacity: 0;
-        text <=> root.value;
-        enabled: root.enabled;
-        single-line: true;
-        input-type: InputType.text;
-        edited => {
-            if self.text.character-count >= root.length {
-                root.completed(self.text);
+            erased(cleared) => {
+                // Nothing precedes the first cell.
             }
+            cell: root.cell;
+            size: root.size;
+            masked: root.masked;
+            enabled: root.enabled;
         }
-    }
 
-    TouchArea {
-        enabled: root.enabled;
-        clicked => {
-            field.focus();
+        c1 := OtpCell {
+            visible: root.digits.length > 1;
+            init => { self.char = root.digits[1]; }
+            typed(text) => {
+                root.digits[1] = text;
+                root.edited(1, text);
+                if text.character-count == 1 && root.digits.length > 2 {
+                    c2.take-focus();
+                }
+            }
+            erased(cleared) => {
+                if !cleared {
+                    c0.char = "";
+                    root.digits[0] = "";
+                    root.edited(0, "");
+                }
+                c0.take-focus();
+            }
+            cell: root.cell;
+            size: root.size;
+            masked: root.masked;
+            enabled: root.enabled;
+        }
+
+        c2 := OtpCell {
+            visible: root.digits.length > 2;
+            init => { self.char = root.digits[2]; }
+            typed(text) => {
+                root.digits[2] = text;
+                root.edited(2, text);
+                if text.character-count == 1 && root.digits.length > 3 {
+                    c3.take-focus();
+                }
+            }
+            erased(cleared) => {
+                if !cleared {
+                    c1.char = "";
+                    root.digits[1] = "";
+                    root.edited(1, "");
+                }
+                c1.take-focus();
+            }
+            cell: root.cell;
+            size: root.size;
+            masked: root.masked;
+            enabled: root.enabled;
+        }
+
+        c3 := OtpCell {
+            visible: root.digits.length > 3;
+            init => { self.char = root.digits[3]; }
+            typed(text) => {
+                root.digits[3] = text;
+                root.edited(3, text);
+                if text.character-count == 1 && root.digits.length > 4 {
+                    c4.take-focus();
+                }
+            }
+            erased(cleared) => {
+                if !cleared {
+                    c2.char = "";
+                    root.digits[2] = "";
+                    root.edited(2, "");
+                }
+                c2.take-focus();
+            }
+            cell: root.cell;
+            size: root.size;
+            masked: root.masked;
+            enabled: root.enabled;
+        }
+
+        c4 := OtpCell {
+            visible: root.digits.length > 4;
+            init => { self.char = root.digits[4]; }
+            typed(text) => {
+                root.digits[4] = text;
+                root.edited(4, text);
+                if text.character-count == 1 && root.digits.length > 5 {
+                    c5.take-focus();
+                }
+            }
+            erased(cleared) => {
+                if !cleared {
+                    c3.char = "";
+                    root.digits[3] = "";
+                    root.edited(3, "");
+                }
+                c3.take-focus();
+            }
+            cell: root.cell;
+            size: root.size;
+            masked: root.masked;
+            enabled: root.enabled;
+        }
+
+        c5 := OtpCell {
+            visible: root.digits.length > 5;
+            init => { self.char = root.digits[5]; }
+            typed(text) => {
+                root.digits[5] = text;
+                root.edited(5, text);
+                if text.character-count == 1 {
+                    // The last cell has nowhere to advance to.
+                }
+            }
+            erased(cleared) => {
+                if !cleared {
+                    c4.char = "";
+                    root.digits[4] = "";
+                    root.edited(4, "");
+                }
+                c4.take-focus();
+            }
+            cell: root.cell;
+            size: root.size;
+            masked: root.masked;
+            enabled: root.enabled;
         }
     }
 }

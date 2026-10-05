@@ -8,12 +8,28 @@ export struct Notice {
     status: Status,
 }
 
+// Where a stack sits in its host. Mirrors GPUI Component's `Anchor`, which
+// `Notification::placement` takes.
+export enum NotificationPlacement {
+    top-left,
+    top-center,
+    top-right,
+    bottom-left,
+    bottom-center,
+    bottom-right,
+}
+
 // A toast. Mirrors GPUI Component's `Notification`.
+//
+// `placement` only decides which edge the card slides in from, matching how
+// GPUI offsets the entry animation by the notification's anchor: a top stack
+// drops down, a bottom stack rises.
 export component Notification {
     in property <string> title;
     in property <string> message;
     in property <Status> status: Status.info;
     in property <bool> closable: true;
+    in property <NotificationPlacement> placement: NotificationPlacement.top-right;
     callback closed();
 
     private property <color> tone: Theme.status-color(status);
@@ -21,13 +37,17 @@ export component Notification {
         : status == Status.warning ? "triangle-alert"
         : status == Status.danger ? "circle-x"
         : "info";
-
+    // The card mounts transparent and settles. A `Timer` is what separates the
+    // first frame from the rest; without it the binding would resolve straight
+    // to its resting value and there would be nothing to animate.
     horizontal-stretch: 1;
     min-width: 0px;
     max-width: 320px;
     preferred-width: 240px;
 
     Rectangle {
+        width: root.width;
+
         border-radius: Theme.radius-lg;
         border-width: 1px;
         border-color: Theme.border;
@@ -37,39 +57,105 @@ export component Notification {
         drop-shadow-color: Theme.shadow;
 
         HorizontalLayout {
-            padding: 12px;
-            spacing: 10px;
+                padding: 12px;
+                spacing: 10px;
+                cross-axis-alignment: start;
 
-            Icon {
-                name: glyph;
-                size: 16px;
-                color: tone;
+                Icon {
+                    name: glyph;
+                    size: 16px;
+                    color: tone;
+                }
+
+                VerticalLayout {
+                    horizontal-stretch: 1;
+                    spacing: 2px;
+                    if title != "": Text {
+                        text: title;
+                        color: Theme.foreground;
+                        font-size: Theme.font-size-sm;
+                        font-weight: 600;
+                    }
+                    if message != "": Text {
+                        text: message;
+                        color: Theme.muted-foreground;
+                        font-size: Theme.font-size-xs;
+                        wrap: word-wrap;
+                    }
+                }
+
+                if closable: Button {
+                    icon: "x";
+                    variant: ButtonVariant.ghost;
+                    size: ControlSize.xsmall;
+                    accessible-label: "Dismiss";
+                    clicked => {
+                        root.closed();
+                    }
+                }
             }
+        }
+}
+
+// A stack anchored to one corner of its host. The host supplies the notices;
+// dismissals are reported so the application owns the list.
+export component NotificationLayer {
+    in-out property <[Notice]> items;
+    in property <NotificationPlacement> placement: NotificationPlacement.top-right;
+    in property <length> inset: 16px;
+    in property <length> stack-width: 320px;
+    callback dismissed(index: int);
+
+    private property <bool> is-top: placement == NotificationPlacement.top-left
+        || placement == NotificationPlacement.top-center
+        || placement == NotificationPlacement.top-right;
+    private property <bool> is-left: placement == NotificationPlacement.top-left
+        || placement == NotificationPlacement.bottom-left;
+    private property <bool> is-center: placement == NotificationPlacement.top-center
+        || placement == NotificationPlacement.bottom-center;
+    // The slide is an animated inset. A layout owns its children's `y`, so
+    // moving the stack through padding is what keeps the motion available here;
+    // `rise` follows whether anything is showing, which makes it run on every
+    // arrival with no timer to drive it.
+    private property <bool> active: items.length > 0;
+    private property <length> rise: active ? 0px : 18px;
+    animate rise { duration: 400ms; easing: cubic-bezier(0.25, 0.1, 0.25, 1); }
+
+    // The component states its own size so it fills the frame the host puts it
+    // in; the layouts below then place the stack in the right corner by
+    // alignment rather than by measuring the parent by hand.
+    width: 100%;
+    height: 100%;
+    horizontal-stretch: 1;
+    vertical-stretch: 1;
+
+    VerticalLayout {
+        width: 100%;
+        height: 100%;
+        padding-left: inset;
+        padding-right: inset;
+        padding-top: is-top ? inset + rise : inset;
+        padding-bottom: is-top ? inset : inset + rise;
+        // Top anchors pack the stack at the top edge, bottom anchors at the
+        // bottom edge.
+        alignment: is-top ? start : end;
+
+        HorizontalLayout {
+            horizontal-stretch: 1;
+            alignment: is-left ? start : is-center ? center : end;
 
             VerticalLayout {
-                horizontal-stretch: 1;
-                spacing: 2px;
-                if title != "": Text {
-                    text: title;
-                    color: Theme.foreground;
-                    font-size: Theme.font-size-sm;
-                    font-weight: 600;
-                }
-                if message != "": Text {
-                    text: message;
-                    color: Theme.muted-foreground;
-                    font-size: Theme.font-size-xs;
-                    wrap: word-wrap;
-                }
-            }
+                width: stack-width;
+                spacing: 8px;
 
-            if closable: Button {
-                icon: "x";
-                variant: ButtonVariant.ghost;
-                size: ControlSize.xsmall;
-                accessible-label: "Dismiss";
-                clicked => {
-                    root.closed();
+                for item[index] in items: Notification {
+                    title: item.title;
+                    message: item.message;
+                    status: item.status;
+                    placement: root.placement;
+                    closed => {
+                        root.dismissed(index);
+                    }
                 }
             }
         }

@@ -13,55 +13,134 @@ export component NumberInput {
     in property <string> suffix;
     in property <bool> enabled: true;
     in property <ControlSize> size: ControlSize.medium;
+    // Centres the value and moves the steppers to either end, so the control
+    // reads as `−  value  +` instead of `value  − +`. The frame is then this
+    // component's own and the field inside it drops its own with
+    // `appearance: false`, which is what that flag exists for.
+    in property <bool> centered;
     callback changed(value: float);
 
+    private property <string> shown: "\{round(root.value * 100) / 100}";
+
+    // The field's text is in-out and unbound, so it has to be told: each call
+    // site follows this with `<field>.text = root.shown`, because an id declared
+    // inside an `if` block cannot be reached from here.
     function apply(next: float) {
         let clamped = clamp(next, minimum, maximum);
         root.value = clamped;
-        field.text = "\{round(clamped * 100) / 100}";
         root.changed(clamped);
+    }
+
+    function typed(text: string) {
+        if text != "" && text != "-" && text != "." {
+            root.value = clamp(text.to-float(), root.minimum, root.maximum);
+            root.changed(root.value);
+        }
     }
 
     height: Theme.control-height(size);
     preferred-width: 160px;
     horizontal-stretch: 1;
 
-    field := Input {
-        text: "\{round(root.value * 100) / 100}";
-        placeholder: root.placeholder;
-        prefix-text: root.prefix;
-        suffix-text: root.suffix;
-        enabled: root.enabled;
-        size: root.size;
-        accepted => {
-            root.apply(self.text.to-float());
-        }
-        edited => {
-            if self.text != "" && self.text != "-" && self.text != "." {
-                root.value = clamp(self.text.to-float(), root.minimum, root.maximum);
-                root.changed(root.value);
-            }
-        }
+    if centered: Rectangle {
+        width: 100%;
+        height: 100%;
+        border-radius: Theme.radius-md;
+        border-width: 1px;
+        border-color: cfield.has-focus ? Theme.ring : Theme.input;
+        background: enabled ? Theme.background : Theme.muted;
 
-        Button {
-            icon: "minus";
-            variant: ButtonVariant.ghost;
-            size: ControlSize.xsmall;
-            enabled: root.enabled && root.value > root.minimum;
-            accessible-label: "Decrease";
-            clicked => {
-                root.apply(root.value - root.step);
+        HorizontalLayout {
+            padding-left: 2px;
+            padding-right: 2px;
+            spacing: 2px;
+            // A layout's `alignment` is the main axis; without this the steppers
+            // are laid out against the top of the row instead of its middle.
+            cross-axis-alignment: center;
+
+            Button {
+                icon: "minus";
+                variant: ButtonVariant.ghost;
+                size: ControlSize.xsmall;
+                enabled: root.enabled && root.value > root.minimum;
+                accessible-label: "Decrease";
+                clicked => {
+                    root.apply(root.value - root.step);
+                    cfield.text = root.shown;
+                }
+            }
+
+            cfield := Input {
+                appearance: false;
+                horizontal-stretch: 1;
+                horizontal-alignment: center;
+                text: root.shown;
+                placeholder: root.placeholder;
+                prefix-text: root.prefix;
+                suffix-text: root.suffix;
+                enabled: root.enabled;
+                size: root.size;
+                accepted => {
+                    root.apply(self.text.to-float());
+                    self.text = root.shown;
+                }
+                edited => {
+                    root.typed(self.text);
+                }
+            }
+
+            Button {
+                icon: "plus";
+                variant: ButtonVariant.ghost;
+                size: ControlSize.xsmall;
+                enabled: root.enabled && root.value < root.maximum;
+                accessible-label: "Increase";
+                clicked => {
+                    root.apply(root.value + root.step);
+                    cfield.text = root.shown;
+                }
             }
         }
-        Button {
-            icon: "plus";
-            variant: ButtonVariant.ghost;
-            size: ControlSize.xsmall;
-            enabled: root.enabled && root.value < root.maximum;
-            accessible-label: "Increase";
-            clicked => {
-                root.apply(root.value + root.step);
+    }
+
+    // The `if` carries the id so the conditional element wraps the field rather
+    // than becoming a second, empty `Input` around it.
+    if !centered: field := Input {
+            text: root.shown;
+            placeholder: root.placeholder;
+            prefix-text: root.prefix;
+            suffix-text: root.suffix;
+            enabled: root.enabled;
+            size: root.size;
+            accepted => {
+                root.apply(self.text.to-float());
+                self.text = root.shown;
             }
-        }
+            edited => {
+                root.typed(self.text);
+            }
+
+            Button {
+                icon: "minus";
+                variant: ButtonVariant.ghost;
+                size: ControlSize.xsmall;
+                enabled: root.enabled && root.value > root.minimum;
+                accessible-label: "Decrease";
+                clicked => {
+                    root.apply(root.value - root.step);
+                    field.text = root.shown;
+                }
+            }
+            Button {
+                icon: "plus";
+                variant: ButtonVariant.ghost;
+                size: ControlSize.xsmall;
+                enabled: root.enabled && root.value < root.maximum;
+                accessible-label: "Increase";
+                clicked => {
+                    root.apply(root.value + root.step);
+                    field.text = root.shown;
+                }
+            }
     }
 }

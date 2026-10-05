@@ -162,7 +162,7 @@ export component MessageScrollerExample inherits VerticalLayout {
     // `scrolled-up` is the application's to set; the fade and the round control
     // both follow it.
     GroupBox {
-        title: "Jump-to-latest controls";
+        title: "Jump controls";
         variant: GroupBoxVariant.outline;
 
         Rectangle {
@@ -198,22 +198,36 @@ export component MessageScrollerExample inherits VerticalLayout {
                 ];
             }
 
-            Rectangle {
-                x: parent.width - self.width - 12px;
+            HorizontalLayout {
+                x: 0px;
+                // The row states its own height: a layout left unconstrained
+                // fills its parent, and `self.height` would then be the whole
+                // frame, putting the pill at the top.
                 y: parent.height - self.height - 12px;
-                height: 26px;
-                border-radius: 13px;
-                border-width: 1px;
-                border-color: Theme.border;
-                background: Theme.background;
+                width: parent.width;
+                height: 28px;
+                padding-right: 12px;
+                // `end` keeps the pill at its own size; a bare rectangle with no
+                // width stretches to the frame and pushes its label off-centre.
+                alignment: end;
 
-                HorizontalLayout {
-                    padding-left: 10px;
-                    padding-right: 10px;
-                    spacing: 6px;
-                    alignment: center;
-                    Icon { name: "arrow-down"; size: 12px; color: Theme.foreground; }
-                    Text { text: "Latest"; color: Theme.foreground; font-size: Theme.font-size-xs; vertical-alignment: center; }
+                Rectangle {
+                    height: 28px;
+                    border-radius: 14px;
+                    border-width: 1px;
+                    border-color: Theme.border;
+                    background: Theme.background;
+
+                    HorizontalLayout {
+                        padding-left: 12px;
+                        padding-right: 12px;
+                        spacing: 6px;
+                        // The cross axis centres the glyph and the label on the
+                        // pill's own height.
+                        cross-axis-alignment: center;
+                        Icon { name: "arrow-down"; size: 13px; color: Theme.foreground; }
+                        Text { text: "Latest"; color: Theme.foreground; font-size: Theme.font-size-xs; vertical-alignment: center; }
+                    }
                 }
             }
         }
@@ -226,19 +240,50 @@ export component MessageScrollerExample inherits VerticalLayout {
         variant: GroupBoxVariant.outline;
 
         Rectangle {
-            width: 100%; height: 180px; border-width: 1px; border-color: Theme.border; border-radius: Theme.radius-lg; clip: true;
+            width: 100%; height: 200px; border-width: 1px; border-color: Theme.border; border-radius: Theme.radius-lg; clip: true;
+            background: Theme.background;
+
             VerticalLayout {
                 alignment: center;
-                spacing: 6px;
-                Icon { name: "message-circle"; size: 24px; color: Theme.muted-foreground; }
-                Text { text: "No messages yet"; color: Theme.foreground; font-size: Theme.font-size-sm; horizontal-alignment: center; }
-                Text { text: "Ask a question to start the thread."; color: Theme.muted-foreground; font-size: Theme.font-size-xs; horizontal-alignment: center; }
+                // `alignment` is the vertical axis here; without this the icon
+                // and the copy stay left-aligned inside the centred stack.
+                cross-axis-alignment: center;
+                spacing: 10px;
+
+                Rectangle {
+                    width: 44px;
+                    height: 44px;
+                    border-radius: 22px;
+                    background: Theme.muted;
+
+                    Icon {
+                        x: (parent.width - self.width) / 2;
+                        y: (parent.height - self.height) / 2;
+                        name: "message-circle";
+                        size: 20px;
+                        color: Theme.muted-foreground;
+                    }
+                }
+
+                Text {
+                    text: "No messages yet";
+                    color: Theme.foreground;
+                    font-size: Theme.font-size-sm;
+                    font-weight: 600;
+                    horizontal-alignment: center;
+                }
+                Text {
+                    text: "Ask a question to start the thread.";
+                    color: Theme.muted-foreground;
+                    font-size: Theme.font-size-xs;
+                    horizontal-alignment: center;
+                }
             }
         }
     }
 
     GroupBox {
-        title: "Prepend earlier history";
+        title: "Earlier history";
         variant: GroupBoxVariant.outline;
 
         Rectangle {

@@ -8,6 +8,20 @@ export component PaginationExample inherits VerticalLayout {
     spacing: 24px;
     alignment: start;
 
+    // GPUI's plain `Pagination` labels its step buttons and pairs each label
+    // with its arrow: "‹ Previous" and "Next ›".
+    GroupBox {
+        title: "Basic Pagination";
+        description: "The step buttons carry their labels.";
+        variant: GroupBoxVariant.outline;
+
+        Pagination {
+            pages: 10;
+            page: 5;
+            compact: false;
+        }
+    }
+
     GroupBox {
         title: "Pages";
         variant: GroupBoxVariant.outline;

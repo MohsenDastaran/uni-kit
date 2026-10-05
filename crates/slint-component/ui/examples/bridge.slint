@@ -64,6 +64,9 @@ export component SourceHeading inherits HorizontalLayout {
             font-size: Theme.font-size-xs;
             wrap: word-wrap;
             horizontal-stretch: 1;
+            // The title beside it is centred, so a left-aligned sentence
+            // underneath reads as detached from it.
+            horizontal-alignment: center;
         }
     }
 
