@@ -1,36 +1,175 @@
 import { Theme } from "../theme.slint";
 import { GroupBox, GroupBoxVariant } from "section.slint";
 import { Marker, MarkerHighlight } from "../marker.slint";
+import { Icon } from "../icon.slint";
+import { Button } from "../button.slint";
+import { ButtonVariant } from "../theme.slint";
 
 export component MarkerExample inherits VerticalLayout {
     horizontal-stretch: 1;
-    private property <int> wrap-cols: Theme.wrap-columns(Theme.viewport);
     padding: Theme.page-padding(Theme.viewport);
     spacing: 24px;
     alignment: start;
 
-    GridLayout { spacing: 4px;
-        Marker {
-                row: Theme.wrap-row(0, root.wrap-cols);
-                col: Theme.wrap-col(0, root.wrap-cols);
-                horizontal-stretch: 0;
-                 text: "Search found"; }
-        MarkerHighlight {
-                row: Theme.wrap-row(1, root.wrap-cols);
-                col: Theme.wrap-col(1, root.wrap-cols);
-                horizontal-stretch: 0;
-                 text: "12 matches"; }
-        Marker {
-                row: Theme.wrap-row(2, root.wrap-cols);
-                col: Theme.wrap-col(2, root.wrap-cols);
-                horizontal-stretch: 0;
-                 text: "in this file."; }
-    
-            Rectangle {
-                row: 0;
-                col: root.wrap-cols;
-                horizontal-stretch: 1;
-            }
-}
+    GroupBox {
+        title: "Plain";
+        variant: GroupBoxVariant.outline;
 
+        VerticalLayout {
+            spacing: 8px;
+            alignment: start;
+
+            HorizontalLayout {
+                spacing: 2px;
+                alignment: start;
+                Marker { text: "Drag a file here, or "; }
+                MarkerHighlight { text: "browse"; }
+                Marker { text: " to upload."; }
+            }
+
+            HorizontalLayout {
+                spacing: 2px;
+                alignment: start;
+                Marker { text: "Messages are "; }
+                MarkerHighlight { text: "end-to-end encrypted"; }
+                Marker { text: "."; }
+            }
+        }
+    }
+
+    GroupBox {
+        title: "Separator";
+        variant: GroupBoxVariant.outline;
+
+        VerticalLayout {
+            spacing: 12px;
+            alignment: start;
+
+            // Two rules with the label between them. Stacked rather than
+            // inline: a stretched 1px rule inside a horizontal row does not
+            // lay out at this size.
+            VerticalLayout {
+                spacing: 6px;
+                alignment: center;
+                Rectangle { horizontal-stretch: 1; height: 1px; background: Theme.border; }
+                Text {
+                    text: "Today";
+                    color: Theme.muted-foreground;
+                    font-size: Theme.font-size-xs;
+                    horizontal-alignment: center;
+                }
+                Rectangle { horizontal-stretch: 1; height: 1px; background: Theme.border; }
+            }
+
+            HorizontalLayout {
+                spacing: 12px;
+                alignment: center;
+                Rectangle { min-width: 12px; horizontal-stretch: 1; min-height: 1px; background: Theme.border; }
+                Text {
+                    text: "The answer stopped before it finished.";
+                    color: Theme.muted-foreground;
+                    font-size: Theme.font-size-xs;
+                    vertical-alignment: center;
+                }
+                Rectangle { min-width: 12px; horizontal-stretch: 1; min-height: 1px; background: Theme.border; }
+            }
+        }
+    }
+
+    GroupBox {
+        title: "Alignment";
+        variant: GroupBoxVariant.outline;
+
+        VerticalLayout {
+            spacing: 8px;
+            alignment: start;
+
+            HorizontalLayout {
+                horizontal-stretch: 1;
+                Marker { text: "Delivered"; }
+            }
+            HorizontalLayout {
+                horizontal-stretch: 1;
+                alignment: end;
+                Marker { text: "Read at 14:02"; }
+            }
+        }
+    }
+
+    // A marker can lead with a glyph, which is how a transcript labels a notice
+    // with a status rather than only wording it.
+    GroupBox {
+        title: "With icon";
+        variant: GroupBoxVariant.outline;
+
+        VerticalLayout {
+            spacing: 8px;
+            alignment: start;
+
+            HorizontalLayout {
+                spacing: 6px;
+                alignment: center;
+                Icon { name: "info"; size: 14px; color: Theme.muted-foreground; }
+                Marker { text: "Messages are end-to-end encrypted"; }
+            }
+            HorizontalLayout {
+                spacing: 6px;
+                alignment: center;
+                Icon { name: "circle-check"; size: 14px; color: Theme.success; }
+                Marker { text: "Delivered"; }
+            }
+            HorizontalLayout {
+                spacing: 6px;
+                alignment: center;
+                Icon { name: "triangle-alert"; size: 14px; color: Theme.warning; }
+                Marker { text: "The answer stopped before it finished."; }
+            }
+        }
+    }
+
+    GroupBox {
+        title: "Links and buttons";
+        variant: GroupBoxVariant.outline;
+
+        HorizontalLayout {
+            spacing: 8px;
+            alignment: center;
+            Marker { text: "Stopped before it finished."; }
+            Button { text: "Retry"; variant: ButtonVariant.link; }
+        }
+    }
+
+    GroupBox {
+        title: "Loading styles";
+        variant: GroupBoxVariant.outline;
+
+        VerticalLayout {
+            spacing: 8px;
+            alignment: start;
+
+            HorizontalLayout {
+                spacing: 8px;
+                alignment: center;
+                Icon {
+                    name: "loader-circle";
+                    size: 12px;
+                    spinning: true;
+                    color: Theme.muted-foreground;
+                }
+                Marker { text: "Loading messages…"; }
+            }
+
+            HorizontalLayout {
+                spacing: 8px;
+                alignment: center;
+                Icon {
+                    name: "loader-circle";
+                    size: 12px;
+                    spinning: true;
+                    color: Theme.muted-foreground;
+                }
+                Marker { text: "Thinking…"; }
+            }
+        }
+    }
 }

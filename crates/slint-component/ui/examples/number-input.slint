@@ -40,6 +40,45 @@ export component NumberInputExample inherits VerticalLayout {
         }
     }
 
+    // `minimum` and `maximum` clamp the value and disable the stepper that
+    // would cross them.
+    GroupBox {
+        title: "With Min/Max/Step";
+        variant: GroupBoxVariant.outline;
+
+        NumberInput {
+            value: 1;
+            minimum: 1;
+            maximum: 12;
+            step: 1;
+        }
+        NumberInput {
+            value: 100;
+            minimum: 0;
+            maximum: 100;
+            step: 5;
+            suffix: "%";
+        }
+    }
+
+    // `prefix` and `suffix` sit inside the frame, on either side of the value.
+    GroupBox {
+        title: "With Number Formatting";
+        variant: GroupBoxVariant.outline;
+
+        NumberInput {
+            value: 1250;
+            step: 50;
+            prefix: "$";
+            suffix: "/mo";
+        }
+        NumberInput {
+            value: 7.5;
+            step: 0.5;
+            suffix: "kg";
+        }
+    }
+
     GroupBox {
         title: "Disabled State";
         variant: GroupBoxVariant.outline;

@@ -38,4 +38,52 @@ export component LabelExample inherits VerticalLayout {
         }
     }
 
+    // Children follow the text, so a hint or a unit sits on the same line as
+    // the label.
+    GroupBox {
+        title: "Label with Secondary Text";
+        variant: GroupBoxVariant.outline;
+
+        VerticalLayout {
+            spacing: 8px;
+            alignment: start;
+
+            Label {
+                text: "Workspace name";
+                Text {
+                    text: "Visible to everyone in the organisation.";
+                    color: Theme.muted-foreground;
+                    font-size: Theme.font-size-xs;
+                    vertical-alignment: center;
+                }
+            }
+
+            Label {
+                text: "Storage";
+                Label {
+                    text: "(GB)";
+                    size: ControlSize.small;
+                }
+            }
+        }
+    }
+
+    // `wrap: word-wrap` is on the text, so a long label flows onto a second
+    // line instead of overflowing.
+    GroupBox {
+        title: "Multi-line Text";
+        variant: GroupBoxVariant.outline;
+
+        VerticalLayout {
+            spacing: 8px;
+            alignment: start;
+
+            Label {
+                text: "Describe what changed in this release and why it matters to someone reading the changelog for the first time.";
+            }
+            Input {
+                placeholder: "Release notes";
+            }
+        }
+    }
 }

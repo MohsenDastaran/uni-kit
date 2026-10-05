@@ -21,6 +21,20 @@ export component SliderExample inherits VerticalLayout {
         }
     }
 
+    // The value is a plain number, so a slider backs any bounded quantity.
+    GroupBox {
+        title: "Basic Slider";
+        variant: GroupBoxVariant.outline;
+
+        VerticalLayout {
+            spacing: 10px;
+            alignment: start;
+            Slider { value: 25; }
+            Slider { value: 50; }
+            Slider { value: 75; }
+        }
+    }
+
     GroupBox {
         title: "Custom Step Intervals";
         variant: GroupBoxVariant.outline;
@@ -37,6 +51,18 @@ export component SliderExample inherits VerticalLayout {
             value: 21;
             minimum: -10;
             maximum: 40;
+        }
+    }
+
+    GroupBox {
+        title: "Custom Styling";
+        variant: GroupBoxVariant.outline;
+
+        VerticalLayout {
+            spacing: 12px;
+            alignment: start;
+            Slider { value: 40; }
+            Slider { value: 65; }
         }
     }
 

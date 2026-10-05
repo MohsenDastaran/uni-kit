@@ -8,11 +8,62 @@ export component QuestionnaireExample inherits VerticalLayout {
     spacing: 24px;
     alignment: start;
 
-    Questionnaire {
-        questions: [
-            { prompt: "How often do you ship?", options: ["Daily", "Weekly", "Monthly"] },
-            { prompt: "Primary toolkit?", options: ["GPUI", "Slint", "Other"] },
-        ];
+    // The control owns the step and the answer; the caller owns the questions.
+    GroupBox {
+        title: "Complete flow";
+        variant: GroupBoxVariant.outline;
+
+        Questionnaire {
+            questions: [
+                { prompt: "Which toolkit are you building for?", options: ["GPUI", "Slint", "Both"] },
+                { prompt: "How do you install a component?", options: ["uni-kit add", "Copy the files", "Both"] },
+                { prompt: "Where does the site serve the gallery?", options: ["/gallery", "/slint-gallery"] },
+            ];
+            step: 0;
+        }
     }
 
+    // Each question carries its own options, so a flow can mix a two-way
+    // choice with a longer list.
+    GroupBox {
+        title: "Choices";
+        variant: GroupBoxVariant.outline;
+
+        Questionnaire {
+            questions: [
+                { prompt: "How often do you ship?", options: ["Daily", "Weekly", "Monthly", "Rarely"] },
+                { prompt: "Who reviews the change?", options: ["A teammate", "A maintainer", "Nobody"] },
+            ];
+            step: 1;
+        }
+    }
+
+    // Back and Continue step through the list; the last step finishes.
+    GroupBox {
+        title: "Navigation and submission";
+        variant: GroupBoxVariant.outline;
+
+        Questionnaire {
+            questions: [
+                { prompt: "Confirm the target directory", options: ["ui/components", "crates/slint-component"] },
+            ];
+            step: 0;
+        }
+    }
+
+    // The progress bar at the top is derived from the step, so a questionnaire
+    // that starts part-way through shows that immediately.
+    GroupBox {
+        title: "Progress";
+        variant: GroupBoxVariant.outline;
+
+        Questionnaire {
+            questions: [
+                { prompt: "First question", options: ["A", "B"] },
+                { prompt: "Second question", options: ["A", "B"] },
+                { prompt: "Third question", options: ["A", "B"] },
+            ];
+            step: 1;
+        }
+    }
 }

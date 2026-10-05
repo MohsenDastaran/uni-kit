@@ -1,7 +1,9 @@
 import { Theme } from "../theme.slint";
 import { GroupBox, GroupBoxVariant } from "section.slint";
 import { Popover } from "../popover.slint";
+import { Placement } from "../tooltip.slint";
 import { Button } from "../button.slint";
+import { Icon } from "../icon.slint";
 
 export component PopoverExample inherits VerticalLayout {
     horizontal-stretch: 1;
@@ -12,11 +14,86 @@ export component PopoverExample inherits VerticalLayout {
     GroupBox {
         title: "Click";
         variant: GroupBoxVariant.outline;
+
         Popover {
-            Button {
-                text: "Open popover";
+            Button { text: "Open popover"; icon: "chevron-down"; }
+            VerticalLayout {
+                padding: 12px;
+                spacing: 6px;
+                Text { text: "Click outside to dismiss."; color: Theme.foreground; font-size: Theme.font-size-sm; }
+                Text { text: "The panel is a popup, so it is not clipped by this card."; color: Theme.muted-foreground; font-size: Theme.font-size-xs; }
             }
         }
     }
 
+    GroupBox {
+        title: "Popover with Custom Positioning";
+        variant: GroupBoxVariant.outline;
+
+        HorizontalLayout {
+            spacing: 24px;
+            alignment: center;
+            Popover {
+                placement: Placement.bottom;
+                Button { text: "Below"; }
+                VerticalLayout {
+                    padding: 12px;
+                    Text { text: "Placement.bottom"; color: Theme.foreground; font-size: Theme.font-size-sm; }
+                }
+            }
+            Popover {
+                placement: Placement.right;
+                Button { text: "Right"; }
+                VerticalLayout {
+                    padding: 12px;
+                    Text { text: "Placement.right"; color: Theme.foreground; font-size: Theme.font-size-sm; }
+                }
+            }
+        }
+    }
+
+    // A popover is where a small view lives: a list, a form, or a colour grid.
+    GroupBox {
+        title: "View in Popover";
+        variant: GroupBoxVariant.outline;
+
+        Popover {
+            Button { text: "Notifications"; icon: "bell"; }
+            VerticalLayout {
+                padding: 8px;
+                spacing: 2px;
+                for row in [{ title: "Build finished", detail: "2 minutes ago" }, { title: "New comment", detail: "9 minutes ago" }, { title: "Deploy failed", detail: "1 hour ago" }]: Rectangle {
+                    border-radius: Theme.radius-sm;
+                    HorizontalLayout {
+                        padding: 8px;
+                        spacing: 8px;
+                        Icon { name: "circle"; size: 8px; color: Theme.primary; }
+                        VerticalLayout {
+                            Text { text: row.title; color: Theme.foreground; font-size: Theme.font-size-xs; }
+                            Text { text: row.detail; color: Theme.muted-foreground; font-size: 11px; }
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    GroupBox {
+        title: "Control Open State";
+        variant: GroupBoxVariant.outline;
+
+        HorizontalLayout {
+            spacing: 12px;
+            alignment: center;
+            Popover {
+                open: true;
+                Button { text: "Starts open"; }
+                VerticalLayout {
+                    padding: 12px;
+                    Text { text: "open: true"; color: Theme.foreground; font-size: Theme.font-size-sm; }
+                }
+            }
+            Button { text: "Close it"; }
+        }
+    }
 }

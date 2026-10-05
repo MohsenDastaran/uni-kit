@@ -1,0 +1,144 @@
+import { Theme, ButtonVariant, ControlSize } from "../theme.slint";
+import { GroupBox, GroupBoxVariant } from "section.slint";
+import { Toolbar, ToolbarSeparator, ToolbarSpacer } from "../toolbar.slint";
+import { Button } from "../button.slint";
+import { Input } from "../input.slint";
+
+export component ToolbarExample inherits VerticalLayout {
+    horizontal-stretch: 1;
+    padding: Theme.page-padding(Theme.viewport);
+    spacing: 24px;
+    alignment: start;
+
+    // The toolbar is transparent, so this frame stands in for the panel header
+    // that would supply the surface.
+    GroupBox {
+        title: "Commands";
+        variant: GroupBoxVariant.outline;
+
+        Rectangle {
+            horizontal-stretch: 1;
+            border-radius: Theme.radius-md;
+            border-width: 1px;
+            border-color: Theme.border;
+            background: Theme.sidebar;
+
+            Toolbar {
+                inset: 6px;
+                Button { text: "New"; icon: "plus"; variant: ButtonVariant.ghost; }
+                ToolbarSeparator {}
+                Button { icon: "arrow-left"; variant: ButtonVariant.ghost; }
+                Button { icon: "arrow-right"; variant: ButtonVariant.ghost; }
+                ToolbarSpacer {}
+                Button { icon: "ellipsis"; variant: ButtonVariant.ghost; }
+            }
+        }
+    }
+
+    GroupBox {
+        title: "Sizes";
+        variant: GroupBoxVariant.outline;
+
+        VerticalLayout {
+            spacing: 12px;
+
+            Rectangle {
+                horizontal-stretch: 1; border-radius: Theme.radius-md; border-width: 1px; border-color: Theme.border; background: Theme.sidebar;
+                Toolbar {
+                    inset: 6px;
+                    size: ControlSize.xsmall;
+                    Button { text: "Small"; variant: ButtonVariant.ghost; size: ControlSize.xsmall; }
+                    Button { text: "Small"; variant: ButtonVariant.ghost; size: ControlSize.xsmall; }
+                    ToolbarSpacer {}
+                }
+            }
+
+            Rectangle {
+                horizontal-stretch: 1; border-radius: Theme.radius-md; border-width: 1px; border-color: Theme.border; background: Theme.sidebar;
+                Toolbar {
+                    inset: 6px;
+                    size: ControlSize.medium;
+                    Button { text: "Medium"; variant: ButtonVariant.ghost; }
+                    Button { text: "Medium"; variant: ButtonVariant.ghost; }
+                    ToolbarSpacer {}
+                }
+            }
+
+            Rectangle {
+                horizontal-stretch: 1; border-radius: Theme.radius-md; border-width: 1px; border-color: Theme.border; background: Theme.sidebar;
+                Toolbar {
+                    inset: 6px;
+                    size: ControlSize.large;
+                    Button { text: "Large"; variant: ButtonVariant.ghost; size: ControlSize.large; }
+                    Button { text: "Large"; variant: ButtonVariant.ghost; size: ControlSize.large; }
+                    ToolbarSpacer {}
+                }
+            }
+        }
+    }
+
+    // A label and a search field are content, not commands, so they keep their
+    // own dimensions.
+    GroupBox {
+        title: "Labels and custom elements";
+        variant: GroupBoxVariant.outline;
+
+        Rectangle {
+            horizontal-stretch: 1;
+            border-radius: Theme.radius-md;
+            border-width: 1px;
+            border-color: Theme.border;
+            background: Theme.sidebar;
+
+            Toolbar {
+                inset: 6px;
+                spacing: 8px;
+                Text {
+                    text: "3 files changed";
+                    color: Theme.muted-foreground;
+                    font-size: Theme.font-size-xs;
+                    vertical-alignment: center;
+                }
+                ToolbarSeparator {}
+                Input {
+                    width: 200px;
+                    size: ControlSize.small;
+                    placeholder: "Filter files…";
+                    prefix-icon: "search";
+                }
+                ToolbarSpacer {}
+                Button { text: "Review"; variant: ButtonVariant.primary; }
+            }
+        }
+    }
+
+    // The surrounding surface owns the background and the border, so a toolbar
+    // drops into a header without fighting it.
+    GroupBox {
+        title: "Custom styling";
+        variant: GroupBoxVariant.outline;
+
+        Rectangle {
+            horizontal-stretch: 1;
+            border-radius: Theme.radius-md;
+            border-width: 1px;
+            border-color: Theme.border;
+            background: Theme.primary.with-alpha(Theme.dark ? 0.18 : 0.08);
+
+            Toolbar {
+                inset: 6px;
+                spacing: 6px;
+                Text {
+                    text: "Editor";
+                    color: Theme.foreground;
+                    font-size: Theme.font-size-xs;
+                    font-weight: 600;
+                    vertical-alignment: center;
+                }
+                ToolbarSpacer {}
+                Button { icon: "panel-left"; variant: ButtonVariant.ghost; }
+                Button { icon: "panel-right"; variant: ButtonVariant.ghost; }
+            }
+        }
+    }
+}

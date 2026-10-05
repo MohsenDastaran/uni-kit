@@ -427,6 +427,34 @@ const ALIASES = {
   'hover-card': {
     'User Profile Preview': 'Hover',
   },
+  questionnaire: {
+    'Complete flow': 'Usage',
+  },
+  // The Shimmer page groups several knobs under one heading, so its cards name
+  // the section that documents them.
+  // The Marker page names these two sections in a sentence rather than as
+  // headings, so the cards point at the heading that covers them.
+  marker: {
+    'With icon': 'Icons, content, and interactive children',
+    'Links and buttons': 'Icons, content, and interactive children',
+  },
+  shimmer: {
+    'Basic': 'Basic usage',
+    'Timing, spread and color': 'Duration',
+    'Play once': 'Direction and play-once',
+    'In context': 'Compose with Marker',
+  },
+  'message-scroller': {
+    'Conversation': 'Create state and choose the starting position',
+    'Streaming responses': 'Append, streaming, and follow-tail behavior',
+    'Empty conversation': 'Render rows and an empty state',
+  },
+  // The Image page documents the framework-agnostic patterns rather than one
+  // sample per heading, so its two cards point at the sections that exist.
+  image: {
+    'Placeholder': 'Start with a working image',
+    'Fit modes': 'Common patterns',
+  },
   icon: {
     'Basic Icon': 'Icons',
     'Icon with Custom Color': 'Icons',

@@ -8,10 +8,38 @@ export component TextViewExample inherits VerticalLayout {
     spacing: 24px;
     alignment: start;
 
-    TextView {
-        TextHeading { text: "Getting started"; }
-        TextParagraph { text: "Copy a component into your project and import it from its .slint file."; }
-        TextCode { text: "import { Button } from \"button.slint\";"; }
+    // The three parts a rendered document is built from: a heading, body text,
+    // and an inline code run.
+    GroupBox {
+        title: "Markdown";
+        variant: GroupBoxVariant.outline;
+
+        TextView {
+            TextHeading { text: "Getting started"; }
+            TextParagraph { text: "Copy a component into your project and import it from its .slint file."; }
+            TextCode { text: "import { Button } from \"button.slint\";"; }
+            TextHeading { level: 3; text: "Install"; }
+            TextParagraph { text: "The CLI copies the files listed in the component manifest into ui/components."; }
+        }
     }
 
+    // A paragraph can be cut to a number of lines, which is how a transcript
+    // preview keeps rows even.
+    GroupBox {
+        title: "Clamp to a number of lines";
+        variant: GroupBoxVariant.outline;
+
+        VerticalLayout {
+            spacing: 12px;
+            alignment: start;
+            TextParagraph {
+                height: 44px;
+                text: "Dock builds application workspaces from draggable tab groups, nested splits, and collapsible left, right, and bottom docks. It is the layout foundation used by Longbridge in production, not an isolated UI demo.";
+                overflow: elide;
+            }
+            TextParagraph {
+                text: "The same paragraph, unclamped.";
+            }
+        }
+    }
 }

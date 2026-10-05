@@ -1,4 +1,5 @@
 import { Theme } from "../theme.slint";
+import { Icon } from "../icon.slint";
 import { GroupBox, GroupBoxVariant } from "section.slint";
 import { List } from "../list.slint";
 
@@ -8,13 +9,78 @@ export component ListExample inherits VerticalLayout {
     spacing: 24px;
     alignment: start;
 
-    List {
-        items: [
-            { title: "Inbox", description: "12 unread", icon: "inbox" },
-            { title: "Sent", description: "On this device", icon: "send" },
-            { title: "Archive", description: "Last 30 days", icon: "folder" },
-        ];
-        selected: 0;
+    GroupBox {
+        title: "Basic List";
+        variant: GroupBoxVariant.outline;
+
+        List {
+            items: [
+                { title: "Inbox", description: "12 unread", icon: "" },
+                { title: "Sent", description: "On this device", icon: "" },
+                { title: "Archive", description: "Last 30 days", icon: "" },
+                { title: "Spam", description: "Nothing reported", icon: "" },
+            ];
+            selected: 1;
+        }
     }
 
+    // A leading icon and a description line turn a row into a destination.
+    GroupBox {
+        title: "List Items with Icons and Actions";
+        variant: GroupBoxVariant.outline;
+
+        List {
+            items: [
+                { title: "Project files", description: "src/ and Cargo.toml", icon: "folder" },
+                { title: "Recent", description: "dock.slint, menu.slint", icon: "clock" },
+                { title: "Shared with me", description: "3 people", icon: "users" },
+                { title: "Trash", description: "Empties after 30 days", icon: "trash" },
+            ];
+            selected: 0;
+        }
+    }
+
+    // A search field above the list is the usual shape; the field itself is an
+    // `Input`, so this mock keeps the focus on the list below it.
+    GroupBox {
+        title: "List with Search";
+        variant: GroupBoxVariant.outline;
+
+        Rectangle {
+            horizontal-stretch: 1;
+            border-radius: Theme.radius-md;
+            border-width: 1px;
+            border-color: Theme.border;
+            background: Theme.background;
+
+            VerticalLayout {
+                spacing: 8px;
+
+                HorizontalLayout {
+                    padding: 8px;
+                    spacing: 8px;
+                    alignment: center;
+                    Icon { name: "search"; size: 14px; color: Theme.muted-foreground; }
+                    Text {
+                        horizontal-stretch: 1;
+                        text: "Search components…";
+                        color: Theme.muted-foreground;
+                        font-size: Theme.font-size-sm;
+                        vertical-alignment: center;
+                    }
+                }
+
+                Rectangle { height: 1px; background: Theme.border; }
+
+                List {
+                    items: [
+                        { title: "Button", description: "Push button", icon: "" },
+                        { title: "Badge", description: "Status label", icon: "" },
+                        { title: "Banner", description: "Page notice", icon: "" },
+                    ];
+                    selected: 0;
+                }
+            }
+        }
+    }
 }

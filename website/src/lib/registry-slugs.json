@@ -71,8 +71,10 @@
     "text-view",
     "textarea",
     "theme",
+    "time-field",
     "title-bar",
     "toggle",
+    "toolbar",
     "tooltip",
     "tree",
     "virtual-list"

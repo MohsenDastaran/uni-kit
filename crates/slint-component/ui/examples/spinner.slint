@@ -213,6 +213,21 @@ export component SpinnerExample inherits VerticalLayout {
         }
     }
 
+    // Any icon can be the spinning glyph, which is how a component keeps its
+    // own loading language.
+    GroupBox {
+        title: "Spinner with Custom Icon";
+        variant: GroupBoxVariant.outline;
+
+        HorizontalLayout {
+            spacing: 16px;
+            alignment: center;
+            Spinner { icon: "loader-circle"; size: ControlSize.large; color: Theme.primary; }
+            Spinner { icon: "refresh-cw"; size: ControlSize.large; color: Theme.success; }
+            Spinner { icon: "refresh-cw"; size: ControlSize.large; color: Theme.warning; }
+        }
+    }
+
     Timer {
         interval: 2s;
         running: root.refreshing;

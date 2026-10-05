@@ -66,4 +66,30 @@ export component SwitchExample inherits VerticalLayout {
         }
     }
 
+    GroupBox {
+        title: "With Label";
+        variant: GroupBoxVariant.outline;
+
+        VerticalLayout {
+            spacing: 10px;
+            alignment: start;
+
+            Switch { label: "Send anonymous usage data"; checked: true; }
+            Switch { label: "Keep the window on top of others"; }
+            Switch { label: "Reopen the last workspace on launch"; checked: true; }
+        }
+    }
+
+    GroupBox {
+        title: "Disabled State";
+        variant: GroupBoxVariant.outline;
+
+        VerticalLayout {
+            spacing: 10px;
+            alignment: start;
+
+            Switch { label: "Off and disabled"; enabled: false; }
+            Switch { label: "On and disabled"; checked: true; enabled: false; }
+        }
+    }
 }

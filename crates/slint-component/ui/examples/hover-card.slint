@@ -23,6 +23,27 @@ export component HoverCardExample inherits VerticalLayout {
         }
     }
 
+    // A card can open over anything hoverable, so a whole row can be the host.
+    GroupBox {
+        title: "User Profile Preview";
+        variant: GroupBoxVariant.outline;
+
+        HorizontalLayout {
+            spacing: 16px;
+            alignment: start;
+            HoverCard {
+                title: "grace@example.com";
+                description: "Maintains the Slint port. Reviewed 42 changes this month.";
+                Button { text: "Open profile"; variant: ButtonVariant.link; }
+            }
+            HoverCard {
+                title: "#design";
+                description: "12 members. Last message 4 minutes ago.";
+                Button { text: "Join channel"; variant: ButtonVariant.link; }
+            }
+        }
+    }
+
     GroupBox {
         title: "Custom Timing";
         variant: GroupBoxVariant.outline;
@@ -46,4 +67,29 @@ export component HoverCardExample inherits VerticalLayout {
         }
     }
 
+    // The card follows its host: one anchored under a label at the start, one
+    // under a control at the end of the row.
+    GroupBox {
+        title: "Positioning";
+        variant: GroupBoxVariant.outline;
+
+        HorizontalLayout {
+            horizontal-stretch: 1;
+            spacing: 16px;
+
+            HoverCard {
+                title: "Start";
+                description: "Anchored to this label.";
+                Button { text: "Left"; variant: ButtonVariant.link; }
+            }
+
+            Rectangle { horizontal-stretch: 1; }
+
+            HoverCard {
+                title: "End";
+                description: "Anchored to the trailing control.";
+                Button { text: "Right"; variant: ButtonVariant.link; }
+            }
+        }
+    }
 }

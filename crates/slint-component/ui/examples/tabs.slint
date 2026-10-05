@@ -1,4 +1,4 @@
-import { Theme } from "../theme.slint";
+import { Theme, ControlSize } from "../theme.slint";
 import { GroupBox, GroupBoxVariant } from "section.slint";
 import { Tabs, TabsVariant } from "../tabs.slint";
 
@@ -8,13 +8,157 @@ export component TabsExample inherits VerticalLayout {
     spacing: 24px;
     alignment: start;
 
-    Tabs {
-        items: [
-            { label: "Account", icon: "user", disabled: false },
-            { label: "Password", icon: "lock", disabled: false },
-            { label: "Billing", icon: "circle", disabled: true },
-        ];
-        Text { text: "Account settings live here."; color: Theme.foreground; }
+    GroupBox {
+        title: "Basic Tabs";
+        variant: GroupBoxVariant.outline;
+
+        Tabs {
+            items: [
+                { label: "Account", icon: "", disabled: false },
+                { label: "Password", icon: "", disabled: false },
+                { label: "Settings", icon: "", disabled: false },
+            ];
+            selected: 0;
+            Text { text: "Account settings live here."; color: Theme.foreground; }
+        }
     }
 
+    // The variant sets the whole bar: a rule under the active tab, a filled
+    // pill, or an outlined one.
+    GroupBox {
+        title: "Tab Variants";
+        variant: GroupBoxVariant.outline;
+
+        VerticalLayout {
+            spacing: 16px;
+            alignment: start;
+
+            Tabs {
+                items: [
+                    { label: "Default", icon: "", disabled: false },
+                    { label: "Selected", icon: "", disabled: false },
+                    { label: "Third", icon: "", disabled: false },
+                ];
+                selected: 1;
+                variant: TabsVariant.underline;
+                Text { text: "Underline."; color: Theme.muted-foreground; font-size: Theme.font-size-sm; }
+            }
+
+            Tabs {
+                items: [
+                    { label: "Default", icon: "", disabled: false },
+                    { label: "Selected", icon: "", disabled: false },
+                    { label: "Third", icon: "", disabled: false },
+                ];
+                selected: 1;
+                variant: TabsVariant.pill;
+                Text { text: "Pill."; color: Theme.muted-foreground; font-size: Theme.font-size-sm; }
+            }
+
+            Tabs {
+                items: [
+                    { label: "Default", icon: "", disabled: false },
+                    { label: "Selected", icon: "", disabled: false },
+                    { label: "Third", icon: "", disabled: false },
+                ];
+                selected: 1;
+                variant: TabsVariant.outline;
+                Text { text: "Outline."; color: Theme.muted-foreground; font-size: Theme.font-size-sm; }
+            }
+        }
+    }
+
+    GroupBox {
+        title: "Tab Sizes";
+        variant: GroupBoxVariant.outline;
+
+        VerticalLayout {
+            spacing: 12px;
+            alignment: start;
+
+            Tabs {
+                items: [
+                    { label: "Small", icon: "", disabled: false },
+                    { label: "Tabs", icon: "", disabled: false },
+                ];
+                selected: 0;
+                size: ControlSize.small;
+                variant: TabsVariant.pill;
+            }
+
+            Tabs {
+                items: [
+                    { label: "Medium", icon: "", disabled: false },
+                    { label: "Tabs", icon: "", disabled: false },
+                ];
+                selected: 0;
+                size: ControlSize.medium;
+                variant: TabsVariant.pill;
+            }
+
+            Tabs {
+                items: [
+                    { label: "Large", icon: "", disabled: false },
+                    { label: "Tabs", icon: "", disabled: false },
+                ];
+                selected: 0;
+                size: ControlSize.large;
+                variant: TabsVariant.pill;
+            }
+        }
+    }
+
+    GroupBox {
+        title: "Tabs with Icons";
+        variant: GroupBoxVariant.outline;
+
+        Tabs {
+            items: [
+                { label: "Account", icon: "user", disabled: false },
+                { label: "Password", icon: "lock", disabled: false },
+                { label: "Billing", icon: "circle", disabled: false },
+            ];
+            selected: 0;
+            variant: TabsVariant.pill;
+            Text { text: "An icon leads each label."; color: Theme.muted-foreground; font-size: Theme.font-size-sm; }
+        }
+    }
+
+    // A bar wider than its frame flicks sideways rather than squeezing the
+    // labels.
+    GroupBox {
+        title: "Scrollable Tabs";
+        variant: GroupBoxVariant.outline;
+
+        Tabs {
+            items: [
+                { label: "Overview", icon: "", disabled: false },
+                { label: "Activity", icon: "", disabled: false },
+                { label: "Members", icon: "", disabled: false },
+                { label: "Billing", icon: "", disabled: false },
+                { label: "Integrations", icon: "", disabled: false },
+                { label: "Security", icon: "", disabled: false },
+                { label: "Audit log", icon: "", disabled: false },
+            ];
+            selected: 0;
+            variant: TabsVariant.pill;
+            Text { text: "Drag the bar sideways to reach the rest."; color: Theme.muted-foreground; font-size: Theme.font-size-sm; }
+        }
+    }
+
+    GroupBox {
+        title: "Disabled Tabs";
+        variant: GroupBoxVariant.outline;
+
+        Tabs {
+            items: [
+                { label: "Enabled", icon: "", disabled: false },
+                { label: "Disabled", icon: "", disabled: true },
+                { label: "Also enabled", icon: "", disabled: false },
+            ];
+            selected: 0;
+            variant: TabsVariant.pill;
+            Text { text: "The middle tab cannot be selected."; color: Theme.muted-foreground; font-size: Theme.font-size-sm; }
+        }
+    }
 }

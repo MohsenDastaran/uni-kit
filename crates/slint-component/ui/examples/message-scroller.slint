@@ -1,7 +1,8 @@
 import { Theme } from "../theme.slint";
 import { GroupBox, GroupBoxVariant } from "section.slint";
-import { MessageScroller, ChatTurn } from "../message-scroller.slint";
+import { MessageScroller } from "../message-scroller.slint";
 import { MessageRole } from "../message.slint";
+import { Icon } from "../icon.slint";
 
 export component MessageScrollerExample inherits VerticalLayout {
     horizontal-stretch: 1;
@@ -9,12 +10,57 @@ export component MessageScrollerExample inherits VerticalLayout {
     spacing: 24px;
     alignment: start;
 
-    MessageScroller {
-        height: 240px;
-        messages: [
-            { role: MessageRole.user, body: "Hello" },
-            { role: MessageRole.assistant, body: "Hi — how can I help?" },
-        ];
+    GroupBox {
+        title: "Conversation";
+        variant: GroupBoxVariant.outline;
+
+        Rectangle {
+            width: 100%; height: 320px; border-width: 1px; border-color: Theme.border; border-radius: Theme.radius-lg; clip: true;
+            MessageScroller {
+                messages: [
+                    { role: MessageRole.user, body: "How do I add a component?" },
+                    { role: MessageRole.assistant, body: "Run uni-kit add slint button. It copies the component and everything it imports." },
+                    { role: MessageRole.user, body: "And the icons?" },
+                    { role: MessageRole.assistant, body: "Those come with the component. The manifest lists every file." },
+                    { role: MessageRole.user, body: "Which framework should I pick?" },
+                    { role: MessageRole.assistant, body: "Either. The selector on each page switches the live example and the source." },
+                ];
+            }
+        }
     }
 
+    // An empty conversation shows the empty state; the title and description
+    // belong to the host, not the scroller.
+    GroupBox {
+        title: "Empty conversation";
+        variant: GroupBoxVariant.outline;
+
+        Rectangle {
+            width: 100%; height: 180px; border-width: 1px; border-color: Theme.border; border-radius: Theme.radius-lg; clip: true;
+            VerticalLayout {
+                alignment: center;
+                spacing: 6px;
+                Icon { name: "message-circle"; size: 24px; color: Theme.muted-foreground; }
+                Text { text: "No messages yet"; color: Theme.foreground; font-size: Theme.font-size-sm; horizontal-alignment: center; }
+                Text { text: "Ask a question to start the thread."; color: Theme.muted-foreground; font-size: Theme.font-size-xs; horizontal-alignment: center; }
+            }
+        }
+    }
+
+    // The scroller pins to the newest turn, so a short exchange and a long one
+    // both read from the bottom.
+    GroupBox {
+        title: "Streaming responses";
+        variant: GroupBoxVariant.outline;
+
+        Rectangle {
+            width: 100%; height: 200px; border-width: 1px; border-color: Theme.border; border-radius: Theme.radius-lg; clip: true;
+            MessageScroller {
+                messages: [
+                    { role: MessageRole.user, body: "Summarise the dock component." },
+                    { role: MessageRole.assistant, body: "It is a workspace of tab groups: a centre pane with left, right, and bottom docks, all resizable and collapsible, with tabs you can drag between groups." },
+                ];
+            }
+        }
+    }
 }

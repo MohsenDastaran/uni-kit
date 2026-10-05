@@ -1,9 +1,10 @@
-import { Theme } from "../theme.slint";
+import { Theme, ButtonVariant, ControlSize } from "../theme.slint";
 import { GroupBox, GroupBoxVariant } from "section.slint";
 import { InputGroup, InputGroupAddon } from "../input-group.slint";
 import { Input } from "../input.slint";
-import { ButtonVariant } from "../theme.slint";
 import { Button } from "../button.slint";
+import { Icon } from "../icon.slint";
+import { Textarea } from "../textarea.slint";
 
 export component InputGroupExample inherits VerticalLayout {
     horizontal-stretch: 1;
@@ -11,20 +12,166 @@ export component InputGroupExample inherits VerticalLayout {
     spacing: 24px;
     alignment: start;
 
+    // One bordered track: the input drops its own frame and the button sits at
+    // the trailing edge.
     GroupBox {
-        title: "Search";
+        title: "Input with a clear button";
         variant: GroupBoxVariant.outline;
+
         InputGroup {
             Input {
                 placeholder: "Search the docs…";
                 appearance: false;
                 prefix-icon: "search";
-            }
-            Button {
-                text: "Search";
-                variant: ButtonVariant.primary;
+                cleanable: true;
             }
         }
     }
 
+    GroupBox {
+        title: "Buttons, icons, and menus";
+        variant: GroupBoxVariant.outline;
+
+        VerticalLayout {
+            spacing: 12px;
+
+            InputGroup {
+                Input {
+                    placeholder: "Search the docs…";
+                    appearance: false;
+                    prefix-icon: "search";
+                }
+                Button {
+                    text: "Search";
+                    variant: ButtonVariant.primary;
+                }
+            }
+
+            InputGroup {
+                InputGroupAddon {
+                    Text { text: "https://"; color: Theme.muted-foreground; font-size: Theme.font-size-sm; vertical-alignment: center; }
+                }
+                Input {
+                    placeholder: "gpui-kit.com";
+                    appearance: false;
+                }
+                Button {
+                    icon: "ellipsis";
+                    variant: ButtonVariant.ghost;
+                }
+            }
+        }
+    }
+
+    GroupBox {
+        title: "Disabled, read-only, and validation";
+        variant: GroupBoxVariant.outline;
+
+        VerticalLayout {
+            spacing: 12px;
+
+            InputGroup {
+                Input {
+                    placeholder: "Read only";
+                    appearance: false;
+                    read-only: true;
+                    text: "copied from the registry";
+                }
+                Button { icon: "copy"; variant: ButtonVariant.ghost; }
+            }
+
+            InputGroup {
+                invalid: true;
+                Input {
+                    placeholder: "you@example.com";
+                    appearance: false;
+                    invalid: true;
+                    text: "not-an-address";
+                }
+                Icon { name: "circle-x"; size: 14px; color: Theme.danger; }
+            }
+
+            InputGroup {
+                Input {
+                    placeholder: "Disabled";
+                    appearance: false;
+                    enabled: false;
+                }
+                Button { text: "Go"; enabled: false; }
+            }
+        }
+    }
+
+    // The frame is generic, so a taller child works the same way. The counter
+    // and the submit action sit outside the track.
+    GroupBox {
+        title: "Textarea with a counter and submit action";
+        variant: GroupBoxVariant.outline;
+
+        VerticalLayout {
+            spacing: 8px;
+            Textarea {
+                placeholder: "Write a reply…";
+                text: "Dock now keeps every toolbar chip on one baseline.";
+            }
+            HorizontalLayout {
+                horizontal-stretch: 1;
+                spacing: 8px;
+                alignment: center;
+                Text { text: "58 / 280"; color: Theme.muted-foreground; font-size: Theme.font-size-xs; vertical-alignment: center; }
+                Rectangle { horizontal-stretch: 1; }
+                Button { text: "Reply"; variant: ButtonVariant.primary; }
+            }
+        }
+    }
+
+    // An addon is a plain padding box, so it can hold a label, an icon, or a
+    // menu trigger at either end of the track.
+    GroupBox {
+        title: "Parts and alignment";
+        variant: GroupBoxVariant.outline;
+
+        VerticalLayout {
+            spacing: 12px;
+            InputGroup {
+                InputGroupAddon {
+                    Text { text: "https://"; color: Theme.muted-foreground; font-size: Theme.font-size-sm; vertical-alignment: center; }
+                }
+                Input { placeholder: "gpui-kit.com"; appearance: false; }
+            }
+            InputGroup {
+                InputGroupAddon {
+                    Icon { name: "search"; size: 14px; color: Theme.muted-foreground; }
+                }
+                Input { placeholder: "Search"; appearance: false; }
+                InputGroupAddon {
+                    Text { text: "⌘K"; color: Theme.muted-foreground; font-size: Theme.font-size-xs; vertical-alignment: center; }
+                }
+            }
+        }
+    }
+
+    GroupBox {
+        title: "Sizes and custom styles";
+        variant: GroupBoxVariant.outline;
+
+        VerticalLayout {
+            spacing: 12px;
+            InputGroup {
+                size: ControlSize.small;
+                Input { placeholder: "Small"; appearance: false; size: ControlSize.small; }
+                Button { text: "Go"; size: ControlSize.small; }
+            }
+            InputGroup {
+                size: ControlSize.medium;
+                Input { placeholder: "Medium"; appearance: false; }
+                Button { text: "Go"; }
+            }
+            InputGroup {
+                size: ControlSize.large;
+                Input { placeholder: "Large"; appearance: false; size: ControlSize.large; }
+                Button { text: "Go"; size: ControlSize.large; }
+            }
+        }
+    }
 }

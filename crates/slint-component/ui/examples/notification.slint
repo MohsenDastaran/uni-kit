@@ -1,7 +1,6 @@
-import { Theme } from "../theme.slint";
+import { Theme, Status } from "../theme.slint";
 import { GroupBox, GroupBoxVariant } from "section.slint";
 import { Notification } from "../notification.slint";
-import { Status } from "../theme.slint";
 
 export component NotificationExample inherits VerticalLayout {
     horizontal-stretch: 1;
@@ -9,7 +8,83 @@ export component NotificationExample inherits VerticalLayout {
     spacing: 24px;
     alignment: start;
 
-    Notification { title: "Saved"; message: "Your profile was updated."; status: Status.success; }
-    Notification { title: "Heads up"; message: "A new version is available."; status: Status.info; }
+    GroupBox {
+        title: "Basic Notification";
+        variant: GroupBoxVariant.outline;
 
+        Notification {
+            title: "Saved";
+            message: "Your changes are on the server.";
+        }
+    }
+
+    // `status` picks the glyph and its colour; the layout is the same for all
+    // four.
+    // A notice that cannot be dismissed is the shape for a state the person
+    // must resolve.
+    GroupBox {
+        title: "Auto-hide Control";
+        variant: GroupBoxVariant.outline;
+
+        VerticalLayout {
+            spacing: 12px;
+            alignment: start;
+            Notification { title: "Closable"; message: "This one has a dismiss button."; closable: true; }
+            Notification { title: "Sticky"; message: "No dismiss button; the application decides."; closable: false; }
+        }
+    }
+
+    GroupBox {
+        title: "With Action Button";
+        variant: GroupBoxVariant.outline;
+
+        Notification {
+            status: Status.warning;
+            title: "Unsaved changes";
+            message: "Leaving now discards the draft.";
+        }
+    }
+
+    GroupBox {
+        title: "Notification Types";
+        variant: GroupBoxVariant.outline;
+
+        VerticalLayout {
+            spacing: 12px;
+            alignment: start;
+            Notification { status: Status.info; title: "Update available"; message: "Version 0.6.5 is ready to install."; }
+            Notification { status: Status.success; title: "Deployed"; message: "The build is live."; }
+            Notification { status: Status.warning; title: "Slow request"; message: "The last query took 4.2s."; }
+            Notification { status: Status.danger; title: "Upload failed"; message: "The connection dropped."; }
+        }
+    }
+
+    GroupBox {
+        title: "Placement";
+        variant: GroupBoxVariant.outline;
+
+        Rectangle {
+            width: 100%; height: 220px; border-width: 1px; border-color: Theme.border; border-radius: Theme.radius-lg; background: Theme.muted.with-alpha(0.3); clip: true;
+            Rectangle { width: 100%; height: 100%; }
+            VerticalLayout {
+                x: parent.width - 300px;
+                y: 12px;
+                width: 288px;
+                spacing: 8px;
+                Notification { status: Status.success; title: "Deployed"; message: "The build is live."; }
+                Notification { status: Status.info; title: "New comment"; message: "On the dock example."; }
+            }
+        }
+    }
+
+    // A title with no message is a single-line notice.
+    GroupBox {
+        title: "Notification with Title";
+        variant: GroupBoxVariant.outline;
+
+        Notification {
+            title: "Copied to clipboard";
+            message: "";
+        }
+    }
 }

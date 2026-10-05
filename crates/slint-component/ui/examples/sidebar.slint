@@ -8,16 +8,62 @@ export component SidebarExample inherits VerticalLayout {
     spacing: 24px;
     alignment: start;
 
-    Rectangle {
-        width: 100%; height: Theme.viewport < 480px ? 280px : 360px; border-width: 1px; border-color: Theme.border; border-radius: Theme.radius-lg; clip: true;
-        Sidebar {
-            height: 100%;
-            items: [
-                { label: "Home", icon: "house" },
-                { label: "Inbox", icon: "inbox" },
-                { label: "Settings", icon: "settings" },
-            ];
+    GroupBox {
+        title: "Basic Sidebar";
+        variant: GroupBoxVariant.outline;
+
+        Rectangle {
+            width: 100%; height: 320px; border-width: 1px; border-color: Theme.border; border-radius: Theme.radius-lg; clip: true;
+            Sidebar {
+                height: 100%;
+                items: [
+                    { label: "Home", icon: "house" },
+                    { label: "Inbox", icon: "inbox" },
+                    { label: "Settings", icon: "settings" },
+                ];
+                selected: 0;
+            }
         }
     }
 
+    // Collapsing keeps the icons and the header toggle; the labels and the
+    // footer name are what leave.
+    GroupBox {
+        title: "Collapsible Sidebar";
+        variant: GroupBoxVariant.outline;
+
+        Rectangle {
+            width: 100%; height: 320px; border-width: 1px; border-color: Theme.border; border-radius: Theme.radius-lg; clip: true;
+            Sidebar {
+                height: 100%;
+                collapsed: true;
+                items: [
+                    { label: "Home", icon: "house" },
+                    { label: "Inbox", icon: "inbox" },
+                    { label: "Settings", icon: "settings" },
+                ];
+                selected: 1;
+            }
+        }
+    }
+
+    GroupBox {
+        title: "Multiple Groups";
+        variant: GroupBoxVariant.outline;
+
+        Rectangle {
+            width: 100%; height: 320px; border-width: 1px; border-color: Theme.border; border-radius: Theme.radius-lg; clip: true;
+            Sidebar {
+                height: 100%;
+                items: [
+                    { label: "Dashboard", icon: "layout-dashboard" },
+                    { label: "Reports", icon: "chart-column" },
+                    { label: "Customers", icon: "users" },
+                    { label: "Billing", icon: "database" },
+                    { label: "Support", icon: "message-circle" },
+                ];
+                selected: 2;
+            }
+        }
+    }
 }

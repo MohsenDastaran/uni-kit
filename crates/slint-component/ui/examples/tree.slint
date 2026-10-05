@@ -8,13 +8,39 @@ export component TreeExample inherits VerticalLayout {
     spacing: 24px;
     alignment: start;
 
-    Tree {
-        items: [
-            { label: "src", depth: 0, folder: true, expanded: true },
-            { label: "lib.rs", depth: 1, folder: false, expanded: false },
-            { label: "main.rs", depth: 1, folder: false, expanded: false },
-            { label: "ui", depth: 0, folder: true, expanded: false },
-        ];
+    // The model is flat: `depth` indents a row, and `expanded` chooses the
+    // chevron. Collapsing a folder is the caller's re-model, not a tree
+    // behaviour, which keeps the component free of state.
+    GroupBox {
+        title: "Basic Tree";
+        variant: GroupBoxVariant.outline;
+
+        Tree {
+            items: [
+                { label: "src", depth: 0, folder: true, expanded: true },
+                { label: "lib.rs", depth: 1, folder: false, expanded: false },
+                { label: "main.rs", depth: 1, folder: false, expanded: false },
+                { label: "ui", depth: 0, folder: true, expanded: false },
+            ];
+            selected: 1;
+        }
     }
 
+    GroupBox {
+        title: "File Tree with Icons";
+        variant: GroupBoxVariant.outline;
+
+        Tree {
+            items: [
+                { label: "slint-component", depth: 0, folder: true, expanded: true },
+                { label: "ui", depth: 1, folder: true, expanded: true },
+                { label: "dock.slint", depth: 2, folder: false, expanded: false },
+                { label: "menu.slint", depth: 2, folder: false, expanded: false },
+                { label: "theme.slint", depth: 2, folder: false, expanded: false },
+                { label: "Cargo.toml", depth: 1, folder: false, expanded: false },
+                { label: "README.md", depth: 1, folder: false, expanded: false },
+            ];
+            selected: 2;
+        }
+    }
 }

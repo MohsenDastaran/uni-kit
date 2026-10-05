@@ -84,6 +84,55 @@ export component IconExample inherits VerticalLayout {
         }
     }
 
+    // A one-off glyph does not need a lookup entry: point an `Image` at the
+    // file. `colorize` tints it to the theme, which is what `Icon` does for
+    // every named icon.
+    GroupBox {
+        title: "Custom SVG Path";
+        variant: GroupBoxVariant.outline;
+
+        HorizontalLayout {
+            spacing: 16px;
+            alignment: center;
+            Image {
+                width: 24px;
+                height: 24px;
+                image-fit: contain;
+                source: @image-url("../icons/sparkles.svg");
+            }
+            Image {
+                width: 32px;
+                height: 32px;
+                colorize: Theme.primary;
+                image-fit: contain;
+                source: @image-url("../icons/sparkles.svg");
+            }
+            Image {
+                width: 40px;
+                height: 40px;
+                colorize: Theme.success;
+                image-fit: contain;
+                source: @image-url("../icons/sparkles.svg");
+            }
+        }
+    }
+
+    // `spinning` rotates any glyph, so a set of loading states can share one
+    // component.
+    GroupBox {
+        title: "Animated Loading Icon";
+        variant: GroupBoxVariant.outline;
+
+        HorizontalLayout {
+            spacing: 16px;
+            alignment: center;
+            Icon { name: "loader-circle"; size: 20px; spinning: true; }
+            Icon { name: "loader-circle"; size: 20px; color: Theme.primary; spinning: true; }
+            Icon { name: "refresh-cw"; size: 20px; color: Theme.success; spinning: true; }
+            Icon { name: "refresh-cw"; size: 20px; color: Theme.warning; spinning: true; }
+        }
+    }
+
     GroupBox {
         title: "Icon in Button";
         variant: GroupBoxVariant.outline;

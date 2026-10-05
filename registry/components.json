@@ -17801,6 +17801,26 @@
           "src": "crates/slint-component/ui/virtual-list.slint",
           "target": "virtual-list.slint"
         }
+      ],
+      "toolbar": [
+        {
+          "src": "crates/slint-component/ui/toolbar.slint",
+          "target": "toolbar.slint"
+        },
+        {
+          "src": "crates/slint-component/ui/theme.slint",
+          "target": "theme.slint"
+        }
+      ],
+      "time-field": [
+        {
+          "src": "crates/slint-component/ui/time-field.slint",
+          "target": "time-field.slint"
+        },
+        {
+          "src": "crates/slint-component/ui/theme.slint",
+          "target": "theme.slint"
+        }
       ]
     }
   },

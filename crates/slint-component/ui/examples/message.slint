@@ -8,7 +8,57 @@ export component MessageExample inherits VerticalLayout {
     spacing: 24px;
     alignment: start;
 
-    Message { role: MessageRole.user; body: "How do I add a Slint button?"; }
-    Message { role: MessageRole.assistant; body: "Copy button.slint and theme.slint into your project, then import Button."; }
+    GroupBox {
+        title: "Alignment";
+        variant: GroupBoxVariant.outline;
 
+        VerticalLayout {
+            spacing: 4px;
+            Message { role: MessageRole.user; body: "How do I copy a component into my project?"; }
+            Message { role: MessageRole.assistant; body: "Run `uni-kit add slint button` and it copies button.slint plus everything it imports into ui/components."; }
+            Message { role: MessageRole.user; body: "Does it copy the icons too?"; }
+            Message { role: MessageRole.assistant; body: "Yes. The manifest lists every file the component needs, including the icons folder."; }
+        }
+    }
+
+    // Consecutive turns from one speaker read as a group: the avatar and name
+    // appear once, and the body carries the thread.
+    GroupBox {
+        title: "Grouping";
+        variant: GroupBoxVariant.outline;
+
+        VerticalLayout {
+            spacing: 4px;
+            Message { role: MessageRole.assistant; author: "Assistant"; initials: "A"; body: "Dock keeps one workspace column."; }
+            Message { role: MessageRole.assistant; author: "Assistant"; initials: "A"; body: "Left, right, and bottom docks are all collapsible."; }
+            Message { role: MessageRole.assistant; author: "Assistant"; initials: "A"; body: "Tabs drag between groups."; }
+            Message { role: MessageRole.user; author: "You"; initials: "YO"; body: "Does zoom affect the layout tree?"; }
+        }
+    }
+
+    // The copy affordance is the one action every turn carries; a host can add
+    // more next to it.
+    GroupBox {
+        title: "Rich content and actions";
+        variant: GroupBoxVariant.outline;
+
+        VerticalLayout {
+            spacing: 4px;
+            Message { role: MessageRole.assistant; body: "Here is the manifest entry for the dock component. Copy it into registry/components.json."; }
+            Message { role: MessageRole.user; body: "Got it."; }
+        }
+    }
+
+    // `author` and `initials` override the role defaults, which is how a group
+    // chat keeps each speaker distinct.
+    GroupBox {
+        title: "Avatar, header, content, and footer";
+        variant: GroupBoxVariant.outline;
+
+        VerticalLayout {
+            spacing: 4px;
+            Message { role: MessageRole.assistant; author: "Dock"; initials: "DK"; body: "Left, right, and bottom docks all share one workspace column."; }
+            Message { role: MessageRole.assistant; author: "Menu"; initials: "MN"; body: "Rows keep the same columns, so labels and shortcuts line up."; }
+        }
+    }
 }

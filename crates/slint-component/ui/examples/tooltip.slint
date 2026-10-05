@@ -1,7 +1,8 @@
 import { Theme } from "../theme.slint";
 import { GroupBox, GroupBoxVariant } from "section.slint";
-import { Tooltip } from "../tooltip.slint";
+import { Tooltip, Placement } from "../tooltip.slint";
 import { Button } from "../button.slint";
+import { Icon } from "../icon.slint";
 
 export component TooltipExample inherits VerticalLayout {
     horizontal-stretch: 1;
@@ -12,6 +13,7 @@ export component TooltipExample inherits VerticalLayout {
     GroupBox {
         title: "Hover the button";
         variant: GroupBoxVariant.outline;
+
         Tooltip {
             text: "Create a new document";
             Button {
@@ -21,4 +23,85 @@ export component TooltipExample inherits VerticalLayout {
         }
     }
 
+    GroupBox {
+        title: "Basic Tooltip with Text";
+        variant: GroupBoxVariant.outline;
+
+        HorizontalLayout {
+            spacing: 16px;
+            alignment: center;
+            Tooltip {
+                text: "Bold (⌘B)";
+                Button { text: "Bold"; }
+            }
+            Tooltip {
+                text: "Italic (⌘I)";
+                Button { text: "Italic"; }
+            }
+            Tooltip {
+                text: "Underline (⌘U)";
+                placement: Placement.bottom;
+                Button { text: "Underline"; }
+            }
+        }
+    }
+
+    // A tooltip is a label, not a menu. It stays out of the way and never takes
+    // the click.
+    GroupBox {
+        title: "Tooltip with Action/Keybinding";
+        variant: GroupBoxVariant.outline;
+
+        Tooltip {
+            text: "Save the workspace — ⌘S";
+            Button { text: "Save"; icon: "download"; }
+        }
+    }
+
+    GroupBox {
+        title: "Toolbar with Tooltips";
+        variant: GroupBoxVariant.outline;
+
+        Rectangle {
+            horizontal-stretch: 1;
+            border-radius: Theme.radius-md;
+            border-width: 1px;
+            border-color: Theme.border;
+            background: Theme.sidebar;
+
+            HorizontalLayout {
+                padding: 6px;
+                spacing: 4px;
+                alignment: start;
+                Tooltip { text: "Undo"; Button { icon: "arrow-left"; } }
+                Tooltip { text: "Redo"; Button { icon: "arrow-right"; } }
+                Rectangle { width: 1px; height: 20px; background: Theme.border; }
+                Tooltip { text: "Zoom in"; Button { icon: "plus"; } }
+                Tooltip { text: "Zoom out"; Button { icon: "minus"; } }
+            }
+        }
+    }
+
+    // Any hoverable element can be the host, including a bare icon.
+    GroupBox {
+        title: "Status Indicators with Tooltips";
+        variant: GroupBoxVariant.outline;
+
+        HorizontalLayout {
+            spacing: 20px;
+            alignment: center;
+            Tooltip {
+                text: "Build passed 4 minutes ago";
+                Icon { name: "circle-check"; size: 18px; color: Theme.success; }
+            }
+            Tooltip {
+                text: "2 warnings in the last build";
+                Icon { name: "triangle-alert"; size: 18px; color: Theme.warning; }
+            }
+            Tooltip {
+                text: "Upload failed";
+                Icon { name: "circle-x"; size: 18px; color: Theme.danger; }
+            }
+        }
+    }
 }

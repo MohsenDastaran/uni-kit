@@ -8,13 +8,60 @@ export component MenuExample inherits VerticalLayout {
     spacing: 24px;
     alignment: start;
 
-    Menu {
-        items: [
-            { label: "New file", icon: "file", shortcut: "⌘N", disabled: false, checked: false, separator: false },
-            { label: "Copy", icon: "copy", shortcut: "⌘C", disabled: false, checked: false, separator: false },
-            { label: "", icon: "", shortcut: "", disabled: false, checked: false, separator: true },
-            { label: "Delete", icon: "trash", shortcut: "⌫", disabled: false, checked: false, separator: false },
-        ];
+    // Every row keeps the same columns, so a row without an icon still leaves
+    // the icon slot empty rather than shifting its label left.
+    GroupBox {
+        title: "DropdownMenu";
+        variant: GroupBoxVariant.outline;
+
+        Menu {
+            items: [
+                { label: "New file", icon: "file", shortcut: "⌘N", disabled: false, checked: false, separator: false },
+                { label: "Open…", icon: "folder-open", shortcut: "⌘O", disabled: false, checked: false, separator: false },
+                { label: "Save", icon: "download", shortcut: "⌘S", disabled: false, checked: false, separator: false },
+                { label: "", icon: "", shortcut: "", disabled: false, checked: false, separator: true },
+                { label: "Export as CSV", icon: "", shortcut: "", disabled: false, checked: false, separator: false },
+            ];
+        }
     }
 
+    GroupBox {
+        title: "Icons";
+        variant: GroupBoxVariant.outline;
+
+        Menu {
+            items: [
+                { label: "Rename", icon: "pencil", shortcut: "F2", disabled: false, checked: false, separator: false },
+                { label: "Duplicate", icon: "copy", shortcut: "⌘D", disabled: false, checked: false, separator: false },
+                { label: "Move to…", icon: "folder", shortcut: "", disabled: false, checked: false, separator: false },
+                { label: "Delete", icon: "trash", shortcut: "⌫", disabled: false, checked: false, separator: false },
+            ];
+        }
+    }
+
+    GroupBox {
+        title: "Check state";
+        variant: GroupBoxVariant.outline;
+
+        Menu {
+            items: [
+                { label: "Show minimap", icon: "", shortcut: "", disabled: false, checked: true, separator: false },
+                { label: "Wrap lines", icon: "", shortcut: "⌥Z", disabled: false, checked: true, separator: false },
+                { label: "Show whitespace", icon: "", shortcut: "", disabled: false, checked: false, separator: false },
+            ];
+        }
+    }
+
+    GroupBox {
+        title: "Disabled State";
+        variant: GroupBoxVariant.outline;
+
+        Menu {
+            items: [
+                { label: "Cut", icon: "", shortcut: "⌘X", disabled: false, checked: false, separator: false },
+                { label: "Copy", icon: "", shortcut: "⌘C", disabled: false, checked: false, separator: false },
+                { label: "Paste", icon: "", shortcut: "⌘V", disabled: true, checked: false, separator: false },
+            ];
+        }
+    }
 }

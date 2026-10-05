@@ -11,19 +11,48 @@ export component RootExample inherits VerticalLayout {
     alignment: start;
 
     private property <bool> dialog-open;
-    Rectangle {
-        width: 100%; height: Theme.viewport < 480px ? 280px : 360px; border-width: 1px; border-color: Theme.border; border-radius: Theme.radius-lg; clip: true;
-        Root {
-            width: 100%; height: 100%;
-            dialog-open <=> root.dialog-open;
-            dialog-title: "Confirm";
-            dialog-description: "Apply these changes?";
-            notices: [{ title: "Synced", message: "All changes are saved.", status: Status.success }];
-            VerticalLayout {
-                padding: 16px;
-                Button { text: "Open dialog"; clicked => { root.dialog-open = true; } }
+
+    // Root mounts the overlay layers above its children: the dialog below opens
+    // inside this frame, not over the page.
+    GroupBox {
+        title: "Overlays";
+        variant: GroupBoxVariant.outline;
+
+        Rectangle {
+            width: 100%; height: Theme.viewport < 480px ? 280px : 360px; border-width: 1px; border-color: Theme.border; border-radius: Theme.radius-lg; clip: true;
+            Root {
+                width: 100%; height: 100%;
+                dialog-open <=> root.dialog-open;
+                dialog-title: "Confirm";
+                dialog-description: "Apply these changes?";
+                notices: [{ title: "Synced", message: "All changes are saved.", status: Status.success }];
+                VerticalLayout {
+                    padding: 16px;
+                    spacing: 8px;
+                    Button { text: "Open dialog"; clicked => { root.dialog-open = true; } }
+                    Text {
+                        text: "Notifications stack at the top-right of this frame.";
+                        color: Theme.muted-foreground;
+                        font-size: Theme.font-size-xs;
+                    }
+                }
             }
         }
     }
 
+    GroupBox {
+        title: "Closing windows and quitting";
+        variant: GroupBoxVariant.outline;
+
+        VerticalLayout {
+            spacing: 8px;
+            alignment: start;
+            Text {
+                text: "A window's root view is the application view wrapped in Root. The application owns the quit and close-window actions; Root only hosts the layers above it.";
+                color: Theme.muted-foreground;
+                font-size: Theme.font-size-sm;
+            }
+            Button { text: "Close window"; }
+        }
+    }
 }

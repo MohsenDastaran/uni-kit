@@ -47,6 +47,20 @@ export component TagExample inherits VerticalLayout {
     }
 
     GroupBox {
+        title: "Tag Variants";
+        variant: GroupBoxVariant.outline;
+
+        HorizontalLayout {
+            spacing: 8px;
+            alignment: start;
+            Tag { text: "Default"; }
+            Tag { text: "Secondary"; variant: TagVariant.secondary; }
+            Tag { text: "Outline"; variant: TagVariant.outline; }
+            Tag { text: "Status"; variant: TagVariant.status; status: Status.info; }
+        }
+    }
+
+    GroupBox {
         title: "Tag Sizes";
         variant: GroupBoxVariant.outline;
         Tag {
@@ -62,4 +76,18 @@ export component TagExample inherits VerticalLayout {
         }
     }
 
+    // An outlined, closable tag is the usual shape for a filter the person can
+    // remove; the close affordance is the same at every variant.
+    GroupBox {
+        title: "Outline Tags";
+        variant: GroupBoxVariant.outline;
+
+        HorizontalLayout {
+            spacing: 8px;
+            alignment: start;
+            Tag { text: "language:rust"; variant: TagVariant.outline; closable: true; }
+            Tag { text: "label:good first issue"; variant: TagVariant.outline; closable: true; }
+            Tag { text: "assignee:ada"; variant: TagVariant.outline; }
+        }
+    }
 }

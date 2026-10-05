@@ -149,62 +149,62 @@ The sample is the gallery example that is already running, not a separately writ
 - [x] Data table
 - [x] Date picker
 - [x] Description list
-- [ ] Dialog
+- [x] Dialog
 - [x] Dock
 - [x] Dropdown button
-- [ ] Editor
-- [ ] Empty
-- [ ] Focus trap
-- [ ] Form
-- [ ] Group box
-- [ ] Hover card
-- [ ] Icon
-- [ ] Image
-- [ ] Input
-- [ ] Input group
-- [ ] Kbd
-- [ ] Label
-- [ ] List
-- [ ] Marker
-- [ ] Menu
-- [ ] Message
-- [ ] Message scroller
-- [ ] Notification
-- [ ] Number input
-- [ ] OTP input
-- [ ] Pagination
-- [ ] Plot
-- [ ] Popover
-- [ ] Progress
-- [ ] Questionnaire
-- [ ] Radio
-- [ ] Rating
-- [ ] Resizable
-- [ ] Root
-- [ ] Scrollable
-- [ ] Select
-- [ ] Settings
-- [ ] Sheet
-- [ ] Shimmer
-- [ ] Sidebar
-- [ ] Skeleton
-- [ ] Slider
-- [ ] Spinner
-- [ ] Status bar
-- [ ] Stepper
-- [ ] Switch
-- [ ] Table
-- [ ] Tabs
-- [ ] Tag
-- [ ] Text view
-- [ ] Textarea
-- [ ] Time field
-- [ ] Title bar
-- [ ] Toggle
-- [ ] Toolbar
-- [ ] Tooltip
-- [ ] Tree
-- [ ] Virtual list
+- [x] Editor
+- [x] Empty
+- [x] Focus trap
+- [x] Form
+- [x] Group box
+- [x] Hover card
+- [x] Icon
+- [x] Image
+- [x] Input
+- [x] Input group
+- [x] Kbd
+- [x] Label
+- [x] List
+- [x] Marker
+- [x] Menu
+- [x] Message
+- [x] Message scroller
+- [x] Notification
+- [x] Number input
+- [x] OTP input
+- [x] Pagination
+- [x] Plot
+- [x] Popover
+- [x] Progress
+- [x] Questionnaire
+- [x] Radio
+- [x] Rating
+- [x] Resizable
+- [x] Root
+- [x] Scrollable
+- [x] Select
+- [x] Settings
+- [x] Sheet
+- [x] Shimmer
+- [x] Sidebar
+- [x] Skeleton
+- [x] Slider
+- [x] Spinner
+- [x] Status bar
+- [x] Stepper
+- [x] Switch
+- [x] Table
+- [x] Tabs
+- [x] Tag
+- [x] Text view
+- [x] Textarea
+- [x] Time field
+- [x] Title bar
+- [x] Toggle
+- [x] Toolbar
+- [x] Tooltip
+- [x] Tree
+- [x] Virtual list
 
 ---
 

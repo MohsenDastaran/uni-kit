@@ -1,4 +1,4 @@
-import { Theme } from "../theme.slint";
+import { Theme, ControlSize } from "../theme.slint";
 import { GroupBox, GroupBoxVariant } from "section.slint";
 import { Kbd, KbdSequence } from "../kbd.slint";
 
@@ -32,4 +32,44 @@ export component KbdExample inherits VerticalLayout {
         }
     }
 
+    // A sequence is a row of chips with a small gap. `size` shrinks the whole
+    // chip, which is what an inline hint in a menu row uses.
+    GroupBox {
+        title: "Multiple Modifiers";
+        variant: GroupBoxVariant.outline;
+
+        VerticalLayout {
+            spacing: 8px;
+            alignment: start;
+
+            KbdSequence {
+                Kbd { text: "⌘"; }
+                Kbd { text: "⇧"; }
+                Kbd { text: "P"; }
+            }
+            KbdSequence {
+                Kbd { text: "Ctrl"; }
+                Kbd { text: "Alt"; }
+                Kbd { text: "Delete"; }
+            }
+            KbdSequence {
+                Kbd { text: "⌘"; size: ControlSize.small; }
+                Kbd { text: "K"; size: ControlSize.small; }
+            }
+        }
+    }
+
+    GroupBox {
+        title: "Arrow Keys and Function Keys";
+        variant: GroupBoxVariant.outline;
+
+        KbdSequence {
+            Kbd { text: "↑"; }
+            Kbd { text: "↓"; }
+            Kbd { text: "←"; }
+            Kbd { text: "→"; }
+            Kbd { text: "Enter"; }
+            Kbd { text: "Esc"; }
+        }
+    }
 }

@@ -1,6 +1,6 @@
 import { Theme } from "../theme.slint";
 import { GroupBox, GroupBoxVariant } from "section.slint";
-import { ImageView } from "../image.slint";
+import { ImageView, ImageFit } from "../image.slint";
 
 export component ImageExample inherits VerticalLayout {
     horizontal-stretch: 1;
@@ -8,11 +8,45 @@ export component ImageExample inherits VerticalLayout {
     spacing: 24px;
     alignment: start;
 
+    // Without a source the frame shows its placeholder icon.
     GroupBox {
         title: "Placeholder";
         variant: GroupBoxVariant.outline;
+
         ImageView {
             height: 160px;
+        }
+    }
+
+    // `fit` decides how a source fills its frame: `cover` crops, `contain`
+    // letterboxes, `fill` stretches. The last one uses a bundled SVG so the
+    // difference is visible without an asset file.
+    GroupBox {
+        title: "Fit modes";
+        variant: GroupBoxVariant.outline;
+
+        HorizontalLayout {
+            spacing: 12px;
+            alignment: start;
+
+            ImageView {
+                width: 160px;
+                height: 120px;
+                fit: ImageFit.cover;
+                source: @image-url("../icons/chart-column.svg");
+            }
+            ImageView {
+                width: 160px;
+                height: 120px;
+                fit: ImageFit.contain;
+                source: @image-url("../icons/chart-column.svg");
+            }
+            ImageView {
+                width: 160px;
+                height: 120px;
+                fit: ImageFit.fill;
+                source: @image-url("../icons/chart-column.svg");
+            }
         }
     }
 

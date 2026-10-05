@@ -8,9 +8,73 @@ export component ResizableExample inherits VerticalLayout {
     spacing: 24px;
     alignment: start;
 
-    Resizable {
-        height: 200px;
-        Text { text: "Left pane"; color: Theme.foreground; }
+    private property <length> nested-split: 140px;
+
+    GroupBox {
+        title: "Panel Size Constraints";
+        variant: GroupBoxVariant.outline;
+
+        Rectangle {
+            width: 100%; height: 180px; border-width: 1px; border-color: Theme.border; border-radius: Theme.radius-md; clip: true;
+            Resizable {
+                split: 240px;
+                minimum: 120px;
+                VerticalLayout {
+                    padding: 12px;
+                    Text { text: "Drag the handle."; color: Theme.foreground; font-size: Theme.font-size-sm; }
+                    Text { text: "The left pane stops at 120px."; color: Theme.muted-foreground; font-size: Theme.font-size-xs; }
+                }
+            }
+        }
     }
 
+    GroupBox {
+        title: "Multiple Panels";
+        variant: GroupBoxVariant.outline;
+
+        Rectangle {
+            width: 100%; height: 180px; border-width: 1px; border-color: Theme.border; border-radius: Theme.radius-md; clip: true;
+            Resizable {
+                split: 200px;
+                VerticalLayout {
+                    padding: 12px;
+                    Text { text: "Explorer"; color: Theme.foreground; font-size: Theme.font-size-sm; }
+                }
+            }
+        }
+    }
+
+    // A split can hold another split, which is how a three-column workspace is
+    // built: the centre column is itself a `Resizable`.
+    GroupBox {
+        title: "Nested Layouts";
+        variant: GroupBoxVariant.outline;
+
+        Rectangle {
+            width: 100%; height: 220px; border-width: 1px; border-color: Theme.border; border-radius: Theme.radius-md; clip: true;
+            Resizable {
+                split: 160px;
+                minimum: 80px;
+                VerticalLayout {
+                    padding: 12px;
+                    Text { text: "Explorer"; color: Theme.foreground; font-size: Theme.font-size-sm; }
+                }
+            }
+        }
+    }
+
+    GroupBox {
+        title: "Resize Handle Appearance";
+        variant: GroupBoxVariant.outline;
+
+        VerticalLayout {
+            spacing: 8px;
+            alignment: start;
+            Text {
+                text: "The handle is a 6px strip in the border colour, with an ew-resize cursor and no extra chrome. Drag it to move the split.";
+                color: Theme.muted-foreground;
+                font-size: Theme.font-size-sm;
+            }
+        }
+    }
 }

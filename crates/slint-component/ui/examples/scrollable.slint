@@ -8,12 +8,51 @@ export component ScrollableExample inherits VerticalLayout {
     spacing: 24px;
     alignment: start;
 
-    Scrollable {
-        height: 200px;
-        VerticalLayout {
-            padding: 8px; spacing: 8px;
-            for i in 20: Text { text: "Row \{i + 1}"; color: Theme.foreground; }
+    // The height is explicit. Without it Slint copies the content's preferred
+    // height onto the flickable, the area grows to fit, and a wheel move never
+    // scrolls.
+    GroupBox {
+        title: "Basic Scrollable Container";
+        variant: GroupBoxVariant.outline;
+
+        Scrollable {
+            height: 180px;
+            VerticalLayout {
+                padding: 8px;
+                spacing: 8px;
+                for i in 20: Text { text: "Row \{i + 1}"; color: Theme.foreground; }
+            }
         }
     }
 
+    GroupBox {
+        title: "Vertical Scrolling";
+        variant: GroupBoxVariant.outline;
+
+        Scrollable {
+            height: 180px;
+            VerticalLayout {
+                padding: 12px;
+                spacing: 10px;
+                for i in 12: Rectangle {
+                    height: 44px;
+                    border-radius: Theme.radius-md;
+                    border-width: 1px;
+                    border-color: Theme.border;
+                    background: Theme.muted.with-alpha(0.35);
+                    HorizontalLayout {
+                        padding-left: 12px;
+                        padding-right: 12px;
+                        alignment: center;
+                        Text {
+                            text: "Commit \{i + 1}";
+                            color: Theme.foreground;
+                            font-size: Theme.font-size-sm;
+                            vertical-alignment: center;
+                        }
+                    }
+                }
+            }
+        }
+    }
 }

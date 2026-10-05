@@ -1,7 +1,7 @@
 import { Theme } from "../theme.slint";
 import { GroupBox, GroupBoxVariant } from "section.slint";
 import { Sheet } from "../sheet.slint";
-import { Button } from "../button.slint";
+import { Placement } from "../dialog.slint";
 
 export component SheetExample inherits VerticalLayout {
     horizontal-stretch: 1;
@@ -9,16 +9,75 @@ export component SheetExample inherits VerticalLayout {
     spacing: 24px;
     alignment: start;
 
-    private property <bool> open: true;
-    Rectangle {
-        width: 100%; height: Theme.viewport < 480px ? 280px : 360px; border-width: 1px; border-color: Theme.border; border-radius: Theme.radius-lg; clip: true;
-        Button { x: 16px; y: 16px; text: "Open sheet"; clicked => { root.open = true; } }
-        Sheet {
-            width: 100%; height: 100%;
-            open <=> root.open;
-            title: "Filters";
-            description: "Narrow the results.";
+    private property <bool> basic-open: true;
+    private property <bool> left-open: true;
+    private property <bool> bottom-open: true;
+
+    // The sheet fills its container, so the frame below stands in for a window.
+    GroupBox {
+        title: "Basic Sheet";
+        variant: GroupBoxVariant.outline;
+
+        Rectangle {
+            width: 100%; height: 320px; border-width: 1px; border-color: Theme.border; border-radius: Theme.radius-lg; clip: true;
+            Rectangle { width: 100%; height: 100%; background: Theme.muted.with-alpha(0.3); }
+            Sheet {
+                width: 100%; height: 100%;
+                open <=> root.basic-open;
+                title: "Panel settings";
+                description: "Changes apply to this workspace only.";
+            }
         }
     }
 
+    GroupBox {
+        title: "Sheet with Placement";
+        variant: GroupBoxVariant.outline;
+
+        HorizontalLayout {
+            spacing: 12px;
+            Rectangle {
+                horizontal-stretch: 1; height: 240px; border-width: 1px; border-color: Theme.border; border-radius: Theme.radius-lg; clip: true;
+                Rectangle { width: 100%; height: 100%; background: Theme.muted.with-alpha(0.3); }
+                Sheet {
+                    width: 100%; height: 100%;
+                    open <=> root.left-open;
+                    placement: Placement.left;
+                    title: "From the left";
+                    description: "Navigation and filters.";
+                }
+            }
+            Rectangle {
+                horizontal-stretch: 1; height: 240px; border-width: 1px; border-color: Theme.border; border-radius: Theme.radius-lg; clip: true;
+                Rectangle { width: 100%; height: 100%; background: Theme.muted.with-alpha(0.3); }
+                Sheet {
+                    width: 100%; height: 100%;
+                    open <=> root.bottom-open;
+                    placement: Placement.bottom;
+                    title: "From the bottom";
+                    description: "A console or a picker.";
+                }
+            }
+        }
+    }
+
+    GroupBox {
+        title: "Sheet with Form Content";
+        variant: GroupBoxVariant.outline;
+
+        Rectangle {
+            width: 100%; height: 320px; border-width: 1px; border-color: Theme.border; border-radius: Theme.radius-lg; clip: true;
+            Rectangle { width: 100%; height: 100%; background: Theme.muted.with-alpha(0.3); }
+            Sheet {
+                width: 100%; height: 100%;
+                open: true;
+                title: "Invite a teammate";
+                description: "They receive an email with a join link.";
+                VerticalLayout {
+                    spacing: 8px;
+                    Text { text: "name@company.com"; color: Theme.muted-foreground; font-size: Theme.font-size-sm; }
+                }
+            }
+        }
+    }
 }

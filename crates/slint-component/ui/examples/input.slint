@@ -5,6 +5,7 @@ import { Input } from "../input.slint";
 
 export component InputExample inherits VerticalLayout {
     horizontal-stretch: 1;
+    private property <string> last-query: "";
     private property <int> wrap-cols: Theme.field-columns(Theme.viewport);
     padding: Theme.page-padding(Theme.viewport);
     spacing: 24px;
@@ -174,6 +175,61 @@ export component InputExample inherits VerticalLayout {
                 horizontal-stretch: 1;
                 text: "not-an-email";
                 invalid: true;
+            }
+        }
+    }
+
+    GroupBox {
+        title: "Disabled Input";
+        variant: GroupBoxVariant.outline;
+
+        VerticalLayout {
+            spacing: 12px;
+            Input { text: "readonly@example.com"; read-only: true; }
+            Input { text: "locked@example.com"; enabled: false; }
+        }
+    }
+
+    GroupBox {
+        title: "Input Validation";
+        variant: GroupBoxVariant.outline;
+
+        VerticalLayout {
+            spacing: 12px;
+            Input { text: "you@example.com"; prefix-icon: "mail"; }
+            Input { text: "not-an-address"; invalid: true; prefix-icon: "mail"; }
+        }
+    }
+
+    GroupBox {
+        title: "Clean on ESC";
+        variant: GroupBoxVariant.outline;
+
+        VerticalLayout {
+            spacing: 12px;
+            Input { text: "press escape to clear"; cleanable: true; clean-on-escape: true; }
+            Input { placeholder: "escape clears this too"; cleanable: true; clean-on-escape: true; }
+        }
+    }
+
+    GroupBox {
+        title: "Handle Input Events";
+        variant: GroupBoxVariant.outline;
+
+        VerticalLayout {
+            spacing: 8px;
+            alignment: start;
+            Input {
+                placeholder: "Type and press enter";
+                prefix-icon: "search";
+                accepted(text) => {
+                    root.last-query = text;
+                }
+            }
+            Text {
+                text: "Last submitted: " + (root.last-query == "" ? "nothing yet" : root.last-query);
+                color: Theme.muted-foreground;
+                font-size: Theme.font-size-xs;
             }
         }
     }

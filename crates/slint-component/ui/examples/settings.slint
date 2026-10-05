@@ -8,12 +8,85 @@ export component SettingsExample inherits VerticalLayout {
     spacing: 24px;
     alignment: start;
 
-    Settings {
-        rows: [
-            { title: "Dark mode", description: "Use the dark palette.", checked: false },
-            { title: "Notifications", description: "Show desktop alerts.", checked: true },
-            { title: "Sounds", description: "Play a sound for new messages.", checked: false },
-        ];
+    GroupBox {
+        title: "Basic Settings";
+        variant: GroupBoxVariant.outline;
+
+        Settings {
+            rows: [
+                { title: "Dark mode", description: "Use the dark palette.", checked: false },
+                { title: "Notifications", description: "Show desktop alerts.", checked: true },
+                { title: "Sounds", description: "Play a sound for new messages.", checked: false },
+            ];
+        }
     }
 
+    // A settings page stacks rows and lets the surrounding group carry the
+    // surface. The filled block below shows the other treatment: the frame
+    // takes the muted fill instead of an outline.
+    GroupBox {
+        title: "Group Variants";
+        variant: GroupBoxVariant.outline;
+
+        VerticalLayout {
+            spacing: 12px;
+
+            Text {
+                text: "Filled";
+                color: Theme.muted-foreground;
+                font-size: Theme.font-size-xs;
+            }
+
+            Rectangle {
+                border-radius: Theme.radius-md;
+                background: Theme.muted.with-alpha(0.5);
+                VerticalLayout {
+                    padding-left: 12px;
+                    padding-right: 12px;
+                    Settings {
+                        rows: [
+                            { title: "Reduce motion", description: "Skip non-essential animation.", checked: false },
+                            { title: "Compact density", description: "Fit more rows on screen.", checked: true },
+                        ];
+                    }
+                }
+            }
+
+            Text {
+                text: "Outlined";
+                color: Theme.muted-foreground;
+                font-size: Theme.font-size-xs;
+            }
+
+            Rectangle {
+                border-radius: Theme.radius-md;
+                border-width: 1px;
+                border-color: Theme.border;
+                VerticalLayout {
+                    padding-left: 12px;
+                    padding-right: 12px;
+                    Settings {
+                        rows: [
+                            { title: "Usage data", description: "Send anonymous crash reports.", checked: true },
+                            { title: "Personalised ads", description: "Use activity to pick ads.", checked: false },
+                        ];
+                    }
+                }
+            }
+        }
+    }
+
+    GroupBox {
+        title: "Complete Settings Example";
+        variant: GroupBoxVariant.outline;
+
+        Settings {
+            rows: [
+                { title: "Sync across devices", description: "Keep every device on the same revision.", checked: true },
+                { title: "Auto-save", description: "Write changes every 30 seconds.", checked: true },
+                { title: "Spell check", description: "Underline unknown words.", checked: false },
+                { title: "Telemetry", description: "Share anonymous performance data.", checked: false },
+            ];
+        }
+    }
 }

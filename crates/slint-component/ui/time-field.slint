@@ -1,0 +1,127 @@
+import { Theme, ControlSize } from "theme.slint";
+
+export enum TimePrecision { hours_minutes, hours_minutes_seconds }
+export enum HourCycle { h24, h12 }
+
+// A segmented time-of-day field. Mirrors GPUI Component's `TimeField`: each
+// part is its own field, so the value keeps its width while a digit is typed,
+// and an optional seconds segment and a 12-hour clock change the shape.
+export component TimeField {
+    in-out property <int> hour: 0;
+    in-out property <int> minute: 0;
+    in-out property <int> second: 0;
+    in property <TimePrecision> precision: TimePrecision.hours_minutes;
+    in property <HourCycle> hour-cycle: HourCycle.h24;
+    in property <bool> enabled: true;
+    in property <bool> invalid;
+    in property <ControlSize> size: ControlSize.medium;
+    callback changed(hour: int, minute: int, second: int);
+
+    private property <bool> focused: hour-field.has-focus || minute-field.has-focus || seconds-field.has-focus;
+    private property <color> edge: invalid ? Theme.danger : focused ? Theme.ring : Theme.input;
+    private property <bool> with-seconds: precision == TimePrecision.hours_minutes_seconds;
+    private property <bool> afternoon: hour >= 12;
+
+    pure function pad(n: int) -> string {
+        n < 10 ? "0\{n}" : "\{n}"
+    }
+
+    // 12-hour clock: 0 and 12 read as 12, and the rest wrap at 12.
+    private property <int> display-hour: hour-cycle == HourCycle.h12
+        ? (hour == 0 ? 12 : hour > 12 ? hour - 12 : hour)
+        : hour;
+
+    height: Theme.control-height(size);
+    horizontal-stretch: 0;
+    // An explicit width, not a preferred one: inside a stretching layout a
+    // preferred width is ignored and the frame would span the row.
+    width: with-seconds ? 116px : 92px;
+
+    Rectangle {
+        border-radius: Theme.radius-md;
+        border-width: 1px;
+        border-color: edge;
+        background: enabled ? Theme.background : Theme.muted;
+    }
+
+    HorizontalLayout {
+        padding-left: 10px;
+        padding-right: 10px;
+        spacing: 2px;
+        alignment: center;
+        opacity: enabled ? 1 : 0.5;
+
+        hour-field := TextInput {
+            width: 22px;
+            horizontal-alignment: center;
+            text: root.pad(root.display-hour);
+            enabled: root.enabled;
+            single-line: true;
+            color: Theme.foreground;
+            font-family: Theme.mono-font-family;
+            font-size: Theme.control-font-size(root.size);
+            selection-background-color: Theme.selection.with-alpha(0.35);
+            edited => {
+                root.hour = max(0, min(23, self.text.to-float()));
+                root.changed(root.hour, root.minute, root.second);
+            }
+        }
+
+        Text {
+            text: ":";
+            color: Theme.muted-foreground;
+            font-size: Theme.control-font-size(root.size);
+            vertical-alignment: center;
+        }
+
+        minute-field := TextInput {
+            width: 22px;
+            horizontal-alignment: center;
+            text: root.pad(root.minute);
+            enabled: root.enabled;
+            single-line: true;
+            color: Theme.foreground;
+            font-family: Theme.mono-font-family;
+            font-size: Theme.control-font-size(root.size);
+            selection-background-color: Theme.selection.with-alpha(0.35);
+            edited => {
+                root.minute = max(0, min(59, self.text.to-float()));
+                root.changed(root.hour, root.minute, root.second);
+            }
+        }
+
+        // Hidden without seconds: an invisible element leaves the layout.
+        Text {
+            visible: root.with-seconds;
+            text: ":";
+            color: Theme.muted-foreground;
+            font-size: Theme.control-font-size(root.size);
+            vertical-alignment: center;
+        }
+
+        seconds-field := TextInput {
+            visible: root.with-seconds;
+            width: 22px;
+            horizontal-alignment: center;
+            text: root.pad(root.second);
+            enabled: root.enabled;
+            single-line: true;
+            color: Theme.foreground;
+            font-family: Theme.mono-font-family;
+            font-size: Theme.control-font-size(root.size);
+            selection-background-color: Theme.selection.with-alpha(0.35);
+            edited => {
+                root.second = max(0, min(59, self.text.to-float()));
+                root.changed(root.hour, root.minute, root.second);
+            }
+        }
+
+        if hour-cycle == HourCycle.h12: Text {
+            text: root.afternoon ? "PM" : "AM";
+            color: Theme.muted-foreground;
+            font-size: Theme.font-size-xs;
+            font-weight: 600;
+            vertical-alignment: center;
+        }
+    }
+}

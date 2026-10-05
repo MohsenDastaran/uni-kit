@@ -22,7 +22,8 @@ export component InputGroup {
         padding-left: 2px;
         padding-right: 2px;
         spacing: 0;
-        alignment: start;
+        // No `alignment: start` here: it would stop the field from stretching,
+        // and the input would collapse to nothing between its addons.
         @children
     }
 }
