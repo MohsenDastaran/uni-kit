@@ -182,4 +182,4 @@ The repository includes a complete workspace with edge docks, runtime panel oper
 cargo run -p example-dock
 ```
 
-See [`examples/dock/src/main.rs`](https://github.com/longbridge/gpui-kit/blob/main/examples/dock/src/main.rs) for the full implementation.
+See [`examples/dock/src/main.rs`](https://github.com/MohsenDastaran/uni-kit/blob/main/examples/dock/src/main.rs) for the full implementation.

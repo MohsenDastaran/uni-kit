@@ -34,8 +34,6 @@ const starLabel = stars >= 1000 ? `${(stars / 1000).toFixed(1)}k` : `${stars}`;
 const gettingStartedHref = url('docs/getting-started');
 const componentsHref = url('component');
 const baseHref = url('base');
-const shellHref = url('shell');
-const contributorsHref = url('contributors');
 const skillsHref = url('skills');
 const llmsHref = url('llms-full.txt');
 
@@ -104,9 +102,9 @@ const copy = {
                   { icon: "dock", title: "Freeform dock layout", description: "Dockable panels with drag-to-rearrange and zooming — all serializable.", apis: ["DockArea", "DockLayout", "TabGroup"] },
                   { icon: "theme", title: "Multi-theme support", description: "Light, dark and custom themes driven by semantic tokens instead of endless style fields.", apis: ["Theme", "ThemeColor", "ActiveTheme"] },
               ],
-              chooseKicker: "Three layers. One ecosystem.",
+              chooseKicker: "Two layers. One ecosystem.",
               chooseTitle: "Choose who owns the visual system.",
-              chooseDescription: "Use gpui-component for a coherent product, build and own your design system on gpui-base, or open the application to JavaScript extensions with gpui-shell.",
+              chooseDescription: "Use gpui-component for a coherent product, or build and own your design system on gpui-base.",
               shipTitle: "Keep the product coherent",
               shipDescription: "gpui-component provides a complete, polished visual and interaction system ready to ship.",
               shipPoints: ["60+ finished components", "Light and dark themes included", "Interaction details already handled"],
@@ -118,7 +116,6 @@ const copy = {
               scriptTitle: "Extend it in JavaScript",
               scriptDescription: "The host stays Rust and grants what a script may reach, one capability at a time; the script draws real interface in the same process.",
               scriptPoints: ["Extend the product without a fork or a release", "No capability granted by default", "Hot-reload on save, no restart"],
-              startShell: "Explore gpui-shell",
               principleKicker: "Principle",
               principleLead: "Behavior belongs to the foundation.",
               principleTail: "Presentation belongs to the application.",
@@ -289,20 +286,6 @@ const copy = {
                         <a :href="baseHref" class="path__link">{{ copy.startBase }} <ArrowRight :size="15" /></a>
                     </article>
 
-                    <article class="path">
-                        <div class="path__meta"><Braces :size="16" /><span>gpui-shell</span></div>
-                        <h3>{{ copy.scriptTitle }}</h3>
-                        <p>{{ copy.scriptDescription }}</p>
-                        <pre><code><span class="c-kw">import</span> { Button, text } <span class="c-kw">from</span> <span class="c-str">"gpui"</span>;
-
-<span class="c-type">Button</span>.<span class="c-fn">new</span>(<span class="c-str">"save"</span>)
-    .<span class="c-fn">on_click</span>((_e, cx) =&gt; <span class="c-kw">this</span>.<span class="c-fn">save</span>(cx))
-    .<span class="c-fn">child</span>(<span class="c-fn">text</span>(<span class="c-str">"Save changes"</span>))</code></pre>
-                        <ul>
-                            <li v-for="item in copy.scriptPoints" :key="item"><Check :size="13" />{{ item }}</li>
-                        </ul>
-                        <a :href="shellHref" class="path__link">{{ copy.startShell }} <ArrowRight :size="15" /></a>
-                    </article>
                 </div>
             </div>
         </section>

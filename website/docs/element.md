@@ -153,13 +153,13 @@ impl Element for EventSurface {
 }
 ```
 
-The element is intentionally invisible and has no handler. A hitbox is geometry for input routing, not a click callback. [GPUI Kit's `CarouselScrollMask`](https://github.com/longbridge/gpui-kit/blob/main/crates/component/src/carousel/scroll_mask.rs) starts with this pattern, then retains its `Hitbox` and installs frame-local pointer and wheel listeners in `paint`. It uses `Hitbox::should_handle_scroll` to avoid claiming gestures blocked by a surface in front. When an element has children, request their layouts first and pass their `LayoutId`s to `window.request_layout`; then prepaint and paint them in order. For intrinsic measurement, `window.request_measured_layout` takes a measurement closure instead.
+The element is intentionally invisible and has no handler. A hitbox is geometry for input routing, not a click callback. [GPUI Kit's `CarouselScrollMask`](https://github.com/MohsenDastaran/uni-kit/blob/main/crates/component/src/carousel/scroll_mask.rs) starts with this pattern, then retains its `Hitbox` and installs frame-local pointer and wheel listeners in `paint`. It uses `Hitbox::should_handle_scroll` to avoid claiming gestures blocked by a surface in front. When an element has children, request their layouts first and pass their `LayoutId`s to `window.request_layout`; then prepaint and paint them in order. For intrinsic measurement, `window.request_measured_layout` takes a measurement closure instead.
 
 `HitboxBehavior::Normal` participates in hit testing without hiding hitboxes behind it. `BlockMouse` occludes both mouse and scroll handling behind the hitbox; `BlockMouseExceptScroll` leaves scrolling available. The hitbox also carries the current content mask. In a custom element, coordinate the hitbox with any clipping and paint order; drawing a shape does not create a hitbox automatically.
 
 ### Make the surface visible and respond to a press
 
-The first example is a trait skeleton, so adding it as a child produces no visible pixels. To run the continuation, replace the contents of the existing [`examples/hello_world/src/main.rs`](https://github.com/longbridge/gpui-kit/blob/main/examples/hello_world/src/main.rs) with the complete file below. The parent gives the surface a definite `240 × 96` pixel area; its relative width and height now have a size to resolve against. This uses the existing workspace example and adds no dependency.
+The first example is a trait skeleton, so adding it as a child produces no visible pixels. To run the continuation, replace the contents of the existing [`examples/hello_world/src/main.rs`](https://github.com/MohsenDastaran/uni-kit/blob/main/examples/hello_world/src/main.rs) with the complete file below. The parent gives the surface a definite `240 × 96` pixel area; its relative width and height now have a size to resolve against. This uses the existing workspace example and adds no dependency.
 
 ```rust
 use gpui_kit::component::ActiveTheme as _;
@@ -293,11 +293,11 @@ To verify each layer while learning, try these changes in the same file and reru
 
 The first two changes are experiments, not alternate finished implementations: restore the full code before continuing.
 
-The example does not need an `ElementId`: the counter belongs to the Entity, while the hitbox and listener are rebuilt each frame. Add a stable ID only when the low-level element itself needs keyed state or accessibility identity. For a surface with children, the next step is to retain their layout handles in `RequestLayoutState`, prepaint them after the parent has bounds, and paint them in order; see [TextView](https://github.com/longbridge/gpui-kit/blob/main/crates/base/src/text/text_view.rs) for a real implementation. A reusable input primitive also needs a deliberate focus, keyboard, and accessibility contract; attaching a mouse listener alone does not provide one.
+The example does not need an `ElementId`: the counter belongs to the Entity, while the hitbox and listener are rebuilt each frame. Add a stable ID only when the low-level element itself needs keyed state or accessibility identity. For a surface with children, the next step is to retain their layout handles in `RequestLayoutState`, prepaint them after the parent has bounds, and paint them in order; see [TextView](https://github.com/MohsenDastaran/uni-kit/blob/main/crates/base/src/text/text_view.rs) for a real implementation. A reusable input primitive also needs a deliberate focus, keyboard, and accessibility contract; attaching a mouse listener alone does not provide one.
 
 ### Compose one child in a custom Element
 
-The pointer surface above has no child layout to forward. This second complete example adds exactly one child. Replace [`examples/hello_world/src/main.rs`](https://github.com/longbridge/gpui-kit/blob/main/examples/hello_world/src/main.rs) with the code below, then run `cargo run -p hello_world` from the repository root. It uses the same package and dependencies as the previous exercise.
+The pointer surface above has no child layout to forward. This second complete example adds exactly one child. Replace [`examples/hello_world/src/main.rs`](https://github.com/MohsenDastaran/uni-kit/blob/main/examples/hello_world/src/main.rs) with the code below, then run `cargo run -p hello_world` from the repository root. It uses the same package and dependencies as the previous exercise.
 
 ```rust
 use gpui_kit::component::ActiveTheme as _;
@@ -425,7 +425,7 @@ The example keeps the layout child in `RequestLayoutState` because it must survi
 
 ### Text is a specialized low-level element
 
-The [TextSystem](./text-system) owns font lookup, shaping, glyph metrics, and caches. `cx.text_system()` exposes it; a window also has a window-specific text system. Text width depends on font, size, shaping, and available width, so a custom text element may need `request_measured_layout` or a measured line during layout. Its `prepaint` can then compute line geometry, selections, and hitboxes; `paint` draws the prepared text. Keep the same font parameters through measurement and paint, or caret and selection positions will drift. Use GPUI's `text(...)` and GPUI Kit's text components unless you need selection, inline objects, or a specialized editor. [GPUI Base's TextView](https://github.com/longbridge/gpui-kit/blob/main/crates/base/src/text/text_view.rs) shows measured layout, an element-owned hitbox, and painting tied to the resolved bounds. [GPUI Kit's input element](https://github.com/longbridge/gpui-kit/blob/main/crates/base/src/input/base/element.rs) shows the same pipeline for editing.
+The [TextSystem](./text-system) owns font lookup, shaping, glyph metrics, and caches. `cx.text_system()` exposes it; a window also has a window-specific text system. Text width depends on font, size, shaping, and available width, so a custom text element may need `request_measured_layout` or a measured line during layout. Its `prepaint` can then compute line geometry, selections, and hitboxes; `paint` draws the prepared text. Keep the same font parameters through measurement and paint, or caret and selection positions will drift. Use GPUI's `text(...)` and GPUI Kit's text components unless you need selection, inline objects, or a specialized editor. [GPUI Base's TextView](https://github.com/MohsenDastaran/uni-kit/blob/main/crates/base/src/text/text_view.rs) shows measured layout, an element-owned hitbox, and painting tied to the resolved bounds. [GPUI Kit's input element](https://github.com/MohsenDastaran/uni-kit/blob/main/crates/base/src/input/base/element.rs) shows the same pipeline for editing.
 
 ## When to implement `Element`
 
@@ -444,10 +444,10 @@ For a reusable UI component, start with [`RenderOnce`](./render-once). For state
 
 | Example | Why composition alone is insufficient | What the element owns |
 | --- | --- | --- |
-| [Input](https://github.com/longbridge/gpui-kit/blob/main/crates/base/src/input/base/element.rs) | Caret, selection, wrapping, and pointer-to-text mapping must use the same measured text geometry. | Text layout, hitboxes, input handlers, and paint order. |
-| [TextView](https://github.com/longbridge/gpui-kit/blob/main/crates/base/src/text/text_view.rs) | Rich text and selectable ranges need measurement and clipping tied to resolved bounds. | Text layout state, hitbox, selection surface, and prepared painting. |
-| [CarouselScrollMask](https://github.com/longbridge/gpui-kit/blob/main/crates/component/src/carousel/scroll_mask.rs) | A gesture surface must occupy the viewport independently of moving carousel content. | Full-size layout, hitbox, and pointer/wheel dispatch; it paints nothing. |
-| [Plot line](https://github.com/longbridge/gpui-kit/blob/main/crates/component/src/plot/shape/line.rs) | Data points require direct path tessellation, but do not require custom layout or input. | A path painted inside a higher-level chart; this shape itself does not need a full `Element` implementation. |
+| [Input](https://github.com/MohsenDastaran/uni-kit/blob/main/crates/base/src/input/base/element.rs) | Caret, selection, wrapping, and pointer-to-text mapping must use the same measured text geometry. | Text layout, hitboxes, input handlers, and paint order. |
+| [TextView](https://github.com/MohsenDastaran/uni-kit/blob/main/crates/base/src/text/text_view.rs) | Rich text and selectable ranges need measurement and clipping tied to resolved bounds. | Text layout state, hitbox, selection surface, and prepared painting. |
+| [CarouselScrollMask](https://github.com/MohsenDastaran/uni-kit/blob/main/crates/component/src/carousel/scroll_mask.rs) | A gesture surface must occupy the viewport independently of moving carousel content. | Full-size layout, hitbox, and pointer/wheel dispatch; it paints nothing. |
+| [Plot line](https://github.com/MohsenDastaran/uni-kit/blob/main/crates/component/src/plot/shape/line.rs) | Data points require direct path tessellation, but do not require custom layout or input. | A path painted inside a higher-level chart; this shape itself does not need a full `Element` implementation. |
 
 These examples show that `Element` is about owning a phase boundary, not merely drawing something custom. The carousel surface demonstrates that an Element may paint nothing. Plot demonstrates the opposite: a custom drawing can use a canvas or a containing Element without making each shape an Element.
 
@@ -495,7 +495,7 @@ div().id("result-row")
 
 The `.id(...)` call changes the Rust type from `Div` to `Stateful<Div>`, so identity-dependent methods become available. Give each repeated row a domain-derived ID rather than the same literal ID. `on_click` registers a handler; it does not automatically update an Entity's state.
 
-When exposing the same fluent methods on a GPUI Kit component, delegate its interaction state to the underlying primitive. The component's [Radio implementation](https://github.com/longbridge/gpui-kit/blob/main/crates/component/src/radio.rs) follows this shape (the excerpt omits unrelated fields):
+When exposing the same fluent methods on a GPUI Kit component, delegate its interaction state to the underlying primitive. The component's [Radio implementation](https://github.com/MohsenDastaran/uni-kit/blob/main/crates/component/src/radio.rs) follows this shape (the excerpt omits unrelated fields):
 
 ```rust
 impl InteractiveElement for Radio {
@@ -531,7 +531,7 @@ canvas(
 .h(px(1.))
 ```
 
-The `prepaint` result here is `Option<Path<Pixels>>`; it exists only for this frame. [GPUI Kit's dashed Separator](https://github.com/longbridge/gpui-kit/blob/main/crates/component/src/separator.rs) uses `canvas` to draw a path in its resolved bounds, and the [circular Progress](https://github.com/longbridge/gpui-kit/blob/main/crates/component/src/progress/progress_circle.rs) returns measured radii from prepaint to paint. Use this for a focused drawing callback inside `Render` or `RenderOnce`. See [Paint](./paint) for `PathBuilder`, SVG path notation, and path caching examples. It has no built-in children, hitbox, focus tracking, or stable Element ID. When those responsibilities need to work together, implement `Element` or compose a standard interactive element around the canvas.
+The `prepaint` result here is `Option<Path<Pixels>>`; it exists only for this frame. [GPUI Kit's dashed Separator](https://github.com/MohsenDastaran/uni-kit/blob/main/crates/component/src/separator.rs) uses `canvas` to draw a path in its resolved bounds, and the [circular Progress](https://github.com/MohsenDastaran/uni-kit/blob/main/crates/component/src/progress/progress_circle.rs) returns measured radii from prepaint to paint. Use this for a focused drawing callback inside `Render` or `RenderOnce`. See [Paint](./paint) for `PathBuilder`, SVG path notation, and path caching examples. It has no built-in children, hitbox, focus tracking, or stable Element ID. When those responsibilities need to work together, implement `Element` or compose a standard interactive element around the canvas.
 
 When an existing interactive element such as `div()` already provides the behavior you need, compose it. If a custom primitive needs standard interaction, embed or delegate to GPUI's `Interactivity`, as GPUI's built-in elements do. Implementing raw hitboxes and event registration yourself also makes you responsible for dispatch, clipping, cursor behavior, and accessibility.
 

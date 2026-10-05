@@ -115,7 +115,7 @@ took 5 ms, or that the GPU and compositor displayed it within 5 ms. The
 profiler also exposes `dirty_to_draw_duration()` and `PresentTiming` for
 custom instrumentation, but those are separate measurements from this HUD's
 `FRAME`. See GPUI's [frame timing definitions](https://docs.rs/gpui-pre/{{gpui_pre_version}}/gpui/profiler/struct.FrameTiming.html)
-and the [sampler implementation](https://github.com/longbridge/gpui-kit/blob/main/crates/fps/src/sampler.rs).
+and the [sampler implementation](https://github.com/MohsenDastaran/uni-kit/blob/main/crates/fps/src/sampler.rs).
 
 ## The headline
 
@@ -242,7 +242,7 @@ you need to correlate a frame with an app event, including the first
 invalidation timestamp (`dirty_at`) and present submission. They do not by
 themselves measure GPU completion or photons on screen. See GPUI's
 [collector API](https://docs.rs/gpui-pre/{{gpui_pre_version}}/gpui/profiler/struct.FrameTimingCollector.html)
-and [GPUI Kit's monitor](https://github.com/longbridge/gpui-kit/blob/main/crates/fps/src/monitor.rs).
+and [GPUI Kit's monitor](https://github.com/MohsenDastaran/uni-kit/blob/main/crates/fps/src/monitor.rs).
 
 ## The first frames are not measured
 

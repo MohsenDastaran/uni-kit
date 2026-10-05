@@ -127,7 +127,7 @@ If the text stays at zero, check that the listener writes `this.count` and calls
 
 ## Build and use the component
 
-`MessageRow` has a small builder surface: `new` supplies required text, while `action` is an optional **slot**. `AnyElement` stores whichever concrete element the caller supplies. The slot is rendered after the body; calling `.action(...)` twice replaces the earlier element. This follows the repository's [`Empty` component](https://github.com/longbridge/gpui-kit/blob/main/crates/component/src/empty.rs), which uses named optional slots and renders them in a fixed order. If the component must accept several children, store `Vec<AnyElement>` and implement `ParentElement`; one named slot does not need that trait.
+`MessageRow` has a small builder surface: `new` supplies required text, while `action` is an optional **slot**. `AnyElement` stores whichever concrete element the caller supplies. The slot is rendered after the body; calling `.action(...)` twice replaces the earlier element. This follows the repository's [`Empty` component](https://github.com/MohsenDastaran/uni-kit/blob/main/crates/component/src/empty.rs), which uses named optional slots and renders them in a fixed order. If the component must accept several children, store `Vec<AnyElement>` and implement `ParentElement`; one named slot does not need that trait.
 
 The caller can put a semantic control in the slot and keep the behavior in its retained View. In this example the `Editor` below owns `opened`; its click listener changes that field and requests another render:
 
@@ -238,7 +238,7 @@ Capturing an `Entity<T>` keeps that entity alive as long as the rendered handler
 | `cx.listener` or `cx.notify()` is unavailable in `RenderOnce::render` | That method gets `&mut App`, not an entity `Context<Self>`. Create the listener in the owner View's `Render::render` and pass it in, as above. |
 | Calling `.child(...)` on `MessageRow` fails | The derive provides `IntoElement`, not `ParentElement`. Add a named builder such as `.action(...)`, or implement `ParentElement` and store children explicitly. |
 
-To check a copied example, first put the type, builders, and `RenderOnce` implementation in the same module with both imports shown above. Use it as a child of a retained View and run `cargo check -p your-app` in that app's workspace. The `Editor` snippets are separate illustrations; add the mentioned fields and imports before compiling them together. For the repository's real API, compare [`Empty`](https://github.com/longbridge/gpui-kit/blob/main/crates/component/src/empty.rs), [`Checkbox`](https://github.com/longbridge/gpui-kit/blob/main/crates/component/src/checkbox.rs), and [`Button`](https://github.com/longbridge/gpui-kit/blob/main/crates/component/src/button/button.rs).
+To check a copied example, first put the type, builders, and `RenderOnce` implementation in the same module with both imports shown above. Use it as a child of a retained View and run `cargo check -p your-app` in that app's workspace. The `Editor` snippets are separate illustrations; add the mentioned fields and imports before compiling them together. For the repository's real API, compare [`Empty`](https://github.com/MohsenDastaran/uni-kit/blob/main/crates/component/src/empty.rs), [`Checkbox`](https://github.com/MohsenDastaran/uni-kit/blob/main/crates/component/src/checkbox.rs), and [`Button`](https://github.com/MohsenDastaran/uni-kit/blob/main/crates/component/src/button/button.rs).
 
 ## Builder-style components
 

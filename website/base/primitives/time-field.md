@@ -12,7 +12,7 @@ Like every `gpui-base` primitive, Time Field supplies behavior and semantic stru
 
 ## Example
 
-The [single native Cargo entrypoint](https://github.com/longbridge/gpui-kit/blob/main/crates/base/examples/native/src/bin/components.rs) selects this primitive from the [shared showcase implementation](https://github.com/longbridge/gpui-kit/blob/main/crates/base/examples/showcase/mod.rs). The same showcase is compiled once for the WASM preview above.
+The [single native Cargo entrypoint](https://github.com/MohsenDastaran/uni-kit/blob/main/crates/base/examples/native/src/bin/components.rs) selects this primitive from the [shared showcase implementation](https://github.com/MohsenDastaran/uni-kit/blob/main/crates/base/examples/showcase/mod.rs). The same showcase is compiled once for the WASM preview above.
 
 ```bash
 cargo run -p gpui-base-examples -- time-field
@@ -28,7 +28,7 @@ use gpui_kit::base::{HourCycle, TimeField, TimeFieldEvent, TimeFieldState, TimeP
 
 The example composes `TimeField` over a `TimeFieldState`. The field renders one `TimeFieldSegment` per hour, minute, optional second and optional AM/PM part, separated by `:`. Lay out and style the root with `Styled`, and decorate each segment through `TimeField::render_segment`; the slot receives a `TimeFieldSegmentState` with the segment, its value and whether it is selected.
 
-The authoritative module is [`components/time_field.rs`](https://github.com/longbridge/gpui-kit/blob/main/crates/base/examples/showcase/components/time_field.rs). Native and browser previews compile this same file.
+The authoritative module is [`components/time_field.rs`](https://github.com/MohsenDastaran/uni-kit/blob/main/crates/base/examples/showcase/components/time_field.rs). Native and browser previews compile this same file.
 
 ## State and events
 

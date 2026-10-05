@@ -85,7 +85,7 @@ cargo run -p gpui-base-examples -- input
 ```
 
 The implementation is in
-[`crates/base/examples/showcase/components/input.rs`](https://github.com/longbridge/gpui-kit/blob/main/crates/base/examples/showcase/components/input.rs).
+[`crates/base/examples/showcase/components/input.rs`](https://github.com/MohsenDastaran/uni-kit/blob/main/crates/base/examples/showcase/components/input.rs).
 
 ## Atomic inline tokens
 

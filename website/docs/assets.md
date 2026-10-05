@@ -65,7 +65,7 @@ explicitly register `AllAssets` to use the complete bundle.
 
 ## Start with the default source
 
-`gpui_kit::assets::Assets` provides the default resource source with the original 101 component icons listed in [`default-icons.txt`](https://github.com/longbridge/gpui-kit/blob/main/crates/assets/default-icons.txt).
+`gpui_kit::assets::Assets` provides the default resource source with the original 101 component icons listed in [`default-icons.txt`](https://github.com/MohsenDastaran/uni-kit/blob/main/crates/assets/default-icons.txt).
 
 Add the umbrella crate to `Cargo.toml`; its default features include `component` and `assets`:
 
@@ -328,5 +328,5 @@ On WebAssembly, `Assets::new(endpoint)` and `AllAssets::new(endpoint)` use the s
 [rust-embed]: https://docs.rs/rust-embed/latest/rust_embed/
 [IconName]: https://docs.rs/gpui-kit-assets/{{gpui_kit_version}}/gpui_kit_assets/enum.IconName.html
 [Icon]: https://docs.rs/gpui-component/latest/gpui_component/struct.Icon.html
-[assets]: https://github.com/longbridge/gpui-kit/tree/main/crates/assets/assets/icons
+[assets]: https://github.com/MohsenDastaran/uni-kit/tree/main/crates/assets/assets/icons
 [gpui-kit-assets]: https://docs.rs/crate/gpui-kit-assets/{{gpui_kit_version}}

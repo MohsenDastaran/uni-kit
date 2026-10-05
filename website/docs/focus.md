@@ -16,7 +16,7 @@ From the repository root, run:
 cargo run -p focus_trap
 ```
 
-The source is [`examples/focus_trap/src/main.rs`](https://github.com/longbridge/gpui-kit/blob/main/examples/focus_trap/src/main.rs). Click an outside button and press Tab: Focus follows the window's ordinary Tab order. Click a button in either numbered area and press Tab or Shift+Tab: Focus cycles among that area's buttons. The example calls `.focus_trap(id, &handle)` on each container; the buttons are real GPUI Kit `Button`s with their own focus handles. It demonstrates containment after entering an area, not a complete modal lifecycle.
+The source is [`examples/focus_trap/src/main.rs`](https://github.com/MohsenDastaran/uni-kit/blob/main/examples/focus_trap/src/main.rs). Click an outside button and press Tab: Focus follows the window's ordinary Tab order. Click a button in either numbered area and press Tab or Shift+Tab: Focus cycles among that area's buttons. The example calls `.focus_trap(id, &handle)` on each container; the buttons are real GPUI Kit `Button`s with their own focus handles. It demonstrates containment after entering an area, not a complete modal lifecycle.
 
 For a new application, initialize Kit before opening a window with `gpui_kit::init(cx)`, as the example does. `gpui_kit::open_window` supplies the Base `Root` that handles normal Tab and Shift+Tab navigation and participates in Kit's trap handling. The [Getting Started](./getting-started) guide covers the application setup.
 

@@ -53,7 +53,7 @@ crate-type = ["staticlib", "rlib"]
 [dependencies]
 gpui-mobile = { package = "gpui-pre-mobile", git = "https://github.com/longbridge/gpui-mobile", rev = "0b882efdac7f524e0bb0b1d4c886b2aa752f9f20" }
 gpui = { package = "gpui-pre", version = "=0.3.4", default-features = false }
-gpui-kit = { git = "https://github.com/longbridge/gpui-kit", rev = "7d9efcd2069f9eaa6eb3ba6345aac4aa7d87c9f7", default-features = false, features = ["component"] }
+gpui-kit = { git = "https://github.com/MohsenDastaran/uni-kit", rev = "7d9efcd2069f9eaa6eb3ba6345aac4aa7d87c9f7", default-features = false, features = ["component"] }
 ```
 
 These revisions reproduce the example's dependency baseline. The Kit revision includes mobile platform gating but predates mobile tooltip suppression. The current GPUI Kit checkout uses `gpui-pre {{gpui_pre_version}}`, while this pinned mobile platform and renderer use `0.3.4`. Cargo can select both versions, producing incompatible GPUI types; replacing the Kit dependency with a local path is **not** a working upgrade by itself. First update the mobile platform and renderer to the same GPUI version as Kit and validate that combination. Only then can you use a path dependency such as:

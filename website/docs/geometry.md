@@ -72,7 +72,7 @@ The layout tree, hitboxes in the dispatch tree, and painted scene are separate. 
 
 ## Scrolling, clipping, and a worked calculation
 
-A scroll viewport and its content have different origins. GPUI Kit's [virtual list implementation](https://github.com/longbridge/gpui-kit/blob/main/crates/base/src/virtual_list.rs) uses a **negative** scroll offset, adds that offset when positioning items in window space, and prepaints them under a `ContentMask` for the viewport. Its `visible_range` first selects items in content space; the mask then limits drawing and input to the visible region. Selecting a visible item does not itself clip its pixels.
+A scroll viewport and its content have different origins. GPUI Kit's [virtual list implementation](https://github.com/MohsenDastaran/uni-kit/blob/main/crates/base/src/virtual_list.rs) uses a **negative** scroll offset, adds that offset when positioning items in window space, and prepaints them under a `ContentMask` for the viewport. Its `visible_range` first selects items in content space; the mask then limits drawing and input to the visible region. Selecting a visible item does not itself clip its pixels.
 
 ### Run the coordinate calculation
 

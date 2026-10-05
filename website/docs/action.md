@@ -22,10 +22,10 @@ cargo run -p gpui-component-story -- Tree
 
 Select a file-tree row and press **Enter**. The process prints `Renaming item: ...` in the terminal. Select another row and repeat to see that the handler reads the current selection. If Enter does nothing, click a row first: the binding is scoped to the Tree story's focused path. This example does not rename a file.
 
-Read the implementation in [`crates/story/src/stories/tree_story.rs`](https://github.com/longbridge/gpui-kit/blob/main/crates/story/src/stories/tree_story.rs):
+Read the implementation in [`crates/story/src/stories/tree_story.rs`](https://github.com/MohsenDastaran/uni-kit/blob/main/crates/story/src/stories/tree_story.rs):
 
 1. `actions!(story, [Rename, OpenFile, Delete])` defines the typed commands.
-2. `init` binds `enter` to `Rename` under the `TreeStory` context. [`stories::init`](https://github.com/longbridge/gpui-kit/blob/main/crates/story/src/stories/mod.rs) calls it during application setup.
+2. `init` binds `enter` to `Rename` under the `TreeStory` context. [`stories::init`](https://github.com/MohsenDastaran/uni-kit/blob/main/crates/story/src/stories/mod.rs) calls it during application setup.
 3. `TreeStory::render` attaches `.key_context(CONTEXT)` and `.on_action(cx.listener(Self::on_action_rename))` to the story container. Its child Tree supplies the active focus path.
 4. `on_action_rename` reads the selected entry from `tree_state`. Selection belongs to the Tree state; the Action expresses what the user requested.
 

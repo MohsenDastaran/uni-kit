@@ -357,7 +357,7 @@ suites remain in place. Pure presentation components need geometry or pixel asse
 not invented interaction state. Custom parts register their existing native elements;
 unsupported properties remain unavailable, with no manual test-only override.
 
-The [Input regression example](https://github.com/longbridge/gpui-kit/tree/main/crates/kit/tests/input)
+The [Input regression example](https://github.com/MohsenDastaran/uni-kit/tree/main/crates/kit/tests/input)
 shows how to turn a manual editing sequence into a repeatable UI test. From the
 repository root, run both editing and focus targets, or select one workflow:
 
@@ -450,7 +450,7 @@ visual regression, compare images against reviewed expectations under controlled
 fonts, dimensions, theme, focus and animation state. State assertions and image
 assertions detect different defects; neither establishes packaged-app or full IME
 correctness. The executable rendering examples are in
-[`crates/kit/tests/rendering.rs`](https://github.com/longbridge/gpui-kit/blob/testing/crates/kit/tests/rendering.rs).
+[`crates/kit/tests/rendering.rs`](https://github.com/MohsenDastaran/uni-kit/blob/testing/crates/kit/tests/rendering.rs).
 
 ## Run in CI
 

@@ -40,7 +40,7 @@ DescriptionList::new()
 // Horizontal layout (default)
 DescriptionList::horizontal()
     .item("Platform", "macOS, Windows, Linux", 1)
-    .item("Repository", "https://github.com/longbridge/gpui-kit", 1)
+    .item("Repository", "https://github.com/MohsenDastaran/uni-kit", 1)
 
 // Vertical layout
 DescriptionList::vertical()
@@ -61,7 +61,7 @@ DescriptionList::new()
             .value("Full-featured UI components for desktop applications")
             .span(3), // Spans all 3 columns
         DescriptionItem::new("Repository")
-            .value("https://github.com/longbridge/gpui-kit")
+            .value("https://github.com/MohsenDastaran/uni-kit")
             .span(2), // Spans 2 columns
     ])
 ```
@@ -150,7 +150,7 @@ DescriptionList::new()
         ).span(3),
 
         DescriptionItem::new("Repository").value(
-            "https://github.com/longbridge/gpui-kit"
+            "https://github.com/MohsenDastaran/uni-kit"
         ).span(2),
         DescriptionItem::new("License").value("Apache-2.0").span(1),
 

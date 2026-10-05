@@ -1,4 +1,4 @@
-const REPO = 'longbridge/gpui-kit';
+const REPO = 'MohsenDastaran/uni-kit';
 const API_BASE = `https://api.github.com/repos/${REPO}`;
 
 const MAX_CONTRIBUTORS = 24;

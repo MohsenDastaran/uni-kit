@@ -146,9 +146,9 @@ Run `cargo run` from the project directory. The window shows a label and button;
 
 Learn how to build interruptible animation in the [GPUI Base Motion guide](../base/motion.md).
 
-- [GitHub Repository](https://github.com/longbridge/gpui-kit)
-- [Issue Tracker](https://github.com/longbridge/gpui-kit/issues)
-- [Contributing Guide](https://github.com/longbridge/gpui-kit/blob/main/CONTRIBUTING.md)
+- [GitHub Repository](https://github.com/MohsenDastaran/uni-kit)
+- [Issue Tracker](https://github.com/MohsenDastaran/uni-kit/issues)
+- [Contributing Guide](https://github.com/MohsenDastaran/uni-kit/blob/main/CONTRIBUTING.md)
 
 ## License
 

@@ -47,7 +47,7 @@ const copy = {
 
   const input = () => modal?.querySelector<HTMLInputElement>('.pagefind-ui__search-input') ?? null;
 
-  /** `/shell/#anchor` → `/shell#anchor`; the site root keeps its slash. */
+  /** A trailing slash becomes an anchor: `/docs/test/#x` → `/docs/test#x`; the site root keeps its slash. */
   function withoutTrailingSlash(url: string) {
     const [path, hash] = url.split('#');
     const trimmed = path.length > 1 ? path.replace(/\/+$/, '') : path;

@@ -1,5 +1,5 @@
 ---
-import { themes } from '../lib/theme-catalog';
+import { themes, themeSwatches, themeSurface } from '../lib/theme-catalog';
 
 const base = `${import.meta.env.BASE_URL.replace(/\/+$/, '')}/`;
 const choices = [
@@ -13,6 +13,19 @@ const groups = [
   { mode: 'light', label: 'Light' },
   { mode: 'dark', label: 'Dark' },
 ];
+// A preview spectrum for the three built-ins, which have no colour file. The
+// light and dark sets are fixed so that the "Default Light" tile stays light
+// and "Default Dark" stays dark no matter which theme the reader is in.
+const lightSpectrum = ['#ef4444', '#f97316', '#eab308', '#22c55e', '#06b6d4', '#3b82f6'];
+const darkSpectrum = ['#f87171', '#fb923c', '#facc15', '#4ade80', '#22d3ee', '#60a5fa'];
+// "Follow System" is the default in whichever mode is live, so its spectrum
+// comes from tokens that flip with the mode rather than from a fixed set.
+const liveSpectrum = [1, 2, 3, 4, 5, 6].map((n) => `var(--default-swatch-${n})`);
+const builtIns: Record<string, { stage: string; ink: string; border: string; swatches: string[] }> = {
+  system: { stage: 'var(--background)', ink: 'var(--foreground)', border: 'var(--border)', swatches: liveSpectrum },
+  light: { stage: '#ffffff', ink: '#0a0a0a', border: '#e5e5e5', swatches: lightSpectrum },
+  dark: { stage: '#0a0a0a', ink: '#fafafa', border: '#2f2f2f', swatches: darkSpectrum },
+};
 ---
 
 <button id="theme-palette-open" class="theme-toggle" type="button"
@@ -38,20 +51,29 @@ const groups = [
     {groups.map((group) => (
       <div class="theme-palette__group" data-theme-group={group.mode} role="group" aria-label={group.label}>
         <div class="theme-palette__heading" aria-hidden="true">{group.label}</div>
-        {choices.filter((theme) => theme.mode === group.mode).map((theme) => (
-          <button id={`theme-option-${theme.id}`} class="theme-palette__option" type="button" role="option"
-            data-theme-id={theme.id} data-theme-name={theme.name} data-mode={theme.mode}
-            data-theme-source={'source' in theme ? `${base}theme-data/${theme.source}.json` : undefined}
-            data-search={`${theme.name} ${theme.family} ${theme.mode}`.toLowerCase()} aria-selected="false">
-            <svg class="theme-palette__item-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-              <path d="M12 22a1 1 0 0 1 0-20 10 9 0 0 1 10 9 5 5 0 0 1-5 5h-2.25a1.75 1.75 0 0 0-1.4 2.8l.3.4a1.75 1.75 0 0 1-1.4 2.8z"/>
-              <circle cx="13.5" cy="6.5" r=".5" fill="currentColor"/><circle cx="17.5" cy="10.5" r=".5" fill="currentColor"/>
-              <circle cx="6.5" cy="12.5" r=".5" fill="currentColor"/><circle cx="8.5" cy="7.5" r=".5" fill="currentColor"/>
-            </svg>
-            <span class="theme-palette__name">{theme.name}</span>
-            <svg class="theme-palette__check" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="m20 6-11 11-5-5"/></svg>
-          </button>
-        ))}
+        <div class="theme-palette__options">
+          {choices.filter((theme) => theme.mode === group.mode).map((theme) => {
+            const own = 'colors' in theme && theme.colors;
+            const builtIn = builtIns[theme.id];
+            const swatches = own ? themeSwatches(theme.colors) : builtIn.swatches;
+            const surface = own ? themeSurface(theme.colors, theme.mode) : builtIn;
+            return (
+              <button id={`theme-option-${theme.id}`} class="theme-palette__option" type="button" role="option"
+                data-theme-id={theme.id} data-theme-name={theme.name} data-mode={theme.mode}
+                data-theme-source={'source' in theme ? `${base}theme-data/${theme.source}.json` : undefined}
+                data-search={`${theme.name} ${theme.family} ${theme.mode}`.toLowerCase()} aria-selected="false"
+                style={`--tile-stage:${surface.stage};--tile-ink:${surface.ink};${surface.border ? `--tile-line:${surface.border};` : ''}`}>
+                <span class="theme-palette__row">
+                  <span class="theme-palette__name">{theme.name}</span>
+                  <svg class="theme-palette__check" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="m20 6-11 11-5-5"/></svg>
+                </span>
+                <span class="theme-palette__swatches" aria-hidden="true">
+                  {swatches.map((color) => <span class="theme-palette__swatch" style={`background:${color}`} />)}
+                </span>
+              </button>
+            );
+          })}
+        </div>
       </div>
     ))}
     <p class="theme-palette__empty" hidden>No matching themes</p>

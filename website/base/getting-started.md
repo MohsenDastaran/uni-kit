@@ -14,7 +14,7 @@ Use the repository revision of GPUI that matches `gpui-base`:
 
 ```toml
 [dependencies]
-gpui-base = { git = "https://github.com/longbridge/gpui-kit" }
+gpui-base = { git = "https://github.com/MohsenDastaran/uni-kit" }
 gpui = { git = "https://github.com/zed-industries/zed" }
 gpui_platform = { git = "https://github.com/zed-industries/zed", features = ["font-kit"] }
 ```

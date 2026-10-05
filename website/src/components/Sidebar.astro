@@ -86,7 +86,7 @@ function renderItems(items: SidebarItem[], depth = 0): any[] {
     const sidebar = document.querySelector('.docs-sidebar');
     if (!sidebar) return;
 
-    const section = window.location.pathname.match(/(?:^|\/)(docs|base|shell)(?:\/|$)/)?.[1] || 'docs';
+    const section = window.location.pathname.match(/(?:^|\/)(docs|base)(?:\/|$)/)?.[1] || 'docs';
     const key = 'gpui-kit:sidebar-scroll:' + section;
 
     // 1. Restore the last known scroll position for this section.

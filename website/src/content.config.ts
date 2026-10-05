@@ -20,11 +20,6 @@ const component = defineCollection({
   schema: pageSchema,
 });
 
-const shell = defineCollection({
-  loader: glob({ pattern: '**/*.md', base: './shell' }),
-  schema: pageSchema,
-});
-
 const base = defineCollection({
   loader: glob({ pattern: '**/*.md', base: './base' }),
   schema: pageSchema,
@@ -33,6 +28,5 @@ const base = defineCollection({
 export const collections = {
   docs,
   component,
-  shell,
   base,
 };

@@ -7,7 +7,7 @@ maturity: [platform-dependent]
 
 # Native Extensions
 
-A native extension attaches an OS control or view to a GPUI window. The two concrete integrations in this repository show different paths: [NativeMenu](https://github.com/longbridge/gpui-kit/tree/main/crates/component/src/native_menu) uses the operating system's menu API, while [gpui-wry](https://github.com/longbridge/gpui-kit/tree/main/crates/webview) embeds a native WebView. Both cross the GPUI/OS boundary; neither is implemented by launching another application.
+A native extension attaches an OS control or view to a GPUI window. The two concrete integrations in this repository show different paths: [NativeMenu](https://github.com/MohsenDastaran/uni-kit/tree/main/crates/component/src/native_menu) uses the operating system's menu API, while [gpui-wry](https://github.com/MohsenDastaran/uni-kit/tree/main/crates/webview) embeds a native WebView. Both cross the GPUI/OS boundary; neither is implemented by launching another application.
 
 Use `NativeMenu` when a popup must escape a small window's bounds or follow the system menu appearance. Use the GPUI `PopupMenu` when the menu needs to participate in GPUI's own overlay composition. Use `gpui-wry` only when the screen needs an actual browser engine and can reserve a rectangle for a native child view; [TextView HTML](../component/text-view.md#html) handles document display, and [`cx.open_url`](./context#open-a-url-in-the-default-browser) opens the user's browser. `gpui-wry` is experimental.
 
@@ -34,9 +34,9 @@ Cargo checks only the current target's `#[cfg]` branch; a Linux build does not v
 
 ## 1. Choose the integration boundary
 
-For **platform menu integration**, keep the shared GPUI-facing API separate from platform adapters. `NativeMenu::show(position, window, cx)` chooses its macOS, Windows, or Linux fallback implementation in [the shared module](https://github.com/longbridge/gpui-kit/blob/main/crates/component/src/native_menu/mod.rs). Its native adapters create and operate the system menu, then send the selected action back through GPUI.
+For **platform menu integration**, keep the shared GPUI-facing API separate from platform adapters. `NativeMenu::show(position, window, cx)` chooses its macOS, Windows, or Linux fallback implementation in [the shared module](https://github.com/MohsenDastaran/uni-kit/blob/main/crates/component/src/native_menu/mod.rs). Its native adapters create and operate the system menu, then send the selected action back through GPUI.
 
-For an **embedded child view**, native content occupies a GPUI layout slot across frames. Own it in an `Entity`, as [`gpui-wry::WebView`](https://github.com/longbridge/gpui-kit/blob/main/crates/webview/src/lib.rs) does. The owner must control show/hide, focus, bounds, and destruction before the parent window closes.
+For an **embedded child view**, native content occupies a GPUI layout slot across frames. Own it in an `Entity`, as [`gpui-wry::WebView`](https://github.com/MohsenDastaran/uni-kit/blob/main/crates/webview/src/lib.rs) does. The owner must control show/hide, focus, bounds, and destruction before the parent window closes.
 
 ## 2. Obtain the right window handle
 
@@ -56,7 +56,7 @@ match native_handle.as_raw() {
 }
 ```
 
-This is an adapter excerpt inside a function returning `Result`; it is not a complete cross-platform function. Match the actual handle variant under the corresponding target `#[cfg]`. The `HasWindowHandle` result borrows the live window, and the raw pointer or ID does not own the native object. The menu adapters copy an `NSView` pointer or `HWND` into a foreground task and rely on the parent window staying alive during the synchronous tracking call. Do not cache or use such a value after window destruction. GPUI's pinned Linux platform implementation exposes XCB window IDs under X11 and a Wayland surface under Wayland. A raw surface pointer alone does not provide the GTK widget hierarchy or compositor integration needed to embed a GTK control. The repository's [AppKit](https://github.com/longbridge/gpui-kit/blob/main/crates/component/src/native_menu/macos.rs) and [Win32](https://github.com/longbridge/gpui-kit/blob/main/crates/component/src/native_menu/windows.rs) adapters show handle extraction.
+This is an adapter excerpt inside a function returning `Result`; it is not a complete cross-platform function. Match the actual handle variant under the corresponding target `#[cfg]`. The `HasWindowHandle` result borrows the live window, and the raw pointer or ID does not own the native object. The menu adapters copy an `NSView` pointer or `HWND` into a foreground task and rely on the parent window staying alive during the synchronous tracking call. Do not cache or use such a value after window destruction. GPUI's pinned Linux platform implementation exposes XCB window IDs under X11 and a Wayland surface under Wayland. A raw surface pointer alone does not provide the GTK widget hierarchy or compositor integration needed to embed a GTK control. The repository's [AppKit](https://github.com/MohsenDastaran/uni-kit/blob/main/crates/component/src/native_menu/macos.rs) and [Win32](https://github.com/MohsenDastaran/uni-kit/blob/main/crates/component/src/native_menu/windows.rs) adapters show handle extraction.
 
 ## 3. Platform menu example: NativeMenu
 
@@ -95,11 +95,11 @@ NativeMenu::new()
 
 Import `NativeMenu` from `gpui_kit::component::native_menu::NativeMenu`. `position` is a window-relative `Point<Pixels>` in logical pixels, such as `MouseDownEvent::position`. The builder also accepts separators, submenus, disabled and checked items, and icons; `NativeMenu::from(gpui_kit::Menu)` reuses an existing GPUI menu definition. `show` consumes the menu and returns immediately. It does nothing for an empty menu. Focus the intended action handler before opening the menu: the selected action is dispatched to the window's active focus context. On Linux, the fallback asks `Root` for its overlay; an application without that window root has no fallback menu to show.
 
-The [story](https://github.com/longbridge/gpui-kit/blob/main/crates/story/src/stories/native_menu_story.rs) shows focus placement and action handling. On Linux, [the fallback](https://github.com/longbridge/gpui-kit/blob/main/crates/component/src/native_menu/fallback.rs) builds a GPUI `PopupMenu` in `Root`'s overlay; it is still subject to the GPUI window boundary.
+The [story](https://github.com/MohsenDastaran/uni-kit/blob/main/crates/story/src/stories/native_menu_story.rs) shows focus placement and action handling. On Linux, [the fallback](https://github.com/MohsenDastaran/uni-kit/blob/main/crates/component/src/native_menu/fallback.rs) builds a GPUI `PopupMenu` in `Root`'s overlay; it is still subject to the GPUI window boundary.
 
 ## 4. Embedded view example: WebView
 
-The [WebView example](https://github.com/longbridge/gpui-kit/blob/main/examples/webview/src/main.rs) creates a Wry native child view from a live GPUI window and stores the wrapper in an `Entity`:
+The [WebView example](https://github.com/MohsenDastaran/uni-kit/blob/main/examples/webview/src/main.rs) creates a Wry native child view from a live GPUI window and stores the wrapper in an `Entity`:
 
 ```rust
 let webview = cx.new(|cx| {

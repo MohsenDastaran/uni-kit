@@ -230,7 +230,7 @@ keyboard activation, touch, and modifier keys:
 use gpui_kit::ClickEvent;
 use gpui_kit::component::text::markdown;
 
-markdown("[Open the project](https://github.com/longbridge/gpui-kit)")
+markdown("[Open the project](https://github.com/MohsenDastaran/uni-kit)")
     .on_link_click(|url, event, _window, cx| {
         if event.is_right_click() {
             println!("Show a context menu for {url}");

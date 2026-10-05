@@ -28,6 +28,64 @@ export const themes = Object.entries(files)
   })))
   .sort((a, b) => a.name.localeCompare(b.name));
 
+// The band of base colours a palette tile previews, in spectrum order. Every
+// theme file carries this family, so the strip is a stable six across themes.
+// Dots are the source files' separator, so every token is a flat lookup.
+export const swatchTokens = [
+  'base.red',
+  'base.magenta',
+  'base.yellow',
+  'base.green',
+  'base.cyan',
+  'base.blue',
+] as const;
+
+// Only literal colours reach CSS. A theme may legitimately hold a gradient or a
+// named reference for a token, and neither is paintable.
+const paintable = (value: string | undefined): value is string =>
+  typeof value === 'string' && (value.startsWith('#') || /^(rgb|hsl|oklch|color)\(/.test(value));
+
+export function themeSwatches(colors: Record<string, string> | undefined): string[] {
+  if (!colors) return [];
+  return swatchTokens.flatMap((token) => (paintable(colors[token]) ? [colors[token]] : []));
+}
+
+// A tile previews a theme the reader is not currently in, so it cannot borrow
+// the page's tokens: every colour it paints comes from that theme's own file.
+// The stage walks tokens in order and takes the first literal one, which keeps
+// a theme with no `popover` from losing its colour entirely.
+const surfaceKeys = [
+  'card.background',
+  'background',
+  'popover.background',
+  'muted.background',
+  'secondary.background',
+] as const;
+
+const inkKeys = ['card.foreground', 'foreground', 'popover.foreground', 'secondary.foreground'] as const;
+
+function firstPaintable(colors: Record<string, string>, keys: readonly string[]): string | undefined {
+  return keys.map((key) => colors[key]).find(paintable);
+}
+
+// The light/dark category a tile is drawn in, which is the mode declared by the
+// theme file rather than anything measured from the page.
+export function themeSurface(colors: Record<string, string> | undefined, mode: string) {
+  const stage = colors ? firstPaintable(colors, surfaceKeys) : undefined;
+  const ink = colors ? firstPaintable(colors, inkKeys) : undefined;
+  return {
+    // A light-category theme opens on white and a dark-category theme on a dark
+    // surface, whatever its own background token happens to be.
+    stage: stage ?? (mode === 'dark' ? '#0a0a0a' : '#ffffff'),
+    ink: ink ?? (mode === 'dark' ? '#fafafa' : '#0a0a0a'),
+    // A border is the theme's own, or a faint line of its ink so that the
+    // boundary reads on a stage of any brightness.
+    border: (colors && firstPaintable(colors, ['border'])) ?? undefined,
+  };
+}
+
+export type ThemeSurface = ReturnType<typeof themeSurface>;
+
 export const themeInfo = Object.fromEntries(themes.map(({ id, mode, name, source }) => [id, { mode, name, source }]));
 
 // A list names fallbacks in order, matching the component theme's fallbacks.

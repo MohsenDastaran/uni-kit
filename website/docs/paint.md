@@ -153,7 +153,7 @@ The parent `div` receives the mouse event. Its `on_prepaint` hook records its re
 
 ## Follow a real drawing app
 
-Run the existing [Brush example](https://github.com/longbridge/gpui-kit/blob/main/examples/brush/src/main.rs) from the repository root:
+Run the existing [Brush example](https://github.com/MohsenDastaran/uni-kit/blob/main/examples/brush/src/main.rs) from the repository root:
 
 ```sh
 cargo run -p example-brush
@@ -207,7 +207,7 @@ let local_pos = if let Some(bounds) = self.canvas_bounds {
 
 ### 3. Pass resolved bounds into painting
 
-In `render_canvas`, the canvas's first callback receives its final bounds and returns them with the strokes, active stroke, grid setting, and theme. The second callback receives that value and paints. This excerpt shows the handoff; the [source](https://github.com/longbridge/gpui-kit/blob/main/examples/brush/src/main.rs) also draws the optional grid and active stroke:
+In `render_canvas`, the canvas's first callback receives its final bounds and returns them with the strokes, active stroke, grid setting, and theme. The second callback receives that value and paints. This excerpt shows the handoff; the [source](https://github.com/MohsenDastaran/uni-kit/blob/main/examples/brush/src/main.rs) also draws the optional grid and active stroke:
 
 ```rust
 canvas(
@@ -377,7 +377,7 @@ GPUI’s `PathBuilder` takes full point coordinates; it has no SVG `H` or `V` sh
 | Prepare geometry shared by hit testing and drawing; insert a `Hitbox` | `prepaint` | Bounds and current frame input geometry are available. |
 | Build paint-only geometry if necessary; call `paint_path`, `paint_quad`, or paint prepared children | `paint` | Drawing order is now known; Brush builds its paths here. |
 
-For a small decorative shape, `canvas(prepaint, paint)` is enough. [GPUI Kit's Plot line](https://github.com/longbridge/gpui-kit/blob/main/crates/component/src/plot/shape/line.rs) builds a stroke from data points and paints it into the chart. The [input element](https://github.com/longbridge/gpui-kit/blob/main/crates/base/src/input/base/element.rs) uses paths for selections and text range decorations; it paints blinking carets as quads. Both use `PathBuilder`, but the input must also coordinate text metrics and hit testing.
+For a small decorative shape, `canvas(prepaint, paint)` is enough. [GPUI Kit's Plot line](https://github.com/MohsenDastaran/uni-kit/blob/main/crates/component/src/plot/shape/line.rs) builds a stroke from data points and paints it into the chart. The [input element](https://github.com/MohsenDastaran/uni-kit/blob/main/crates/base/src/input/base/element.rs) uses paths for selections and text range decorations; it paints blinking carets as quads. Both use `PathBuilder`, but the input must also coordinate text metrics and hit testing.
 
 The scene can clip drawing with `window.with_content_mask`. Clipping, input hitboxes, and [accessibility](./accessibility) are separate contracts: a painted path is not automatically clickable or announced to assistive technology. A chart with point interaction must also establish hitboxes or an equivalent pointer mapping, and a semantic chart needs an accessible representation.
 
@@ -395,10 +395,10 @@ A gauge driven by an [Entity](./entity) can keep separate `Option<Path<Pixels>>`
 
 ### Plot: a value-like element uses keyed window state
 
-This cache depends on a stable [ElementId](./element_id) across frames. [`Line`](https://github.com/longbridge/gpui-kit/blob/main/crates/component/src/plot/shape/line.rs) is recreated as a value during render. Storing a cache on that value would lose it on the next frame. [`PathCaches::for_paint`](https://github.com/longbridge/gpui-kit/blob/main/crates/component/src/plot/path_cache.rs) instead uses `window.use_keyed_state` under the plot's current element ID. `Line::paint_cached` hashes the projected points, stroke width, and curve style; `PathCache::get` tessellates only when the key changes. It builds the path relative to zero, then clones and translates cached vertices to this frame's origin, so scrolling does not trigger tessellation, although translation still costs work. Dots remain cheap quads painted at the new origin. This pattern depends on stable element identity and benefits from using the same slot for the same series across frames; reordering series by index causes avoidable cache misses when their shape keys differ.
+This cache depends on a stable [ElementId](./element_id) across frames. [`Line`](https://github.com/MohsenDastaran/uni-kit/blob/main/crates/component/src/plot/shape/line.rs) is recreated as a value during render. Storing a cache on that value would lose it on the next frame. [`PathCaches::for_paint`](https://github.com/MohsenDastaran/uni-kit/blob/main/crates/component/src/plot/path_cache.rs) instead uses `window.use_keyed_state` under the plot's current element ID. `Line::paint_cached` hashes the projected points, stroke width, and curve style; `PathCache::get` tessellates only when the key changes. It builds the path relative to zero, then clones and translates cached vertices to this frame's origin, so scrolling does not trigger tessellation, although translation still costs work. Dots remain cheap quads painted at the new origin. This pattern depends on stable element identity and benefits from using the same slot for the same series across frames; reordering series by index causes avoidable cache misses when their shape keys differ.
 
 ### Input: a text editor owns the whole Element pipeline
 
-GPUI Kit's [input element](https://github.com/longbridge/gpui-kit/blob/main/crates/base/src/input/base/element.rs) owns much more than its selection paths. It measures text, tracks wrapping and viewport geometry, inserts a hitbox in prepaint, then paints selection paths, caret quads, and text from prepared layout. Its input handlers and focus behavior depend on the same geometry. This is why a complex editor needs a custom `Element`: text layout, hit testing, input routing, and drawing must agree on one snapshot. Paths for selections and text range decorations are only part of that pipeline.
+GPUI Kit's [input element](https://github.com/MohsenDastaran/uni-kit/blob/main/crates/base/src/input/base/element.rs) owns much more than its selection paths. It measures text, tracks wrapping and viewport geometry, inserts a hitbox in prepaint, then paints selection paths, caret quads, and text from prepared layout. Its input handlers and focus behavior depend on the same geometry. This is why a complex editor needs a custom `Element`: text layout, hit testing, input routing, and drawing must agree on one snapshot. Paths for selections and text range decorations are only part of that pipeline.
 
 The progression is useful when choosing an API: use `canvas` for a focused decoration owned by an existing Entity; use keyed window state when a value-like drawing element needs a cache across frames; implement `Element` when layout, text, hit testing, and input must be coordinated directly. See the [Element lifecycle](./element) for the trait methods and the [Event guide](./event) for input propagation.

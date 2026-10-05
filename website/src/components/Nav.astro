@@ -20,17 +20,14 @@ const starLabel = starCount >= 1000 ? `${(starCount / 1000).toFixed(1)}k` : `${s
 const navLinks = [
   { text: 'Docs', href: url('docs') },
   { text: 'Component', href: url('component') },
-  { text: 'Base', href: url('base') },
-  { text: 'Shell', href: url('shell') },
-  { text: 'App Stories', href: url('apps') },
+  // Base is a GPUI-only layer: the Slint port has no equivalent, so the link
+  // is scoped to the GPUI framework and hidden by CSS when Slint is selected.
+  { text: 'Base', href: url('base'), framework: 'gpui' },
 ];
 
 const resourceLinks = [
-  { text: 'API Doc', href: 'https://docs.rs/gpui-kit' },
-  { text: 'Contributors', href: url('contributors') },
-  { text: 'Releases', href: url('releases') },
-  { text: 'Issues', href: 'https://github.com/longbridge/gpui-kit/issues' },
-  { text: 'Discussion', href: 'https://github.com/longbridge/gpui-kit/discussions' },
+  { text: 'Issues', href: 'https://github.com/MohsenDastaran/uni-kit/issues' },
+  { text: 'Discussion', href: 'https://github.com/MohsenDastaran/uni-kit/discussions' },
 ];
 
 const resourcesLabel = 'Resources';
@@ -48,6 +45,7 @@ const resourcesLabel = 'Resources';
         <a
           href={link.href}
           class={`site-nav__link${currentPath.startsWith(link.href) ? ' active' : ''}`}
+          data-framework-link={link.framework}
         >
           {link.text}
         </a>
@@ -81,7 +79,7 @@ const resourcesLabel = 'Resources';
 
       <!-- GitHub star -->
       <a
-        href="https://github.com/longbridge/gpui-kit"
+        href="https://github.com/MohsenDastaran/uni-kit"
         target="_blank"
         rel="noopener noreferrer"
         class="github-star-btn site-nav__link"

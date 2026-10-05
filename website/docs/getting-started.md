@@ -101,11 +101,11 @@ Read these in order as your app grows:
 4. [Accessibility](./accessibility.md) and [Testing](./test.md): follow the Save flow with a keyboard, check its focus and visible result, then run the documented UI test and confirm both the rendered status and saved model value. Check assistive technology separately on each target platform.
 5. [Component catalog](../component/index.md): choose controls for your application; then read [Icons & Assets](./assets.md) and [Fonts](./fonts.md) as your interface needs them.
 
-For a tested example of retained input state and subscriptions, read the [application recipes](https://github.com/longbridge/gpui-kit/tree/main/examples/ai_recipes). The [Coding Guides](./coding-guides.md) explain the conventions behind those examples.
+For a tested example of retained input state and subscriptions, read the [application recipes](https://github.com/MohsenDastaran/uni-kit/tree/main/examples/ai_recipes). The [Coding Guides](./coding-guides.md) explain the conventions behind those examples.
 
 ## Complete tested view
 
-This settings view is a compiled recipe showing retained input state and subscriptions. The excerpt is synchronized with its [Rust source](https://github.com/longbridge/gpui-kit/blob/main/examples/ai_recipes/src/settings.rs). The repository's default `gpui-kit-recipes` executable opens a small bootstrap view; it does not display this settings view. The [settings interaction test](https://github.com/longbridge/gpui-kit/blob/main/examples/ai_recipes/tests/settings.rs) mounts `Settings` in a GPUI test window. From the repository root, run:
+This settings view is a compiled recipe showing retained input state and subscriptions. The excerpt is synchronized with its [Rust source](https://github.com/MohsenDastaran/uni-kit/blob/main/examples/ai_recipes/src/settings.rs). The repository's default `gpui-kit-recipes` executable opens a small bootstrap view; it does not display this settings view. The [settings interaction test](https://github.com/MohsenDastaran/uni-kit/blob/main/examples/ai_recipes/tests/settings.rs) mounts `Settings` in a GPUI test window. From the repository root, run:
 
 ```sh
 cargo test -p gpui-kit-recipes --test settings

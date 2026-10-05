@@ -26,7 +26,7 @@ Form::new()
     .footer(Button::new("save").label("Save"))
 ```
 
-`child` accepts a Field. Put commands in `footer`, which spans all columns and aligns its content to the trailing edge. Attach submission behavior to the supplied Button; Form does not submit automatically. See the [complete application recipe](https://github.com/longbridge/gpui-kit/tree/main/examples/ai_recipes) for retained state, callbacks, and window setup.
+`child` accepts a Field. Put commands in `footer`, which spans all columns and aligns its content to the trailing edge. Attach submission behavior to the supplied Button; Form does not submit automatically. See the [complete application recipe](https://github.com/MohsenDastaran/uni-kit/tree/main/examples/ai_recipes) for retained state, callbacks, and window setup.
 
 ## Usage
 ### Basic Form

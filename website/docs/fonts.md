@@ -137,7 +137,7 @@ italic text; a single regular file is not a promise of all styles. Bundling
 also makes a desktop app independent of whether that family is installed on
 the user's machine. Keep the font's redistribution license with the app.
 
-The [GPUI Kit web gallery](https://github.com/longbridge/gpui-kit/blob/main/crates/story-web/src/lib.rs) bundles `Inter Variable`, `JetBrains Mono`, a subset of `Noto Sans SC`, and `IBM Plex Sans` this way. Rust's [`include_bytes!`](https://doc.rust-lang.org/std/macro.include_bytes.html) puts those font bytes into the WebAssembly download. The gallery's CJK subset is about 42 KB, compared with about 1.2 MB for its source font: subset known interface copy to limit initial payload, then plan separately for arbitrary text entered by users.
+The [GPUI Kit web gallery](https://github.com/MohsenDastaran/uni-kit/blob/main/crates/story-web/src/lib.rs) bundles `Inter Variable`, `JetBrains Mono`, a subset of `Noto Sans SC`, and `IBM Plex Sans` this way. Rust's [`include_bytes!`](https://doc.rust-lang.org/std/macro.include_bytes.html) puts those font bytes into the WebAssembly download. The gallery's CJK subset is about 42 KB, compared with about 1.2 MB for its source font: subset known interface copy to limit initial payload, then plan separately for arbitrary text entered by users.
 
 ### Try a bundled font in `hello_world`
 
@@ -236,7 +236,7 @@ See [Theme](../component/theme.md) for the full config reference.
 
 See the [WebAssembly guide](./webassembly) for the browser build and its font setup.
 
-GPUI's Web text system does **not enumerate or load the browser's installed fonts** as its main font collection. Register every family that must be shaped reliably, including the family used by the initial text style, before creating a window or measuring its first text. On this Web platform, `.SystemUIFont` maps to `IBM Plex Sans`; if that alias can be used before the theme applies, register that family too. Apply or change the theme **after** registration and keep its `font_family` and `mono_font_family` pointed at loaded families. A theme file naming an unavailable desktop font can otherwise fail font resolution. The [gallery initialization](https://github.com/longbridge/gpui-kit/blob/main/crates/story-web/src/lib.rs) follows this order: initialize GPUI Kit, register font bytes, apply the theme, then open the window; later theme changes reassert its loaded families.
+GPUI's Web text system does **not enumerate or load the browser's installed fonts** as its main font collection. Register every family that must be shaped reliably, including the family used by the initial text style, before creating a window or measuring its first text. On this Web platform, `.SystemUIFont` maps to `IBM Plex Sans`; if that alias can be used before the theme applies, register that family too. Apply or change the theme **after** registration and keep its `font_family` and `mono_font_family` pointed at loaded families. A theme file naming an unavailable desktop font can otherwise fail font resolution. The [gallery initialization](https://github.com/MohsenDastaran/uni-kit/blob/main/crates/story-web/src/lib.rs) follows this order: initialize GPUI Kit, register font bytes, apply the theme, then open the window; later theme changes reassert its loaded families.
 
 There are three useful supply choices:
 

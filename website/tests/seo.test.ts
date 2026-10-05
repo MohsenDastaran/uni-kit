@@ -18,7 +18,7 @@ function tag(html, pattern) {
 }
 
 test('primary landing pages contain server-rendered headings and copy', () => {
-  for (const path of ['index.html', 'apps/index.html', 'skills/index.html', 'contributors/index.html']) {
+  for (const path of ['index.html', 'skills/index.html']) {
     const html = read(path);
     assert.match(html, /<h1[\s>]/, `${path} must contain an H1 before JavaScript runs`);
     assert.ok(tag(html, /<main[^>]*>([\s\S]*?)<\/main>/).length > 100, `${path} must contain meaningful main content`);
@@ -26,7 +26,7 @@ test('primary landing pages contain server-rendered headings and copy', () => {
 });
 
 test('indexable pages have canonical and English alternates', () => {
-  for (const path of ['index.html', 'docs/index.html', 'apps/index.html']) {
+  for (const path of ['index.html', 'docs/index.html']) {
     const html = read(path);
     assert.match(html, /<link rel="canonical" href="https:\/\/gpui-kit\.com\//, `${path} canonical`);
     assert.match(html, /hreflang="en"/, `${path} English alternate`);
@@ -137,8 +137,8 @@ test('primary navigation follows the Kit section order', () => {
   const html = read('docs/index.html');
   const nav = html.match(/<nav class="site-nav"[\s\S]*?<\/nav>/)?.[0] ?? '';
   const links = [...nav.matchAll(/<a\s+href="([^"]+)"\s+class="site-nav__link[^"]*"[^>]*>\s*([^<]+?)\s*<\/a>/g)];
-  assert.deepEqual(links.slice(0, 5).map(match => match[2]), ['Docs', 'Component', 'Base', 'Shell', 'App Stories']);
-  assert.deepEqual(links.slice(0, 5).map(match => match[1]), ['/docs', '/component', '/base', '/shell', '/apps']);
+  assert.deepEqual(links.slice(0, 3).map(match => match[2]), ['Docs', 'Component', 'Base']);
+  assert.deepEqual(links.slice(0, 3).map(match => match[1]), ['/docs', '/component', '/base']);
   assert.doesNotMatch(nav, /site-nav__lang-btn/);
 });
 

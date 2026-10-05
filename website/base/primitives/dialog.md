@@ -12,7 +12,7 @@ Like every `gpui-base` primitive, Dialog supplies behavior and semantic structur
 
 ## Example
 
-The [single native Cargo entrypoint](https://github.com/longbridge/gpui-kit/blob/main/crates/base/examples/native/src/bin/components.rs) selects this primitive from the [shared showcase implementation](https://github.com/longbridge/gpui-kit/blob/main/crates/base/examples/showcase/mod.rs). The same showcase is compiled once for the WASM preview above.
+The [single native Cargo entrypoint](https://github.com/MohsenDastaran/uni-kit/blob/main/crates/base/examples/native/src/bin/components.rs) selects this primitive from the [shared showcase implementation](https://github.com/MohsenDastaran/uni-kit/blob/main/crates/base/examples/showcase/mod.rs). The same showcase is compiled once for the WASM preview above.
 
 ```bash
 cargo run -p gpui-base-examples -- dialog
@@ -28,7 +28,7 @@ use gpui_kit::base::{Dialog, DialogBackdrop, DialogClose, DialogDescription, Dia
 
 The example composes `Dialog`, `DialogBackdrop`, `DialogClose`, `DialogDescription`, `DialogPopup`, `DialogTitle`, `DialogTrigger`. GPUI's standard styling and event traits provide presentation; these base types provide the interaction structure.
 
-The authoritative module is [`components/dialog.rs`](https://github.com/longbridge/gpui-kit/blob/main/crates/base/examples/showcase/components/dialog.rs). Native and browser previews compile this same file.
+The authoritative module is [`components/dialog.rs`](https://github.com/MohsenDastaran/uni-kit/blob/main/crates/base/examples/showcase/components/dialog.rs). Native and browser previews compile this same file.
 
 ## State and events
 

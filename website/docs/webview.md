@@ -7,7 +7,7 @@ maturity: [experimental, platform-dependent]
 
 # WebView
 
-[`gpui-wry`](https://github.com/longbridge/gpui-kit/tree/main/crates/webview) is GPUI Kit's **experimental** integration with [Wry](https://github.com/tauri-apps/wry). Use it when a screen needs browser behavior; [TextView HTML](../component/text-view.md#html) renders document content but is not a browser. To open a URL in the user's default external browser, use [`cx.open_url`](./context#open-a-url-in-the-default-browser). The integration currently supports macOS and Windows. The Linux path in the repository's example is unfinished.
+[`gpui-wry`](https://github.com/MohsenDastaran/uni-kit/tree/main/crates/webview) is GPUI Kit's **experimental** integration with [Wry](https://github.com/tauri-apps/wry). Use it when a screen needs browser behavior; [TextView HTML](../component/text-view.md#html) renders document content but is not a browser. To open a URL in the user's default external browser, use [`cx.open_url`](./context#open-a-url-in-the-default-browser). The integration currently supports macOS and Windows. The Linux path in the repository's example is unfinished.
 
 ## Run the example
 
@@ -17,7 +17,7 @@ From the repository root:
 cargo run -p webview
 ```
 
-The [complete example](https://github.com/longbridge/gpui-kit/blob/main/examples/webview/src/main.rs) is the runnable starting point. It creates the child view inside the `open_window` callback, wraps it in an `Entity<WebView>`, and renders that Entity below an address input. Enter in the input calls `load_url`; the example also contains a back handler. Run it from the repository root with the command above. For another application, match the dependency versions in [the example manifest](https://github.com/longbridge/gpui-kit/blob/main/examples/webview/Cargo.toml): `gpui-kit`, `gpui-wry`, `wry` (package `lb-wry`), and `raw-window-handle` are direct dependencies of this integration.
+The [complete example](https://github.com/MohsenDastaran/uni-kit/blob/main/examples/webview/src/main.rs) is the runnable starting point. It creates the child view inside the `open_window` callback, wraps it in an `Entity<WebView>`, and renders that Entity below an address input. Enter in the input calls `load_url`; the example also contains a back handler. Run it from the repository root with the command above. For another application, match the dependency versions in [the example manifest](https://github.com/MohsenDastaran/uni-kit/blob/main/examples/webview/Cargo.toml): `gpui-kit`, `gpui-wry`, `wry` (package `lb-wry`), and `raw-window-handle` are direct dependencies of this integration.
 
 ```rust
 use gpui_kit::*;
@@ -112,7 +112,7 @@ When an overlay must be visible, place the WebView in a separate window or arran
 
 The following PRs explore overlay composition. **None is part of the current `gpui-wry` behavior described above.** Check their status and implementation before using a branch in an application:
 
-- [GPUI Kit #2626](https://github.com/longbridge/gpui-kit/pull/2626) explores drawing GPUI overlays above the native WebView. Its current branch depends on [Zed/GPUI #61945](https://github.com/zed-industries/zed/pull/61945), an opt-in layered scene for deferred GPUI overlays. The GPUI Kit PR validates the macOS path; Windows composition and Linux hosting remain follow-up work in that PR.
+- [GPUI Kit #2626](https://github.com/MohsenDastaran/uni-kit/pull/2626) explores drawing GPUI overlays above the native WebView. Its current branch depends on [Zed/GPUI #61945](https://github.com/zed-industries/zed/pull/61945), an opt-in layered scene for deferred GPUI overlays. The GPUI Kit PR validates the macOS path; Windows composition and Linux hosting remain follow-up work in that PR.
 - [Zed/GPUI #62379](https://github.com/zed-industries/zed/pull/62379) proposes a separate, broader opt-in `CompositionTree` for ordering GPUI and native surfaces, with macOS and Windows examples. It is an alternative to #61945, **not** the dependency of GPUI Kit #2626. Its Linux composition path is outside that PR's scope.
 
 These experiments may change before merge. They explain the intended direction; they do not remove today's platform, overlay, or focus limitations.
