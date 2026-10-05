@@ -1,0 +1,5 @@
+// Shared by `Message` and `Bubble`. It lives in its own file because `Message`
+// renders a `Bubble`, and a `MessageRole` declared in either one would make the
+// two import each other.
+
+export enum MessageRole { user, assistant }

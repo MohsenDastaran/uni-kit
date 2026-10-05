@@ -149,27 +149,45 @@ and then starts the site, so a refresh shows the change. It is the same as
 make dev
 ```
 
-Name the page you are working on to compile only that page:
+With no `SLUGS`, `make dev` rebuilds only the pages whose sources changed since
+they were last built, and skips the wasm build entirely when nothing did. Name
+pages to force a rebuild:
 
 ```bash
 make dev SLUGS=dock
 make dev SLUGS=dock,dropdown_button
 ```
 
-Each page is a separate component type in one generated tree, so the full set is
-a ~97 MB Rust file that takes a wasm `rustc` tens of minutes and peaks near
-13 GiB. One page is a couple of MB and finishes in seconds. A filtered build
-produces a gallery that only contains those pages, so run plain `make dev` once
-before publishing or testing other components.
+Each page is a separate component type, so the whole catalog is one generated
+Rust file that holds every example. A single `rustc` compiling all of it needs
+more than 9 GiB and does not fit on a 14 GiB laptop alongside a desktop session.
+The build is therefore split per page: each page is its own wasm in
+`crates/slint-component/www/dist/pages/<slug>/`, and the site loads the folder
+for the page it is showing. One page is a few MB and finishes in seconds.
 
-The rebuild is capped in a memory cgroup, because that 13 GiB peak will swap the
-whole desktop to a halt before the kernel kills it. With the cap, an oversized
-build dies on its own and the machine stays usable. Tune the cap with
-`GUARD_MEMORY_MAX` (systemd size, default `9G`):
+Build every page this way — bounded, one at a time — with:
 
 ```bash
-GUARD_MEMORY_MAX=12G make dev
+make build:wasm-slint-pages
 ```
+
+The first `make dev` on a fresh clone has no stamps yet, so it builds every page
+once; that takes a few minutes and is the price of never needing the single
+oversized compile. After that only the pages you touch are rebuilt.
+
+`make build:wasm-slint` still produces the combined module. It needs more memory
+than a laptop can spare, so it expects a bigger machine.
+
+Every build runs in a memory cgroup sized from the machine: total RAM minus a
+5 GiB reserve for the desktop. The build is the first thing to die rather than
+the session. Override the cap with `GUARD_MEMORY_MAX` (a systemd size):
+
+```bash
+GUARD_MEMORY_MAX=6G make dev SLUGS=dock
+```
+
+When the cap fires, the build stops with a message naming the limit and the
+machine's memory, instead of the bare exit code it used to leave behind.
 
 A soft `GUARD_MEMORY_HIGH` ceiling defaults to that same value on purpose. Set
 below it, the kernel reclaims continuously and the build stalls at a fraction of

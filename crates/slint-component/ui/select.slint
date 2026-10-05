@@ -35,6 +35,9 @@ export component Select {
         padding-left: Theme.input-padding-x(size);
         padding-right: Theme.input-padding-x(size);
         spacing: 8px;
+        // A fixed-size child (the chevron) sits against the top edge unless the
+        // row centres it. This is the cross axis, so the label still stretches.
+        cross-axis-alignment: center;
 
         Text {
             horizontal-stretch: 1;
@@ -86,6 +89,7 @@ export component Select {
                         padding-top: 6px;
                         padding-bottom: 6px;
                         spacing: 8px;
+                        cross-axis-alignment: center;
 
                         Text {
                             horizontal-stretch: 1;

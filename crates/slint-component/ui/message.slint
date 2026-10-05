@@ -2,50 +2,152 @@ import { Theme, ButtonVariant, ControlSize } from "theme.slint";
 import { Icon } from "icon.slint";
 import { Button } from "button.slint";
 import { Avatar, AvatarSize } from "avatar.slint";
+import { Bubble, BubbleVariant, BubbleAlignment } from "bubble.slint";
+import { MessageRole } from "message-role.slint";
 
-export enum MessageRole { user, assistant }
+// Re-exported so callers keep importing both from `message.slint`.
+export { MessageRole }
+export enum MessageAlignment { start, end }
 
 // One chat turn. Mirrors GPUI Component's `Message`.
+//
+// The row is a column: an avatar-and-content line, then the footer. The avatar
+// is bottom-aligned with the content so it stays flush however tall the bubble
+// grows, and it swaps sides with the alignment, exactly as GPUI's
+// `flex_row_reverse` does for `MessageAlignment::End`.
 export component Message {
     in property <MessageRole> role: MessageRole.assistant;
+    // `user` turns are the sent ones and sit at the trailing edge by default.
+    in property <MessageAlignment> alignment: role == MessageRole.user ? MessageAlignment.end : MessageAlignment.start;
+    // Sender name and timestamp, drawn above the bubble.
     in property <string> author;
+    in property <string> time;
     in property <string> body;
     in property <string> initials;
+    // Delivery or read status, drawn under the row.
+    in property <string> footer;
+    in property <bool> show-avatar: true;
+    in property <bool> show-actions;
+    // A turn that failed to send reads as destructive and offers Retry.
+    in property <bool> failed;
+    // Which surface the body gets. GPUI passes the `Bubble` in, so the caller
+    // chooses; a conversation uses `muted`/`ghost`, a two-party transcript
+    // `filled`/`secondary`.
+    in property <BubbleVariant> bubble-variant: role == MessageRole.user ? BubbleVariant.filled : BubbleVariant.secondary;
     callback copy-requested();
+    callback retry-requested();
 
-    HorizontalLayout {
+    private property <bool> at-end: alignment == MessageAlignment.end;
+    private property <color> tint: failed ? Theme.destructive : Theme.primary;
+    private property <color> tint-foreground: failed ? Theme.destructive : Theme.primary-foreground;
+
+    horizontal-stretch: 1;
+    min-width: 0px;
+
+    // 10px between the header, the bubble, and the footer, matching GPUI's
+    // `gap(0.625rem)`.
+    VerticalLayout {
+        horizontal-stretch: 1;
+        min-width: 0px;
         spacing: 10px;
-        padding: 8px;
+        // The cross axis is horizontal here, so this is what puts a sent turn
+        // against the trailing edge.
+        cross-axis-alignment: at-end ? end : start;
 
-        Avatar {
-            initials: initials == "" ? (role == MessageRole.user ? "U" : "A") : initials;
-            size: AvatarSize.small;
-            fill: role == MessageRole.user ? Theme.primary : Theme.secondary;
-        }
-
-        VerticalLayout {
+        HorizontalLayout {
             horizontal-stretch: 1;
-            spacing: 4px;
-            HorizontalLayout {
-                Text {
-                    horizontal-stretch: 1;
-                    text: author == "" ? (role == MessageRole.user ? "You" : "Assistant") : author;
-                    color: Theme.foreground;
-                    font-size: Theme.font-size-xs;
-                    font-weight: 600;
+            min-width: 0px;
+            spacing: 8px;
+            // `items_end` in GPUI: the avatar sits on the bubble's bottom edge.
+            cross-axis-alignment: end;
+
+            if !at-end && show-avatar: Avatar {
+                initials: initials == "" ? (role == MessageRole.user ? "YO" : "AL") : initials;
+                size: AvatarSize.medium;
+                fill: role == MessageRole.user ? tint : Theme.muted;
+                initials-color: role == MessageRole.user ? tint-foreground : Theme.muted-foreground;
+                border-color: Theme.background;
+            }
+
+            VerticalLayout {
+                horizontal-stretch: 1;
+                min-width: 0px;
+                spacing: 10px;
+                cross-axis-alignment: at-end ? end : start;
+
+                if author != "" || time != "": HorizontalLayout {
+                    spacing: 6px;
+                    alignment: at-end ? end : start;
+                    if author != "": Text {
+                        text: author;
+                        color: Theme.foreground;
+                        font-size: Theme.font-size-xs;
+                        font-weight: 600;
+                        vertical-alignment: center;
+                    }
+                    if time != "": Text {
+                        text: time;
+                        color: Theme.muted-foreground;
+                        font-size: 11px;
+                        vertical-alignment: center;
+                    }
                 }
-                Button {
-                    icon: "copy";
-                    variant: ButtonVariant.ghost;
-                    size: ControlSize.xsmall;
-                    clicked => { root.copy-requested(); }
+
+                Bubble {
+                    role: role;
+                    alignment: at-end ? BubbleAlignment.end : BubbleAlignment.start;
+                    variant: failed ? BubbleVariant.destructive : root.bubble-variant;
+                    text: body;
+                    show-avatar: false;
+                }
+
+                if show-actions: HorizontalLayout {
+                    spacing: 2px;
+                    alignment: at-end ? end : start;
+                    Button { icon: "copy"; variant: ButtonVariant.ghost; size: ControlSize.xsmall; clicked => { root.copy-requested(); } }
+                    Button { icon: "heart"; variant: ButtonVariant.ghost; size: ControlSize.xsmall; }
+                    Button { icon: "star"; variant: ButtonVariant.ghost; size: ControlSize.xsmall; }
                 }
             }
-            Text {
-                text: body;
-                color: Theme.foreground;
-                font-size: Theme.font-size-sm;
-                wrap: word-wrap;
+
+            if at-end && show-avatar: Avatar {
+                initials: initials == "" ? (role == MessageRole.user ? "YO" : "AL") : initials;
+                size: AvatarSize.medium;
+                fill: role == MessageRole.user ? tint : Theme.muted;
+                initials-color: role == MessageRole.user ? tint-foreground : Theme.muted-foreground;
+                border-color: Theme.background;
+            }
+        }
+
+        // The footer lines up with the content column, not the avatar, so it
+        // carries the avatar's width plus the row gap on that side.
+        if footer != "" || failed: HorizontalLayout {
+            spacing: 6px;
+            alignment: at-end ? end : start;
+            padding-left: !at-end && show-avatar ? 40px : 0px;
+            padding-right: at-end && show-avatar ? 40px : 0px;
+
+            if failed: Text {
+                text: "Failed to send";
+                color: Theme.destructive;
+                font-size: 11px;
+                vertical-alignment: center;
+            }
+            if footer != "": Text {
+                text: footer;
+                color: Theme.muted-foreground;
+                font-size: 11px;
+                vertical-alignment: center;
+            }
+            if failed: TouchArea {
+                clicked => { root.retry-requested(); }
+                Text {
+                    text: "Retry";
+                    color: Theme.foreground;
+                    font-size: 11px;
+                    font-weight: 600;
+                    vertical-alignment: center;
+                }
             }
         }
     }

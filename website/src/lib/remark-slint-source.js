@@ -448,12 +448,8 @@ const ALIASES = {
     'Conversation': 'Create state and choose the starting position',
     'Streaming responses': 'Append, streaming, and follow-tail behavior',
     'Empty conversation': 'Render rows and an empty state',
-  },
-  // The Image page documents the framework-agnostic patterns rather than one
-  // sample per heading, so its two cards point at the sections that exist.
-  image: {
-    'Placeholder': 'Start with a working image',
-    'Fit modes': 'Common patterns',
+    // A host-drawn jump control is the "style slot" that section documents.
+    'Custom jump button': 'Scrollbar and style slots',
   },
   icon: {
     'Basic Icon': 'Icons',

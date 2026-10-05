@@ -30,6 +30,28 @@ export function wasmExamplesDevServer(base) {
         const [prefix, root] = entry;
         const relative = pathname.slice(prefix.length).replace(/^\/+/, '');
         let file = join(root, relative || 'index.html');
+
+        // A folder request answers with its own index.html. The site sets
+        // `trailingSlash: 'never'`, so a per-page build is asked for without the
+        // slash: `/slint-gallery/pages/<slug>`.
+        if (existsSync(file) && statSync(file).isDirectory()) {
+          file = join(file, 'index.html');
+        }
+
+        // A miss under `pages/` must not fall back to the top-level `index.html`:
+        // that page would request `slint_component.js` from the page folder and
+        // be handed HTML in its place. Report the missing build instead.
+        const page = /^pages\/([^/]+)(?:\/|$)/.exec(relative);
+        if (page && !existsSync(file)) {
+          res.statusCode = 503;
+          res.setHeader('Content-Type', 'text/plain; charset=utf-8');
+          res.end(
+            `The Slint example for "${page[1]}" is not built.\n` +
+              `Run: make build:wasm-slint-dev SLUGS=${page[1]}\n`,
+          );
+          return;
+        }
+
         if (!existsSync(file) || !statSync(file).isFile()) {
           file = join(root, 'index.html');
         }

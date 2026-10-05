@@ -8,18 +8,27 @@ export { GroupBoxVariant }
 // on one row. Either one asks the page to show this sample.
 export component GroupBox inherits VerticalLayout {
     in property <string> title;
+    in property <string> description;
     in property <GroupBoxVariant> variant: GroupBoxVariant.normal;
+    // Passed through to the component, so a section can show its footer.
+    in property <string> footer;
+    in property <length> content-padding: 16px;
+    in property <length> corner-radius: Theme.radius-md;
 
     horizontal-stretch: 1;
     spacing: variant == GroupBoxVariant.normal ? 16px : 12px;
 
     if root.title != "": SourceHeading {
         title: root.title;
+        description: root.description;
     }
 
     Box {
         title: "";
         variant: root.variant;
+        footer: root.footer;
+        content-padding: root.content-padding;
+        corner-radius: root.corner-radius;
         @children
     }
 }

@@ -10,6 +10,9 @@ export component Avatar {
     in property <string> initials;
     in property <AvatarSize> size: AvatarSize.medium;
     in property <color> fill: Theme.secondary;
+    // The initials must contrast with `fill`; a caller that darkens the fill
+    // sets this too.
+    in property <color> initials-color: Theme.secondary-foreground;
     in property <string> icon: "user";
     // Overrides `size` when greater than zero.
     in property <length> custom-edge;
@@ -56,7 +59,7 @@ export component Avatar {
             width: 100%;
             height: 100%;
             text: initials;
-            color: Theme.secondary-foreground;
+            color: root.initials-color;
             font-size: edge * 0.38;
             font-weight: 600;
             horizontal-alignment: center;

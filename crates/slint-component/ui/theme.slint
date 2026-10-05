@@ -92,6 +92,17 @@ export global Theme {
     out property <color> description-label: dark ? #171717 : background.mix(border, 0.8);
     out property <color> description-label-foreground: dark ? #f5f5f5 : #171717;
 
+    // GPUI `group_box.background` and `group_box.foreground`. The fill is a
+    // recess: neutral-100 on white in light, and neutral-800 in dark.
+    //
+    // GPUI's dark value is neutral-950, which is that theme's page background,
+    // so a filled group there is the same colour as the page it sits on and
+    // reads as no surface at all. This uses the muted step instead, so the fill
+    // is visible in both palettes.
+    out property <color> group-box: palette ? palette-muted : (dark ? #262626 : #f5f5f5);
+    out property <color> group-box-foreground: palette ? palette-secondary-foreground : (dark ? #fafafa : #171717);
+    out property <color> group-box-title-foreground: palette ? palette-muted-foreground : (dark ? #a3a3a3 : #737373);
+
     out property <color> popover: palette ? palette-popover : (dark ? #171717 : #ffffff);
     out property <color> sidebar: palette ? palette-sidebar : (dark ? #111111 : #fafafa);
     out property <color> overlay: dark ? #000000a0 : #0000004d;

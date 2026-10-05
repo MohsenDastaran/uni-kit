@@ -1,6 +1,7 @@
-import { Theme } from "../theme.slint";
+import { Theme, ButtonVariant } from "../theme.slint";
 import { GroupBox, GroupBoxVariant } from "section.slint";
 import { Message, MessageRole } from "../message.slint";
+import { Button } from "../button.slint";
 
 export component MessageExample inherits VerticalLayout {
     horizontal-stretch: 1;
@@ -8,57 +9,157 @@ export component MessageExample inherits VerticalLayout {
     spacing: 24px;
     alignment: start;
 
+    // The whole row: a header line, the bubble, and a footer under both.
+    GroupBox {
+        title: "Anatomy and basic usage";
+        variant: GroupBoxVariant.outline;
+
+        VerticalLayout {
+            spacing: 20px;
+
+            Message {
+                role: MessageRole.assistant;
+                author: "Alice";
+                time: "10:24 AM";
+                initials: "AL";
+                body: "Can you review this?";
+                footer: "Read";
+            }
+
+            Message {
+                role: MessageRole.user;
+                author: "You";
+                time: "10:25 AM";
+                initials: "YO";
+                body: "Sure — I will send notes shortly.";
+                footer: "Delivered";
+            }
+        }
+    }
+
+    // `user` turns sit at the trailing edge and take the primary surface;
+    // everything else starts at the leading edge on the secondary one.
     GroupBox {
         title: "Alignment";
         variant: GroupBoxVariant.outline;
 
         VerticalLayout {
-            spacing: 4px;
-            Message { role: MessageRole.user; body: "How do I copy a component into my project?"; }
-            Message { role: MessageRole.assistant; body: "Run `uni-kit add slint button` and it copies button.slint plus everything it imports into ui/components."; }
-            Message { role: MessageRole.user; body: "Does it copy the icons too?"; }
-            Message { role: MessageRole.assistant; body: "Yes. The manifest lists every file the component needs, including the icons folder."; }
+            spacing: 20px;
+
+            Message {
+                role: MessageRole.assistant;
+                author: "Support";
+                time: "10:42 AM";
+                initials: "ST";
+                body: "Your issue has been assigned to the team.";
+            }
+
+            Message {
+                role: MessageRole.user;
+                author: "You";
+                time: "Just now";
+                initials: "YO";
+                body: "Thank you for the quick update.";
+                footer: "Delivered";
+            }
         }
     }
 
-    // Consecutive turns from one speaker read as a group: the avatar and name
-    // appear once, and the body carries the thread.
     GroupBox {
-        title: "Grouping";
+        title: "Avatar";
         variant: GroupBoxVariant.outline;
 
         VerticalLayout {
-            spacing: 4px;
-            Message { role: MessageRole.assistant; author: "Assistant"; initials: "A"; body: "Dock keeps one workspace column."; }
-            Message { role: MessageRole.assistant; author: "Assistant"; initials: "A"; body: "Left, right, and bottom docks are all collapsible."; }
-            Message { role: MessageRole.assistant; author: "Assistant"; initials: "A"; body: "Tabs drag between groups."; }
-            Message { role: MessageRole.user; author: "You"; initials: "YO"; body: "Does zoom affect the layout tree?"; }
+            spacing: 20px;
+
+            Message {
+                role: MessageRole.assistant;
+                author: "Alice Chen";
+                initials: "AC";
+                body: "Initials stand in whenever there is no image.";
+            }
+
+            Message {
+                role: MessageRole.assistant;
+                author: "Jordan Park";
+                initials: "JP";
+                body: "A turn with no avatar slot pulls its text to the edge instead.";
+                show-avatar: false;
+            }
         }
     }
 
-    // The copy affordance is the one action every turn carries; a host can add
-    // more next to it.
+    GroupBox {
+        title: "Header";
+        variant: GroupBoxVariant.outline;
+
+        VerticalLayout {
+            spacing: 20px;
+
+            Message {
+                role: MessageRole.assistant;
+                author: "Alice Chen";
+                time: "10:24 AM";
+                initials: "AC";
+                body: "The header carries the sender and the timestamp.";
+            }
+
+            Message {
+                role: MessageRole.user;
+                author: "You";
+                time: "10:25 AM";
+                initials: "YO";
+                body: "And it lines up with the bubble, not with the avatar.";
+            }
+        }
+    }
+
+    // A footer states delivery; a failed turn says so and offers the retry.
+    GroupBox {
+        title: "Footer";
+        variant: GroupBoxVariant.outline;
+
+        VerticalLayout {
+            spacing: 20px;
+
+            Message {
+                role: MessageRole.user;
+                initials: "YO";
+                body: "This one was delivered.";
+                footer: "Delivered";
+            }
+
+            Message {
+                role: MessageRole.user;
+                initials: "YO";
+                body: "The response could not be sent.";
+                failed: true;
+            }
+        }
+    }
+
+    // The actions are the caller's: the component only reserves the row.
     GroupBox {
         title: "Rich content and actions";
         variant: GroupBoxVariant.outline;
 
         VerticalLayout {
-            spacing: 4px;
-            Message { role: MessageRole.assistant; body: "Here is the manifest entry for the dock component. Copy it into registry/components.json."; }
-            Message { role: MessageRole.user; body: "Got it."; }
-        }
-    }
+            spacing: 20px;
 
-    // `author` and `initials` override the role defaults, which is how a group
-    // chat keeps each speaker distinct.
-    GroupBox {
-        title: "Avatar, header, content, and footer";
-        variant: GroupBoxVariant.outline;
+            Message {
+                role: MessageRole.assistant;
+                author: "Support";
+                initials: "ST";
+                body: "The install failure is coming from the workspace package.";
+                show-actions: true;
+            }
 
-        VerticalLayout {
-            spacing: 4px;
-            Message { role: MessageRole.assistant; author: "Dock"; initials: "DK"; body: "Left, right, and bottom docks all share one workspace column."; }
-            Message { role: MessageRole.assistant; author: "Menu"; initials: "MN"; body: "Rows keep the same columns, so labels and shortcuts line up."; }
+            HorizontalLayout {
+                spacing: 8px;
+                alignment: start;
+                Button { text: "Copy"; icon: "copy"; variant: ButtonVariant.ghost; }
+                Button { text: "Retry"; icon: "refresh-cw"; variant: ButtonVariant.ghost; }
+            }
         }
     }
 }

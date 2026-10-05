@@ -24,6 +24,11 @@ export component InputGroup {
         spacing: 0;
         // No `alignment: start` here: it would stop the field from stretching,
         // and the input would collapse to nothing between its addons.
+        //
+        // The trailing adornment is often a bare `Icon`, and a horizontal layout
+        // puts a fixed-size child against the top edge. Centring the cross axis
+        // is what GPUI's `h_flex().items_center()` does for the same row.
+        cross-axis-alignment: center;
         @children
     }
 }

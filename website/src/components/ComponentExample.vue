@@ -119,7 +119,17 @@ const frameworkList: Record<string, Framework> = {
     src: () => {
       if (!pageSlug.value) return undefined;
       const base = props.baseUrl.replace(/\/$/, "");
-      return `${base}/slint-gallery?component=${encodeURIComponent(pageSlug.value)}`;
+      const slug = encodeURIComponent(pageSlug.value);
+      // Each page is built into its own folder. The whole catalog in one module
+      // is one generated Rust file that a single `rustc` cannot compile inside
+      // the memory a laptop can spare, so the gallery is split by page and the
+      // server picks the folder from the path.
+      //
+      // No trailing slash: the site sets `trailingSlash: 'never'`, and Vite
+      // answers a trailing-slash URL itself with a 404 before the gallery
+      // middleware sees it. The page's own script turns the path back into a
+      // folder when it imports its module.
+      return `${base}/slint-gallery/pages/${slug}?component=${slug}`;
     },
   },
 };

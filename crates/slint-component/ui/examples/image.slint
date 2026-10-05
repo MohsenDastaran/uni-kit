@@ -8,46 +8,308 @@ export component ImageExample inherits VerticalLayout {
     spacing: 24px;
     alignment: start;
 
-    // Without a source the frame shows its placeholder icon.
+    // A source paints the frame; no source leaves the placeholder in place, so
+    // a missing asset never leaves an empty hole in a layout.
     GroupBox {
-        title: "Placeholder";
-        variant: GroupBoxVariant.outline;
-
-        ImageView {
-            height: 160px;
-        }
-    }
-
-    // `fit` decides how a source fills its frame: `cover` crops, `contain`
-    // letterboxes, `fill` stretches. The last one uses a bundled SVG so the
-    // difference is visible without an asset file.
-    GroupBox {
-        title: "Fit modes";
+        title: "Start with a working image";
         variant: GroupBoxVariant.outline;
 
         HorizontalLayout {
-            spacing: 12px;
-            alignment: start;
+            horizontal-stretch: 1;
+            spacing: 16px;
 
-            ImageView {
-                width: 160px;
-                height: 120px;
-                fit: ImageFit.cover;
-                source: @image-url("../icons/chart-column.svg");
+            VerticalLayout {
+                horizontal-stretch: 1;
+                spacing: 6px;
+
+                ImageView {
+                    height: 140px;
+                    fit: ImageFit.contain;
+                    source: @image-url("../icons/sparkles.svg");
+                }
+                Text {
+                    text: "With a source";
+                    color: Theme.muted-foreground;
+                    font-size: Theme.font-size-xs;
+                }
             }
-            ImageView {
-                width: 160px;
-                height: 120px;
-                fit: ImageFit.contain;
-                source: @image-url("../icons/chart-column.svg");
-            }
-            ImageView {
-                width: 160px;
-                height: 120px;
-                fit: ImageFit.fill;
-                source: @image-url("../icons/chart-column.svg");
+
+            VerticalLayout {
+                horizontal-stretch: 1;
+                spacing: 6px;
+
+                ImageView {
+                    height: 140px;
+                }
+                Text {
+                    text: "Without one";
+                    color: Theme.muted-foreground;
+                    font-size: Theme.font-size-xs;
+                }
             }
         }
     }
 
+    GroupBox {
+        title: "Common patterns";
+        variant: GroupBoxVariant.outline;
+
+        VerticalLayout {
+            spacing: 16px;
+
+            // `fit` decides how a source fills its frame.
+            HorizontalLayout {
+                spacing: 12px;
+
+                VerticalLayout {
+                    horizontal-stretch: 1;
+                    spacing: 6px;
+                    ImageView {
+                        height: 120px;
+                        fit: ImageFit.cover;
+                        source: @image-url("../icons/chart-column.svg");
+                    }
+                    Text {
+                        text: "cover — crops the overflow";
+                        color: Theme.muted-foreground;
+                        font-size: Theme.font-size-xs;
+                    }
+                }
+                VerticalLayout {
+                    horizontal-stretch: 1;
+                    spacing: 6px;
+                    ImageView {
+                        height: 120px;
+                        fit: ImageFit.contain;
+                        source: @image-url("../icons/chart-column.svg");
+                    }
+                    Text {
+                        text: "contain — letterboxes";
+                        color: Theme.muted-foreground;
+                        font-size: Theme.font-size-xs;
+                    }
+                }
+                VerticalLayout {
+                    horizontal-stretch: 1;
+                    spacing: 6px;
+                    ImageView {
+                        height: 120px;
+                        fit: ImageFit.fill;
+                        source: @image-url("../icons/chart-column.svg");
+                    }
+                    Text {
+                        text: "fill — stretches";
+                        color: Theme.muted-foreground;
+                        font-size: Theme.font-size-xs;
+                    }
+                }
+            }
+
+            // `radius` shapes the frame. A rounded square and a circle both come
+            // from the same component.
+            HorizontalLayout {
+                spacing: 12px;
+                alignment: start;
+
+                ImageView {
+                    width: 72px;
+                    height: 72px;
+                    radius: Theme.radius-sm;
+                    fit: ImageFit.cover;
+                    source: @image-url("../icons/user.svg");
+                }
+                ImageView {
+                    width: 72px;
+                    height: 72px;
+                    radius: Theme.radius-lg;
+                    fit: ImageFit.cover;
+                    source: @image-url("../icons/user.svg");
+                }
+                ImageView {
+                    width: 72px;
+                    height: 72px;
+                    radius: 36px;
+                    fit: ImageFit.cover;
+                    source: @image-url("../icons/user.svg");
+                }
+                Text {
+                    text: "radius: 3px, 8px, and a full circle";
+                    color: Theme.muted-foreground;
+                    font-size: Theme.font-size-xs;
+                    vertical-alignment: center;
+                }
+            }
+        }
+    }
+
+    // A thumbnail grid. The selected cell is the frame's job, not the image's:
+    // a ring around the `ImageView` reads as selection without recolouring it.
+    GroupBox {
+        title: "Gallery with selection";
+        variant: GroupBoxVariant.outline;
+
+        HorizontalLayout {
+            spacing: 8px;
+
+            Rectangle {
+                horizontal-stretch: 1;
+                height: 104px;
+                border-radius: Theme.radius-lg;
+                border-width: 1px;
+                border-color: Theme.border;
+                background: Theme.muted.with-alpha(0.3);
+
+                ImageView {
+                    x: 8px;
+                    y: 8px;
+                    width: parent.width - 16px;
+                    height: parent.height - 16px;
+                    radius: Theme.radius-md;
+                    fit: ImageFit.contain;
+                    source: @image-url("../icons/image.svg");
+                }
+            }
+            Rectangle {
+                horizontal-stretch: 1;
+                height: 104px;
+                border-radius: Theme.radius-lg;
+                border-width: 1px;
+                border-color: Theme.border;
+                background: Theme.muted.with-alpha(0.3);
+
+                ImageView {
+                    x: 8px;
+                    y: 8px;
+                    width: parent.width - 16px;
+                    height: parent.height - 16px;
+                    radius: Theme.radius-md;
+                    fit: ImageFit.contain;
+                    source: @image-url("../icons/palette.svg");
+                }
+            }
+            Rectangle {
+                horizontal-stretch: 1;
+                height: 104px;
+                border-radius: Theme.radius-lg;
+                border-width: 2px;
+                border-color: Theme.primary;
+                background: Theme.muted.with-alpha(0.3);
+
+                ImageView {
+                    x: 8px;
+                    y: 8px;
+                    width: parent.width - 16px;
+                    height: parent.height - 16px;
+                    radius: Theme.radius-md;
+                    fit: ImageFit.contain;
+                    source: @image-url("../icons/globe.svg");
+                }
+            }
+            Rectangle {
+                horizontal-stretch: 1;
+                height: 104px;
+                border-radius: Theme.radius-lg;
+                border-width: 1px;
+                border-color: Theme.border;
+                background: Theme.muted.with-alpha(0.3);
+
+                ImageView {
+                    x: 8px;
+                    y: 8px;
+                    width: parent.width - 16px;
+                    height: parent.height - 16px;
+                    radius: Theme.radius-md;
+                    fit: ImageFit.contain;
+                    source: @image-url("../icons/github.svg");
+                }
+            }
+            Rectangle {
+                horizontal-stretch: 1;
+                height: 104px;
+                border-radius: Theme.radius-lg;
+                border-width: 1px;
+                border-color: Theme.border;
+                background: Theme.muted.with-alpha(0.3);
+
+                ImageView {
+                    x: 8px;
+                    y: 8px;
+                    width: parent.width - 16px;
+                    height: parent.height - 16px;
+                    radius: Theme.radius-md;
+                    fit: ImageFit.contain;
+                    source: @image-url("../icons/cpu.svg");
+                }
+            }
+            Rectangle {
+                horizontal-stretch: 1;
+                height: 104px;
+                border-radius: Theme.radius-lg;
+                border-width: 1px;
+                border-color: Theme.border;
+                background: Theme.muted.with-alpha(0.3);
+
+                ImageView {
+                    x: 8px;
+                    y: 8px;
+                    width: parent.width - 16px;
+                    height: parent.height - 16px;
+                    radius: Theme.radius-md;
+                    fit: ImageFit.contain;
+                    source: @image-url("../icons/database.svg");
+                }
+            }
+        }
+    }
+
+    // An image that carries meaning needs its description in the text beside
+    // it; one that only decorates needs none.
+    GroupBox {
+        title: "Accessibility";
+        variant: GroupBoxVariant.outline;
+
+        VerticalLayout {
+            spacing: 16px;
+
+            HorizontalLayout {
+                spacing: 12px;
+                alignment: center;
+
+                ImageView {
+                    width: 48px;
+                    height: 48px;
+                    radius: Theme.radius-md;
+                    fit: ImageFit.contain;
+                    source: @image-url("../icons/shield.svg");
+                }
+                Text {
+                    horizontal-stretch: 1;
+                    text: "Meaningful: the caption carries what the picture shows.";
+                    color: Theme.foreground;
+                    font-size: Theme.font-size-sm;
+                    vertical-alignment: center;
+                }
+            }
+
+            HorizontalLayout {
+                spacing: 12px;
+                alignment: center;
+
+                ImageView {
+                    width: 48px;
+                    height: 48px;
+                    radius: Theme.radius-md;
+                    fit: ImageFit.contain;
+                    source: @image-url("../icons/sparkles.svg");
+                }
+                Text {
+                    horizontal-stretch: 1;
+                    text: "Decorative: the text already says it, so the picture adds nothing to repeat.";
+                    color: Theme.muted-foreground;
+                    font-size: Theme.font-size-sm;
+                    vertical-alignment: center;
+                }
+            }
+        }
+    }
 }

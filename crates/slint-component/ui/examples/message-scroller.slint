@@ -1,7 +1,9 @@
-import { Theme } from "../theme.slint";
+import { Theme, ButtonVariant, ControlSize } from "../theme.slint";
 import { GroupBox, GroupBoxVariant } from "section.slint";
 import { MessageScroller } from "../message-scroller.slint";
-import { MessageRole } from "../message.slint";
+import { MessageRole } from "../message-role.slint";
+import { Button } from "../button.slint";
+import { Input } from "../input.slint";
 import { Icon } from "../icon.slint";
 
 export component MessageScrollerExample inherits VerticalLayout {
@@ -10,27 +12,215 @@ export component MessageScrollerExample inherits VerticalLayout {
     spacing: 24px;
     alignment: start;
 
+    private property <int> unread: 3;
+    private property <bool> jumped-up: true;
+
+    // The whole chat frame: a header with the conversation's identity, the
+    // scroller, and a composer. The scroller only owns the middle band.
     GroupBox {
         title: "Conversation";
+        description: "Scroll upward, append a row, jump to unread, or prepend history to exercise each behavior.";
+        variant: GroupBoxVariant.normal;
+
+        HorizontalLayout {
+            horizontal-stretch: 1;
+            alignment: center;
+
+            Rectangle {
+                width: min(Theme.viewport - 48px, 384px);
+                height: 540px;
+                border-radius: Theme.radius-xl;
+                border-width: 1px;
+                border-color: Theme.border;
+                background: Theme.background;
+                clip: true;
+
+                VerticalLayout {
+                    spacing: 0;
+
+                    // Header
+                    VerticalLayout {
+                        spacing: 0;
+                        HorizontalLayout {
+                            horizontal-stretch: 1;
+                            padding: 20px;
+                            spacing: 8px;
+
+                            VerticalLayout {
+                                horizontal-stretch: 1;
+                                spacing: 2px;
+                                Text { text: "New Chat"; color: Theme.foreground; font-size: Theme.font-size-sm; font-weight: 600; }
+                                Text { text: "How can I help you today?"; color: Theme.muted-foreground; font-size: Theme.font-size-xs; }
+                            }
+                            Button { icon: "refresh-cw"; outline: true; size: ControlSize.small; }
+                        }
+                        Rectangle { width: 100%; height: 1px; background: Theme.border; }
+                    }
+
+                    // The list sits in its own band. The scroller states
+                    // `height: 100%`, so the band must already be the leftover
+                    // height or the composer below is squeezed out.
+                    Rectangle {
+                        vertical-stretch: 1;
+                        min-height: 0px;
+                        background: transparent;
+
+                    MessageScroller {
+                        unread-index: root.unread;
+                        scrolled-up: root.jumped-up;
+                        messages: [
+                            { role: MessageRole.user, body: "You won't. Scrolling up releases tail following, so the reading position is preserved while new rows keep arriving below." },
+                            { role: MessageRole.user, body: "A jump-to-latest button appears once the reader leaves the tail; one click returns to the newest row and resumes following." },
+                            { role: MessageRole.user, body: "And loading older history when they reach the top?" },
+                            { role: MessageRole.user, body: "The application prepends those rows and the scroller keeps the visible anchor steady." },
+                            { role: MessageRole.assistant, body: "That is the anchor rule: the row the reader is looking at stays where it is." },
+                            { role: MessageRole.user, body: "So a burst of new rows never yanks the view." },
+                            { role: MessageRole.assistant, body: "Correct. Following resumes only when the reader returns to the tail." },
+                        ];
+                    }
+                    }
+
+                    // Composer
+                    VerticalLayout {
+                        padding-left: 20px;
+                        padding-right: 20px;
+                        padding-bottom: 20px;
+
+                        Rectangle {
+                            border-radius: Theme.radius-lg;
+                            background: Theme.muted;
+                            VerticalLayout {
+                                padding: 8px;
+                                spacing: 6px;
+                                Input { appearance: false; placeholder: "Write a message…"; }
+                                HorizontalLayout {
+                                    horizontal-stretch: 1;
+                                    alignment: end;
+                                    // Clipped to a circle, the way GPUI rounds its
+                                    // send button to `radius_full()`.
+                                    Rectangle {
+                                        width: 28px;
+                                        height: 28px;
+                                        border-radius: 14px;
+                                        clip: true;
+                                        Button { width: 100%; height: 100%; icon: "arrow-up"; variant: ButtonVariant.primary; size: ControlSize.small; }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    // The status line the application prints under the frame.
+    Text {
+        text: "Following tail: false · Scrolled up: " + (root.jumped-up ? "true" : "false");
+        color: Theme.muted-foreground;
+        font-size: Theme.font-size-xs;
+    }
+
+    // A long assistant turn grows while the reader keeps their place. Only the
+    // changed row's height matters; the rows above it do not move.
+    GroupBox {
+        title: "Streaming responses";
+        description: "Append one assistant response, grow its text progressively, and remeasure only that row.";
+        variant: GroupBoxVariant.normal;
+
+        HorizontalLayout {
+            horizontal-stretch: 1;
+            alignment: center;
+
+            Rectangle {
+                width: min(Theme.viewport - 48px, 384px);
+                height: 300px;
+                border-radius: Theme.radius-xl;
+                border-width: 1px;
+                border-color: Theme.border;
+                background: Theme.background;
+                clip: true;
+
+                Rectangle {
+                    width: 100%;
+                    height: 100%;
+                    background: transparent;
+
+                MessageScroller {
+                    messages: [
+                        { role: MessageRole.assistant, body: "Conversation message 4" },
+                        { role: MessageRole.assistant, body: "Message 5 wraps across more than one line to keep virtual-row measurement realistic." },
+                        { role: MessageRole.assistant, body: "Conversation message 6" },
+                        { role: MessageRole.user, body: "How does streaming preserve my position?" },
+                    ];
+                }
+                }
+            }
+        }
+    }
+
+    // `scrolled-up` is the application's to set; the fade and the round control
+    // both follow it.
+    GroupBox {
+        title: "Jump-to-latest controls";
         variant: GroupBoxVariant.outline;
 
         Rectangle {
-            width: 100%; height: 320px; border-width: 1px; border-color: Theme.border; border-radius: Theme.radius-lg; clip: true;
+            width: 100%; height: 240px; border-width: 1px; border-color: Theme.border; border-radius: Theme.radius-lg; clip: true;
             MessageScroller {
+                scrolled-up: true;
                 messages: [
-                    { role: MessageRole.user, body: "How do I add a component?" },
-                    { role: MessageRole.assistant, body: "Run uni-kit add slint button. It copies the component and everything it imports." },
-                    { role: MessageRole.user, body: "And the icons?" },
-                    { role: MessageRole.assistant, body: "Those come with the component. The manifest lists every file." },
-                    { role: MessageRole.user, body: "Which framework should I pick?" },
-                    { role: MessageRole.assistant, body: "Either. The selector on each page switches the live example and the source." },
+                    { role: MessageRole.user, body: "Scroll up to read the history." },
+                    { role: MessageRole.assistant, body: "The fade marks the bottom edge while the newest turn is out of view." },
+                    { role: MessageRole.user, body: "What does the round control do?" },
+                    { role: MessageRole.assistant, body: "It returns the viewport to the end of the conversation." },
                 ];
             }
         }
     }
 
-    // An empty conversation shows the empty state; the title and description
-    // belong to the host, not the scroller.
+    // `jump-button: false` leaves the control to the application, the way a
+    // custom renderer takes it over in GPUI.
+    GroupBox {
+        title: "Custom jump button";
+        variant: GroupBoxVariant.outline;
+
+        Rectangle {
+            width: 100%; height: 200px; border-width: 1px; border-color: Theme.border; border-radius: Theme.radius-lg; clip: true;
+
+            MessageScroller {
+                jump-button: false;
+                messages: [
+                    { role: MessageRole.user, body: "Give me the short version." },
+                    { role: MessageRole.assistant, body: "Copy a component, import it, and it runs." },
+                    { role: MessageRole.user, body: "That is short." },
+                    { role: MessageRole.assistant, body: "The long version is on the Dock page." },
+                ];
+            }
+
+            Rectangle {
+                x: parent.width - self.width - 12px;
+                y: parent.height - self.height - 12px;
+                height: 26px;
+                border-radius: 13px;
+                border-width: 1px;
+                border-color: Theme.border;
+                background: Theme.background;
+
+                HorizontalLayout {
+                    padding-left: 10px;
+                    padding-right: 10px;
+                    spacing: 6px;
+                    alignment: center;
+                    Icon { name: "arrow-down"; size: 12px; color: Theme.foreground; }
+                    Text { text: "Latest"; color: Theme.foreground; font-size: Theme.font-size-xs; vertical-alignment: center; }
+                }
+            }
+        }
+    }
+
+    // With no rows the scroller draws nothing; the empty state belongs to the
+    // application, which is where its wording lives.
     GroupBox {
         title: "Empty conversation";
         variant: GroupBoxVariant.outline;
@@ -47,18 +237,17 @@ export component MessageScrollerExample inherits VerticalLayout {
         }
     }
 
-    // The scroller pins to the newest turn, so a short exchange and a long one
-    // both read from the bottom.
     GroupBox {
-        title: "Streaming responses";
+        title: "Prepend earlier history";
         variant: GroupBoxVariant.outline;
 
         Rectangle {
             width: 100%; height: 200px; border-width: 1px; border-color: Theme.border; border-radius: Theme.radius-lg; clip: true;
             MessageScroller {
                 messages: [
-                    { role: MessageRole.user, body: "Summarise the dock component." },
-                    { role: MessageRole.assistant, body: "It is a workspace of tab groups: a centre pane with left, right, and bottom docks, all resizable and collapsible, with tabs you can drag between groups." },
+                    { role: MessageRole.assistant, body: "… 48 earlier messages loaded above." },
+                    { role: MessageRole.user, body: "Where were we?" },
+                    { role: MessageRole.assistant, body: "Picking a framework. Both ports render the same gallery." },
                 ];
             }
         }

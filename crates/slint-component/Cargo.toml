@@ -42,3 +42,13 @@ slint-build = "1.17"
 
 [profile.release]
 opt-level = "s"
+
+# The gallery is one generated Rust file holding every example, and full debug
+# info for it is the single largest thing rustc builds. Dropping it is what lets
+# the whole-gallery build finish inside a cgroup cap that leaves the desktop
+# room to breathe; with the default `debug = 2` the build needs more memory than
+# the machine has. Incremental state is off for the same reason: it is another
+# copy of that same enormous artifact on disk and in the compiler's memory.
+[profile.dev]
+debug = false
+incremental = false
