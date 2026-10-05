@@ -1,4 +1,4 @@
-import { Theme } from "../theme.slint";
+import { Theme, ControlSize, ButtonVariant } from "../theme.slint";
 import { GroupBox, GroupBoxVariant } from "section.slint";
 import { Popover } from "../popover.slint";
 import { Placement } from "../tooltip.slint";
@@ -11,17 +11,56 @@ export component PopoverExample inherits VerticalLayout {
     spacing: 24px;
     alignment: start;
 
+    private property <bool> controlled;
+
+    // The plain case: a button, and text in the panel.
+    GroupBox {
+        title: "Basic Popover";
+        variant: GroupBoxVariant.outline;
+
+        Popover {
+            trigger-text: "Click me";
+            panel-width: 260px;
+
+            VerticalLayout {
+                spacing: 4px;
+                Text {
+                    text: "Hello, this is a popover!";
+                    color: Theme.foreground;
+                    font-size: Theme.font-size-sm;
+                }
+                Text {
+                    text: "It appears when you click the button.";
+                    color: Theme.muted-foreground;
+                    font-size: Theme.font-size-xs;
+                    wrap: word-wrap;
+                }
+            }
+        }
+    }
+
     GroupBox {
         title: "Click";
         variant: GroupBoxVariant.outline;
 
         Popover {
-            Button { text: "Open popover"; icon: "chevron-down"; }
+            trigger-text: "Open popover";
+            trigger-icon: "chevron-down";
+            panel-width: 280px;
+
             VerticalLayout {
-                padding: 12px;
                 spacing: 6px;
-                Text { text: "Click outside to dismiss."; color: Theme.foreground; font-size: Theme.font-size-sm; }
-                Text { text: "The panel is a popup, so it is not clipped by this card."; color: Theme.muted-foreground; font-size: Theme.font-size-xs; }
+                Text {
+                    text: "Click outside to dismiss.";
+                    color: Theme.foreground;
+                    font-size: Theme.font-size-sm;
+                }
+                Text {
+                    text: "The panel is a popup, so it is not clipped by this card.";
+                    color: Theme.muted-foreground;
+                    font-size: Theme.font-size-xs;
+                    wrap: word-wrap;
+                }
             }
         }
     }
@@ -33,44 +72,75 @@ export component PopoverExample inherits VerticalLayout {
         HorizontalLayout {
             spacing: 24px;
             alignment: center;
+
             Popover {
                 placement: Placement.bottom;
-                Button { text: "Below"; }
-                VerticalLayout {
-                    padding: 12px;
-                    Text { text: "Placement.bottom"; color: Theme.foreground; font-size: Theme.font-size-sm; }
+                trigger-text: "Below";
+                panel-width: 220px;
+                Text {
+                    text: "Placement.bottom";
+                    color: Theme.foreground;
+                    font-size: Theme.font-size-xs;
                 }
             }
             Popover {
                 placement: Placement.right;
-                Button { text: "Right"; }
-                VerticalLayout {
-                    padding: 12px;
-                    Text { text: "Placement.right"; color: Theme.foreground; font-size: Theme.font-size-sm; }
+                trigger-text: "Right";
+                panel-width: 220px;
+                Text {
+                    text: "Placement.right";
+                    color: Theme.foreground;
+                    font-size: Theme.font-size-xs;
+                }
+            }
+            Popover {
+                placement: Placement.top;
+                trigger-text: "Above";
+                panel-width: 220px;
+                Text {
+                    text: "Placement.top";
+                    color: Theme.foreground;
+                    font-size: Theme.font-size-xs;
                 }
             }
         }
     }
 
-    // A popover is where a small view lives: a list, a form, or a colour grid.
+    // Any children work: this one is a small activity view.
     GroupBox {
         title: "View in Popover";
         variant: GroupBoxVariant.outline;
 
         Popover {
-            Button { text: "Notifications"; icon: "bell"; }
+            trigger-text: "Open activity";
+            panel-width: 280px;
+
             VerticalLayout {
-                padding: 8px;
-                spacing: 2px;
-                for row in [{ title: "Build finished", detail: "2 minutes ago" }, { title: "New comment", detail: "9 minutes ago" }, { title: "Deploy failed", detail: "1 hour ago" }]: Rectangle {
-                    border-radius: Theme.radius-sm;
-                    HorizontalLayout {
-                        padding: 8px;
-                        spacing: 8px;
-                        Icon { name: "circle"; size: 8px; color: Theme.primary; }
-                        VerticalLayout {
-                            Text { text: row.title; color: Theme.foreground; font-size: Theme.font-size-xs; }
-                            Text { text: row.detail; color: Theme.muted-foreground; font-size: 11px; }
+                spacing: 10px;
+                Text {
+                    text: "Recent activity";
+                    color: Theme.muted-foreground;
+                    font-size: Theme.font-size-xs;
+                }
+                for row in [{ title: "Build finished", detail: "2 minutes ago" }, { title: "New comment", detail: "9 minutes ago" }, { title: "Deploy failed", detail: "1 hour ago" }]: HorizontalLayout {
+                    spacing: 8px;
+                    cross-axis-alignment: center;
+                    Icon {
+                        name: row.title == "Deploy failed" ? "circle-x" : "circle-check";
+                        size: 14px;
+                        color: row.title == "Deploy failed" ? Theme.danger : Theme.success;
+                    }
+                    VerticalLayout {
+                        spacing: 1px;
+                        Text {
+                            text: row.title;
+                            color: Theme.foreground;
+                            font-size: Theme.font-size-sm;
+                        }
+                        Text {
+                            text: row.detail;
+                            color: Theme.muted-foreground;
+                            font-size: Theme.font-size-xs;
                         }
                     }
                 }
@@ -78,22 +148,137 @@ export component PopoverExample inherits VerticalLayout {
         }
     }
 
+    // The panel can hold interactive children, not just text.
+    GroupBox {
+        title: "Add content by `content` method";
+        variant: GroupBoxVariant.outline;
+
+        Popover {
+            trigger-text: "Complex content";
+            panel-width: 280px;
+
+            VerticalLayout {
+                spacing: 10px;
+                Text {
+                    text: "This popover has complex content.";
+                    color: Theme.foreground;
+                    font-size: Theme.font-size-sm;
+                }
+                HorizontalLayout {
+                    spacing: 8px;
+                    alignment: start;
+                    Button { text: "Perform action"; outline: true; }
+                    Button { text: "Cancel"; variant: ButtonVariant.ghost; }
+                }
+            }
+        }
+    }
+
+    // Closing from inside needs a handle on the popover, which the host has.
+    GroupBox {
+        title: "Dismiss Popover manually";
+        variant: GroupBoxVariant.outline;
+
+        dismiss := Popover {
+            trigger-text: "Dismiss popover";
+            panel-width: 300px;
+
+            VerticalLayout {
+                spacing: 10px;
+                Text {
+                    text: "Click the button below to dismiss this popover.";
+                    color: Theme.foreground;
+                    font-size: Theme.font-size-sm;
+                    wrap: word-wrap;
+                }
+                Button {
+                    text: "Close popover";
+                    outline: true;
+                    clicked => {
+                        dismiss.open = false;
+                    }
+                }
+            }
+        }
+    }
+
+    GroupBox {
+        title: "Styling Popover";
+        variant: GroupBoxVariant.outline;
+
+        Popover {
+            trigger-text: "Custom style";
+            panel-width: 300px;
+            panel-background: Theme.primary;
+            panel-radius: Theme.radius-xl;
+            panel-border: false;
+
+            VerticalLayout {
+                spacing: 4px;
+                Text {
+                    text: "Fully custom styled popover";
+                    color: Theme.primary-foreground;
+                    font-size: Theme.font-size-sm;
+                    font-weight: 600;
+                }
+                Text {
+                    text: "A custom surface, radius, and no border.";
+                    color: Theme.primary-foreground;
+                    font-size: Theme.font-size-xs;
+                    wrap: word-wrap;
+                }
+            }
+        }
+    }
+
+    // The host owns the state, so an outside control can drive it too.
     GroupBox {
         title: "Control Open State";
         variant: GroupBoxVariant.outline;
 
         HorizontalLayout {
             spacing: 12px;
-            alignment: center;
-            Popover {
-                open: true;
-                Button { text: "Starts open"; }
-                VerticalLayout {
-                    padding: 12px;
-                    Text { text: "open: true"; color: Theme.foreground; font-size: Theme.font-size-sm; }
+            alignment: start;
+
+            Button {
+                text: root.controlled ? "Close" : "Open";
+                outline: true;
+                clicked => {
+                    root.controlled = !root.controlled;
                 }
             }
-            Button { text: "Close it"; }
+
+            controlled := Popover {
+                trigger-text: "Controlled popover";
+                open <=> root.controlled;
+                panel-width: 280px;
+
+                Text {
+                    text: "This popover's open state is controlled programmatically.";
+                    color: Theme.foreground;
+                    font-size: Theme.font-size-xs;
+                    wrap: word-wrap;
+                }
+            }
+        }
+    }
+
+    // Last, because it is open on the first frame and floats above the rest.
+    GroupBox {
+        title: "Default Open";
+        variant: GroupBoxVariant.outline;
+
+        Popover {
+            trigger-text: "Default open";
+            open: true;
+            panel-width: 300px;
+
+            Text {
+                text: "This popover is open by default when first rendered.";
+                color: Theme.foreground;
+                font-size: Theme.font-size-xs;
+                wrap: word-wrap;
+            }
         }
     }
 }

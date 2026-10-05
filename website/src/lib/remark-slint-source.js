@@ -523,6 +523,12 @@ const SHARED = {
     Default: 'Single',
     'Custom style': 'Icons and custom content',
   },
+  popover: {
+    // The heading writes `content` as a code span, and the heading text the
+    // plugin matches on drops code spans entirely — it reads "Add content by
+    // method". The card keeps a title that matches what the page displays.
+    'Add content by `content` method': 'Add content by method',
+  },
   // Box title -> heading. Cards use readable titles, so they resolve here in
   // phase 2, which inserts one sample per section. Putting them in `ALIASES`
   // instead would insert a copy after every Rust snippet in the section.

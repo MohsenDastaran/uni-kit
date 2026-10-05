@@ -173,7 +173,6 @@ The sample is the gallery example that is already running, not a separately writ
 - [x] Number input
 - [x] OTP input
 - [x] Pagination
-- [x] Plot
 - [x] Popover
 - [x] Progress
 - [x] Questionnaire

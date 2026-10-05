@@ -65,7 +65,6 @@ const storyNames: Record<string, string> = {
   notification: "Notification",
   "number-input": "NumberInput",
   "otp-input": "OtpInput",
-  plot: "Chart",
   scrollable: "Scrollbar",
   "status-bar": "StatusBar",
   "text-view": "Editor",

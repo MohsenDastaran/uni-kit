@@ -1,39 +1,91 @@
-import { Theme } from "theme.slint";
+import { Theme, ControlSize, ButtonVariant } from "theme.slint";
 import { Placement } from "tooltip.slint";
+import { Button } from "button.slint";
 
 // A click-opened panel. Mirrors GPUI Component's `Popover`.
+//
+// Slint allows one `@children` slot per component, and the panel is the part
+// worth handing over: GPUI's `.trigger(any Selectable)` is wider than Slint can
+// express, while `.child(...)` content is what every example varies. So the
+// panel takes `@children` and the trigger is the button these properties
+// describe.
 export component Popover {
     in property <Placement> placement: Placement.bottom;
     in-out property <bool> open;
+    in property <string> trigger-text;
+    in property <string> trigger-icon;
+    in property <bool> trigger-outline: true;
+    in property <ControlSize> trigger-size: ControlSize.medium;
+    in property <bool> enabled: true;
+    // The panel's width. A left or right placement offsets by it, so the panel
+    // cannot be a fixed distance from the trigger.
+    in property <length> panel-width: 240px;
+    // The surface. A host that wants its own look sets these rather than
+    // reaching into the panel, which Slint does not allow.
+    in property <color> panel-background: Theme.popover;
+    in property <length> panel-radius: Theme.radius-lg;
+    in property <bool> panel-border: true;
 
     min-width: host.preferred-width;
     min-height: host.preferred-height;
 
-    host := TouchArea {
+    // `open` is the controlled state, so the panel follows it in both
+    // directions: a host that sets it false closes the panel, and a dismissal
+    // by click-outside reports back through `is-open`.
+    // The controlled side: a host that sets `open` false closes the panel. The
+    // reverse - reporting a click-outside dismissal back through `open` - is not
+    // wired: reading `is-open` from a `changed` handler here makes the Slint
+    // compiler fail const propagation with an invalid type, so `open` can be
+    // ahead of the panel after a dismissal. The trigger calls `show()` itself,
+    // so it still reopens.
+    changed open => {
+        if root.open {
+            panel.show();
+        } else {
+            panel.close();
+        }
+    }
+
+    // A host that starts with `open: true` never sees a change, so the first
+    // frame is shown here.
+    init => {
+        if root.open {
+            panel.show();
+        }
+    }
+
+    // The trigger handles its own click. A `TouchArea` wrapped around the
+    // button never fires: the button's own touch area consumes the press first.
+    host := Button {
+        text: root.trigger-text;
+        icon: root.trigger-icon;
+        outline: root.trigger-outline;
+        size: root.trigger-size;
+        enabled: root.enabled;
         clicked => {
+            // `open` alone is not enough: a dismissal by click-outside leaves it
+            // true, and setting it true again would not be a change, so the
+            // panel would never come back. Asking it to show is what reopens it.
             panel.show();
             root.open = true;
-        }
-        VerticalLayout {
-            @children
         }
     }
 
     panel := PopupWindow {
         x: placement == Placement.right ? host.width + 8px
-            : placement == Placement.left ? -220px
+            : placement == Placement.left ? -(root.panel-width + 8px)
             : 0;
         y: placement == Placement.bottom ? host.height + 8px
-            : placement == Placement.top ? -8px
+            : placement == Placement.top ? -(panel.preferred-height + 8px)
             : 0;
-        width: 220px;
+        width: panel-width;
         close-policy: close-on-click-outside;
 
         Rectangle {
-            border-radius: Theme.radius-lg;
-            border-width: 1px;
+            border-radius: root.panel-radius;
+            border-width: root.panel-border ? 1px : 0px;
             border-color: Theme.border;
-            background: Theme.popover;
+            background: root.panel-background;
             drop-shadow-blur: 12px;
             drop-shadow-offset-y: 4px;
             drop-shadow-color: Theme.shadow;
@@ -41,23 +93,8 @@ export component Popover {
             VerticalLayout {
                 padding: 12px;
                 spacing: 8px;
-                Text {
-                    text: "Popover";
-                    color: Theme.foreground;
-                    font-size: Theme.font-size-sm;
-                }
-                Text {
-                    text: "Click outside to close.";
-                    color: Theme.muted-foreground;
-                    font-size: Theme.font-size-xs;
-                    wrap: word-wrap;
-                }
+                @children
             }
         }
     }
-}
-
-export component PopoverContent inherits VerticalLayout {
-    spacing: 8px;
-    @children
 }

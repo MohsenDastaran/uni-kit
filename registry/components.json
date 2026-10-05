@@ -12116,20 +12116,6 @@
           "target": "icons/zap.svg"
         }
       ],
-      "plot": [
-        {
-          "src": "crates/slint-component/ui/chart.slint",
-          "target": "chart.slint"
-        },
-        {
-          "src": "crates/slint-component/ui/plot.slint",
-          "target": "plot.slint"
-        },
-        {
-          "src": "crates/slint-component/ui/theme.slint",
-          "target": "theme.slint"
-        }
-      ],
       "popover": [
         {
           "src": "crates/slint-component/ui/popover.slint",

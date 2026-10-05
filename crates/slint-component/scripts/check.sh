@@ -5,13 +5,18 @@
 #
 #   scripts/check.sh              # every example
 #   scripts/check.sh button tabs  # the named examples
+#
+# This builds the checker in DEBUG on purpose. The Slint compiler guards some
+# assumptions with `debug_assert!`, and a release build compiles those out, so a
+# file could pass here and still panic the gallery's build script, which cargo
+# always builds in debug. A debug checker fails on exactly what that build does.
 set -uo pipefail
 
 crate_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
-checker="$crate_dir/check/target/release/slint-component-check"
+checker="$crate_dir/check/target/debug/slint-component-check"
 if [[ ! -x "$checker" ]]; then
   CARGO_TARGET_DIR="$crate_dir/check/target" \
-    cargo build --release --quiet --manifest-path "$crate_dir/check/Cargo.toml" || exit 1
+    cargo build --quiet --manifest-path "$crate_dir/check/Cargo.toml" || exit 1
 fi
 
 cd "$crate_dir/ui/examples"
