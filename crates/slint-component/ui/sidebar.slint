@@ -1,20 +1,47 @@
 import { Theme } from "theme.slint";
 import { Icon } from "icon.slint";
 import { Avatar, AvatarSize } from "avatar.slint";
+import { Scrollable } from "scrollable.slint";
 
-export struct SidebarItem {
+// One row in a group. Every field has to be written at each use, because Slint
+// structs carry no field defaults.
+export struct SidebarEntry {
     label: string,
     icon: string,
+    // A trailing figure, such as "1,234". Empty draws nothing.
+    suffix: string,
+    // A trailing icon, such as "chevron-right" or "bell". Empty draws nothing.
+    trailing-icon: string,
+    // Dimmed, for an entry that cannot be opened yet.
+    muted: bool,
+}
+
+// A titled run of entries. An empty title draws no heading.
+export struct SidebarGroup {
+    title: string,
+    entries: [SidebarEntry],
 }
 
 // An application sidebar. Mirrors GPUI Component's `Sidebar`.
+//
+// Selection is a group and an entry rather than one flat index: a flat index
+// would need the running total of every earlier group, and a Slint function has
+// no loop to compute it with.
 export component Sidebar {
-    in property <[SidebarItem]> items;
-    in-out property <int> selected: 0;
+    in property <[SidebarGroup]> groups;
+    in-out property <int> selected-group: 0;
+    in-out property <int> selected-entry: 0;
     in-out property <bool> collapsed;
-    callback changed(index: int);
+    // The header: a mark, a name, and a line under it.
+    in property <string> header-icon: "box";
+    in property <string> header-title: "Workspace";
+    in property <string> header-subtitle;
+    // The footer.
+    in property <string> footer-initials: "YK";
+    in property <string> footer-name: "You";
+    callback changed(group: int, entry: int);
 
-    width: collapsed ? 56px : (Theme.viewport < 480px ? 180px : 220px);
+    width: collapsed ? 56px : (Theme.viewport < 480px ? 180px : 232px);
     animate width { duration: 160ms; }
     horizontal-stretch: 0;
 
@@ -29,16 +56,43 @@ export component Sidebar {
         spacing: 4px;
 
         HorizontalLayout {
-            spacing: 8px;
-            if !collapsed: Text {
-                horizontal-stretch: 1;
-                text: "Workspace";
-                color: Theme.foreground;
-                font-size: Theme.font-size-sm;
-                font-weight: 600;
-                vertical-alignment: center;
+            spacing: 10px;
+            cross-axis-alignment: center;
+
+            Rectangle {
+                width: 28px;
+                height: 28px;
+                border-radius: Theme.radius-sm;
+                background: Theme.primary;
+
+                Icon {
+                    x: (parent.width - self.width) / 2;
+                    y: (parent.height - self.height) / 2;
+                    name: root.header-icon;
+                    size: 16px;
+                    color: Theme.primary-foreground;
+                }
             }
-            TouchArea {
+
+            if !collapsed: VerticalLayout {
+                horizontal-stretch: 1;
+                spacing: 1px;
+                Text {
+                    text: root.header-title;
+                    color: Theme.foreground;
+                    font-size: Theme.font-size-sm;
+                    font-weight: 600;
+                    overflow: elide;
+                }
+                if root.header-subtitle != "": Text {
+                    text: root.header-subtitle;
+                    color: Theme.muted-foreground;
+                    font-size: Theme.font-size-xs;
+                    overflow: elide;
+                }
+            }
+
+            if !collapsed: TouchArea {
                 clicked => { root.collapsed = !root.collapsed; }
                 Icon {
                     name: "panel-left";
@@ -48,43 +102,133 @@ export component Sidebar {
             }
         }
 
-        for item[index] in items: Rectangle {
-            border-radius: Theme.radius-md;
-            background: selected == index ? Theme.accent : (touch.has-hover ? Theme.accent.with-alpha(0.4) : transparent);
-            HorizontalLayout {
-                padding: 8px;
-                spacing: 10px;
-                Icon {
-                    name: item.icon;
-                    size: 16px;
-                    color: Theme.foreground;
-                }
-                if !collapsed: Text {
-                    text: item.label;
-                    color: Theme.foreground;
-                    font-size: Theme.font-size-sm;
-                    vertical-alignment: center;
-                }
-            }
-            touch := TouchArea {
-                clicked => {
-                    root.selected = index;
-                    root.changed(index);
+        // The groups scroll: a sidebar with many entries has more than the
+        // window can show, and the footer has to stay at the bottom.
+        Scrollable {
+            vertical-stretch: 1;
+
+            VerticalLayout {
+                padding-top: 4px;
+                spacing: 12px;
+
+                for group[gi] in root.groups: VerticalLayout {
+                    spacing: 2px;
+
+                    // The heading is a row, not a bare `Text`: padding only
+                    // applies to layout elements, so a `Text` would ignore it.
+                    // It goes with the labels when collapsed: a 32px rail has no
+                    // width to write "Platform" in.
+                    if !collapsed && group.title != "": HorizontalLayout {
+                        padding-left: 8px;
+                        padding-top: 4px;
+                        padding-bottom: 2px;
+                        Text {
+                            text: group.title;
+                            color: Theme.muted-foreground;
+                            font-size: Theme.font-size-xs;
+                            font-weight: 500;
+                        }
+                    }
+
+                    for entry[ei] in group.entries: Rectangle {
+                        border-radius: Theme.radius-md;
+                        opacity: entry.muted ? 0.45 : 1;
+                        background: root.selected-group == gi && root.selected-entry == ei
+                            ? Theme.accent
+                            : (touch.has-hover && !entry.muted ? Theme.accent.with-alpha(0.4) : transparent);
+
+                        HorizontalLayout {
+                            padding: 8px;
+                            spacing: 10px;
+                            cross-axis-alignment: center;
+                            alignment: collapsed ? center : start;
+
+                            Icon {
+                                name: entry.icon;
+                                size: 16px;
+                                color: Theme.foreground;
+                            }
+                            if !collapsed: Text {
+                                horizontal-stretch: 1;
+                                text: entry.label;
+                                color: Theme.foreground;
+                                font-size: Theme.font-size-sm;
+                                vertical-alignment: center;
+                                overflow: elide;
+                            }
+                            if !collapsed && entry.suffix != "": Text {
+                                text: entry.suffix;
+                                color: Theme.muted-foreground;
+                                font-size: Theme.font-size-xs;
+                                vertical-alignment: center;
+                            }
+                            if !collapsed && entry.trailing-icon != "": Icon {
+                                name: entry.trailing-icon;
+                                size: 14px;
+                                color: Theme.muted-foreground;
+                            }
+                        }
+
+                        touch := TouchArea {
+                            enabled: !entry.muted;
+                            clicked => {
+                                root.selected-group = gi;
+                                root.selected-entry = ei;
+                                root.changed(gi, ei);
+                            }
+                        }
+                    }
                 }
             }
         }
 
-        Rectangle { vertical-stretch: 1; }
+        Rectangle { height: 1px; background: Theme.border; }
 
         HorizontalLayout {
+            padding-top: 4px;
             spacing: 8px;
-            Avatar { initials: "YK"; size: AvatarSize.small; }
+            cross-axis-alignment: center;
+            Avatar { initials: root.footer-initials; size: AvatarSize.small; }
             if !collapsed: Text {
-                text: "You";
+                horizontal-stretch: 1;
+                text: root.footer-name;
                 color: Theme.foreground;
                 font-size: Theme.font-size-sm;
                 vertical-alignment: center;
+                overflow: elide;
             }
+            if !collapsed: Icon {
+                name: "chevrons-up-down";
+                size: 14px;
+                color: Theme.muted-foreground;
+            }
+        }
+    }
+
+    // Collapsed, the rail is 56px wide and the content box inside it is 32px,
+    // so the toggle cannot sit in the header row: it would be pushed out and
+    // clipped. It floats just outside the rail's top-right corner instead,
+    // where it is always reachable.
+    if collapsed: Rectangle {
+        x: root.width + 6px;
+        y: 12px;
+        width: 28px;
+        height: 28px;
+        border-radius: Theme.radius-sm;
+        border-width: 1px;
+        border-color: Theme.border;
+        background: Theme.popover;
+
+        Icon {
+            x: (parent.width - self.width) / 2;
+            y: (parent.height - self.height) / 2;
+            name: "panel-right";
+            size: 16px;
+            color: Theme.muted-foreground;
+        }
+
+        TouchArea {
+            clicked => { root.collapsed = false; }
         }
     }
 }

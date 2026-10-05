@@ -14,55 +14,157 @@ export component SidebarExample inherits VerticalLayout {
 
         Rectangle {
             width: 100%; height: 320px; border-width: 1px; border-color: Theme.border; border-radius: Theme.radius-lg; clip: true;
-            Sidebar {
+            HorizontalLayout {
+                width: 100%;
                 height: 100%;
-                items: [
-                    { label: "Home", icon: "house" },
-                    { label: "Inbox", icon: "inbox" },
-                    { label: "Settings", icon: "settings" },
-                ];
-                selected: 0;
+                // The section lays a fixed-width child out centred; a
+                // sidebar belongs against the left edge.
+                alignment: start;
+                Sidebar {
+                    height: 100%;
+                    groups: [
+                        {
+                            title: "",
+                            entries: [
+                                { label: "Home", icon: "house", suffix: "", trailing-icon: "", muted: false },
+                                { label: "Inbox", icon: "inbox", suffix: "", trailing-icon: "", muted: false },
+                                { label: "Settings", icon: "settings", suffix: "", trailing-icon: "", muted: false },
+                            ],
+                        },
+                    ];
+                    selected-entry: 0;
+                }
             }
         }
     }
 
-    // Collapsing keeps the icons and the header toggle; the labels and the
-    // footer name are what leave.
+    // Collapsing keeps the icons and the header toggle; the labels, the group
+    // headings, and the footer name are what leave.
     GroupBox {
         title: "Collapsible Sidebar";
         variant: GroupBoxVariant.outline;
 
         Rectangle {
             width: 100%; height: 320px; border-width: 1px; border-color: Theme.border; border-radius: Theme.radius-lg; clip: true;
-            Sidebar {
+            HorizontalLayout {
+                width: 100%;
                 height: 100%;
-                collapsed: true;
-                items: [
-                    { label: "Home", icon: "house" },
-                    { label: "Inbox", icon: "inbox" },
-                    { label: "Settings", icon: "settings" },
-                ];
-                selected: 1;
+                // The section lays a fixed-width child out centred; a
+                // sidebar belongs against the left edge.
+                alignment: start;
+                Sidebar {
+                    height: 100%;
+                    collapsed: true;
+                    groups: [
+                        {
+                            title: "Platform",
+                            entries: [
+                                { label: "Home", icon: "house", suffix: "", trailing-icon: "", muted: false },
+                                { label: "Inbox", icon: "inbox", suffix: "", trailing-icon: "", muted: false },
+                                { label: "Settings", icon: "settings", suffix: "", trailing-icon: "", muted: false },
+                            ],
+                        },
+                    ];
+                    selected-entry: 1;
+                }
             }
         }
     }
 
+    // Groups are what carry the headings; an entry is the same shape whether it
+    // sits in a titled group or an untitled one.
     GroupBox {
         title: "Multiple Groups";
         variant: GroupBoxVariant.outline;
 
         Rectangle {
-            width: 100%; height: 320px; border-width: 1px; border-color: Theme.border; border-radius: Theme.radius-lg; clip: true;
-            Sidebar {
+            width: 100%; height: 340px; border-width: 1px; border-color: Theme.border; border-radius: Theme.radius-lg; clip: true;
+            HorizontalLayout {
+                width: 100%;
                 height: 100%;
-                items: [
-                    { label: "Dashboard", icon: "layout-dashboard" },
-                    { label: "Reports", icon: "chart-column" },
-                    { label: "Customers", icon: "users" },
-                    { label: "Billing", icon: "database" },
-                    { label: "Support", icon: "message-circle" },
-                ];
-                selected: 2;
+                // The section lays a fixed-width child out centred; a
+                // sidebar belongs against the left edge.
+                alignment: start;
+                Sidebar {
+                    height: 100%;
+                    header-title: "Acme";
+                    groups: [
+                        {
+                            title: "Overview",
+                            entries: [
+                                { label: "Dashboard", icon: "layout-dashboard", suffix: "", trailing-icon: "", muted: false },
+                                { label: "Reports", icon: "chart-column", suffix: "", trailing-icon: "", muted: false },
+                            ],
+                        },
+                        {
+                            title: "Management",
+                            entries: [
+                                { label: "Customers", icon: "users", suffix: "1,234", trailing-icon: "", muted: false },
+                                { label: "Billing", icon: "database", suffix: "", trailing-icon: "", muted: false },
+                                { label: "Support", icon: "message-circle", suffix: "", trailing-icon: "", muted: false },
+                            ],
+                        },
+                    ];
+                    selected-group: 1;
+                    selected-entry: 0;
+                }
+            }
+        }
+    }
+
+    // The whole shape at once: a workspace header, two titled groups and an
+    // untitled one, entries with a figure, a trailing icon, or dimmed, and a
+    // named footer.
+    GroupBox {
+        title: "Admin Dashboard Sidebar";
+        variant: GroupBoxVariant.outline;
+
+        Rectangle {
+            width: 100%; height: 620px; border-width: 1px; border-color: Theme.border; border-radius: Theme.radius-lg; clip: true;
+            HorizontalLayout {
+                width: 100%;
+                height: 100%;
+                // The section lays a fixed-width child out centred; a
+                // sidebar belongs against the left edge.
+                alignment: start;
+                Sidebar {
+                    height: 100%;
+                    header-icon: "box";
+                    header-title: "Company Name";
+                    header-subtitle: "Enterprise";
+                    footer-initials: "JL";
+                    footer-name: "Jason Lee";
+
+                    groups: [
+                        {
+                            title: "Platform",
+                            entries: [
+                                { label: "Playground", icon: "house", suffix: "", trailing-icon: "", muted: false },
+                                { label: "History", icon: "clock", suffix: "On", trailing-icon: "", muted: false },
+                                { label: "Starred", icon: "star", suffix: "", trailing-icon: "", muted: false },
+                                { label: "Settings", icon: "settings", suffix: "", trailing-icon: "", muted: false },
+                            ],
+                        },
+                        {
+                            title: "",
+                            entries: [
+                                { label: "Models", icon: "layers", suffix: "", trailing-icon: "chevron-right", muted: false },
+                                { label: "Documentation", icon: "file-text", suffix: "", trailing-icon: "chevron-right", muted: false },
+                                { label: "Settings", icon: "settings", suffix: "", trailing-icon: "chevron-right", muted: false },
+                            ],
+                        },
+                        {
+                            title: "Projects",
+                            entries: [
+                                { label: "Design Engineering", icon: "frame", suffix: "", trailing-icon: "bell", muted: false },
+                                { label: "Sales and Marketing", icon: "chart-column", suffix: "%", trailing-icon: "", muted: false },
+                                { label: "Travel", icon: "globe", suffix: "", trailing-icon: "", muted: true },
+                            ],
+                        },
+                    ];
+                    selected-group: 0;
+                    selected-entry: 0;
+                }
             }
         }
     }

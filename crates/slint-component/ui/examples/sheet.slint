@@ -2,6 +2,7 @@ import { Theme } from "../theme.slint";
 import { GroupBox, GroupBoxVariant } from "section.slint";
 import { Sheet } from "../sheet.slint";
 import { Placement } from "../dialog.slint";
+import { Button } from "../button.slint";
 
 export component SheetExample inherits VerticalLayout {
     horizontal-stretch: 1;
@@ -9,73 +10,119 @@ export component SheetExample inherits VerticalLayout {
     spacing: 24px;
     alignment: start;
 
-    private property <bool> basic-open: true;
-    private property <bool> left-open: true;
-    private property <bool> bottom-open: true;
+    private property <bool> open;
+    private property <Placement> where: Placement.right;
 
-    // The sheet fills its container, so the frame below stands in for a window.
-    GroupBox {
-        title: "Basic Sheet";
-        variant: GroupBoxVariant.outline;
-
-        Rectangle {
-            width: 100%; height: 320px; border-width: 1px; border-color: Theme.border; border-radius: Theme.radius-lg; clip: true;
-            Rectangle { width: 100%; height: 100%; background: Theme.muted.with-alpha(0.3); }
-            Sheet {
-                width: 100%; height: 100%;
-                open <=> root.basic-open;
-                title: "Panel settings";
-                description: "Changes apply to this workspace only.";
-            }
-        }
+    pure function edge-name(placement: Placement) -> string {
+        return placement == Placement.left ? "From the left"
+            : placement == Placement.top ? "From the top"
+            : placement == Placement.bottom ? "From the bottom"
+            : "From the right";
     }
 
+    // One button per edge. They share the frame, so the panel slides in from
+    // whichever side the button names.
     GroupBox {
         title: "Sheet with Placement";
         variant: GroupBoxVariant.outline;
 
-        HorizontalLayout {
+        VerticalLayout {
             spacing: 12px;
-            Rectangle {
-                horizontal-stretch: 1; height: 240px; border-width: 1px; border-color: Theme.border; border-radius: Theme.radius-lg; clip: true;
-                Rectangle { width: 100%; height: 100%; background: Theme.muted.with-alpha(0.3); }
-                Sheet {
-                    width: 100%; height: 100%;
-                    open <=> root.left-open;
-                    placement: Placement.left;
-                    title: "From the left";
-                    description: "Navigation and filters.";
+
+            HorizontalLayout {
+                spacing: 8px;
+                alignment: start;
+                Button {
+                    text: "Left sheet";
+                    outline: true;
+                    clicked => {
+                        root.where = Placement.left;
+                        root.open = true;
+                    }
+                }
+                Button {
+                    text: "Top sheet";
+                    outline: true;
+                    clicked => {
+                        root.where = Placement.top;
+                        root.open = true;
+                    }
+                }
+                Button {
+                    text: "Right sheet";
+                    outline: true;
+                    clicked => {
+                        root.where = Placement.right;
+                        root.open = true;
+                    }
+                }
+                Button {
+                    text: "Bottom sheet";
+                    outline: true;
+                    clicked => {
+                        root.where = Placement.bottom;
+                        root.open = true;
+                    }
                 }
             }
+
+            // The frame stands in for the window: the sheet fills it, and it is
+            // clipped so the panel is hidden until it has slid in.
             Rectangle {
-                horizontal-stretch: 1; height: 240px; border-width: 1px; border-color: Theme.border; border-radius: Theme.radius-lg; clip: true;
+                width: 100%; height: 320px; border-width: 1px; border-color: Theme.border; border-radius: Theme.radius-lg; clip: true;
                 Rectangle { width: 100%; height: 100%; background: Theme.muted.with-alpha(0.3); }
+
                 Sheet {
                     width: 100%; height: 100%;
-                    open <=> root.bottom-open;
-                    placement: Placement.bottom;
-                    title: "From the bottom";
-                    description: "A console or a picker.";
+                    open <=> root.open;
+                    placement: root.where;
+                    title: root.edge-name(root.where);
+                    description: "Opened from the edge the button names.";
+                    Text {
+                        text: "Press a button above to slide the sheet in from another edge.";
+                        color: Theme.muted-foreground;
+                        font-size: Theme.font-size-xs;
+                        wrap: word-wrap;
+                    }
                 }
             }
         }
     }
 
+    // The body scrolls inside the panel, so the header and the footer stay put
+    // however long the list is.
     GroupBox {
-        title: "Sheet with Form Content";
+        title: "Sheet with List";
         variant: GroupBoxVariant.outline;
 
         Rectangle {
-            width: 100%; height: 320px; border-width: 1px; border-color: Theme.border; border-radius: Theme.radius-lg; clip: true;
+            width: 100%; height: 360px; border-width: 1px; border-color: Theme.border; border-radius: Theme.radius-lg; clip: true;
             Rectangle { width: 100%; height: 100%; background: Theme.muted.with-alpha(0.3); }
+
             Sheet {
                 width: 100%; height: 100%;
                 open: true;
-                title: "Invite a teammate";
-                description: "They receive an email with a join link.";
-                VerticalLayout {
-                    spacing: 8px;
-                    Text { text: "name@company.com"; color: Theme.muted-foreground; font-size: Theme.font-size-sm; }
+                size: 280px;
+                title: "File Explorer";
+                description: "40 files. The list scrolls; the header does not.";
+                footer-label: "Download all";
+
+                for i in 40: Rectangle {
+                    height: 30px;
+                    border-radius: Theme.radius-sm;
+                    background: Theme.muted.with-alpha(0.4);
+
+                    HorizontalLayout {
+                        padding-left: 10px;
+                        padding-right: 10px;
+                        cross-axis-alignment: center;
+                        Text {
+                            text: "report-\{i + 1}.pdf";
+                            color: Theme.foreground;
+                            font-size: Theme.font-size-xs;
+                            vertical-alignment: center;
+                        }
+                    }
                 }
             }
         }

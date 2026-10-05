@@ -19,12 +19,18 @@ export component Slider {
         : 16px;
     private property <float> span: max(0.0001, maximum - minimum);
     private property <float> fraction: clamp((value - minimum) / span, 0, 1);
+    // The distance the thumb's centre travels. Half a thumb is held back at
+    // each end so the whole thumb stays on the track at the extremes.
+    private property <length> usable: max(0px, root.width - thumb);
+    private property <length> centre: thumb / 2 + usable * fraction;
 
     function apply(at: length) {
-        if !enabled || root.width <= 0 {
+        if !enabled || usable <= 0 {
             return;
         }
-        let raw = minimum + (at / root.width) * span;
+        // The inverse of `centre`, so the thumb lands under the pointer.
+        let f = clamp((at - thumb / 2) / usable, 0, 1);
+        let raw = minimum + f * span;
         let stepped = step > 0 ? round(raw / step) * step : raw;
         let next = clamp(stepped, minimum, maximum);
         if next != root.value {
@@ -50,7 +56,11 @@ export component Slider {
         background: Theme.secondary;
 
         Rectangle {
-            width: parent.width * fraction;
+            // `x` has to be given: a child that sets `width` but not `x` is
+            // centred in its parent, which floated the fill away from the edge
+            // while the thumb stayed put.
+            x: 0;
+            width: centre;
             height: 100%;
             border-radius: parent.border-radius;
             background: Theme.primary;
@@ -58,7 +68,7 @@ export component Slider {
     }
 
     Rectangle {
-        x: parent.width * fraction - thumb / 2;
+        x: centre - thumb / 2;
         y: (parent.height - self.height) / 2;
         width: thumb;
         height: thumb;
@@ -69,7 +79,7 @@ export component Slider {
     }
 
     if focus.has-focus: Rectangle {
-        x: parent.width * fraction - thumb / 2 - 3px;
+        x: centre - thumb / 2 - 3px;
         y: (parent.height - thumb) / 2 - 3px;
         width: thumb + 6px;
         height: thumb + 6px;

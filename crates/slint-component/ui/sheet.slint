@@ -1,74 +1,162 @@
 import { Theme, ButtonVariant, ControlSize } from "theme.slint";
 import { Button } from "button.slint";
 import { Placement } from "dialog.slint";
+import { Scrollable } from "scrollable.slint";
 
-// A sliding panel. Mirrors GPUI Component's `Sheet`: overlay plus a panel
-// that enters from a side.
+// A panel that slides in from an edge of its container, following shadcn's
+// `Sheet`: an overlay, a header of title and description with a close control,
+// a body that scrolls, and an optional footer action.
+//
+// The panel travels off its own edge rather than being removed, so it is in
+// the tree for the whole of both transitions. Give it a container the size of
+// the window it stands in for.
 export component Sheet {
     in-out property <bool> open;
     in property <string> title;
     in property <string> description;
+    // The edge the panel comes from.
     in property <Placement> placement: Placement.right;
+    // The panel's width for a left or right sheet, its height for a top or
+    // bottom one. Zero keeps the default for that edge.
+    in property <length> size: 0px;
+    // Whether a click on the overlay closes the sheet.
+    in property <bool> overlay-closable: true;
+    // A footer action. Empty draws no footer.
+    in property <string> footer-label;
+    callback footer-clicked();
     callback closed();
 
     private property <bool> vertical: placement == Placement.top || placement == Placement.bottom;
-    visible: open;
+    private property <length> panel-width: vertical ? root.width
+        : (size > 0px ? size : min(root.width * 0.85, 360px));
+    private property <length> panel-height: vertical
+        ? (size > 0px ? size : min(root.height * 0.6, 300px))
+        : root.height;
+    // The distance the panel covers getting out of the way.
+    private property <length> travel: vertical ? panel-height : panel-width;
+    // Fully open the panel sits on its edge; closed it is a whole panel away,
+    // which puts it past the clip. Animating this is the whole transition, and
+    // it runs both ways because the panel never leaves the tree.
+    private property <length> offset: open ? 0px : travel;
+    animate offset { duration: 260ms; easing: ease-in-out; }
+
+    horizontal-stretch: 1;
+    vertical-stretch: 1;
+    // Present while opening -- `open` is already true, so the panel has
+    // somewhere to travel from -- and while closing, until it has fully left
+    // its edge. Only then does it drop out, so a closed sheet covers nothing
+    // and needs no clipping from its host to disappear.
+    visible: open || offset < travel;
+
+    // Fires once per close, whoever asked for it: the overlay, the close
+    // control, or a host assigning `open` itself.
+    //
+    // The writes below are inlined rather than gathered into a public
+    // `close()`. A public function that assigns a root property and is called
+    // from a callback makes the Slint generator panic with an internal error.
+    changed open => {
+        if !root.open {
+            root.closed();
+        }
+    }
 
     Rectangle {
         width: 100%;
         height: 100%;
         background: Theme.overlay;
+        opacity: open ? 1 : 0;
+        animate opacity { duration: 200ms; }
         TouchArea {
-            clicked => {
-                root.open = false;
-                root.closed();
-            }
+            enabled: root.open && root.overlay-closable;
+            clicked => { root.open = false; }
         }
     }
 
     Rectangle {
-        x: placement == Placement.right ? parent.width - self.width : 0px;
-        y: placement == Placement.bottom ? parent.height - self.height : 0px;
-        width: vertical || parent.width < 480px ? parent.width : min(parent.width * 0.8, 320px);
-        height: vertical ? min(parent.height * 0.55, 240px) : parent.height;
+        x: placement == Placement.right ? parent.width - self.width + offset
+            : placement == Placement.left ? -offset
+            : 0px;
+        y: placement == Placement.bottom ? parent.height - self.height + offset
+            : placement == Placement.top ? -offset
+            : 0px;
+        width: panel-width;
+        height: panel-height;
         background: Theme.popover;
         border-width: 1px;
         border-color: Theme.border;
+        drop-shadow-blur: 24px;
+        drop-shadow-offset-y: 8px;
+        drop-shadow-color: Theme.shadow;
 
         VerticalLayout {
-            padding: 20px;
-            spacing: 16px;
+            spacing: 0;
 
+            // The header, on its own so the rule below spans the full width.
             HorizontalLayout {
+                padding-left: 20px;
+                padding-right: 16px;
+                padding-top: 18px;
+                padding-bottom: 18px;
+                spacing: 12px;
+                cross-axis-alignment: start;
+
                 VerticalLayout {
                     horizontal-stretch: 1;
                     spacing: 4px;
                     if title != "": Text {
-                        text: title;
+                        text: root.title;
                         color: Theme.foreground;
                         font-size: Theme.font-size-lg;
                         font-weight: 600;
+                        wrap: word-wrap;
                     }
                     if description != "": Text {
-                        text: description;
+                        text: root.description;
                         color: Theme.muted-foreground;
                         font-size: Theme.font-size-sm;
                         wrap: word-wrap;
                     }
                 }
+
                 Button {
                     icon: "x";
                     variant: ButtonVariant.ghost;
                     size: ControlSize.xsmall;
                     accessible-label: "Close";
-                    clicked => {
-                        root.open = false;
-                        root.closed();
-                    }
+                    clicked => { root.open = false; }
                 }
             }
 
-            @children
+            Rectangle { height: 1px; background: Theme.border; }
+
+            // The body. It scrolls, so a sheet holding more than fits stays
+            // usable and the header stays where it is.
+            Scrollable {
+                vertical-stretch: 1;
+
+                VerticalLayout {
+                    padding: 20px;
+                    spacing: 8px;
+                    @children
+                }
+            }
+
+            // The footer, separated like the header and packed to the trailing
+            // edge.
+            if footer-label != "": Rectangle { height: 1px; background: Theme.border; }
+            if footer-label != "": HorizontalLayout {
+                padding-left: 20px;
+                padding-right: 20px;
+                padding-top: 14px;
+                padding-bottom: 14px;
+                spacing: 8px;
+                alignment: end;
+                Button {
+                    text: root.footer-label;
+                    variant: ButtonVariant.primary;
+                    clicked => { root.footer-clicked(); }
+                }
+            }
         }
     }
 }
