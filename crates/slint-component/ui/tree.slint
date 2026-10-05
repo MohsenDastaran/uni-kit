@@ -6,13 +6,24 @@ export struct TreeNode {
     depth: int,
     folder: bool,
     expanded: bool,
+    // Whether the row is painted at all. A flat model cannot work out for itself
+    // whether an ancestor is collapsed -- Slint has no loops in functions and no
+    // recursion, so the chain cannot be walked -- and the owner is the one that
+    // knows the shape of the tree.
+    hidden: bool,
 }
 
 // A file tree. Mirrors GPUI Component's `Tree` with a flattened model.
+//
+// The disclosure arrow owns a hit area of its own, over the row's, so clicking
+// it opens the folder instead of only selecting the row.
 export component Tree {
     in-out property <[TreeNode]> items;
     in-out property <int> selected: -1;
     callback changed(index: int);
+    // Fired after the arrow flips a folder, so the owner can show or hide the
+    // rows underneath it.
+    callback toggled(index: int);
 
     horizontal-stretch: 1;
     min-width: 0px;
@@ -20,13 +31,20 @@ export component Tree {
     VerticalLayout {
         spacing: 0;
         for item[index] in items: Rectangle {
+            // Both are needed. A hidden element is not painted, but a layout
+            // still reserves its space -- so a closed folder would leave a gap
+            // and the rows under it would not move up.
+            visible: !item.hidden;
+            height: item.hidden ? 0px : row.preferred-height;
             background: selected == index ? Theme.accent : (touch.has-hover ? Theme.accent.with-alpha(0.4) : transparent);
-            HorizontalLayout {
+
+            row := HorizontalLayout {
                 padding-left: 8px + item.depth * 16px;
                 padding-right: 8px;
                 padding-top: 4px;
                 padding-bottom: 4px;
                 spacing: 6px;
+                cross-axis-alignment: center;
 
                 if item.folder: Icon {
                     name: item.expanded ? "chevron-down" : "chevron-right";
@@ -47,10 +65,25 @@ export component Tree {
                     vertical-alignment: center;
                 }
             }
+
             touch := TouchArea {
                 clicked => {
                     root.selected = index;
                     root.changed(index);
+                }
+            }
+
+            // Declared after the row's so it takes the click, and sized to the
+            // chevron the layout above put at this indent.
+            if item.folder: TouchArea {
+                x: 8px + item.depth * 16px - 2px;
+                y: 0;
+                width: 16px;
+                height: 100%;
+
+                clicked => {
+                    root.items[index].expanded = !root.items[index].expanded;
+                    root.toggled(index);
                 }
             }
         }

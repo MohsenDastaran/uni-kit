@@ -1,10 +1,21 @@
 import { Theme, ControlSize } from "../theme.slint";
 import { GroupBox, GroupBoxVariant } from "section.slint";
 import { Textarea } from "../textarea.slint";
+import { Icon } from "../icon.slint";
 
 export component TextareaExample inherits VerticalLayout {
     horizontal-stretch: 1;
     private property <string> draft: "";
+    // Editable text belongs to the host: `text` is an `in-out` property, and a
+    // one-way literal on it is destroyed the first time the field is written
+    // to, which is what makes a typed value behave unpredictably.
+    in-out property <string> bio: "I build desktop tools in Rust and Slint.";
+    in-out property <string> notes: "Dock now keeps every toolbar chip on one baseline.";
+    in-out property <string> snippet: "missing closing brace";
+    // The references the message carries. Slint cannot join an array, so the
+    // readout below lists them as text rather than deriving it.
+    private property <[string]> references: ["src/main.rs", "tests/dock.rs", "Cargo.toml"];
+    in-out property <string> message: "Please review the dock changes before the release.";
     padding: Theme.page-padding(Theme.viewport);
     spacing: 24px;
     alignment: start;
@@ -15,12 +26,13 @@ export component TextareaExample inherits VerticalLayout {
 
         Textarea {
             placeholder: "Tell us about yourself…";
-            text: "I build desktop tools in Rust and Slint.";
+            text <=> root.bio;
         }
     }
 
-    // A taller frame for longer prose. `preferred-height` is what grows; the
-    // text still scrolls inside once it passes the frame.
+    // A taller frame for longer prose. `TextInput` cannot measure itself, so a
+    // Slint field does not grow with its content; this one is simply taller and
+    // the text scrolls inside it past that.
     GroupBox {
         title: "Auto-grow";
         variant: GroupBoxVariant.outline;
@@ -30,7 +42,7 @@ export component TextareaExample inherits VerticalLayout {
             Textarea {
                 height: 200px;
                 placeholder: "Release notes…";
-                text: "Dock now keeps every toolbar chip on one baseline.";
+                text <=> root.notes;
             }
         }
     }
@@ -79,8 +91,86 @@ export component TextareaExample inherits VerticalLayout {
             spacing: 12px;
             Textarea { placeholder: "Normal"; }
             Textarea { placeholder: "Read only"; read-only: true; text: "Generated from the manifest."; }
-            Textarea { placeholder: "Invalid"; invalid: true; text: "missing closing brace"; }
+            Textarea { placeholder: "Invalid"; invalid: true; text <=> root.snippet; }
             Textarea { placeholder: "Disabled"; enabled: false; }
+        }
+    }
+
+    // GPUI puts a token inline in the run of text. Slint's `Textarea` holds a
+    // plain string, so a reference cannot sit inside the text itself: the
+    // composer keeps the references as chips on the line the message starts on,
+    // and reports the two apart -- the text and the references -- which is what
+    // a send handler needs.
+    GroupBox {
+        title: "Atomic inline tokens";
+        variant: GroupBoxVariant.outline;
+
+        VerticalLayout {
+            spacing: 10px;
+            alignment: start;
+
+            // The frame is the composer's own, which is why the field inside it
+            // turns its appearance off.
+            Rectangle {
+                width: 100%;
+                height: 150px;
+                border-width: 1px;
+                border-color: Theme.input;
+                border-radius: Theme.radius-md;
+                background: Theme.background;
+
+                VerticalLayout {
+                    padding: 8px;
+                    spacing: 8px;
+
+                    HorizontalLayout {
+                        spacing: 6px;
+                        alignment: start;
+
+                        for token[i] in root.references: Rectangle {
+                            border-radius: Theme.radius-sm;
+                            background: Theme.secondary;
+
+                            HorizontalLayout {
+                                padding-left: 6px;
+                                padding-right: 6px;
+                                padding-top: 3px;
+                                padding-bottom: 3px;
+                                spacing: 4px;
+                                cross-axis-alignment: center;
+
+                                Icon { name: "file"; size: 12px; color: Theme.muted-foreground; }
+                                Text {
+                                    text: token;
+                                    color: Theme.foreground;
+                                    font-size: Theme.font-size-xs;
+                                    vertical-alignment: center;
+                                }
+                            }
+                        }
+                    }
+
+                    Textarea {
+                        appearance: false;
+                        horizontal-stretch: 1;
+                        placeholder: "Write a message…";
+                        text <=> root.message;
+                    }
+                }
+            }
+
+            Text {
+                text: "Text: " + (root.message == "" ? "(empty)" : root.message);
+                color: Theme.muted-foreground;
+                font-size: Theme.font-size-xs;
+                wrap: word-wrap;
+            }
+            Text {
+                text: "References: src/main.rs · tests/dock.rs · Cargo.toml";
+                color: Theme.muted-foreground;
+                font-size: Theme.font-size-xs;
+                wrap: word-wrap;
+            }
         }
     }
 }

@@ -26,6 +26,10 @@ export component Toolbar {
         // `ToolbarSpacer` could not push the trailing group to the edge. The
         // controls set `horizontal-stretch: 0`, so they keep their own width.
         spacing: root.spacing;
+        // GPUI's `.items_center()`. Without it a label sits at the top of the
+        // row while the buttons beside it stretch, so the icons do not line up
+        // with their words.
+        cross-axis-alignment: center;
         @children
     }
 }
@@ -39,6 +43,23 @@ export component ToolbarSeparator inherits Rectangle {
     height: bar-height;
     horizontal-stretch: 0;
     background: Theme.border;
+}
+
+// A run of related controls. GPUI's `ToolbarGroup` gives the run an accessible
+// name so assistive technology reads it as one unit; Slint has no toolbar role,
+// so the group takes `groupbox` and carries the label itself.
+//
+// Like GPUI's, a group cannot disable its children -- that API propagates through
+// React context there, which has no equivalent for arbitrary children here.
+export component ToolbarGroup inherits HorizontalLayout {
+    // The accessible name for the run, e.g. "History".
+    in property <string> label;
+
+    spacing: 4px;
+    horizontal-stretch: 0;
+    accessible-role: groupbox;
+    accessible-label: root.label;
+    @children
 }
 
 // A pushed group: everything after it sits at the trailing edge.

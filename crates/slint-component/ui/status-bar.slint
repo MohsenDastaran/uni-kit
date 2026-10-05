@@ -1,41 +1,135 @@
 import { Theme } from "theme.slint";
 import { Icon } from "icon.slint";
 
-// A window footer. Mirrors GPUI Component's `StatusBar`.
+// What a segment is. A `button` takes the hover affordance and reports clicks;
+// a `label` is read-only; a `separator` is the vertical rule between groups.
+export enum StatusItemKind {
+    label,
+    button,
+    separator,
+}
+
+export struct StatusItem {
+    kind: StatusItemKind,
+    icon: string,
+    label: string,
+}
+
+// One segment. Not exported: it exists to keep the three regions from repeating
+// the same markup.
+component Segment inherits Rectangle {
+    in property <StatusItem> item;
+    callback clicked();
+
+    private property <bool> interactive: item.kind == StatusItemKind.button;
+    private property <bool> readout: item.kind != StatusItemKind.separator;
+
+    // A `Rectangle` has no preferred size of its own, so `self.preferred-width`
+    // here would be zero and elide every label. The inner layout is what knows
+    // how wide the segment really is.
+    width: readout ? content.preferred-width : 1px;
+    height: 16px;
+    border-radius: Theme.radius-sm;
+    background: touch.has-hover && interactive ? Theme.accent : transparent;
+
+    if item.kind == StatusItemKind.separator: Rectangle {
+        x: (parent.width - self.width) / 2;
+        y: (parent.height - self.height) / 2;
+        width: 1px;
+        height: 12px;
+        background: Theme.border;
+    }
+
+    // Not guarded by an `if`: an id declared inside one is scoped to that
+    // block, so the width above could not reach it.
+    content := HorizontalLayout {
+        visible: readout;
+        padding-left: 6px;
+        padding-right: 6px;
+        spacing: 4px;
+        cross-axis-alignment: center;
+
+        if item.icon != "": Icon {
+            name: item.icon;
+            size: 12px;
+            color: item.kind == StatusItemKind.button ? Theme.foreground : Theme.muted-foreground;
+        }
+        if item.label != "": Text {
+            text: item.label;
+            color: item.kind == StatusItemKind.button ? Theme.foreground : Theme.muted-foreground;
+            font-size: Theme.font-size-xs;
+            vertical-alignment: center;
+            overflow: elide;
+        }
+    }
+
+    touch := TouchArea {
+        enabled: interactive;
+        clicked => { root.clicked(); }
+    }
+}
+
+// A window footer. Mirrors GPUI Component's `StatusBar`: a left region, a right
+// region, and a centre between them.
+//
+// GPUI appends to the left and right with repeated `left()` / `right()` calls;
+// here each region is a list. The centre is `@children`, so it holds anything a
+// progress bar or a custom readout needs.
+//
+// The centre is centred when both regions have something in them, end-aligned
+// when only the left does, and start-aligned otherwise -- which is what
+// `space-between` does with the groups that are present.
 export component StatusBar {
-    in property <string> left: "main";
-    in property <string> right: "UTF-8";
+    in property <[StatusItem]> left;
+    in property <[StatusItem]> right;
+    // Overridable, the way `Styled` lets a GPUI `StatusBar` restyle itself.
+    in property <color> background: Theme.sidebar;
+    in property <color> border-color: Theme.border;
+    callback left-clicked(index: int);
+    callback right-clicked(index: int);
 
     height: 24px;
     horizontal-stretch: 1;
 
     Rectangle {
-        background: Theme.sidebar;
+        background: root.background;
         border-width: 1px;
-        border-color: Theme.border;
+        border-color: root.border-color;
     }
 
     HorizontalLayout {
         padding-left: 8px;
         padding-right: 8px;
-        spacing: 12px;
-        // The bar is taller than its leading glyph, and a horizontal layout
-        // puts a fixed-size child against the top edge without this.
+        spacing: 8px;
+        alignment: space-between;
         cross-axis-alignment: center;
 
-        Icon { name: "code"; size: 12px; color: Theme.muted-foreground; }
-        Text {
-            horizontal-stretch: 1;
-            text: left;
-            color: Theme.muted-foreground;
-            font-size: Theme.font-size-xs;
-            vertical-alignment: center;
+        HorizontalLayout {
+            spacing: 6px;
+            cross-axis-alignment: center;
+            for item[i] in root.left: Segment {
+                item: item;
+                clicked => { root.left-clicked(i); }
+            }
         }
-        Text {
-            text: right;
-            color: Theme.muted-foreground;
-            font-size: Theme.font-size-xs;
-            vertical-alignment: center;
+
+        // No stretch: `space-between` on the outer layout is what places this
+        // region, so it lands centred when both sides are present, against the
+        // right edge with only a left region, and against the left otherwise.
+        HorizontalLayout {
+            spacing: 6px;
+            cross-axis-alignment: center;
+            alignment: center;
+            @children
+        }
+
+        HorizontalLayout {
+            spacing: 6px;
+            cross-axis-alignment: center;
+            for item[i] in root.right: Segment {
+                item: item;
+                clicked => { root.right-clicked(i); }
+            }
         }
     }
 }

@@ -3,9 +3,9 @@ import { Theme, ControlSize } from "theme.slint";
 export enum TimePrecision { hours_minutes, hours_minutes_seconds }
 export enum HourCycle { h24, h12 }
 
-// A segmented time-of-day field. Mirrors GPUI Component's `TimeField`: each
-// part is its own field, so the value keeps its width while a digit is typed,
-// and an optional seconds segment and a 12-hour clock change the shape.
+// A segmented time-of-day field. Mirrors GPUI Component's `TimeField`: the
+// frame is one rounded surface, each part sits in a segment of its own, and the
+// segment being edited is filled with the selection colour.
 export component TimeField {
     in-out property <int> hour: 0;
     in-out property <int> minute: 0;
@@ -17,10 +17,16 @@ export component TimeField {
     in property <ControlSize> size: ControlSize.medium;
     callback changed(hour: int, minute: int, second: int);
 
-    private property <bool> focused: hour-field.has-focus || minute-field.has-focus || seconds-field.has-focus;
-    private property <color> edge: invalid ? Theme.danger : focused ? Theme.ring : Theme.input;
     private property <bool> with-seconds: precision == TimePrecision.hours_minutes_seconds;
+    private property <bool> with-period: hour-cycle == HourCycle.h12;
     private property <bool> afternoon: hour >= 12;
+    private property <bool> focused: hour-field.has-focus || minute-field.has-focus
+        || (with-seconds && seconds-field.has-focus);
+    private property <color> edge: invalid ? Theme.danger : focused ? Theme.ring : Theme.input;
+    // Two tabular digits plus the `px_0p5` GPUI gives each segment.
+    private property <length> segment: 22px;
+    // The fill the GPUI field puts behind the segment it is editing.
+    private property <color> active: enabled ? Theme.selection : transparent;
 
     pure function pad(n: int) -> string {
         n < 10 ? "0\{n}" : "\{n}"
@@ -35,35 +41,71 @@ export component TimeField {
     horizontal-stretch: 0;
     // An explicit width, not a preferred one: inside a stretching layout a
     // preferred width is ignored and the frame would span the row.
-    width: with-seconds ? 116px : 92px;
+    width: 2 * segment + 18px
+        + (with-seconds ? segment + 6px : 0px)
+        + (with-period ? 26px : 0px);
 
     Rectangle {
         border-radius: Theme.radius-md;
         border-width: 1px;
         border-color: edge;
-        background: enabled ? Theme.background : Theme.muted;
+        background: enabled ? Theme.input-background : Theme.muted;
     }
 
+    // `px_1` in the GPUI field: the segments sit just inside the frame.
     HorizontalLayout {
-        padding-left: 10px;
-        padding-right: 10px;
-        spacing: 2px;
+        padding-left: 4px;
+        padding-right: 4px;
+        spacing: 1px;
         alignment: center;
         opacity: enabled ? 1 : 0.5;
 
-        hour-field := TextInput {
-            width: 22px;
-            horizontal-alignment: center;
-            text: root.pad(root.display-hour);
-            enabled: root.enabled;
-            single-line: true;
-            color: Theme.foreground;
-            font-family: Theme.mono-font-family;
-            font-size: Theme.control-font-size(root.size);
-            selection-background-color: Theme.selection.with-alpha(0.35);
-            edited => {
-                root.hour = max(0, min(23, self.text.to-float()));
-                root.changed(root.hour, root.minute, root.second);
+        Rectangle {
+            width: segment;
+            border-radius: Theme.radius-sm;
+            background: hour-field.has-focus ? active : transparent;
+
+            hour-field := TextInput {
+                x: 0;
+                y: 0;
+                width: 100%;
+                height: 100%;
+                horizontal-alignment: center;
+                vertical-alignment: center;
+                text: root.pad(root.display-hour);
+                enabled: root.enabled;
+                single-line: true;
+                color: Theme.foreground;
+                font-family: Theme.mono-font-family;
+                font-size: Theme.control-font-size(root.size);
+                selection-background-color: Theme.selection.with-alpha(0.35);
+                // A digit typed into a full segment starts it over, the way a
+                // spinner replaces its value. Without this the segment is full
+                // of its own padded value and every keystroke would be refused.
+                key-pressed(event) => {
+                    if event.text.is-float() && self.text.character-count >= 2 {
+                        self.text = "";
+                    }
+                    reject
+                }
+                // A segment holds two digits. A string cannot be cut, so a third
+                // is refused and the field is put back to the value it had. Only
+                // a paste reaches here now.
+                edited => {
+                    if self.text.character-count > 2 {
+                        self.text = root.pad(root.display-hour);
+                    } else {
+                        root.hour = max(0, min(23, self.text.to-float()));
+                        root.changed(root.hour, root.minute, root.second);
+                    }
+                }
+                // Pad again once the segment is left, so it reads `05` rather
+                // than the `5` that was typed into it.
+                changed has-focus => {
+                    if !self.has-focus {
+                        self.text = root.pad(root.display-hour);
+                    }
+                }
             }
         }
 
@@ -74,19 +116,52 @@ export component TimeField {
             vertical-alignment: center;
         }
 
-        minute-field := TextInput {
-            width: 22px;
-            horizontal-alignment: center;
-            text: root.pad(root.minute);
-            enabled: root.enabled;
-            single-line: true;
-            color: Theme.foreground;
-            font-family: Theme.mono-font-family;
-            font-size: Theme.control-font-size(root.size);
-            selection-background-color: Theme.selection.with-alpha(0.35);
-            edited => {
-                root.minute = max(0, min(59, self.text.to-float()));
-                root.changed(root.hour, root.minute, root.second);
+        Rectangle {
+            width: segment;
+            border-radius: Theme.radius-sm;
+            background: minute-field.has-focus ? active : transparent;
+
+            minute-field := TextInput {
+                x: 0;
+                y: 0;
+                width: 100%;
+                height: 100%;
+                horizontal-alignment: center;
+                vertical-alignment: center;
+                text: root.pad(root.minute);
+                enabled: root.enabled;
+                single-line: true;
+                color: Theme.foreground;
+                font-family: Theme.mono-font-family;
+                font-size: Theme.control-font-size(root.size);
+                selection-background-color: Theme.selection.with-alpha(0.35);
+                // A digit typed into a full segment starts it over, the way a
+                // spinner replaces its value. Without this the segment is full
+                // of its own padded value and every keystroke would be refused.
+                key-pressed(event) => {
+                    if event.text.is-float() && self.text.character-count >= 2 {
+                        self.text = "";
+                    }
+                    reject
+                }
+                // A segment holds two digits. A string cannot be cut, so a third
+                // is refused and the field is put back to the value it had. Only
+                // a paste reaches here now.
+                edited => {
+                    if self.text.character-count > 2 {
+                        self.text = root.pad(root.minute);
+                    } else {
+                        root.minute = max(0, min(59, self.text.to-float()));
+                        root.changed(root.hour, root.minute, root.second);
+                    }
+                }
+                // Pad again once the segment is left, so it reads `05` rather
+                // than the `5` that was typed into it.
+                changed has-focus => {
+                    if !self.has-focus {
+                        self.text = root.pad(root.minute);
+                    }
+                }
             }
         }
 
@@ -99,29 +174,67 @@ export component TimeField {
             vertical-alignment: center;
         }
 
-        seconds-field := TextInput {
+        Rectangle {
             visible: root.with-seconds;
-            width: 22px;
-            horizontal-alignment: center;
-            text: root.pad(root.second);
-            enabled: root.enabled;
-            single-line: true;
-            color: Theme.foreground;
-            font-family: Theme.mono-font-family;
-            font-size: Theme.control-font-size(root.size);
-            selection-background-color: Theme.selection.with-alpha(0.35);
-            edited => {
-                root.second = max(0, min(59, self.text.to-float()));
-                root.changed(root.hour, root.minute, root.second);
+            width: segment;
+            border-radius: Theme.radius-sm;
+            background: seconds-field.has-focus ? active : transparent;
+
+            seconds-field := TextInput {
+                x: 0;
+                y: 0;
+                width: 100%;
+                height: 100%;
+                horizontal-alignment: center;
+                vertical-alignment: center;
+                text: root.pad(root.second);
+                enabled: root.enabled;
+                single-line: true;
+                color: Theme.foreground;
+                font-family: Theme.mono-font-family;
+                font-size: Theme.control-font-size(root.size);
+                selection-background-color: Theme.selection.with-alpha(0.35);
+                // A digit typed into a full segment starts it over, the way a
+                // spinner replaces its value. Without this the segment is full
+                // of its own padded value and every keystroke would be refused.
+                key-pressed(event) => {
+                    if event.text.is-float() && self.text.character-count >= 2 {
+                        self.text = "";
+                    }
+                    reject
+                }
+                // A segment holds two digits. A string cannot be cut, so a third
+                // is refused and the field is put back to the value it had. Only
+                // a paste reaches here now.
+                edited => {
+                    if self.text.character-count > 2 {
+                        self.text = root.pad(root.second);
+                    } else {
+                        root.second = max(0, min(59, self.text.to-float()));
+                        root.changed(root.hour, root.minute, root.second);
+                    }
+                }
+                // Pad again once the segment is left, so it reads `05` rather
+                // than the `5` that was typed into it.
+                changed has-focus => {
+                    if !self.has-focus {
+                        self.text = root.pad(root.second);
+                    }
+                }
             }
         }
 
-        if hour-cycle == HourCycle.h12: Text {
-            text: root.afternoon ? "PM" : "AM";
-            color: Theme.muted-foreground;
-            font-size: Theme.font-size-xs;
-            font-weight: 600;
-            vertical-alignment: center;
+        // `ml_1` in GPUI: the period is set apart from the last segment.
+        if hour-cycle == HourCycle.h12: HorizontalLayout {
+            padding-left: 4px;
+            alignment: center;
+            Text {
+                text: root.afternoon ? "PM" : "AM";
+                color: Theme.muted-foreground;
+                font-size: Theme.font-size-xs;
+                font-weight: 600;
+                vertical-alignment: center;
+            }
         }
     }
 }

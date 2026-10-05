@@ -27,21 +27,21 @@ export component StepperExample inherits VerticalLayout {
                 { label: "Finish", icon: "info" },
             ];
         }
-        GridLayout {
+        // One row, not a wrap grid. The wrap scheme is for cards that reflow;
+        // here a label that stretches and two buttons that do not fit at any
+        // width, and wrapping them only ever split the buttons across rows.
+        HorizontalLayout {
             spacing: 8px;
+            cross-axis-alignment: center;
+
             Text {
-                row: Theme.wrap-row(0, root.wrap-cols);
-                col: Theme.wrap-col(0, root.wrap-cols);
+                horizontal-stretch: 1;
                 text: "Step \{root.order-step + 1} of \{order.items.length}";
                 color: Theme.muted-foreground;
                 font-size: Theme.font-size-sm;
                 vertical-alignment: center;
-                horizontal-stretch: 1;
             }
             Button {
-                row: Theme.wrap-row(1, root.wrap-cols);
-                col: Theme.wrap-col(1, root.wrap-cols);
-                horizontal-stretch: 0;
                 text: "Previous";
                 icon: "chevron-left";
                 enabled: root.order-step > 0;
@@ -50,9 +50,6 @@ export component StepperExample inherits VerticalLayout {
                 }
             }
             Button {
-                row: Theme.wrap-row(2, root.wrap-cols);
-                col: Theme.wrap-col(2, root.wrap-cols);
-                horizontal-stretch: 0;
                 text: root.order-step == order.items.length - 1 ? "Done" : "Next";
                 suffix-icon: root.order-step == order.items.length - 1 ? "" : "chevron-right";
                 variant: ButtonVariant.primary;
@@ -60,11 +57,6 @@ export component StepperExample inherits VerticalLayout {
                 clicked => {
                     root.order-step += 1;
                 }
-            }
-            Rectangle {
-                row: 0;
-                col: root.wrap-cols;
-                horizontal-stretch: 1;
             }
         }
     }

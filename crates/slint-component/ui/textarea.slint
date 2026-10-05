@@ -9,13 +9,22 @@ export component Textarea {
     in property <bool> read-only;
     in property <bool> invalid;
     in property <ControlSize> size: ControlSize.medium;
+    // Whether the field draws its own frame. A composer that wraps the field in
+    // a frame of its own turns this off, so the two borders do not stack -- the
+    // job `InputGroup` does for GPUI.
+    in property <bool> appearance: true;
     callback edited(text: string);
 
     private property <bool> focused: field.has-focus && enabled;
+    // `TextInput` lays its content out in full and exposes no line height, so
+    // the field is slid by this much to bring the caret back into the box.
+    private property <length> line: Theme.input-font-size(size) * 1.45;
     private property <color> edge: invalid ? Theme.danger : focused ? Theme.ring : Theme.input;
 
-    min-height: Theme.viewport < 480px ? 72px : 80px;
-    preferred-height: Theme.viewport < 480px ? 96px : 120px;
+    // A definite frame. Without one the child layout below is not constrained to
+    // the component's height: it lays out at its content height and spills past
+    // the border, so a long text escapes the box instead of scrolling inside it.
+    height: Theme.control-height(size) * 3;
     min-width: 0px;
     preferred-width: 100%;
     horizontal-stretch: 1;
@@ -23,12 +32,12 @@ export component Textarea {
 
     Rectangle {
         border-radius: Theme.radius-md;
-        border-width: 1px;
+        border-width: root.appearance ? 1px : 0px;
         border-color: edge;
-        background: enabled ? Theme.background : Theme.muted;
+        background: root.appearance ? (enabled ? Theme.background : Theme.muted) : transparent;
     }
 
-    if focused: Rectangle {
+    if root.appearance && focused: Rectangle {
         x: -2px;
         y: -2px;
         width: parent.width + 4px;
@@ -39,12 +48,19 @@ export component Textarea {
     }
 
     VerticalLayout {
+        // Pinned to the frame, so the clipping box inside it is the frame and the
+        // text scrolls rather than growing the layout.
+        height: 100%;
         padding: Theme.input-padding-x(size);
 
+        // A definite height, not `vertical-stretch`: a layout gives a child at
+        // least its preferred height, and this box's preferred height is the
+        // text's, so stretching left it free to grow past the frame and the clip
+        // had nothing to clip against.
         Rectangle {
+            height: root.height - 2 * Theme.input-padding-x(size);
             clip: true;
             horizontal-stretch: 1;
-            vertical-stretch: 1;
 
             Text {
                 width: 100%;
@@ -56,8 +72,15 @@ export component Textarea {
 
             field := TextInput {
                 width: 100%;
-                height: 100%;
-                text <=> root.text;
+                // The whole text, not the box. `TextInput` clips its own
+                // content, so it has to be laid out at full height for the box
+                // above to be able to scroll it.
+                // Read, then write back from `edited`. A two-way `<=>` here makes
+                // every keystroke write the property the host also holds, which
+                // re-enters the field while it is mid-edit; a single-direction
+                // read with one explicit write cannot loop.
+                height: self.preferred-height;
+                text: root.text;
                 enabled: root.enabled;
                 read-only: root.read-only;
                 single-line: false;
@@ -66,7 +89,16 @@ export component Textarea {
                 font-size: Theme.input-font-size(size);
                 selection-background-color: Theme.selection.with-alpha(0.35);
                 selection-foreground-color: Theme.foreground;
+                // Slint's documented way to keep the caret on screen.
+                cursor-position-changed(position) => {
+                    if position.y + self.y < 0 {
+                        self.y = -position.y;
+                    } else if position.y + self.y + root.line > parent.height {
+                        self.y = parent.height - position.y - root.line;
+                    }
+                }
                 edited => {
+                    root.text = self.text;
                     root.edited(self.text);
                 }
             }

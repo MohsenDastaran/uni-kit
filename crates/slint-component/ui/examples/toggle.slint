@@ -1,10 +1,16 @@
 import { Theme, ControlSize } from "../theme.slint";
 import { GroupBox, GroupBoxVariant } from "section.slint";
-import { Toggle, ToggleGroup } from "../toggle.slint";
+import { Toggle, ToggleGroup, ToggleVariant } from "../toggle.slint";
+import { Button } from "../button.slint";
 
 export component ToggleExample inherits VerticalLayout {
     horizontal-stretch: 1;
     private property <int> wrap-cols: Theme.wrap-columns(Theme.viewport);
+    private property <string> last: "nothing yet";
+    // Host state, so the toggle and a button elsewhere read the same value.
+    in-out property <bool> bold;
+    in-out property <bool> italic: true;
+    in-out property <bool> underline;
     padding: Theme.page-padding(Theme.viewport);
     spacing: 24px;
     alignment: start;
@@ -40,6 +46,7 @@ export component ToggleExample inherits VerticalLayout {
             }
         }
     }
+
     GroupBox {
         title: "Group";
         variant: GroupBoxVariant.outline;
@@ -49,6 +56,53 @@ export component ToggleExample inherits VerticalLayout {
                 { text: "Week", icon: "" },
                 { text: "Month", icon: "" }
             ];
+        }
+    }
+
+    // The host owns the value, so anything else on the page can move it too.
+    GroupBox {
+        title: "Controlled Toggle";
+        variant: GroupBoxVariant.outline;
+
+        VerticalLayout {
+            spacing: 10px;
+            alignment: start;
+
+            HorizontalLayout {
+                spacing: 8px;
+                alignment: start;
+                Toggle {
+                    text: "Bold";
+                    icon: "bold";
+                    selected <=> root.bold;
+                }
+                Button {
+                    text: root.bold ? "Turn off" : "Turn on";
+                    clicked => { root.bold = !root.bold; }
+                }
+            }
+
+            Text {
+                text: "Bold is " + (root.bold ? "on" : "off");
+                color: Theme.muted-foreground;
+                font-size: Theme.font-size-xs;
+            }
+        }
+    }
+
+    // `outline` keeps a frame at rest, which is what a toolbar wants; `default`
+    // stays flat until it is hovered or selected.
+    GroupBox {
+        title: "Toggle Variants";
+        variant: GroupBoxVariant.outline;
+
+        HorizontalLayout {
+            spacing: 8px;
+            alignment: start;
+            Toggle { text: "Default"; }
+            Toggle { text: "Default on"; selected: true; }
+            Toggle { text: "Outline"; variant: ToggleVariant.outline; }
+            Toggle { text: "Outline on"; variant: ToggleVariant.outline; selected: true; }
         }
     }
 
@@ -68,6 +122,113 @@ export component ToggleExample inherits VerticalLayout {
             text: "Large";
             size: ControlSize.large;
             selected: true;
+        }
+    }
+
+    GroupBox {
+        title: "Toggle Group Variants and Sizes";
+        variant: GroupBoxVariant.outline;
+
+        VerticalLayout {
+            spacing: 12px;
+            alignment: start;
+            ToggleGroup {
+                size: ControlSize.small;
+                options: [
+                    { text: "Day", icon: "" },
+                    { text: "Week", icon: "" },
+                    { text: "Month", icon: "" }
+                ];
+            }
+            ToggleGroup {
+                options: [
+                    { text: "Day", icon: "" },
+                    { text: "Week", icon: "" },
+                    { text: "Month", icon: "" }
+                ];
+            }
+            ToggleGroup {
+                size: ControlSize.large;
+                options: [
+                    { text: "Day", icon: "" },
+                    { text: "Week", icon: "" },
+                    { text: "Month", icon: "" }
+                ];
+            }
+        }
+    }
+
+    // A row of icon toggles on a toolbar strip, which is what the outlined
+    // variant is for.
+    GroupBox {
+        title: "Toolbar with Toggle Buttons";
+        variant: GroupBoxVariant.outline;
+
+        Rectangle {
+            width: 100%; height: 44px; border-width: 1px; border-color: Theme.border; border-radius: Theme.radius-md;
+
+            HorizontalLayout {
+                padding: 6px;
+                spacing: 4px;
+                alignment: start;
+
+                Toggle {
+                    icon: "bold";
+                    variant: ToggleVariant.outline;
+                    selected <=> root.bold;
+                }
+                Toggle {
+                    icon: "italic";
+                    variant: ToggleVariant.outline;
+                    selected <=> root.italic;
+                }
+                Toggle {
+                    icon: "underline";
+                    variant: ToggleVariant.outline;
+                    selected <=> root.underline;
+                }
+
+                Rectangle { width: 1px; height: 20px; background: Theme.border; }
+
+                Toggle {
+                    text: "Comment";
+                    icon: "message-circle";
+                    variant: ToggleVariant.outline;
+                }
+            }
+        }
+    }
+
+    // `changed` reports the state it moved to, so a host can record or forward
+    // it without reading the property back.
+    GroupBox {
+        title: "Individual Toggle Events";
+        variant: GroupBoxVariant.outline;
+
+        VerticalLayout {
+            spacing: 10px;
+            alignment: start;
+
+            HorizontalLayout {
+                spacing: 8px;
+                alignment: start;
+                Toggle {
+                    text: "Bold";
+                    icon: "bold";
+                    changed(selected) => { root.last = selected ? "Bold on" : "Bold off"; }
+                }
+                Toggle {
+                    text: "Italic";
+                    icon: "italic";
+                    changed(selected) => { root.last = selected ? "Italic on" : "Italic off"; }
+                }
+            }
+
+            Text {
+                text: "Last change: " + root.last;
+                color: Theme.muted-foreground;
+                font-size: Theme.font-size-xs;
+            }
         }
     }
 

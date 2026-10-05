@@ -14,7 +14,7 @@ export component TimeFieldExample inherits VerticalLayout {
 
         VerticalLayout {
             spacing: 12px;
-            alignment: start;
+            cross-axis-alignment: center;
             TimeField { hour: 9; minute: 30; }
             TimeField { hour: 0; minute: 0; }
             TimeField { hour: 23; minute: 59; }
@@ -25,11 +25,14 @@ export component TimeFieldExample inherits VerticalLayout {
         title: "With Seconds";
         variant: GroupBoxVariant.outline;
 
-        TimeField {
-            hour: 14;
-            minute: 5;
-            second: 42;
-            precision: TimePrecision.hours_minutes_seconds;
+        HorizontalLayout {
+            alignment: center;
+            TimeField {
+                hour: 14;
+                minute: 5;
+                second: 42;
+                precision: TimePrecision.hours_minutes_seconds;
+            }
         }
     }
 
@@ -39,7 +42,7 @@ export component TimeFieldExample inherits VerticalLayout {
 
         VerticalLayout {
             spacing: 12px;
-            alignment: start;
+            cross-axis-alignment: center;
             TimeField { hour: 9; minute: 30; hour-cycle: HourCycle.h12; }
             TimeField { hour: 14; minute: 5; hour-cycle: HourCycle.h12; }
             TimeField { hour: 0; minute: 0; hour-cycle: HourCycle.h12; }

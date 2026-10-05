@@ -1,6 +1,8 @@
 import { Theme } from "../theme.slint";
 import { GroupBox, GroupBoxVariant } from "section.slint";
-import { TextView, TextHeading, TextParagraph, TextCode } from "../text-view.slint";
+import {
+    TextView, TextHeading, TextParagraph, TextQuote, TextCodeBlock, TextDivider, TextClamp,
+} from "../text-view.slint";
 
 export component TextViewExample inherits VerticalLayout {
     horizontal-stretch: 1;
@@ -8,37 +10,121 @@ export component TextViewExample inherits VerticalLayout {
     spacing: 24px;
     alignment: start;
 
-    // The three parts a rendered document is built from: a heading, body text,
-    // and an inline code run.
+    private property <string> opened: "nothing yet";
+    private property <string> copied-what: "nothing yet";
+
+    // A whole document: headings, body text with inline markup, a fenced code
+    // block, a list, a quote and a rule.
     GroupBox {
         title: "Markdown";
         variant: GroupBoxVariant.outline;
 
         TextView {
-            TextHeading { text: "Getting started"; }
-            TextParagraph { text: "Copy a component into your project and import it from its .slint file."; }
-            TextCode { text: "import { Button } from \"button.slint\";"; }
+            TextHeading { level: 1; text: "Getting started"; }
+            TextParagraph {
+                text: @markdown("Copy a component into your project and import it from its `.slint` file. Every component reads the `Theme` global, so it follows whichever theme the app sets.");
+            }
+
             TextHeading { level: 3; text: "Install"; }
-            TextParagraph { text: "The CLI copies the files listed in the component manifest into ui/components."; }
+            TextCodeBlock {
+                language: "shell";
+                code: "bunx @dastaran/uni-kit@latest add slint button";
+                copied => { root.copied-what = "the install command"; }
+            }
+
+            TextParagraph {
+                text: @markdown("The CLI writes the files listed in the manifest into `ui/components`. Import them by file name:\n\n- `button.slint` — a themed button\n- `input.slint` — a single-line text field\n- `dialog.slint` — a modal panel\n\nOr in order:\n\n1. Run the command\n2. Import the file\n3. Use the component");
+            }
+
+            TextQuote {
+                text: @markdown("Components read `Theme` and nothing else, so a palette change reaches every one of them at once.");
+            }
+
+            TextDivider { }
+
+            TextParagraph {
+                text: @markdown("Read the [component catalog](https://gpui-kit.com/components) for the full list.");
+            }
         }
     }
 
-    // A paragraph can be cut to a number of lines, which is how a transcript
-    // preview keeps rows even.
+    // Slint's markdown also takes a couple of HTML tags: `<u>` underlines and
+    // `<font color>` colours a run.
+    GroupBox {
+        title: "HTML";
+        variant: GroupBoxVariant.outline;
+
+        TextView {
+            TextParagraph {
+                text: @markdown("An <u>underlined</u> run, a <font color=\"#f97316\">coloured</font> one, and an <u><font color=\"#22c55e\">both at once</font></u>.");
+            }
+        }
+    }
+
+    // A bounded preview. The box holds whole lines, so a transcript row stays
+    // even whatever the text does.
     GroupBox {
         title: "Clamp to a number of lines";
         variant: GroupBoxVariant.outline;
 
-        VerticalLayout {
-            spacing: 12px;
+        TextView {
             alignment: start;
-            TextParagraph {
-                height: 44px;
-                text: "Dock builds application workspaces from draggable tab groups, nested splits, and collapsible left, right, and bottom docks. It is the layout foundation used by Longbridge in production, not an isolated UI demo.";
-                overflow: elide;
+            TextClamp {
+                lines: 2;
+                text: "Dock builds application workspaces from draggable tab groups, nested splits, and collapsible left, right, and bottom docks. It is the layout foundation Longbridge uses in production rather than an isolated UI demo, and it reconciles a pure-data layout tree into live panels on every frame.";
             }
             TextParagraph {
-                text: "The same paragraph, unclamped.";
+                text: @markdown("The same paragraph, unclamped:");
+            }
+            TextParagraph {
+                text: @markdown("Dock builds application workspaces from draggable tab groups, nested splits, and collapsible left, right, and bottom docks. It is the layout foundation Longbridge uses in production rather than an isolated UI demo, and it reconciles a pure-data layout tree into live panels on every frame.");
+            }
+        }
+    }
+
+    // A link in the text reports the URL it was clicked with, so a host can
+    // route it wherever it wants.
+    GroupBox {
+        title: "Link Click Handling";
+        variant: GroupBoxVariant.outline;
+
+        VerticalLayout {
+            spacing: 10px;
+            alignment: start;
+
+            TextParagraph {
+                text: @markdown("Open the [component catalog](https://gpui-kit.com/components) or read the [guides](https://gpui-kit.com/docs).");
+                link-clicked(link) => { root.opened = link; }
+            }
+
+            Text {
+                text: "Last opened: " + root.opened;
+                color: Theme.muted-foreground;
+                font-size: Theme.font-size-xs;
+            }
+        }
+    }
+
+    // A code block carries its own actions. The copy button reports back, which
+    // is where a host puts the clipboard write.
+    GroupBox {
+        title: "Code Block Actions";
+        variant: GroupBoxVariant.outline;
+
+        VerticalLayout {
+            spacing: 10px;
+            alignment: start;
+
+            TextCodeBlock {
+                language: "rust";
+                code: "gpui_component::init(cx);";
+                copied => { root.copied-what = "the Rust snippet"; }
+            }
+
+            Text {
+                text: "Last copied: " + root.copied-what;
+                color: Theme.muted-foreground;
+                font-size: Theme.font-size-xs;
             }
         }
     }

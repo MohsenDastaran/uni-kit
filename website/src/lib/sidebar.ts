@@ -22,6 +22,15 @@ export interface SidebarGeneratorConfig {
   rootLinkText?: string;
   /** Count the examples each component's gallery window paints. */
   countExamples?: boolean;
+  /**
+   * Drop items whose example window paints nothing. Defaults to a production
+   * build: a component with no examples is worth visiting while you work on it,
+   * but not worth publishing in the navigation.
+   *
+   * A page that opts out of the window entirely (`example: false`) is a guide,
+   * not a component with nothing to show, so it is never dropped.
+   */
+  hideEmptyExamples?: boolean;
 }
 
 function parseFrontmatter(content: string): {
@@ -85,6 +94,8 @@ interface FileEntry {
   order: number;
   title: string;
   examples?: GalleryCounts;
+  /** The page has an example window and it paints nothing. */
+  empty?: boolean;
   items?: FileEntry[];
 }
 
@@ -114,6 +125,8 @@ function scanDir(dir: string, baseDir: string, countExamples: boolean): FileEntr
         order: getFileOrder(content),
         title: getFileTitle(relPath, content),
         examples,
+        // An opted-out page has no window to be empty.
+        empty: countExamples && frontmatter.example !== false && !examples,
       };
     }).filter(Boolean) as FileEntry[];
   } catch {
@@ -131,9 +144,14 @@ function itemFromFile(entry: FileEntry, baseUrl: string): SidebarItem {
   };
 }
 
-function entriesToSidebarItems(entries: FileEntry[], baseUrl: string): SidebarItem[] {
+function entriesToSidebarItems(
+  entries: FileEntry[],
+  baseUrl: string,
+  hideEmpty: boolean,
+): SidebarItem[] {
+  const hidden = (entry: FileEntry) => hideEmpty && entry.empty === true;
   const dirs = entries.filter((e) => e.isDir);
-  const files = entries.filter((e) => !e.isDir);
+  const files = entries.filter((e) => !e.isDir && !hidden(e));
 
   const CATALOG_DIRS = ['components', 'primitives'];
   const catalogDir = dirs.find((d) => CATALOG_DIRS.includes(d.name.toLowerCase()));
@@ -151,23 +169,26 @@ function entriesToSidebarItems(entries: FileEntry[], baseUrl: string): SidebarIt
   const otherDirItems: SidebarItem[] = otherDirs.map((d) => ({
     text: d.title,
     collapsed: false,
-    items: entriesToSidebarItems(d.items ?? [], baseUrl),
+    items: entriesToSidebarItems(d.items ?? [], baseUrl, hideEmpty),
   }));
 
   let result: SidebarItem[] = [...fileItems, ...otherDirItems];
 
   if (catalogDir) {
     const catalogItems = (catalogDir.items ?? [])
-      .filter((e) => !e.isDir)
+      .filter((e) => !e.isDir && !hidden(e))
       .sort((a, b) => a.title.localeCompare(b.title, 'en', { sensitivity: 'base' }))
       .map((entry) => itemFromFile(entry, baseUrl));
 
     const label = catalogDir.name.toLowerCase() === 'primitives' ? 'Primitives' : 'Components';
-    result.push({
-      text: label,
-      collapsed: false,
-      items: catalogItems,
-    });
+    // A group with nothing left in it is not worth a heading.
+    if (catalogItems.length > 0) {
+      result.push({
+        text: label,
+        collapsed: false,
+        items: catalogItems,
+      });
+    }
   }
 
   return result;
@@ -175,7 +196,8 @@ function entriesToSidebarItems(entries: FileEntry[], baseUrl: string): SidebarIt
 
 export function generateSidebar(config: SidebarGeneratorConfig): SidebarItem[] {
   const entries = scanDir(config.contentDir, config.contentDir, config.countExamples === true);
-  const items = entriesToSidebarItems(entries, config.baseUrl);
+  const hideEmpty = config.hideEmptyExamples ?? PRODUCTION;
+  const items = entriesToSidebarItems(entries, config.baseUrl, hideEmpty);
 
   const rootGroup: SidebarItem = {
     text: config.rootGroupText,
@@ -201,6 +223,9 @@ export function generateSidebar(config: SidebarGeneratorConfig): SidebarItem[] {
 // root, which is the stable anchor. (`llms.ts` had the same fault.)
 const WEBSITE_ROOT = process.cwd();
 const BASE = import.meta.env.BASE_URL.replace(/\/$/, '');
+// `astro dev` serves every page, including a component whose example window is
+// still empty; a published build leaves those out of the navigation.
+const PRODUCTION = import.meta.env.PROD === true;
 
 export const enDocsSidebar = generateSidebar({
   contentDir: join(WEBSITE_ROOT, 'docs'),

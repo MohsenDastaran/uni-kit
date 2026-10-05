@@ -1,6 +1,7 @@
-import { Theme } from "../theme.slint";
+import { Theme, ControlSize } from "../theme.slint";
 import { GroupBox, GroupBoxVariant } from "section.slint";
-import { StatusBar } from "../status-bar.slint";
+import { StatusBar, StatusItemKind } from "../status-bar.slint";
+import { Progress } from "../progress.slint";
 
 export component StatusBarExample inherits VerticalLayout {
     horizontal-stretch: 1;
@@ -8,72 +9,105 @@ export component StatusBarExample inherits VerticalLayout {
     spacing: 24px;
     alignment: start;
 
+    private property <string> pressed: "nothing yet";
+
+    // The three regions: a left region, a centre, and a right region. Each card
+    // sits its bar at the bottom of a panel, which is where a status bar lives.
     GroupBox {
         title: "Labels";
         variant: GroupBoxVariant.outline;
 
         Rectangle {
-            width: 100%; height: 40px; border-width: 1px; border-color: Theme.border; border-radius: Theme.radius-md; clip: true;
+            width: 100%; height: 60px; border-width: 1px; border-color: Theme.border; border-radius: Theme.radius-md; clip: true;
             VerticalLayout {
                 Rectangle { vertical-stretch: 1; }
-                StatusBar { left: "main • slint-component"; right: "Ln 12, Col 4"; }
-            }
-        }
-    }
-
-    GroupBox {
-        title: "Buttons";
-        variant: GroupBoxVariant.outline;
-
-        Rectangle {
-            width: 100%; height: 40px; border-width: 1px; border-color: Theme.border; border-radius: Theme.radius-md; clip: true;
-            VerticalLayout {
-                Rectangle { vertical-stretch: 1; }
-                Rectangle {
-                    height: 24px;
-                    background: Theme.sidebar;
-                    border-width: 1px;
-                    border-color: Theme.border;
-                    HorizontalLayout {
-                        padding-left: 8px;
-                        padding-right: 8px;
-                        spacing: 12px;
-                        alignment: center;
-                        Text { horizontal-stretch: 1; text: "Build succeeded"; color: Theme.muted-foreground; font-size: Theme.font-size-xs; vertical-alignment: center; }
-                        Text { text: "Rebuild"; color: Theme.primary; font-size: Theme.font-size-xs; vertical-alignment: center; }
-                        Text { text: "Output"; color: Theme.primary; font-size: Theme.font-size-xs; vertical-alignment: center; }
+                StatusBar {
+                    left: [{ kind: StatusItemKind.label, icon: "", label: "Ready" }];
+                    right: [{ kind: StatusItemKind.label, icon: "", label: "UTF-8" }];
+                    Text {
+                        text: "README.md";
+                        color: Theme.muted-foreground;
+                        font-size: Theme.font-size-xs;
+                        vertical-alignment: center;
                     }
                 }
             }
         }
     }
 
+    // A `button` segment takes the hover affordance and reports a click. A
+    // read-only item stays a `label`, so it does not look clickable.
+    GroupBox {
+        title: "Buttons";
+        variant: GroupBoxVariant.outline;
+
+        VerticalLayout {
+            spacing: 10px;
+            alignment: start;
+
+            Rectangle {
+                width: 100%; height: 48px; border-width: 1px; border-color: Theme.border; border-radius: Theme.radius-md; clip: true;
+                VerticalLayout {
+                    Rectangle { vertical-stretch: 1; }
+                    StatusBar {
+                        left: [{ kind: StatusItemKind.button, icon: "github", label: "main" }];
+                        right: [{ kind: StatusItemKind.button, icon: "", label: "Ln 1, Col 1" }];
+                        left-clicked(index) => { root.pressed = "the branch"; }
+                        right-clicked(index) => { root.pressed = "the cursor position"; }
+                    }
+                }
+            }
+
+            Text {
+                text: "Last click: " + root.pressed;
+                color: Theme.muted-foreground;
+                font-size: Theme.font-size-xs;
+            }
+        }
+    }
+
+    // A `separator` divides runs of items, and the centre region is `@children`,
+    // so it holds a component rather than a plain label.
     GroupBox {
         title: "Separators and custom elements";
         variant: GroupBoxVariant.outline;
 
         Rectangle {
-            width: 100%; height: 40px; border-width: 1px; border-color: Theme.border; border-radius: Theme.radius-md; clip: true;
+            width: 100%; height: 60px; border-width: 1px; border-color: Theme.border; border-radius: Theme.radius-md; clip: true;
             VerticalLayout {
                 Rectangle { vertical-stretch: 1; }
-                Rectangle {
-                    height: 24px;
-                    background: Theme.sidebar;
-                    border-width: 1px;
-                    border-color: Theme.border;
-                    HorizontalLayout {
-                        padding-left: 8px;
-                        padding-right: 8px;
-                        spacing: 10px;
-                        alignment: center;
-                        Text { text: "Rust"; color: Theme.muted-foreground; font-size: Theme.font-size-xs; vertical-alignment: center; }
-                        Rectangle { width: 1px; height: 12px; background: Theme.border; }
-                        Text { text: "UTF-8"; color: Theme.muted-foreground; font-size: Theme.font-size-xs; vertical-alignment: center; }
-                        Rectangle { width: 1px; height: 12px; background: Theme.border; }
-                        Text { text: "Spaces: 4"; color: Theme.muted-foreground; font-size: Theme.font-size-xs; vertical-alignment: center; }
-                        Rectangle { horizontal-stretch: 1; }
-                        Text { text: "Ln 12, Col 4"; color: Theme.muted-foreground; font-size: Theme.font-size-xs; vertical-alignment: center; }
+                StatusBar {
+                    left: [
+                        { kind: StatusItemKind.button, icon: "github", label: "main" },
+                        { kind: StatusItemKind.separator, icon: "", label: "" },
+                        { kind: StatusItemKind.label, icon: "circle-check", label: "0 problems" },
+                    ];
+                    right: [{ kind: StatusItemKind.label, icon: "", label: "Ln 12, Col 4" }];
+
+                    Rectangle {
+                        width: 96px;
+                        Progress { value: 60; size: ControlSize.xsmall; }
                     }
+                }
+            }
+        }
+    }
+
+    // `background` and `border-color` override the defaults, the way any
+    // `Styled` method overrides a GPUI `StatusBar`.
+    GroupBox {
+        title: "Custom styling";
+        variant: GroupBoxVariant.outline;
+
+        Rectangle {
+            width: 100%; height: 60px; border-width: 1px; border-color: Theme.border; border-radius: Theme.radius-md; clip: true;
+            VerticalLayout {
+                Rectangle { vertical-stretch: 1; }
+                StatusBar {
+                    background: Theme.secondary;
+                    border-color: Theme.border;
+                    left: [{ kind: StatusItemKind.label, icon: "", label: "Ready" }];
+                    right: [{ kind: StatusItemKind.label, icon: "", label: "Rust" }];
                 }
             }
         }

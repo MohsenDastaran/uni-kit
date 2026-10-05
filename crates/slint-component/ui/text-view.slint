@@ -1,29 +1,124 @@
-import { Theme } from "theme.slint";
+import { Theme, ControlSize, ButtonVariant } from "theme.slint";
+import { Button } from "button.slint";
 
-// Read-only rich-ish text. Mirrors GPUI Component's `TextView` for headings,
-// paragraphs, and inline code.
+// A rendered document. Blocks stack with the spacing a document keeps between
+// them.
 export component TextView inherits VerticalLayout {
-    spacing: 10px;
-
+    // Tighter spacing, for a preview rather than a page.
+    in property <bool> compact;
+    spacing: compact ? 8px : 14px;
     @children
 }
 
+// A section heading. `level` picks the size, 1 the largest.
+//
+// This is a plain `Text`, not a `StyledText`: a heading needs a font weight to
+// stand out, and `StyledText` has no weight property. Headings carry no inline
+// markup as a result.
 export component TextHeading inherits Text {
     in property <int> level: 2;
     color: Theme.foreground;
-    font-size: level == 1 ? Theme.font-size-xl : Theme.font-size-lg;
+    font-size: level <= 1 ? Theme.font-size-xl
+        : level == 2 ? Theme.font-size-lg
+        : level == 3 ? Theme.font-size-md
+        : Theme.font-size-sm;
     font-weight: 650;
     wrap: word-wrap;
 }
 
-export component TextParagraph inherits Text {
+// Body text. It renders Markdown, so a host writes `text: @markdown("...")` and
+// gets bold, italic, inline code, links, and ordered or unordered lists. Slint
+// parses markdown at build time, which is why the literal is written at the call
+// site rather than handed in as a runtime string.
+export component TextParagraph inherits StyledText {
+    default-color: Theme.foreground;
+    default-font-size: Theme.font-size-sm;
+    link-color: Theme.link;
+}
+
+// A quoted passage: a rule down the left with the text set behind it.
+export component TextQuote inherits HorizontalLayout {
+    in property <styled-text> text;
+    spacing: 12px;
+    // The rule is a fixed width, so the cross axis has to place it.
+    cross-axis-alignment: stretch;
+
+    Rectangle {
+        width: 2px;
+        border-radius: 1px;
+        background: Theme.border;
+    }
+
+    StyledText {
+        horizontal-stretch: 1;
+        text: root.text;
+        default-color: Theme.muted-foreground;
+        default-font-size: Theme.font-size-sm;
+        link-color: Theme.link;
+    }
+}
+
+// A fenced code block: a filled surface, the language it is written in, and the
+// copy action a reader expects on one.
+export component TextCodeBlock inherits Rectangle {
+    in property <string> code;
+    in property <string> language;
+    callback copied();
+
+    border-radius: Theme.radius-md;
+    border-width: 1px;
+    border-color: Theme.border;
+    background: Theme.muted;
+
+    VerticalLayout {
+        padding: 12px;
+        spacing: 8px;
+
+        if language != "": HorizontalLayout {
+            spacing: 8px;
+            cross-axis-alignment: center;
+
+            Text {
+                horizontal-stretch: 1;
+                text: root.language;
+                color: Theme.muted-foreground;
+                font-size: Theme.font-size-xs;
+                vertical-alignment: center;
+            }
+
+            Button {
+                icon: "copy";
+                variant: ButtonVariant.ghost;
+                size: ControlSize.xsmall;
+                accessible-label: "Copy code";
+                clicked => { root.copied(); }
+            }
+        }
+
+        Text {
+            text: root.code;
+            color: Theme.foreground;
+            font-family: Theme.mono-font-family;
+            font-size: Theme.font-size-mono;
+            wrap: word-wrap;
+        }
+    }
+}
+
+// A rule between sections.
+export component TextDivider inherits Rectangle {
+    height: 1px;
+    background: Theme.border;
+}
+
+// A bounded preview of body text: whole lines up to `lines`, then an ellipsis.
+// This stays a plain `Text` because a clipped `StyledText` centres itself in the
+// box and cuts the top off as well.
+export component TextClamp inherits Text {
+    in property <int> lines: 2;
+    height: lines * (Theme.font-size-sm * 1.45);
+    overflow: elide;
     color: Theme.foreground;
     font-size: Theme.font-size-sm;
     wrap: word-wrap;
-}
-
-export component TextCode inherits Text {
-    color: Theme.foreground;
-    font-family: Theme.mono-font-family;
-    font-size: Theme.font-size-mono;
 }

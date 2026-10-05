@@ -1,6 +1,6 @@
 import { Theme } from "../theme.slint";
 import { GroupBox, GroupBoxVariant } from "section.slint";
-import { Tree } from "../tree.slint";
+import { Tree, TreeNode } from "../tree.slint";
 
 export component TreeExample inherits VerticalLayout {
     horizontal-stretch: 1;
@@ -8,21 +8,49 @@ export component TreeExample inherits VerticalLayout {
     spacing: 24px;
     alignment: start;
 
-    // The model is flat: `depth` indents a row, and `expanded` chooses the
-    // chevron. Collapsing a folder is the caller's re-model, not a tree
-    // behaviour, which keeps the component free of state.
+    // The model is flat: `depth` indents a row and `expanded` chooses the
+    // chevron. The arrow flips `expanded` itself; hiding the rows underneath it
+    // is the owner's job, because Slint cannot walk a parent chain.
+    in-out property <[TreeNode]> basic-items: [
+        { label: "src", depth: 0, folder: true, expanded: true, hidden: false },
+        { label: "lib.rs", depth: 1, folder: false, expanded: false, hidden: false },
+        { label: "main.rs", depth: 1, folder: false, expanded: false, hidden: false },
+        { label: "ui", depth: 0, folder: true, expanded: false, hidden: false },
+    ];
+
+    in-out property <[TreeNode]> file-items: [
+        { label: "slint-component", depth: 0, folder: true, expanded: true, hidden: false },
+        { label: "ui", depth: 1, folder: true, expanded: true, hidden: false },
+        { label: "dock.slint", depth: 2, folder: false, expanded: false, hidden: false },
+        { label: "menu.slint", depth: 2, folder: false, expanded: false, hidden: false },
+        { label: "theme.slint", depth: 2, folder: false, expanded: false, hidden: false },
+        { label: "Cargo.toml", depth: 1, folder: false, expanded: false, hidden: false },
+        { label: "README.md", depth: 1, folder: false, expanded: false, hidden: false },
+    ];
+
+    in-out property <[TreeNode]> settings-items: [
+        { label: "Workspace", depth: 0, folder: true, expanded: true, hidden: false },
+        { label: "General", depth: 1, folder: false, expanded: false, hidden: false },
+        { label: "Appearance", depth: 1, folder: false, expanded: false, hidden: false },
+        { label: "Editor", depth: 0, folder: true, expanded: true, hidden: false },
+        { label: "Fonts", depth: 1, folder: false, expanded: false, hidden: false },
+        { label: "Keymap", depth: 1, folder: false, expanded: false, hidden: false },
+    ];
+
+    in-out property <int> picked: 1;
+
     GroupBox {
         title: "Basic Tree";
         variant: GroupBoxVariant.outline;
 
         Tree {
-            items: [
-                { label: "src", depth: 0, folder: true, expanded: true },
-                { label: "lib.rs", depth: 1, folder: false, expanded: false },
-                { label: "main.rs", depth: 1, folder: false, expanded: false },
-                { label: "ui", depth: 0, folder: true, expanded: false },
-            ];
+            items <=> root.basic-items;
             selected: 1;
+            toggled(index) => {
+                // `src` is row 0; `ui` has nothing under it.
+                root.basic-items[1].hidden = !root.basic-items[0].expanded;
+                root.basic-items[2].hidden = !root.basic-items[0].expanded;
+            }
         }
     }
 
@@ -31,16 +59,79 @@ export component TreeExample inherits VerticalLayout {
         variant: GroupBoxVariant.outline;
 
         Tree {
-            items: [
-                { label: "slint-component", depth: 0, folder: true, expanded: true },
-                { label: "ui", depth: 1, folder: true, expanded: true },
-                { label: "dock.slint", depth: 2, folder: false, expanded: false },
-                { label: "menu.slint", depth: 2, folder: false, expanded: false },
-                { label: "theme.slint", depth: 2, folder: false, expanded: false },
-                { label: "Cargo.toml", depth: 1, folder: false, expanded: false },
-                { label: "README.md", depth: 1, folder: false, expanded: false },
-            ];
+            items <=> root.file-items;
             selected: 2;
+            toggled(index) => {
+                // A row is hidden when any folder above it is closed, so each
+                // row is written out with its own chain.
+                root.file-items[1].hidden = !root.file-items[0].expanded;
+                root.file-items[2].hidden = !root.file-items[0].expanded || !root.file-items[1].expanded;
+                root.file-items[3].hidden = !root.file-items[0].expanded || !root.file-items[1].expanded;
+                root.file-items[4].hidden = !root.file-items[0].expanded || !root.file-items[1].expanded;
+                root.file-items[5].hidden = !root.file-items[0].expanded;
+                root.file-items[6].hidden = !root.file-items[0].expanded;
+            }
+        }
+    }
+
+    // The tree beside the thing it selects, which is how a settings window or a
+    // file browser puts one to work.
+    GroupBox {
+        title: "Tree with Selection Handling";
+        variant: GroupBoxVariant.outline;
+
+        Rectangle {
+            horizontal-stretch: 1;
+            height: 190px;
+            border-width: 1px;
+            border-color: Theme.border;
+            border-radius: Theme.radius-md;
+            clip: true;
+
+            HorizontalLayout {
+                spacing: 0;
+
+                Rectangle {
+                    width: 220px;
+                    background: Theme.sidebar;
+
+                    Tree {
+                        items <=> root.settings-items;
+                        selected <=> root.picked;
+                        toggled(index) => {
+                            root.settings-items[1].hidden = !root.settings-items[0].expanded;
+                            root.settings-items[2].hidden = !root.settings-items[0].expanded;
+                            root.settings-items[4].hidden = !root.settings-items[3].expanded;
+                            root.settings-items[5].hidden = !root.settings-items[3].expanded;
+                        }
+                    }
+                }
+
+                Rectangle { width: 1px; background: Theme.border; }
+
+                VerticalLayout {
+                    horizontal-stretch: 1;
+                    padding: 16px;
+                    spacing: 6px;
+                    alignment: start;
+
+                    Text {
+                        text: root.picked >= 0 && root.picked < root.settings-items.length
+                            ? root.settings-items[root.picked].label
+                            : "Nothing selected";
+                        color: Theme.foreground;
+                        font-size: Theme.font-size-sm;
+                        font-weight: 600;
+                    }
+                    Text {
+                        text: root.picked >= 0 && root.picked < root.settings-items.length
+                            ? "Section \{root.picked + 1} of \{root.settings-items.length}"
+                            : "Pick a row on the left.";
+                        color: Theme.muted-foreground;
+                        font-size: Theme.font-size-xs;
+                    }
+                }
+            }
         }
     }
 }

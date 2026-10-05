@@ -2,7 +2,7 @@ import { Theme, Status, ControlSize } from "../theme.slint";
 import { GroupBox } from "section.slint";
 import { Alert } from "../alert.slint";
 import { Switch } from "../switch.slint";
-import { TextView, TextParagraph } from "../text-view.slint";
+import { TextView, TextHeading, TextParagraph } from "../text-view.slint";
 
 export component AlertExample inherits VerticalLayout {
     horizontal-stretch: 1;
@@ -133,20 +133,20 @@ export component AlertExample inherits VerticalLayout {
             status: Status.danger;
             TextView {
                 TextParagraph {
-                    text: "Please verify your billing information and try again.";
-                    color: Theme.danger;
+                    text: @markdown("Please verify your billing information and try again.");
+                    default-color: Theme.danger;
                 }
                 TextParagraph {
-                    text: "• Check your card details";
-                    color: Theme.danger;
+                    text: @markdown("• Check your card details");
+                    default-color: Theme.danger;
                 }
                 TextParagraph {
-                    text: "• Ensure sufficient funds";
-                    color: Theme.danger;
+                    text: @markdown("• Ensure sufficient funds");
+                    default-color: Theme.danger;
                 }
                 TextParagraph {
-                    text: "• Verify billing address";
-                    color: Theme.danger;
+                    text: @markdown("• Verify billing address");
+                    default-color: Theme.danger;
                 }
             }
         }
@@ -192,34 +192,34 @@ export component AlertExample inherits VerticalLayout {
             status: Status.warning;
             icon: "shield";
             TextView {
-                TextParagraph {
+                TextHeading {
+                    level: 4;
                     text: "Security Notice";
                     color: Theme.warning;
-                    font-weight: 600;
                 }
                 TextParagraph {
-                    text: "Unusual activity detected on your account.";
-                    color: Theme.warning;
+                    text: @markdown("Unusual activity detected on your account.");
+                    default-color: Theme.warning;
                 }
                 TextParagraph {
-                    text: "Recent activity:";
-                    color: Theme.warning;
+                    text: @markdown("Recent activity:");
+                    default-color: Theme.warning;
                 }
                 TextParagraph {
-                    text: "• Login from new device (Chrome on Windows)";
-                    color: Theme.warning;
+                    text: @markdown("• Login from new device (Chrome on Windows)");
+                    default-color: Theme.warning;
                 }
                 TextParagraph {
-                    text: "• Location: San Francisco, CA";
-                    color: Theme.warning;
+                    text: @markdown("• Location: San Francisco, CA");
+                    default-color: Theme.warning;
                 }
                 TextParagraph {
-                    text: "• Time: Today at 2:30 PM";
-                    color: Theme.warning;
+                    text: @markdown("• Time: Today at 2:30 PM");
+                    default-color: Theme.warning;
                 }
                 TextParagraph {
-                    text: "If this wasn't you, please change your password immediately.";
-                    color: Theme.warning;
+                    text: @markdown("If this wasn't you, please change your password immediately.");
+                    default-color: Theme.warning;
                 }
             }
         }

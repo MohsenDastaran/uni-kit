@@ -1,6 +1,6 @@
 import { Theme, ButtonVariant, ControlSize } from "../theme.slint";
 import { GroupBox, GroupBoxVariant } from "section.slint";
-import { Toolbar, ToolbarSeparator, ToolbarSpacer } from "../toolbar.slint";
+import { Toolbar, ToolbarGroup, ToolbarSeparator, ToolbarSpacer } from "../toolbar.slint";
 import { Button } from "../button.slint";
 import { Input } from "../input.slint";
 
@@ -138,6 +138,48 @@ export component ToolbarExample inherits VerticalLayout {
                 ToolbarSpacer {}
                 Button { icon: "panel-left"; variant: ButtonVariant.ghost; }
                 Button { icon: "panel-right"; variant: ButtonVariant.ghost; }
+            }
+        }
+    }
+
+    // A group gives a run of controls one accessible name, so assistive
+    // technology reads it as a unit rather than as loose buttons.
+    GroupBox {
+        title: "Groups";
+        variant: GroupBoxVariant.outline;
+
+        Rectangle {
+            horizontal-stretch: 1;
+            border-radius: Theme.radius-md;
+            border-width: 1px;
+            border-color: Theme.border;
+            background: Theme.sidebar;
+
+            Toolbar {
+                inset: 6px;
+
+                ToolbarGroup {
+                    label: "History";
+                    Button { icon: "arrow-left"; variant: ButtonVariant.ghost; }
+                    Button { icon: "arrow-right"; variant: ButtonVariant.ghost; }
+                }
+
+                ToolbarSeparator {}
+
+                ToolbarGroup {
+                    label: "Formatting";
+                    Button { icon: "bold"; variant: ButtonVariant.ghost; }
+                    Button { icon: "italic"; variant: ButtonVariant.ghost; }
+                    Button { icon: "underline"; variant: ButtonVariant.ghost; }
+                }
+
+                ToolbarSpacer {}
+
+                ToolbarGroup {
+                    label: "Document";
+                    Button { text: "Share"; variant: ButtonVariant.ghost; }
+                    Button { icon: "ellipsis"; variant: ButtonVariant.ghost; }
+                }
             }
         }
     }

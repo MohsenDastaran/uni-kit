@@ -1,5 +1,5 @@
 import { Theme } from "theme.slint";
-import { Scrollable } from "scrollable.slint";
+import { Scrollable, ScrollAxis } from "scrollable.slint";
 
 export struct VirtualRow {
     label: string,
@@ -11,12 +11,39 @@ export struct VirtualRow {
 export component VirtualList {
     in property <[VirtualRow]> items;
     in property <length> row-height: 32px;
+    in property <ScrollAxis> axis: ScrollAxis.vertical;
     in-out property <int> selected: -1;
+    // Slint's scroll offset: zero at the top and negative as the list moves
+    // down, which is what `Flickable.viewport-y` means. Two-way, so a host can
+    // read back where the reader put it.
+    in-out property <length> viewport-y <=> scroller.viewport-y;
+    in-out property <length> viewport-x <=> scroller.viewport-x;
+    // How much of the list is on screen. Slint's `viewport-height` is the
+    // *content* height, not the box, so this comes from the area's own height.
+    out property <length> visible-height: scroller.height;
+    // The rows the viewport currently covers, which is what the window paints.
+    out property <int> first-visible: floor(-viewport-y / row-height);
+    out property <int> last-visible: floor((-viewport-y + visible-height) / row-height);
     callback changed(index: int);
 
-    Scrollable {
+    // How far the list can travel. `viewport-height` is the content height.
+    private property <length> travel: max(0px, scroller.viewport-height - scroller.height);
+
+    // Scroll to a distance from the top. The offset is written negative because
+    // that is the direction Slint's flickable counts in.
+    public function scroll-to(value: length) {
+        scroller.viewport-y = -clamp(value, 0px, travel);
+    }
+
+    // Scroll a row to the top, or to the middle of the box.
+    public function scroll-to-row(index: int, center: bool) {
+        root.scroll-to(index * row-height + (center ? (row-height - scroller.height) / 2 : 0px));
+    }
+
+    scroller := Scrollable {
         width: 100%;
         height: 100%;
+        axis: root.axis;
         VerticalLayout {
             for item[index] in items: Rectangle {
                 height: row-height;

@@ -7,6 +7,10 @@ import { Icon } from "../icon.slint";
 import { Textarea } from "../textarea.slint";
 
 export component InputGroupExample inherits VerticalLayout {
+    // Editable text is host state, not a one-way literal.
+    in-out property <string> registry: "copied from the registry";
+    in-out property <string> address: "not-an-address";
+    in-out property <string> reply: "Dock now keeps every toolbar chip on one baseline.";
     horizontal-stretch: 1;
     padding: Theme.page-padding(Theme.viewport);
     spacing: 24px;
@@ -75,7 +79,7 @@ export component InputGroupExample inherits VerticalLayout {
                     placeholder: "Read only";
                     appearance: false;
                     read-only: true;
-                    text: "copied from the registry";
+                    text <=> root.registry;
                 }
                 Button { icon: "copy"; variant: ButtonVariant.ghost; }
             }
@@ -86,7 +90,7 @@ export component InputGroupExample inherits VerticalLayout {
                     placeholder: "you@example.com";
                     appearance: false;
                     invalid: true;
-                    text: "not-an-address";
+                    text <=> root.address;
                 }
                 Icon { name: "circle-x"; size: 14px; color: Theme.danger; }
             }
@@ -112,7 +116,7 @@ export component InputGroupExample inherits VerticalLayout {
             spacing: 8px;
             Textarea {
                 placeholder: "Write a reply…";
-                text: "Dock now keeps every toolbar chip on one baseline.";
+                text <=> root.reply;
             }
             HorizontalLayout {
                 horizontal-stretch: 1;

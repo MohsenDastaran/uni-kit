@@ -21,6 +21,10 @@ export component Tag {
     private property <color> ink: variant == TagVariant.status ? Theme.status-color(status) : Theme.foreground;
 
     height: Theme.control-height(size) - 8px;
+    // A tag is as wide as its own content and no wider. Without this a layout
+    // that hosts it spans it across the row, which is what made the sizes look
+    // like full-width bars.
+    width: content.preferred-width;
     horizontal-stretch: 0;
 
     Rectangle {
@@ -30,11 +34,15 @@ export component Tag {
         background: fill;
     }
 
-    HorizontalLayout {
+    content := HorizontalLayout {
         padding-left: Theme.control-padding(size) - 2px;
         padding-right: closable ? 4px : self.padding-left;
         spacing: 4px;
         alignment: center;
+        // The icon is a fixed-size child, so it sits against the top edge
+        // unless the row centres it. `vertical-alignment` on the text does not
+        // help the icon.
+        cross-axis-alignment: center;
 
         if icon != "": Icon {
             name: icon;

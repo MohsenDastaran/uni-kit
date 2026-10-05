@@ -149,6 +149,24 @@ const available = computed(
 );
 const active = computed(() => frameworkList[framework.value]);
 
+// A framework with no example for this component leaves the page with nothing
+// to show. A published build sends the reader to the catalog instead of
+// stranding them on an empty page; a dev build keeps the page reachable, the
+// same way the sidebar keeps listing it while you work on one.
+// `window` is absent while Astro renders this on the server, and `isDev` is
+// false in a published build, so the guard has to be explicit.
+if (!isDev && typeof window !== "undefined") {
+  watch(
+    [component, available],
+    ([slug, ready]) => {
+      if (!slug || ready) return;
+      const base = props.baseUrl.replace(/\/$/, "");
+      window.location.replace(`${base}/component`);
+    },
+    { immediate: true },
+  );
+}
+
 // A frame stays mounted once opened, so switching back is instant.
 const opened = reactive(new Set<string>());
 const loaded = reactive(new Set<string>());

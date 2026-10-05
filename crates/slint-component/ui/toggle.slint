@@ -1,6 +1,10 @@
 import { Theme, ControlSize } from "theme.slint";
 import { Icon } from "icon.slint";
 
+// `outline` draws a frame of its own, which is what a toolbar wants; `default`
+// stays flat until it is selected or hovered, like GPUI's two variants.
+export enum ToggleVariant { default, outline }
+
 // A pressed-in control. Mirrors GPUI Component's `Toggle`: an optional icon
 // and label, sizes, and a selected state. Use `ToggleGroup` for a mutually
 // exclusive row.
@@ -8,8 +12,14 @@ export component Toggle {
     in-out property <bool> selected;
     in property <string> text;
     in property <string> icon;
+    in property <ToggleVariant> variant: ToggleVariant.default;
     in property <bool> enabled: true;
     in property <ControlSize> size: ControlSize.medium;
+    // What the pressed state is filled and lettered with. GPUI uses
+    // `accent`/`accent_foreground`; a group on its own track overrides them so
+    // the pressed item stands off the track rather than matching it.
+    in property <color> selected-fill: Theme.accent;
+    in property <color> selected-ink: Theme.accent-foreground;
     callback changed(selected: bool);
 
     function toggle() {
@@ -30,33 +40,44 @@ export component Toggle {
     }
 
     height: Theme.control-height(size);
-    min-width: text == "" ? self.height : 0;
+    // As wide as its own content. Without this a layout that hosts it spans it
+    // across the row, which is what turned the size examples into full-width
+    // bars. An icon on its own is square, like GPUI's `min_w_8`.
+    width: text == "" ? self.height : content.preferred-width;
     opacity: enabled ? 1 : 0.5;
     horizontal-stretch: 0;
 
     Rectangle {
         border-radius: Theme.radius-md;
-        border-width: 1px;
-        border-color: selected ? Theme.border : transparent;
-        background: selected ? Theme.background : (touch.has-hover ? Theme.accent : transparent);
+        border-width: variant == ToggleVariant.outline || selected ? 1px : 0px;
+        border-color: selected ? root.selected-fill : Theme.border;
+        background: selected
+            ? root.selected-fill
+            : variant == ToggleVariant.outline ? Theme.background
+            : touch.has-hover ? Theme.accent
+            : transparent;
         animate background { duration: 100ms; }
     }
 
-    HorizontalLayout {
+    content := HorizontalLayout {
         padding-left: text == "" ? 0 : Theme.control-padding(size);
         padding-right: self.padding-left;
         spacing: 6px;
         alignment: center;
+        // The icon is a fixed-size child, so it sits against the top edge
+        // unless the row centres it. `vertical-alignment` on the text does not
+        // help the icon, which is why the icons floated above their labels.
+        cross-axis-alignment: center;
 
         if icon != "": Icon {
             name: icon;
             size: Theme.icon-size(size);
-            color: Theme.foreground;
+            color: selected ? root.selected-ink : Theme.foreground;
         }
 
         if text != "": Text {
             text: root.text;
-            color: Theme.foreground;
+            color: selected ? root.selected-ink : Theme.foreground;
             font-size: Theme.control-font-size(size);
             font-weight: 500;
             vertical-alignment: center;
@@ -107,6 +128,8 @@ export component ToggleGroup {
     height: Theme.control-height(size);
     horizontal-stretch: 0;
 
+    // The track the selected item sits on, so the pressed fill is the page
+    // colour rather than `accent`, which is the same value as the track.
     Rectangle {
         border-radius: Theme.radius-md;
         background: Theme.muted;
@@ -121,6 +144,8 @@ export component ToggleGroup {
             icon: option.icon;
             selected: root.selected == index;
             size: root.size;
+            selected-fill: Theme.background;
+            selected-ink: Theme.foreground;
             changed => {
                 root.selected = index;
                 root.changed(index);

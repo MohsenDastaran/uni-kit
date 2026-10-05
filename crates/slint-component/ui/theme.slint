@@ -55,6 +55,15 @@ export global Theme {
     out property <color> secondary-foreground: palette ? palette-secondary-foreground : (dark ? #fafafa : #171717);
     out property <color> muted: palette ? palette-muted : (dark ? #262626 : #f5f5f5);
     out property <color> muted-foreground: palette ? palette-muted-foreground : (dark ? #a3a3a3 : #737373);
+    // Link text in rendered Markdown. GPUI draws a link in `primary` and marks
+    // it with an underline; `StyledText` cannot underline a link, so this
+    // colour has to carry that job on its own. It is the one semantic colour
+    // here with no counterpart in `tokens/tokens.json`.
+    out property <color> link: dark ? #60a5fa : #2563eb;
+    // The surface a text field sits on. GPUI's `input_background()` lifts one off
+    // the page in dark mode and leaves it on the page in light mode; without it
+    // a field in dark mode is the same value as the page behind it.
+    out property <color> input-background: dark ? input.with-alpha(0.3) : background;
     out property <color> accent: palette ? palette-accent : (dark ? #262626 : #f5f5f5);
     out property <color> accent-foreground: palette ? palette-accent-foreground : (dark ? #fafafa : #171717);
     out property <color> destructive: palette ? palette-destructive : (dark ? #f87171 : #ef4444);
