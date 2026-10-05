@@ -297,43 +297,6 @@ export component ResizableExample inherits VerticalLayout {
         }
     }
 
-    // Three columns and a bottom drawer: two handles across, one down.
-    GroupBox {
-        title: "IDE Layout";
-        variant: GroupBoxVariant.outline;
-
-        VerticalLayout {
-            height: 260px;
-            spacing: 0;
-
-            ResizablePane {
-                vertical-stretch: 1;
-                HorizontalLayout {
-                    spacing: 0;
-                    ResizablePane {
-                        width: i1.split;
-                        VerticalLayout { padding: 12px; Text { text: "Explorer"; color: Theme.foreground; font-size: Theme.font-size-sm; font-weight: 600; } }
-                    }
-                    i1 := ResizeHandle { split: 170px; minimum: 120px; }
-                    ResizablePane {
-                        horizontal-stretch: 1;
-                        VerticalLayout { padding: 12px; Text { text: "Editor"; color: Theme.foreground; font-size: Theme.font-size-sm; font-weight: 600; } }
-                    }
-                    i2 := ResizeHandle { split: 180px; minimum: 120px; }
-                    ResizablePane {
-                        width: i2.split;
-                        VerticalLayout { padding: 12px; Text { text: "Outline"; color: Theme.foreground; font-size: Theme.font-size-sm; font-weight: 600; } }
-                    }
-                }
-            }
-
-            ResizablePane {
-                height: 70px;
-                VerticalLayout { padding: 12px; Text { text: "Terminal"; color: Theme.foreground; font-size: Theme.font-size-sm; font-weight: 600; } }
-            }
-        }
-    }
-
     // A navigation column beside the panel it selects.
     GroupBox {
         title: "Settings Panel";

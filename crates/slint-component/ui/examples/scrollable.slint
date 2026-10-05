@@ -1,6 +1,6 @@
 import { Theme } from "../theme.slint";
 import { GroupBox, GroupBoxVariant } from "section.slint";
-import { Scrollable } from "../scrollable.slint";
+import { Scrollable, ScrollAxis } from "../scrollable.slint";
 
 export component ScrollableExample inherits VerticalLayout {
     horizontal-stretch: 1;
@@ -50,6 +50,70 @@ export component ScrollableExample inherits VerticalLayout {
                             font-size: Theme.font-size-sm;
                             vertical-alignment: center;
                         }
+                    }
+                }
+            }
+        }
+    }
+
+    // A row wider than the area. `axis` decides which way the content may
+    // overflow, and only the bars that way are drawn.
+    GroupBox {
+        title: "Horizontal Scrolling";
+        variant: GroupBoxVariant.outline;
+
+        Scrollable {
+            axis: ScrollAxis.horizontal;
+            height: 120px;
+            HorizontalLayout {
+                padding: 8px;
+                spacing: 8px;
+                for i in 10: Rectangle {
+                    width: 120px;
+                    border-radius: Theme.radius-md;
+                    border-width: 1px;
+                    border-color: Theme.border;
+                    background: Theme.muted.with-alpha(0.35);
+                    Text {
+                        text: "Card \{i + 1}";
+                        color: Theme.foreground;
+                        font-size: Theme.font-size-sm;
+                        horizontal-alignment: center;
+                        vertical-alignment: center;
+                    }
+                }
+            }
+        }
+    }
+
+    // Both viewports overflow, so both bars are drawn and the corner is shared.
+    GroupBox {
+        title: "Both Directions";
+        variant: GroupBoxVariant.outline;
+
+        Scrollable {
+            axis: ScrollAxis.both;
+            height: 200px;
+            GridLayout {
+                padding: 8px;
+                spacing: 8px;
+                // One loop with the row worked out from the index: a nested
+                // `for` needs its own braces and reads worse here.
+                for i in 64: Rectangle {
+                    row: (i - mod(i, 8)) / 8;
+                    col: mod(i, 8);
+                    width: 96px;
+                    height: 56px;
+                    border-radius: Theme.radius-md;
+                    border-width: 1px;
+                    border-color: Theme.border;
+                    background: Theme.muted.with-alpha(0.35);
+                    Text {
+                        text: "\{(i - mod(i, 8)) / 8 + 1},\{mod(i, 8) + 1}";
+                        color: Theme.muted-foreground;
+                        font-size: Theme.font-size-xs;
+                        horizontal-alignment: center;
+                        vertical-alignment: center;
                     }
                 }
             }

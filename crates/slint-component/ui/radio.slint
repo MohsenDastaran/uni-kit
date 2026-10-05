@@ -3,6 +3,9 @@ import { Theme, ControlSize } from "theme.slint";
 // One option in a mutually exclusive set. Mirrors GPUI Component's `Radio`:
 // a label, sizes, and a disabled state. Pair with `RadioGroup` or bind
 // `checked` yourself.
+//
+// `checked` is the owner's state. The radio reads it and reports clicks, so a
+// host that binds it is responsible for writing it back.
 export component Radio {
     in-out property <bool> checked;
     in property <string> label;
@@ -15,11 +18,14 @@ export component Radio {
         : size == ControlSize.large ? 18px
         : 16px;
 
+    // Reports the click and nothing more. Assigning `checked` here would break
+    // the binding a `RadioGroup` puts on it, and from then on that instance
+    // ignores the group: every option the user had clicked would stay checked.
+    // The owner sets the value, which is `RadioGroup.selected` for a group.
     function select() {
         if !enabled || checked {
             return;
         }
-        root.checked = true;
         root.changed(true);
     }
 

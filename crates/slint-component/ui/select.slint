@@ -14,9 +14,23 @@ export component Select {
     in property <string> placeholder: "Select…";
     in property <bool> enabled: true;
     in property <ControlSize> size: ControlSize.medium;
+    // The trigger's surface. `appearance` draws the frame at all; the three
+    // below are what it is drawn with, so a host can give the control its own
+    // look without wrapping it, which Slint's sizing makes awkward.
+    in property <bool> appearance: true;
+    in property <color> background: Theme.background;
+    in property <color> border-color: Theme.input;
+    in property <length> radius: Theme.radius-md;
+    // Written before the selected label, so the trigger can say what the value
+    // is: "Country: Portugal".
+    in property <string> title-prefix;
+    // The popup's width. Zero matches the trigger.
+    in property <length> menu-width: 0px;
     callback changed(index: int);
 
-    private property <string> label: selected >= 0 && selected < items.length ? items[selected].label : placeholder;
+    private property <string> label: selected >= 0 && selected < items.length
+        ? title-prefix + items[selected].label
+        : placeholder;
 
     height: Theme.input-height(size);
     min-width: 0px;
@@ -25,10 +39,10 @@ export component Select {
     opacity: enabled ? 1 : 0.5;
 
     Rectangle {
-        border-radius: Theme.radius-md;
-        border-width: 1px;
-        border-color: Theme.input;
-        background: Theme.background;
+        border-radius: root.radius;
+        border-width: root.appearance ? 1px : 0px;
+        border-color: root.border-color;
+        background: root.appearance ? root.background : transparent;
     }
 
     HorizontalLayout {
@@ -65,7 +79,7 @@ export component Select {
     list := PopupWindow {
         x: 0;
         y: root.height + 4px;
-        width: root.width;
+        width: root.menu-width > 0px ? root.menu-width : root.width;
         close-policy: close-on-click-outside;
 
         Rectangle {

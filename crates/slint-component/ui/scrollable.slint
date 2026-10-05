@@ -1,13 +1,37 @@
 import { Theme } from "theme.slint";
 
-// A vertical scroll area with an overlay scrollbar. Mirrors GPUI Component's
-// `Scrollable`: the bar stays thin and widens while the pointer is over it.
+// Which way a `Scrollable` may overflow. Mirrors GPUI Component's
+// `ScrollbarAxis`.
+export enum ScrollAxis {
+    vertical,
+    horizontal,
+    both,
+}
+
+// A scroll area with overlay scrollbars. Mirrors GPUI Component's `Scrollable`:
+// each bar stays thin and widens while the pointer is over it.
 //
 // Height is explicit. Without it, Slint copies the content's preferred height
 // onto the flickable, the area grows to fit, and a wheel move never scrolls.
 export component Scrollable {
+    // A vertical-only area pins its viewport width, so content wider than the
+    // area is clipped rather than scrolled.
+    in property <ScrollAxis> axis: ScrollAxis.vertical;
+
+    in-out property <length> viewport-x <=> flick.viewport-x;
+    out property <length> viewport-width <=> flick.viewport-width;
     in-out property <length> viewport-y <=> flick.viewport-y;
     out property <length> viewport-height <=> flick.viewport-height;
+
+    private property <bool> sideways: axis != ScrollAxis.vertical;
+    private property <bool> upright: axis != ScrollAxis.horizontal;
+
+    private property <length> overflow-x: sideways ? max(0px, flick.viewport-width - flick.width) : 0px;
+    private property <length> overflow-y: upright ? max(0px, flick.viewport-height - flick.height) : 0px;
+    private property <length> thumb-width: overflow-x > 0
+        ? max(24px, flick.width * flick.width / flick.viewport-width) : 0px;
+    private property <length> thumb-height: overflow-y > 0
+        ? max(24px, flick.height * flick.height / flick.viewport-height) : 0px;
 
     horizontal-stretch: 1;
     vertical-stretch: 1;
@@ -16,16 +40,13 @@ export component Scrollable {
     preferred-width: 100%;
     preferred-height: 100%;
 
-    private property <length> overflow: max(0px, flick.viewport-height - flick.height);
-    private property <length> thumb-height: overflow > 0 ? max(24px, flick.height * flick.height / flick.viewport-height) : 0;
-
     flick := Flickable {
         x: 0px;
         y: 0px;
         width: parent.width;
         height: parent.height;
-        viewport-width: self.width;
-        viewport-height: max(self.height, content.preferred-height);
+        viewport-width: sideways ? max(self.width, content.preferred-width) : self.width;
+        viewport-height: upright ? max(self.height, content.preferred-height) : self.height;
 
         content := VerticalLayout {
             alignment: start;
@@ -33,15 +54,17 @@ export component Scrollable {
         }
     }
 
-    if overflow > 0: bar := Rectangle {
+    // The vertical bar gives up the corner when the horizontal one is showing,
+    // so the two do not overlap.
+    if overflow-y > 0: bar := Rectangle {
         x: parent.width - self.width - 2px;
         y: 2px;
         width: bar-touch.has-hover || bar-touch.pressed ? 8px : 6px;
-        height: parent.height - 4px;
+        height: parent.height - 4px - (overflow-x > 0 ? 10px : 0px);
         animate width { duration: 120ms; }
 
         thumb := Rectangle {
-            y: (-flick.viewport-y) / overflow * (parent.height - self.height);
+            y: (-flick.viewport-y) / overflow-y * (parent.height - self.height);
             height: thumb-height;
             border-radius: self.width / 2;
             background: Theme.muted-foreground.with-alpha(bar-touch.has-hover || bar-touch.pressed ? 0.6 : 0.35);
@@ -57,11 +80,48 @@ export component Scrollable {
             moved => {
                 if self.pressed {
                     flick.viewport-y = clamp(
-                        self.grab-viewport-y - (self.mouse-y - self.pressed-y) * overflow / (parent.height - thumb-height),
-                        -overflow,
+                        self.grab-viewport-y - (self.mouse-y - self.pressed-y) * overflow-y / max(1px, parent.height - thumb-height),
+                        -overflow-y,
                         0px);
                 }
             }
+            scroll-event(event) => {
+                return reject;
+            }
+        }
+    }
+
+    // The horizontal bar sits along the bottom and drags the viewport's x.
+    if overflow-x > 0: hbar := Rectangle {
+        x: 2px;
+        y: parent.height - self.height - 2px;
+        width: parent.width - 4px;
+        height: hbar-touch.has-hover || hbar-touch.pressed ? 8px : 6px;
+        animate height { duration: 120ms; }
+
+        hthumb := Rectangle {
+            x: (-flick.viewport-x) / overflow-x * (parent.width - self.width);
+            width: thumb-width;
+            border-radius: self.height / 2;
+            background: Theme.muted-foreground.with-alpha(hbar-touch.has-hover || hbar-touch.pressed ? 0.6 : 0.35);
+        }
+
+        hbar-touch := TouchArea {
+            property <length> grab-viewport-x;
+            pointer-event(event) => {
+                if event.kind == PointerEventKind.down {
+                    self.grab-viewport-x = flick.viewport-x;
+                }
+            }
+            moved => {
+                if self.pressed {
+                    flick.viewport-x = clamp(
+                        self.grab-viewport-x - (self.mouse-x - self.pressed-x) * overflow-x / max(1px, parent.width - thumb-width),
+                        -overflow-x,
+                        0px);
+                }
+            }
+            // A wheel over the bar still scrolls the area.
             scroll-event(event) => {
                 return reject;
             }
