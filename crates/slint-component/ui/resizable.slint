@@ -1,37 +1,60 @@
 import { Theme } from "theme.slint";
 
-// Split panes with a drag handle. Mirrors GPUI Component's `Resizable`.
-export component Resizable {
-    in-out property <length> split: 200px;
+// One pane of a split.
+//
+// Slint allows a single `@children` placeholder per component, so a container
+// that owns both panes could only ever fill one of them — which is why the
+// earlier `Resizable` always drew an empty pane beside its content. Panes are
+// separate elements instead: the caller places two of these around a
+// `ResizeHandle` and binds the fixed one to the handle's `split`.
+export component ResizablePane inherits Rectangle {
+    in property <bool> bordered: true;
+
+    border-radius: Theme.radius-md;
+    border-width: root.bordered ? 1px : 0px;
+    border-color: Theme.border;
+    background: Theme.background;
+    clip: true;
+
+    VerticalLayout {
+        // Packed to the top. Without this the children are distributed down the
+        // pane, which throws a two-line sidebar apart.
+        alignment: start;
+        @children
+    }
+}
+
+// The divider between two `ResizablePane`s. It owns the split width, so the
+// fixed pane reads `split` back and the handle clamps it for both of them.
+export component ResizeHandle inherits Rectangle {
+    in-out property <length> split: 220px;
     in property <length> minimum: 80px;
+    // Zero leaves the split unbounded above.
+    in property <length> maximum: 0px;
+    callback resized(split: length);
 
-    HorizontalLayout {
-        spacing: 0;
+    private property <bool> active: grip.has-hover || grip.pressed;
 
-        Rectangle {
-            width: split;
-            clip: true;
-            VerticalLayout {
-                @children
+    width: 6px;
+    background: active ? Theme.primary.with-alpha(0.45) : Theme.border;
+
+    // The strip is the whole target: a 6px line is hard to hit otherwise.
+    grip := TouchArea {
+        x: -4px;
+        y: 0;
+        width: parent.width + 8px;
+        height: parent.height;
+        mouse-cursor: ew-resize;
+        moved => {
+            if self.pressed {
+                root.resize-to(root.split + (self.mouse-x - self.pressed-x));
             }
         }
+    }
 
-        handle := Rectangle {
-            width: 6px;
-            background: Theme.border;
-            TouchArea {
-                mouse-cursor: ew-resize;
-                moved => {
-                    if self.pressed {
-                        root.split = max(minimum, root.split + (self.mouse-x - self.pressed-x));
-                    }
-                }
-            }
-        }
-
-        Rectangle {
-            horizontal-stretch: 1;
-            clip: true;
-        }
+    function resize-to(next: length) {
+        let low = max(root.minimum, next);
+        root.split = root.maximum > 0px ? min(root.maximum, low) : low;
+        root.resized(root.split);
     }
 }

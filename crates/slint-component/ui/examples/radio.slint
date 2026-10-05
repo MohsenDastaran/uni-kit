@@ -29,6 +29,18 @@ export component RadioExample inherits VerticalLayout {
         }
     }
 
+    // The group with one option. A radio never toggles off, so the only choice
+    // is the selected one and the group cannot be emptied.
+    GroupBox {
+        title: "Vertical Layout";
+        description: "A vertical group with a single option.";
+        variant: GroupBoxVariant.outline;
+        RadioGroup {
+            options: ["Standard delivery — the only method for this address"];
+            selected: 0;
+        }
+    }
+
     GroupBox {
         title: "Different Sizes";
         variant: GroupBoxVariant.outline;

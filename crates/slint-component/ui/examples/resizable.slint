@@ -1,6 +1,7 @@
 import { Theme } from "../theme.slint";
 import { GroupBox, GroupBoxVariant } from "section.slint";
-import { Resizable } from "../resizable.slint";
+import { ResizablePane, ResizeHandle } from "../resizable.slint";
+import { Button } from "../button.slint";
 
 export component ResizableExample inherits VerticalLayout {
     horizontal-stretch: 1;
@@ -8,56 +9,401 @@ export component ResizableExample inherits VerticalLayout {
     spacing: 24px;
     alignment: start;
 
-    private property <length> nested-split: 140px;
+    private property <bool> show-aside: true;
+    private property <length> aside-split: 180px;
 
+    // Two panes around one handle. The fixed pane reads the handle's split, so
+    // dragging the divider moves exactly one edge.
+    GroupBox {
+        title: "Usage";
+        variant: GroupBoxVariant.outline;
+
+        HorizontalLayout {
+            height: 160px;
+            spacing: 0;
+            ResizablePane {
+                width: u1.split;
+                VerticalLayout {
+                    padding: 12px;
+                    spacing: 4px;
+                    Text { text: "Sidebar"; color: Theme.foreground; font-size: Theme.font-size-sm; font-weight: 600; }
+                    Text { text: "Drag the divider."; color: Theme.muted-foreground; font-size: Theme.font-size-xs; }
+                }
+            }
+            u1 := ResizeHandle { }
+            ResizablePane {
+                horizontal-stretch: 1;
+                VerticalLayout {
+                    padding: 12px;
+                    spacing: 4px;
+                    Text { text: "Content"; color: Theme.foreground; font-size: Theme.font-size-sm; font-weight: 600; }
+                    Text { text: "Takes whatever is left."; color: Theme.muted-foreground; font-size: Theme.font-size-xs; }
+                }
+            }
+        }
+    }
+
+    // `minimum` is where the divider stops, so the pane cannot be dragged away.
     GroupBox {
         title: "Panel Size Constraints";
         variant: GroupBoxVariant.outline;
 
-        Rectangle {
-            width: 100%; height: 180px; border-width: 1px; border-color: Theme.border; border-radius: Theme.radius-md; clip: true;
-            Resizable {
-                split: 240px;
-                minimum: 120px;
+        HorizontalLayout {
+            height: 160px;
+            spacing: 0;
+            ResizablePane {
+                width: u2.split;
                 VerticalLayout {
                     padding: 12px;
-                    Text { text: "Drag the handle."; color: Theme.foreground; font-size: Theme.font-size-sm; }
-                    Text { text: "The left pane stops at 120px."; color: Theme.muted-foreground; font-size: Theme.font-size-xs; }
+                    spacing: 4px;
+                    Text { text: "240px to start"; color: Theme.foreground; font-size: Theme.font-size-sm; }
+                    Text { text: "Stops at 120px."; color: Theme.muted-foreground; font-size: Theme.font-size-xs; }
+                }
+            }
+            u2 := ResizeHandle { split: 240px; minimum: 120px; }
+            ResizablePane {
+                horizontal-stretch: 1;
+                VerticalLayout {
+                    padding: 12px;
+                    Text { text: "Content"; color: Theme.foreground; font-size: Theme.font-size-sm; }
                 }
             }
         }
     }
 
+    // A ceiling as well as a floor: the pane cannot grow past 320px either.
+    GroupBox {
+        title: "Panel with Size Limits";
+        variant: GroupBoxVariant.outline;
+
+        HorizontalLayout {
+            height: 160px;
+            spacing: 0;
+            ResizablePane {
+                width: u3.split;
+                VerticalLayout {
+                    padding: 12px;
+                    spacing: 4px;
+                    Text { text: "Capped pane"; color: Theme.foreground; font-size: Theme.font-size-sm; }
+                    Text { text: "120px .. 320px."; color: Theme.muted-foreground; font-size: Theme.font-size-xs; }
+                }
+            }
+            u3 := ResizeHandle { split: 200px; minimum: 120px; maximum: 320px; }
+            ResizablePane {
+                horizontal-stretch: 1;
+                VerticalLayout {
+                    padding: 12px;
+                    Text { text: "Content"; color: Theme.foreground; font-size: Theme.font-size-sm; }
+                }
+            }
+        }
+    }
+
+    // Three panes are two handles in a row, each owning its own edge.
     GroupBox {
         title: "Multiple Panels";
         variant: GroupBoxVariant.outline;
 
-        Rectangle {
-            width: 100%; height: 180px; border-width: 1px; border-color: Theme.border; border-radius: Theme.radius-md; clip: true;
-            Resizable {
-                split: 200px;
+        HorizontalLayout {
+            height: 160px;
+            spacing: 0;
+            ResizablePane {
+                width: m1.split;
                 VerticalLayout {
                     padding: 12px;
-                    Text { text: "Explorer"; color: Theme.foreground; font-size: Theme.font-size-sm; }
+                    Text { text: "Explorer"; color: Theme.foreground; font-size: Theme.font-size-sm; font-weight: 600; }
+                }
+            }
+            m1 := ResizeHandle { split: 180px; minimum: 120px; }
+            ResizablePane {
+                width: m2.split;
+                VerticalLayout {
+                    padding: 12px;
+                    Text { text: "Outline"; color: Theme.foreground; font-size: Theme.font-size-sm; font-weight: 600; }
+                }
+            }
+            m2 := ResizeHandle { split: 180px; minimum: 120px; }
+            ResizablePane {
+                horizontal-stretch: 1;
+                VerticalLayout {
+                    padding: 12px;
+                    Text { text: "Editor"; color: Theme.foreground; font-size: Theme.font-size-sm; font-weight: 600; }
                 }
             }
         }
     }
 
-    // A split can hold another split, which is how a three-column workspace is
-    // built: the centre column is itself a `Resizable`.
+    // A split inside a pane is a normal element, so a workspace nests freely.
     GroupBox {
         title: "Nested Layouts";
         variant: GroupBoxVariant.outline;
 
-        Rectangle {
-            width: 100%; height: 220px; border-width: 1px; border-color: Theme.border; border-radius: Theme.radius-md; clip: true;
-            Resizable {
-                split: 160px;
-                minimum: 80px;
+        HorizontalLayout {
+            height: 200px;
+            spacing: 0;
+            ResizablePane {
+                width: n1.split;
                 VerticalLayout {
                     padding: 12px;
-                    Text { text: "Explorer"; color: Theme.foreground; font-size: Theme.font-size-sm; }
+                    Text { text: "Explorer"; color: Theme.foreground; font-size: Theme.font-size-sm; font-weight: 600; }
+                }
+            }
+            n1 := ResizeHandle { split: 160px; minimum: 80px; }
+            ResizablePane {
+                horizontal-stretch: 1;
+                HorizontalLayout {
+                    spacing: 0;
+                    ResizablePane {
+                        width: n2.split;
+                        VerticalLayout {
+                            padding: 12px;
+                            Text { text: "Outline"; color: Theme.foreground; font-size: Theme.font-size-sm; font-weight: 600; }
+                        }
+                    }
+                    n2 := ResizeHandle { split: 160px; minimum: 80px; }
+                    ResizablePane {
+                        horizontal-stretch: 1;
+                        VerticalLayout {
+                            padding: 12px;
+                            Text { text: "Editor"; color: Theme.foreground; font-size: Theme.font-size-sm; font-weight: 600; }
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    // The same nesting, driven from the outer group: a column of two rows, each
+    // of which is itself a horizontal split.
+    GroupBox {
+        title: "Nested Panel Groups";
+        variant: GroupBoxVariant.outline;
+
+        VerticalLayout {
+            height: 240px;
+            spacing: 0;
+            ResizablePane {
+                vertical-stretch: 1;
+                HorizontalLayout {
+                    spacing: 0;
+                    ResizablePane {
+                        width: g1.split;
+                        VerticalLayout { padding: 12px; Text { text: "Left"; color: Theme.foreground; font-size: Theme.font-size-sm; } }
+                    }
+                    g1 := ResizeHandle { split: 200px; minimum: 120px; }
+                    ResizablePane {
+                        horizontal-stretch: 1;
+                        VerticalLayout { padding: 12px; Text { text: "Centre"; color: Theme.foreground; font-size: Theme.font-size-sm; } }
+                    }
+                }
+            }
+            ResizablePane {
+                vertical-stretch: 1;
+                HorizontalLayout {
+                    spacing: 0;
+                    ResizablePane {
+                        width: g2.split;
+                        VerticalLayout { padding: 12px; Text { text: "Bottom left"; color: Theme.foreground; font-size: Theme.font-size-sm; } }
+                    }
+                    g2 := ResizeHandle { split: 200px; minimum: 120px; }
+                    ResizablePane {
+                        horizontal-stretch: 1;
+                        VerticalLayout { padding: 12px; Text { text: "Bottom right"; color: Theme.foreground; font-size: Theme.font-size-sm; } }
+                    }
+                }
+            }
+        }
+    }
+
+    // A pane can be left out entirely; the handle stays put and the remaining
+    // pane keeps the width the hidden one gave back.
+    GroupBox {
+        title: "Conditional Panel Visibility";
+        variant: GroupBoxVariant.outline;
+
+        VerticalLayout {
+            spacing: 10px;
+
+            HorizontalLayout {
+                spacing: 8px;
+                alignment: start;
+                Button {
+                    text: root.show-aside ? "Hide the sidebar" : "Show the sidebar";
+                    outline: true;
+                    clicked => { root.show-aside = !root.show-aside; }
+                }
+            }
+
+            HorizontalLayout {
+                height: 140px;
+                spacing: 0;
+                if root.show-aside: ResizablePane {
+                    width: root.aside-split;
+                    VerticalLayout {
+                        padding: 12px;
+                        Text { text: "Sidebar"; color: Theme.foreground; font-size: Theme.font-size-sm; font-weight: 600; }
+                    }
+                }
+                if root.show-aside: ResizeHandle {
+                    split <=> root.aside-split;
+                    minimum: 120px;
+                }
+                ResizablePane {
+                    horizontal-stretch: 1;
+                    VerticalLayout {
+                        padding: 12px;
+                        Text { text: "Content"; color: Theme.foreground; font-size: Theme.font-size-sm; font-weight: 600; }
+                    }
+                }
+            }
+        }
+    }
+
+    // A file tree beside the file it opens.
+    GroupBox {
+        title: "File Explorer Layout";
+        variant: GroupBoxVariant.outline;
+
+        HorizontalLayout {
+            height: 220px;
+            spacing: 0;
+            ResizablePane {
+                width: f1.split;
+                VerticalLayout {
+                    padding: 12px;
+                    spacing: 6px;
+                    Text { text: "src"; color: Theme.foreground; font-size: Theme.font-size-sm; font-weight: 600; }
+                    for row in ["components", "lib.rs", "main.rs", "theme.rs"]: Text {
+                        text: row;
+                        color: Theme.muted-foreground;
+                        font-size: Theme.font-size-xs;
+                    }
+                }
+            }
+            f1 := ResizeHandle { split: 200px; minimum: 140px; }
+            ResizablePane {
+                horizontal-stretch: 1;
+                VerticalLayout {
+                    padding: 12px;
+                    spacing: 6px;
+                    Text { text: "main.rs"; color: Theme.foreground; font-size: Theme.font-size-sm; font-weight: 600; }
+                    for line in ["fn main() {", "    App::new().run();", "}"]: Text {
+                        text: line;
+                        color: Theme.muted-foreground;
+                        font-size: Theme.font-size-xs;
+                    }
+                }
+            }
+        }
+    }
+
+    // Three columns and a bottom drawer: two handles across, one down.
+    GroupBox {
+        title: "IDE Layout";
+        variant: GroupBoxVariant.outline;
+
+        VerticalLayout {
+            height: 260px;
+            spacing: 0;
+
+            ResizablePane {
+                vertical-stretch: 1;
+                HorizontalLayout {
+                    spacing: 0;
+                    ResizablePane {
+                        width: i1.split;
+                        VerticalLayout { padding: 12px; Text { text: "Explorer"; color: Theme.foreground; font-size: Theme.font-size-sm; font-weight: 600; } }
+                    }
+                    i1 := ResizeHandle { split: 170px; minimum: 120px; }
+                    ResizablePane {
+                        horizontal-stretch: 1;
+                        VerticalLayout { padding: 12px; Text { text: "Editor"; color: Theme.foreground; font-size: Theme.font-size-sm; font-weight: 600; } }
+                    }
+                    i2 := ResizeHandle { split: 180px; minimum: 120px; }
+                    ResizablePane {
+                        width: i2.split;
+                        VerticalLayout { padding: 12px; Text { text: "Outline"; color: Theme.foreground; font-size: Theme.font-size-sm; font-weight: 600; } }
+                    }
+                }
+            }
+
+            ResizablePane {
+                height: 70px;
+                VerticalLayout { padding: 12px; Text { text: "Terminal"; color: Theme.foreground; font-size: Theme.font-size-sm; font-weight: 600; } }
+            }
+        }
+    }
+
+    // A navigation column beside the panel it selects.
+    GroupBox {
+        title: "Settings Panel";
+        variant: GroupBoxVariant.outline;
+
+        HorizontalLayout {
+            height: 200px;
+            spacing: 0;
+            ResizablePane {
+                width: s1.split;
+                VerticalLayout {
+                    padding: 12px;
+                    spacing: 6px;
+                    for row in ["General", "Appearance", "Shortcuts", "Updates"]: Text {
+                        text: row;
+                        color: Theme.muted-foreground;
+                        font-size: Theme.font-size-sm;
+                    }
+                }
+            }
+            s1 := ResizeHandle { split: 180px; minimum: 140px; }
+            ResizablePane {
+                horizontal-stretch: 1;
+                VerticalLayout {
+                    padding: 12px;
+                    spacing: 4px;
+                    Text { text: "Appearance"; color: Theme.foreground; font-size: Theme.font-size-sm; font-weight: 600; }
+                    Text { text: "The panel the navigation selects."; color: Theme.muted-foreground; font-size: Theme.font-size-xs; }
+                }
+            }
+        }
+    }
+
+    // Four widgets: a row of two splits, each split again into two rows.
+    GroupBox {
+        title: "Dashboard with Widgets";
+        variant: GroupBoxVariant.outline;
+
+        HorizontalLayout {
+            height: 240px;
+            spacing: 0;
+            ResizablePane {
+                width: d1.split;
+                VerticalLayout {
+                    height: 100%;
+                    spacing: 0;
+                    ResizablePane {
+                        vertical-stretch: 1;
+                        VerticalLayout { padding: 12px; Text { text: "Revenue"; color: Theme.foreground; font-size: Theme.font-size-sm; font-weight: 600; } }
+                    }
+                    ResizablePane {
+                        vertical-stretch: 1;
+                        VerticalLayout { padding: 12px; Text { text: "Signups"; color: Theme.foreground; font-size: Theme.font-size-sm; font-weight: 600; } }
+                    }
+                }
+            }
+            d1 := ResizeHandle { split: 260px; minimum: 160px; }
+            ResizablePane {
+                horizontal-stretch: 1;
+                VerticalLayout {
+                    height: 100%;
+                    spacing: 0;
+                    ResizablePane {
+                        vertical-stretch: 1;
+                        VerticalLayout { padding: 12px; Text { text: "Traffic"; color: Theme.foreground; font-size: Theme.font-size-sm; font-weight: 600; } }
+                    }
+                    ResizablePane {
+                        vertical-stretch: 1;
+                        VerticalLayout { padding: 12px; Text { text: "Errors"; color: Theme.foreground; font-size: Theme.font-size-sm; font-weight: 600; } }
+                    }
                 }
             }
         }
@@ -71,9 +417,10 @@ export component ResizableExample inherits VerticalLayout {
             spacing: 8px;
             alignment: start;
             Text {
-                text: "The handle is a 6px strip in the border colour, with an ew-resize cursor and no extra chrome. Drag it to move the split.";
+                text: "The handle is a 6px strip in the border colour. It widens its own target by 4px on each side, so the divider is easy to grab without drawing a thicker line.";
                 color: Theme.muted-foreground;
                 font-size: Theme.font-size-sm;
+                wrap: word-wrap;
             }
         }
     }
