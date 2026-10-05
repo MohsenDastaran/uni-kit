@@ -16,11 +16,12 @@ export component ProgressExample inherits VerticalLayout {
     GroupBox {
         title: "Progress";
         variant: GroupBoxVariant.outline;
-        GridLayout {
+        // One row, packed left. These are small controls and always fit, so the
+        // wrap grid only ever broke them onto separate lines.
+        HorizontalLayout {
             spacing: 8px;
+            alignment: start;
             Button {
-                row: Theme.wrap-row(0, root.wrap-cols);
-                col: Theme.wrap-col(0, root.wrap-cols);
                 horizontal-stretch: 0;
                 text: "Loading";
                 selected: root.loading;
@@ -29,8 +30,6 @@ export component ProgressExample inherits VerticalLayout {
                 }
             }
             Button {
-                row: Theme.wrap-row(1, root.wrap-cols);
-                col: Theme.wrap-col(1, root.wrap-cols);
                 horizontal-stretch: 0;
                 icon: "minus";
                 enabled: root.value > 0;
@@ -39,19 +38,12 @@ export component ProgressExample inherits VerticalLayout {
                 }
             }
             Button {
-                row: Theme.wrap-row(2, root.wrap-cols);
-                col: Theme.wrap-col(2, root.wrap-cols);
                 horizontal-stretch: 0;
                 icon: "plus";
                 enabled: root.value < 100;
                 clicked => {
                     root.value = min(100, root.value + 10);
                 }
-            }
-            Rectangle {
-                row: 0;
-                col: root.wrap-cols;
-                horizontal-stretch: 1;
             }
         }
         VerticalLayout {

@@ -1,6 +1,8 @@
-import { Theme } from "../theme.slint";
+import { Theme, ControlSize } from "../theme.slint";
 import { GroupBox, GroupBoxVariant } from "section.slint";
 import { Questionnaire } from "../questionnaire.slint";
+import { Card } from "../card.slint";
+import { Button } from "../button.slint";
 
 export component QuestionnaireExample inherits VerticalLayout {
     horizontal-stretch: 1;
@@ -8,62 +10,279 @@ export component QuestionnaireExample inherits VerticalLayout {
     spacing: 24px;
     alignment: start;
 
-    // The control owns the step and the answer; the caller owns the questions.
+    private property <int> controlled-step: 0;
+
+    // The flow the whole control is built for: a counter, a prompt with a
+    // sentence under it, choices that say what they mean, a write-your-own row,
+    // and a keyboard badge on each choice.
     GroupBox {
         title: "Complete flow";
         variant: GroupBoxVariant.outline;
 
         Questionnaire {
             questions: [
-                { prompt: "Which toolkit are you building for?", options: ["GPUI", "Slint", "Both"] },
-                { prompt: "How do you install a component?", options: ["uni-kit add", "Copy the files", "Both"] },
-                { prompt: "Where does the site serve the gallery?", options: ["/gallery", "/slint-gallery"] },
+                {
+                    prompt: "What should we prototype next?",
+                    help: "Choose one direction or write your own.",
+                    choices: [
+                        { title: "Delegation", detail: "Show how work moves to a specialist." },
+                        { title: "Question prompts", detail: "Show choices while the interface waits." },
+                        { title: "Both together", detail: "" },
+                    ],
+                    free-text: "Type another direction…",
+                },
+                {
+                    prompt: "Which tools belong in it?",
+                    help: "Pick the ones the prototype has to show.",
+                    choices: [
+                        { title: "Editor", detail: "The text surface and its menus." },
+                        { title: "Terminal", detail: "A running command and its output." },
+                        { title: "Browser", detail: "" },
+                    ],
+                    free-text: "Add another tool…",
+                },
+                {
+                    prompt: "What tone should the interface use?",
+                    help: "This question can be skipped.",
+                    choices: [
+                        { title: "Direct", detail: "Short labels, no ceremony." },
+                        { title: "Warm", detail: "Sentences, and room to breathe." },
+                    ],
+                    free-text: "",
+                },
             ];
-            step: 0;
         }
     }
 
-    // Each question carries its own options, so a flow can mix a two-way
-    // choice with a longer list.
+    // The plain case: a prompt and a list, no counter, no badges.
     GroupBox {
         title: "Choices";
         variant: GroupBoxVariant.outline;
 
         Questionnaire {
+            show-counter: false;
+            show-progress: false;
+            show-badges: false;
             questions: [
-                { prompt: "How often do you ship?", options: ["Daily", "Weekly", "Monthly", "Rarely"] },
-                { prompt: "Who reviews the change?", options: ["A teammate", "A maintainer", "Nobody"] },
+                {
+                    prompt: "How often do you ship?",
+                    help: "",
+                    choices: [
+                        { title: "Daily", detail: "" },
+                        { title: "Weekly", detail: "" },
+                        { title: "Monthly", detail: "" },
+                        { title: "Rarely", detail: "" },
+                    ],
+                    free-text: "",
+                },
             ];
-            step: 1;
         }
     }
 
-    // Back and Continue step through the list; the last step finishes.
+    // A rejected step: the message sits under the choices, above the actions.
     GroupBox {
-        title: "Navigation and submission";
+        title: "Validation";
         variant: GroupBoxVariant.outline;
 
         Questionnaire {
+            error: "Choose a direction, or write one in the field above.";
             questions: [
-                { prompt: "Confirm the target directory", options: ["ui/components", "crates/slint-component"] },
+                {
+                    prompt: "Choose a public handle",
+                    help: "The validator rejects short handles.",
+                    choices: [
+                        { title: "Use my account name", detail: "Taken from your profile." },
+                        { title: "Pick a new handle", detail: "At least three characters." },
+                    ],
+                    free-text: "Public handle",
+                },
             ];
-            step: 0;
         }
     }
 
-    // The progress bar at the top is derived from the step, so a questionnaire
-    // that starts part-way through shows that immediately.
+    // The same choices with numbered shortcuts instead of letters.
+    GroupBox {
+        title: "Keyboard shortcuts";
+        variant: GroupBoxVariant.outline;
+
+        Questionnaire {
+            badges: ["1", "2", "3"];
+            questions: [
+                {
+                    prompt: "Choose an answer or type your own",
+                    help: "The badges name the key that picks each choice.",
+                    choices: [
+                        { title: "First choice", detail: "Press 1 to pick this." },
+                        { title: "Second choice", detail: "Press 2 to pick this." },
+                        { title: "Third choice", detail: "Press 3 to pick this." },
+                    ],
+                    free-text: "Type without triggering 1, 2, or 3…",
+                },
+            ];
+        }
+    }
+
+    GroupBox {
+        title: "Sizes and theming";
+        variant: GroupBoxVariant.outline;
+
+        VerticalLayout {
+            spacing: 16px;
+            Questionnaire {
+                size: ControlSize.small;
+                questions: [
+                    {
+                        prompt: "Small",
+                        help: "",
+                        choices: [
+                            { title: "First choice", detail: "" },
+                            { title: "Second choice", detail: "" },
+                        ],
+                        free-text: "",
+                    },
+                ];
+            }
+            Questionnaire {
+                size: ControlSize.large;
+                questions: [
+                    {
+                        prompt: "Large",
+                        help: "The disc, the row padding, and the prompt scale together.",
+                        choices: [
+                            { title: "First choice", detail: "With a sentence under it." },
+                            { title: "Second choice", detail: "" },
+                        ],
+                        free-text: "",
+                    },
+                ];
+            }
+        }
+    }
+
+    // Only the parts a step needs: a prompt, its choices, and the actions.
+    GroupBox {
+        title: "Composition";
+        variant: GroupBoxVariant.outline;
+
+        Questionnaire {
+            show-counter: false;
+            show-progress: false;
+            questions: [
+                {
+                    prompt: "Confirm the target directory",
+                    help: "The control is only the question and its actions here.",
+                    choices: [
+                        { title: "ui/components", detail: "Where a Slint install puts files." },
+                        { title: "crates/slint-component", detail: "The crate that builds the gallery." },
+                    ],
+                    free-text: "",
+                },
+            ];
+        }
+    }
+
+    // The bar on its own, with the counter turned off.
     GroupBox {
         title: "Progress";
         variant: GroupBoxVariant.outline;
 
         Questionnaire {
+            show-counter: false;
             questions: [
-                { prompt: "First question", options: ["A", "B"] },
-                { prompt: "Second question", options: ["A", "B"] },
-                { prompt: "Third question", options: ["A", "B"] },
+                { prompt: "First question", help: "", choices: [{ title: "A", detail: "" }, { title: "B", detail: "" }], free-text: "" },
+                { prompt: "Second question", help: "", choices: [{ title: "A", detail: "" }, { title: "B", detail: "" }], free-text: "" },
+                { prompt: "Third question", help: "", choices: [{ title: "A", detail: "" }, { title: "B", detail: "" }], free-text: "" },
             ];
             step: 1;
+        }
+    }
+
+    // Back and Continue step through the list; the last step submits.
+    GroupBox {
+        title: "Navigation and submission";
+        variant: GroupBoxVariant.outline;
+
+        Questionnaire {
+            show-counter: false;
+            show-progress: false;
+            questions: [
+                {
+                    prompt: "Confirm the release channel",
+                    help: "",
+                    choices: [{ title: "Stable", detail: "" }, { title: "Nightly", detail: "" }],
+                    free-text: "",
+                },
+                {
+                    prompt: "Confirm the rollout",
+                    help: "",
+                    choices: [{ title: "Everyone", detail: "" }, { title: "One team first", detail: "" }],
+                    free-text: "",
+                },
+            ];
+        }
+    }
+
+    // The host owns the step, so its own controls can drive the flow.
+    GroupBox {
+        title: "Controlling the state";
+        variant: GroupBoxVariant.outline;
+
+        VerticalLayout {
+            spacing: 12px;
+
+            HorizontalLayout {
+                spacing: 8px;
+                alignment: start;
+                Button {
+                    text: "Previous question";
+                    outline: true;
+                    enabled: root.controlled-step > 0;
+                    clicked => { root.controlled-step -= 1; }
+                }
+                Button {
+                    text: "Next question";
+                    outline: true;
+                    enabled: root.controlled-step < 1;
+                    clicked => { root.controlled-step += 1; }
+                }
+            }
+
+            controlled := Questionnaire {
+                show-progress: false;
+                step <=> root.controlled-step;
+                questions: [
+                    { prompt: "First", help: "Driven from outside.", choices: [{ title: "A", detail: "" }, { title: "B", detail: "" }], free-text: "" },
+                    { prompt: "Second", help: "The control's own buttons move this too.", choices: [{ title: "A", detail: "" }, { title: "B", detail: "" }], free-text: "" },
+                ];
+            }
+        }
+    }
+
+    // The questionnaire keeps its progress and actions; the card owns the
+    // surface around them.
+    GroupBox {
+        title: "Card and Dialog composition";
+        variant: GroupBoxVariant.outline;
+
+        Card {
+            title: "Prototype brief";
+            description: "The card owns the surface; the questionnaire owns the steps.";
+
+            Questionnaire {
+                show-counter: false;
+                show-progress: false;
+                questions: [
+                    {
+                        prompt: "Who is the prototype for?",
+                        help: "",
+                        choices: [
+                            { title: "The design team", detail: "" },
+                            { title: "A new contributor", detail: "" },
+                        ],
+                        free-text: "",
+                    },
+                ];
+            }
         }
     }
 }

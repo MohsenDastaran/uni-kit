@@ -263,22 +263,4 @@ export component PopoverExample inherits VerticalLayout {
         }
     }
 
-    // Last, because it is open on the first frame and floats above the rest.
-    GroupBox {
-        title: "Default Open";
-        variant: GroupBoxVariant.outline;
-
-        Popover {
-            trigger-text: "Default open";
-            open: true;
-            panel-width: 300px;
-
-            Text {
-                text: "This popover is open by default when first rendered.";
-                color: Theme.foreground;
-                font-size: Theme.font-size-xs;
-                wrap: word-wrap;
-            }
-        }
-    }
 }

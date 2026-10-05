@@ -1,4 +1,4 @@
-import { Theme, ControlSize, ButtonVariant } from "theme.slint";
+import { Theme, ControlSize } from "theme.slint";
 import { Placement } from "tooltip.slint";
 import { Button } from "button.slint";
 
@@ -29,9 +29,6 @@ export component Popover {
     min-width: host.preferred-width;
     min-height: host.preferred-height;
 
-    // `open` is the controlled state, so the panel follows it in both
-    // directions: a host that sets it false closes the panel, and a dismissal
-    // by click-outside reports back through `is-open`.
     // The controlled side: a host that sets `open` false closes the panel. The
     // reverse - reporting a click-outside dismissal back through `open` - is not
     // wired: reading `is-open` from a `changed` handler here makes the Slint
@@ -43,14 +40,6 @@ export component Popover {
             panel.show();
         } else {
             panel.close();
-        }
-    }
-
-    // A host that starts with `open: true` never sees a change, so the first
-    // frame is shown here.
-    init => {
-        if root.open {
-            panel.show();
         }
     }
 

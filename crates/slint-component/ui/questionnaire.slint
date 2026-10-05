@@ -1,40 +1,174 @@
-import { Theme, ButtonVariant } from "theme.slint";
+import { Theme, ControlSize, ButtonVariant } from "theme.slint";
 import { Button } from "button.slint";
-import { RadioGroup } from "radio.slint";
+import { Input } from "input.slint";
 import { Progress } from "progress.slint";
 
+// One option in a question: a line, and a sentence that says what it means.
+export struct QuestionChoice {
+    title: string,
+    detail: string,
+}
+
+// One step. `free-text` is the placeholder of the write-your-own row, and an
+// empty one hides that row.
 export struct Question {
     prompt: string,
-    options: [string],
+    help: string,
+    choices: [QuestionChoice],
+    free-text: string,
 }
 
 // A stepped form. Mirrors GPUI Component's `Questionnaire`.
+//
+// The parts GPUI composes by hand — a progress bar, a "Question 2 of 4" counter,
+// a prompt with a description, a choice list whose rows carry descriptions and
+// keyboard badges, a write-your-own field, an error line, and the Back/Next
+// pair — are properties here, so an example varies them without rebuilding the
+// control.
 export component Questionnaire {
     in property <[Question]> questions;
     in-out property <int> step: 0;
     in-out property <int> answer: 0;
+    // What the write-your-own row holds. The host reads it alongside `answer`.
+    in-out property <string> free-answer;
+    // A validation message for the current step. Empty draws nothing.
+    in property <string> error;
+    // The keyboard badges, one per choice. Replace them for numbered shortcuts.
+    in property <[string]> badges: ["A", "B", "C", "D", "E", "F", "G", "H"];
+    in property <bool> show-badges: true;
+    in property <bool> show-progress: true;
+    in property <bool> show-counter: true;
+    in property <ControlSize> size: ControlSize.medium;
     callback finished();
+    callback changed(step: int, answer: int);
 
     private property <int> total: questions.length;
+    private property <length> disc: size == ControlSize.xsmall ? 12px
+        : size == ControlSize.small ? 14px
+        : size == ControlSize.large ? 18px
+        : 16px;
+    private property <length> row-pad: size == ControlSize.small ? 8px
+        : size == ControlSize.large ? 14px
+        : 11px;
 
     VerticalLayout {
         spacing: 16px;
 
-        Progress {
+        if show-progress: Progress {
             value: total == 0 ? 0 : ((step + 1) * 100 / total);
         }
 
-        if total > 0: Text {
-            text: questions[step].prompt;
-            color: Theme.foreground;
-            font-size: Theme.font-size-md;
-            font-weight: 600;
-            wrap: word-wrap;
+        if total > 0: VerticalLayout {
+            spacing: 4px;
+            if show-counter: Text {
+                text: "Question \{step + 1} of \{total}";
+                color: Theme.muted-foreground;
+                font-size: Theme.font-size-xs;
+            }
+            Text {
+                text: questions[step].prompt;
+                color: Theme.foreground;
+                font-size: size == ControlSize.large ? Theme.font-size-lg : Theme.font-size-md;
+                font-weight: 600;
+                wrap: word-wrap;
+            }
+            if questions[step].help != "": Text {
+                text: questions[step].help;
+                color: Theme.muted-foreground;
+                font-size: Theme.font-size-sm;
+                wrap: word-wrap;
+            }
         }
 
-        if total > 0: RadioGroup {
-            options: questions[step].options;
-            selected <=> root.answer;
+        if total > 0: VerticalLayout {
+            spacing: 8px;
+
+            for choice[index] in questions[step].choices: TouchArea {
+                clicked => {
+                    root.answer = index;
+                    root.changed(root.step, index);
+                }
+
+                Rectangle {
+                    border-radius: Theme.radius-md;
+                    border-width: 1px;
+                    border-color: root.answer == index ? Theme.primary : Theme.border;
+                    background: root.answer == index ? Theme.primary.with-alpha(0.06) : Theme.background;
+
+                    HorizontalLayout {
+                        padding: row-pad;
+                        spacing: 10px;
+                        cross-axis-alignment: start;
+
+                        // The radio disc, drawn here rather than by `Radio` so
+                        // the row can carry a description and a badge.
+                        Rectangle {
+                            width: disc;
+                            height: disc;
+                            border-radius: self.width / 2;
+                            border-width: 1px;
+                            border-color: root.answer == index ? Theme.primary : Theme.input;
+                            background: Theme.background;
+
+                            if root.answer == index: Rectangle {
+                                x: (parent.width - self.width) / 2;
+                                y: (parent.height - self.height) / 2;
+                                width: disc / 2;
+                                height: disc / 2;
+                                border-radius: self.width / 2;
+                                background: Theme.primary;
+                            }
+                        }
+
+                        VerticalLayout {
+                            horizontal-stretch: 1;
+                            spacing: 2px;
+                            Text {
+                                text: choice.title;
+                                color: Theme.foreground;
+                                font-size: Theme.font-size-sm;
+                                font-weight: 500;
+                                wrap: word-wrap;
+                            }
+                            if choice.detail != "": Text {
+                                text: choice.detail;
+                                color: Theme.muted-foreground;
+                                font-size: Theme.font-size-xs;
+                                wrap: word-wrap;
+                            }
+                        }
+
+                        if show-badges && index < badges.length: Rectangle {
+                            width: 22px;
+                            height: 22px;
+                            border-radius: Theme.radius-sm;
+                            border-width: 1px;
+                            border-color: Theme.border;
+                            background: Theme.muted;
+
+                            Text {
+                                text: badges[index];
+                                color: Theme.muted-foreground;
+                                font-size: Theme.font-size-xs;
+                                horizontal-alignment: center;
+                                vertical-alignment: center;
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
+        if total > 0 && questions[step].free-text != "": Input {
+            placeholder: questions[step].free-text;
+            text <=> root.free-answer;
+        }
+
+        if error != "": Text {
+            text: error;
+            color: Theme.danger;
+            font-size: Theme.font-size-xs;
+            wrap: word-wrap;
         }
 
         HorizontalLayout {
@@ -42,11 +176,15 @@ export component Questionnaire {
             Button {
                 text: "Back";
                 enabled: step > 0;
-                clicked => { root.step -= 1; }
+                clicked => {
+                    root.step -= 1;
+                    root.answer = 0;
+                    root.free-answer = "";
+                }
             }
             Rectangle { horizontal-stretch: 1; }
             Button {
-                text: step + 1 >= total ? "Finish" : "Next";
+                text: step + 1 >= total ? "Submit" : "Next";
                 variant: ButtonVariant.primary;
                 enabled: total > 0;
                 clicked => {
@@ -55,6 +193,7 @@ export component Questionnaire {
                     } else {
                         root.step += 1;
                         root.answer = 0;
+                        root.free-answer = "";
                     }
                 }
             }
