@@ -34,6 +34,26 @@ const STORY_TITLES: Record<string, string> = {
   'virtual-list': 'VirtualList',
 };
 
+/**
+ * Whether the sources the counts are derived from are on disk.
+ *
+ * Both live outside `website/`, under `crates/`, so a build that only has the
+ * website directory in context finds no stories and no Slint examples. Every
+ * count then reads as zero, which is indistinguishable from "this component has
+ * no examples" -- and a production build hides those. Callers must treat a
+ * missing source tree as "unknown", never as "empty", or a trimmed build
+ * context silently empties the whole navigation.
+ */
+export const exampleSourcesAvailable = existsSync(STORIES) && existsSync(SLINT_EXAMPLES);
+
+if (!exampleSourcesAvailable) {
+  console.warn(
+    `[example-counts] Story and Slint sources not found under ${ROOT}/../crates. ` +
+      'Example counts are unavailable, so no page will be treated as empty. ' +
+      'Build from the repository root if the navigation needs its counts.',
+  );
+}
+
 export interface GalleryCounts {
   gpui?: number;
   slint?: number;

@@ -1,6 +1,6 @@
 import { readdirSync, readFileSync, statSync } from 'node:fs';
 import { extname, join, relative } from 'node:path';
-import { galleryCounts, type GalleryCounts } from './example-counts';
+import { exampleSourcesAvailable, galleryCounts, type GalleryCounts } from './example-counts';
 
 export interface SidebarItem {
   text: string;
@@ -196,7 +196,9 @@ function entriesToSidebarItems(
 
 export function generateSidebar(config: SidebarGeneratorConfig): SidebarItem[] {
   const entries = scanDir(config.contentDir, config.contentDir, config.countExamples === true);
-  const hideEmpty = config.hideEmptyExamples ?? PRODUCTION;
+  // Only hide when the counts were actually measured. Without the source tree
+  // every page looks empty, and hiding then drops the whole navigation.
+  const hideEmpty = (config.hideEmptyExamples ?? PRODUCTION) && exampleSourcesAvailable;
   const items = entriesToSidebarItems(entries, config.baseUrl, hideEmpty);
 
   const rootGroup: SidebarItem = {
