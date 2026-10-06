@@ -1,0 +1,11 @@
+# Keep the build context to source. Without this the local `node_modules`,
+# Rust `target` directories and the previously built galleries are all sent to
+# the daemon -- and the Slint gallery alone is several gigabytes.
+**/node_modules
+**/target
+**/dist
+**/.astro
+**/.tmp
+.git
+.gitignore
+**/*.log
