@@ -37,24 +37,45 @@ RUN --mount=type=cache,target=/usr/local/cargo/registry \
 WORKDIR /src
 COPY . .
 
-# `GITHUB_TOKEN` only lifts the rate limit for the navbar's star count, which the
-# build falls back to 0 without. It is an ARG and is passed inline, so the value
-# never becomes part of a layer.
-ARG GITHUB_TOKEN
+RUN --mount=type=cache,target=/usr/local/cargo/registry \
+    --mount=type=cache,target=/src/target \
+    make -C crates/story-web build-prod \
+ && make -C crates/base/examples/wasm build
 
+# The Slint gallery cannot be built as one catalog. `build.rs` folds every example
+# into a single generated Rust file, and compiling that file is killed for memory
+# on a 16 GiB runner -- the crate's own script says it wants more than a 14 GiB
+# machine, and its release profile only tunes `opt-level` to buy a little room.
+#
+# `SLINT_GALLERY_ONLY` narrows the catalog to one page, which the script documents
+# as the way to keep this build inside a memory cap. Each page lands in its own
+# folder, which is the layout the site's preview iframe asks for at
+# `/slint-gallery/pages/<slug>`. One page takes about twenty seconds once the
+# dependencies are compiled, so the 76 pages cost well under an hour.
 RUN --mount=type=cache,target=/usr/local/cargo/registry \
     --mount=type=cache,target=/src/target \
     --mount=type=cache,target=/src/crates/slint-component/target \
-    make -C crates/story-web build-prod \
- && make -C crates/base/examples/wasm build \
- && make -C crates/slint-component build
+    cd crates/slint-component \
+ && mkdir -p www/dist/pages \
+ && total=$(./scripts/pages.sh | wc -l) \
+ && i=0 \
+ && for slug in $(./scripts/pages.sh); do \
+      i=$((i + 1)); \
+      echo "[slint] $i/$total $slug"; \
+      SLINT_GALLERY_ONLY="$slug" ./scripts/build.sh --release --out "www/dist/pages/$slug" || exit 1; \
+    done
 
 # The site reads the Story and Slint sources from the repository root to count
 # examples and to render the Slint samples, so it has to build from here rather
 # than from `website/` alone. The copies mirror release-docs.yml.
-RUN cd website \
+#
+# `GITHUB_TOKEN` only lifts the rate limit for the navbar's star count, which the
+# build falls back to 0 without. It arrives as a secret mount rather than an ARG so
+# the value is not recorded in the image metadata.
+RUN --mount=type=secret,id=github_token \
+    cd website \
  && bun install --frozen-lockfile \
- && GITHUB_TOKEN="$GITHUB_TOKEN" bun run build \
+ && GITHUB_TOKEN="$(cat /run/secrets/github_token 2>/dev/null || true)" bun run build \
  && mkdir -p dist/gallery dist/examples/base dist/slint-gallery \
  && cp -r ../crates/story-web/www/dist/. dist/gallery/ \
  && cp -r ../crates/base/examples/wasm/www/dist/. dist/examples/base/ \

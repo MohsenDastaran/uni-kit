@@ -47,7 +47,7 @@ jobs:
           push: true
           # GHCR rejects uppercase paths and the owner is `MohsenDastaran`.
           tags: ghcr.io/mohsendastaran/uni-kit-website:latest
-          build-args: |
-            GITHUB_TOKEN=${{ secrets.GITHUB_TOKEN }}
+          secrets: |
+            github_token=${{ secrets.GITHUB_TOKEN }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
