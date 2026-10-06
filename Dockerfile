@@ -12,12 +12,18 @@ FROM rust:1-bookworm AS build
 
 # `node` is not optional: `crates/slint-component/scripts/changed-pages.sh` execs
 # it to write the per-page build stamp, and that runs at the end of every page.
-# Debian ships the binary as `nodejs` on some releases, so the symlink makes the
-# name the script asks for resolve either way.
+#
+# It has to be a *modern* node. Debian bookworm ships 18, whose `import.meta.dirname`
+# is `undefined`, and the script reads it on its first line -- `join(undefined, '..')`
+# throws. Node 20.11 added that property, so this installs 22 from NodeSource and
+# asserts the version here, where a mistake is obvious, rather than forty minutes
+# into the wasm build.
 RUN apt-get update \
  && apt-get install -y --no-install-recommends \
-      build-essential pkg-config libssl-dev ca-certificates curl git unzip nodejs \
- && ln -sf "$(command -v nodejs || command -v node)" /usr/local/bin/node \
+      build-essential pkg-config libssl-dev ca-certificates curl git unzip gnupg \
+ && curl -fsSL https://deb.nodesource.com/setup_22.x | bash - \
+ && apt-get install -y --no-install-recommends nodejs \
+ && node --version \
  && rm -rf /var/lib/apt/lists/*
 
 # The base examples build with `cargo +nightly`; story-web and the Slint gallery
@@ -37,7 +43,8 @@ ENV BUN_INSTALL="/root/.bun" \
 COPY Cargo.toml Cargo.lock ./
 RUN --mount=type=cache,target=/usr/local/cargo/registry \
     version=$(grep -A 1 '^name = "wasm-bindgen"$' Cargo.lock | grep '^version' | cut -d '"' -f 2) \
- && cargo install -f wasm-bindgen-cli --version "$version"
+ && cargo install -f wasm-bindgen-cli --version "$version" \
+ && wasm-bindgen --version
 
 WORKDIR /src
 COPY . .

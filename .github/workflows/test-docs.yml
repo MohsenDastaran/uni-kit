@@ -3,6 +3,7 @@ on:
   pull_request:
     paths:
       - "website/**"
+      - "registry/**"
       - ".github/workflows/test-docs.yml"
       - "crates/base/**"
       - "crates/story-web/**"
@@ -17,6 +18,14 @@ jobs:
       - uses: oven-sh/setup-bun@v1
         with:
           bun-version: 1.4.0
+      - name: Registry manifest is current
+        # `components.json` is what `npx uni-kit add` installs from, and it is
+        # generated from the Slint import graph. When an import changes and this is
+        # not regenerated, `add` copies an incomplete set and the result does not
+        # compile -- which is how thirteen components shipped broken once.
+        run: |
+          node registry/build-manifest.mjs
+          git diff --exit-code registry/components.json website/src/lib/registry-slugs.json
       - name: Install
         working-directory: website
         run: bun install
