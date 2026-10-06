@@ -10,9 +10,14 @@
 # ---- galleries and site ----------------------------------------------------
 FROM rust:1-bookworm AS build
 
+# `node` is not optional: `crates/slint-component/scripts/changed-pages.sh` execs
+# it to write the per-page build stamp, and that runs at the end of every page.
+# Debian ships the binary as `nodejs` on some releases, so the symlink makes the
+# name the script asks for resolve either way.
 RUN apt-get update \
  && apt-get install -y --no-install-recommends \
-      build-essential pkg-config libssl-dev ca-certificates curl git unzip \
+      build-essential pkg-config libssl-dev ca-certificates curl git unzip nodejs \
+ && ln -sf "$(command -v nodejs || command -v node)" /usr/local/bin/node \
  && rm -rf /var/lib/apt/lists/*
 
 # The base examples build with `cargo +nightly`; story-web and the Slint gallery
