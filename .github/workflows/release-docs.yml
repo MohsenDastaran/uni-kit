@@ -1,17 +1,18 @@
 name: Release Docs
+# Manual only. `publish-image.yml` builds the same galleries and site on every
+# push to main and is the pipeline Coolify pulls from, so this no longer runs on
+# its own -- it would rebuild a multi-gigabyte wasm set twice per push. Kept so
+# the GitHub Pages deployment can still be produced on demand, and safe to delete
+# once the domain is served by Coolify.
 on:
-  workflow_run:
-    workflows: ["Release Crate"]
-    types:
-      - completed
   workflow_dispatch:
 permissions:
   contents: read
   pages: write
   id-token: write
 
-# Pages accepts one deployment at a time; queue rather than cancel so a release
-# deploy is never dropped in favour of a manually dispatched one.
+# Pages accepts one deployment at a time; queue rather than cancel so a
+# dispatched deploy is never dropped.
 concurrency:
   group: pages
   cancel-in-progress: false
@@ -19,14 +20,9 @@ concurrency:
 jobs:
   build:
     runs-on: ubuntu-latest
-    if: ${{ github.event.workflow_run.conclusion == 'success' || github.event_name == 'workflow_dispatch' || github.event_name == 'push' }}
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
-        with:
-          # `workflow_run` reports the commit that triggered the release; the
-          # other events carry no such sha and check out their own ref.
-          ref: ${{ github.event.workflow_run.head_sha || github.ref }}
 
       - uses: oven-sh/setup-bun@v1
         with:

@@ -4,7 +4,7 @@
   <strong>GPUI Kit</strong>
 </p>
 
-[![Build Status](https://github.com/longbridge/gpui-kit/actions/workflows/ci.yml/badge.svg)](https://github.com/longbridge/gpui-kit/actions/workflows/ci.yml) [![Docs](https://docs.rs/gpui-kit/badge.svg)](https://docs.rs/gpui-kit/) [![Crates.io](https://img.shields.io/crates/v/gpui-kit.svg)](https://crates.io/crates/gpui-kit)
+[![Publish Website Image](https://github.com/MohsenDastaran/uni-kit/actions/workflows/publish-image.yml/badge.svg)](https://github.com/MohsenDastaran/uni-kit/actions/workflows/publish-image.yml) [![Docs](https://docs.rs/gpui-kit/badge.svg)](https://docs.rs/gpui-kit/) [![Crates.io](https://img.shields.io/crates/v/gpui-kit.svg)](https://crates.io/crates/gpui-kit)
 
 Copy-paste native UI for Rust desktop toolkits. The same component catalog is hand-written for each framework and published on <https://gpui-kit.com>. You copy the source into your own app, or install it with [`uni-kit`](registry). The CLI does not generate components. It copies the files listed in [`registry/components.json`](registry/components.json).
 
