@@ -2,7 +2,7 @@ import type { APIRoute } from 'astro';
 import { getCollection } from 'astro:content';
 import { SITE_URL } from '../lib/site';
 
-const collections = ['docs', 'component', 'base'] as const;
+const collections = ['docs', 'component'] as const;
 const standalone = ['', 'blocks', 'starter', 'skills'];
 
 function escapeXml(value: string) {

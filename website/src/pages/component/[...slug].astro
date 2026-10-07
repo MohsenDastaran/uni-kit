@@ -36,7 +36,7 @@ const seoTitle = entry.id.replace(/\.md$/, '') === 'index' ? entry.data.title : 
   {entry.data.example !== false && (
     <ComponentExample
       client:load
-      frontmatter={{ ...entry.data, exampleKind: 'component' }}
+      frontmatter={entry.data}
       pathname={pathname}
       baseUrl={base}
       devVersion={devVersion}

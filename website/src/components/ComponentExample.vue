@@ -15,7 +15,6 @@ import { findExampleHeading } from "../lib/example-target.js";
 const props = defineProps<{
   frontmatter: {
     example?: string | false;
-    exampleKind?: "base" | "component";
   };
   pathname: string;
   baseUrl: string;
@@ -42,13 +41,6 @@ const pageSlug = computed(() => {
   const match = props.pathname.match(/\/component\/([^/]+)$/);
   return match?.[1] === "index" ? undefined : match?.[1];
 });
-
-const kind = computed(() =>
-  props.frontmatter.exampleKind === "base" ||
-  props.pathname.includes("/base/primitives/")
-    ? "base"
-    : "component",
-);
 
 const storyNames: Record<string, string> = {
   "alert-dialog": "AlertDialog",
@@ -87,16 +79,11 @@ const storyName = computed(() =>
 const src = computed(() => {
   if (!component.value) return undefined;
   const base = props.baseUrl.replace(/\/$/, "");
-  if (kind.value === "base") {
-    const query = new URLSearchParams({ component: component.value });
-    if (props.devVersion) query.set("v", props.devVersion);
-    return `${base}/examples/base?${query.toString()}`;
-  }
   return `${base}/gallery?story=${encodeURIComponent(storyName.value ?? "")}`;
 });
 
 // Every framework the selector offers, with where its live example is served.
-// GPUI is the fallback: base primitives and pages without a selector show it.
+// GPUI is the fallback: pages without a selector show it.
 interface Framework {
   name: string;
   live: string;
@@ -108,7 +95,7 @@ const frameworkList: Record<string, Framework> = {
   gpui: {
     name: "GPUI",
     live: "Rust, GPUI & WASM",
-    library: kind.value === "base" ? "gpui-base" : "gpui-component",
+    library: "gpui-component",
     src: () => src.value,
   },
   slint: {
@@ -139,9 +126,7 @@ const readFramework = () => {
 };
 
 const selected = shallowRef("gpui");
-const framework = computed(() =>
-  kind.value === "component" ? selected.value : "gpui",
-);
+const framework = computed(() => selected.value);
 const available = computed(
   () =>
     framework.value === "gpui" ||
@@ -470,9 +455,7 @@ function buildPrompt(samples: ExampleSample[], name: string) {
     lines.push(
       `- Render the sample below. Its \`use\` lines are the modules it needs.`,
       "- `Cargo.toml`: `gpui-kit`, whose default features include `component` and `assets`.",
-      kind.value === "base"
-        ? "- This sample is a `gpui-base` primitive. Behavior comes from Base; presentation stays in the application or `gpui-component`."
-        : "- UI components come from `gpui-component` through `gpui_kit::component`.",
+      "- UI components come from `gpui-component` through `gpui_kit::component`.",
     );
   }
   lines.push("", "## Default paths");
@@ -758,8 +741,7 @@ onBeforeUnmount(() => {
     <section
       id="live-example"
       ref="exampleRoot"
-      class="component-example"
-      :class="`component-example--${kind}`"
+      class="component-example component-example--component"
       data-pagefind-ignore
     >
       <div class="component-example__label">

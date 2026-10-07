@@ -33,7 +33,6 @@ const starLabel = stars >= 1000 ? `${(stars / 1000).toFixed(1)}k` : `${stars}`;
 
 const gettingStartedHref = url('docs/getting-started');
 const componentsHref = url('component');
-const baseHref = url('base');
 const skillsHref = url('skills');
 const llmsHref = url('llms-full.txt');
 
@@ -87,7 +86,7 @@ const copy = {
               title: "Build fantastic, high-performance desktop apps.",
               lead: "A comprehensive Rust desktop framework with a complete UI system, data tables, docking, charts, and a code editor — extensible in JavaScript, and used to build Longbridge Pro from day one.",
               componentsAction: "Browse components",
-              baseAction: "Explore gpui-base",
+              baseAction: "Browse components",
               signalStars: "stars on GitHub",
               signalLicense: "Apache-2.0",
               signalPlatforms: "macOS, Windows, Linux",
@@ -112,7 +111,7 @@ const copy = {
               ownTitle: "Own the design system",
               ownDescription: "Reuse focus, selection, overlay and virtualization behavior while owning every pixel.",
               ownPoints: ["Zero-style primitives", "Full accessibility behavior", "100% visual ownership"],
-              startBase: "Read the gpui-base docs",
+              startBase: "Browse the components",
               scriptTitle: "Extend it in JavaScript",
               scriptDescription: "The host stays Rust and grants what a script may reach, one capability at a time; the script draws real interface in the same process.",
               scriptPoints: ["Extend the product without a fork or a release", "No capability granted by default", "Hot-reload on save, no restart"],
@@ -283,7 +282,7 @@ const copy = {
                         <ul>
                             <li v-for="item in copy.ownPoints" :key="item"><Check :size="13" />{{ item }}</li>
                         </ul>
-                        <a :href="baseHref" class="path__link">{{ copy.startBase }} <ArrowRight :size="15" /></a>
+                        <a :href="componentsHref" class="path__link">{{ copy.startBase }} <ArrowRight :size="15" /></a>
                     </article>
 
                 </div>
@@ -302,7 +301,7 @@ const copy = {
                 </div>
                 <div class="principle__aside">
                     <p>{{ copy.principleDetail }}</p>
-                    <a :href="baseHref" class="btn btn--primary">{{ copy.baseAction }} <ArrowRight :size="16" /></a>
+                    <a :href="componentsHref" class="btn btn--primary">{{ copy.baseAction }} <ArrowRight :size="16" /></a>
                 </div>
             </div>
         </section>

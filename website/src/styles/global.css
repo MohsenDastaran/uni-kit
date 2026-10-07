@@ -622,17 +622,6 @@ html[lang^="ja"] .example-prompt {
   }
 }
 
-.component-example--base iframe {
-  height: 600px;
-  color-scheme: light;
-  background: white;
-}
-
-.dark .component-example--base iframe {
-  color-scheme: dark;
-  background: #0a0a0a;
-}
-
 @media (max-width: 640px) {
   .mac-window__title {
     display: none;
@@ -640,9 +629,6 @@ html[lang^="ja"] .example-prompt {
   .component-example iframe,
   .component-example__status--missing {
     height: 560px;
-  }
-  .component-example--base iframe {
-    height: min(520px, 75vh);
   }
 }
 

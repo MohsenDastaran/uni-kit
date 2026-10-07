@@ -173,7 +173,6 @@ function scanDir(
 const SECTIONS = (root: string) => [
   { dir: join(root, 'docs'), prefix: 'docs' },
   { dir: join(root, 'component'), prefix: 'component' },
-  { dir: join(root, 'base'), prefix: 'base' },
 ];
 
 /**
@@ -200,7 +199,6 @@ export function buildLlmsContent(websiteRoot: string): string {
   const sections = [
     { dir: join(websiteRoot, 'docs'), prefix: 'docs' },
     { dir: join(websiteRoot, 'component'), prefix: 'component' },
-    { dir: join(websiteRoot, 'base'), prefix: 'base' },
   ];
 
   const header = `# ${SITE_TITLE}\n\n> ${SITE_DESCRIPTION}\n\n---\n`;

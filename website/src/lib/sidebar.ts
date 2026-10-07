@@ -236,12 +236,6 @@ export const enDocsSidebar = generateSidebar({
   rootLinkText: 'GPUI Kit',
 });
 
-export const enBaseSidebar = generateSidebar({
-  contentDir: join(WEBSITE_ROOT, 'base'),
-  baseUrl: `${BASE}/base`,
-  rootGroupText: 'GPUI Base',
-});
-
 export const enComponentSidebar = generateSidebar({
   contentDir: join(WEBSITE_ROOT, 'component'),
   baseUrl: `${BASE}/component`,

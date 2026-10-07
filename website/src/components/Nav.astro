@@ -20,9 +20,6 @@ const starLabel = starCount >= 1000 ? `${(starCount / 1000).toFixed(1)}k` : `${s
 const navLinks = [
   { text: 'Docs', href: url('docs') },
   { text: 'Component', href: url('component') },
-  // Base is a GPUI-only layer: the Slint port has no equivalent, so the link
-  // is scoped to the GPUI framework and hidden by CSS when Slint is selected.
-  { text: 'Base', href: url('base'), framework: 'gpui' },
   { text: 'Blocks', href: url('blocks') },
   { text: 'Starter', href: url('starter') },
 ];

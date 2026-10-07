@@ -7,7 +7,6 @@ const pageSchema = z.object({
   description: z.string().min(1),
   order: z.number().optional(),
   example: z.union([z.string(), z.literal(false)]).optional(),
-  exampleKind: z.enum(['base', 'component']).optional(),
 });
 
 const docs = defineCollection({
@@ -20,13 +19,7 @@ const component = defineCollection({
   schema: pageSchema,
 });
 
-const base = defineCollection({
-  loader: glob({ pattern: '**/*.md', base: './base' }),
-  schema: pageSchema,
-});
-
 export const collections = {
   docs,
   component,
-  base,
 };

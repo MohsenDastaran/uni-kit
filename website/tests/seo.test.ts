@@ -117,7 +117,6 @@ test('component links and discovery use canonical routes', () => {
   assert.ok(index.includes('/component.md'));
   assert.ok(index.includes('/component/button.md'));
   assert.ok(full.includes('Source: /component/button'));
-  assert.ok(read('base/primitives/input/index.html').includes('href="/component/input"'));
   assert.ok(read('component/icon/index.html').includes('href="/docs/assets"'));
   assert.ok(read('component/index.html').includes('href="/component/button"'));
   assert.ok(!sitemap.includes('/docs/components'));
@@ -137,8 +136,8 @@ test('primary navigation follows the Kit section order', () => {
   const html = read('docs/index.html');
   const nav = html.match(/<nav class="site-nav"[\s\S]*?<\/nav>/)?.[0] ?? '';
   const links = [...nav.matchAll(/<a\s+href="([^"]+)"\s+class="site-nav__link[^"]*"[^>]*>\s*([^<]+?)\s*<\/a>/g)];
-  assert.deepEqual(links.slice(0, 3).map(match => match[2]), ['Docs', 'Component', 'Base']);
-  assert.deepEqual(links.slice(0, 3).map(match => match[1]), ['/docs', '/component', '/base']);
+  assert.deepEqual(links.slice(0, 3).map(match => match[2]), ['Docs', 'Component', 'Blocks']);
+  assert.deepEqual(links.slice(0, 3).map(match => match[1]), ['/docs', '/component', '/blocks']);
   assert.doesNotMatch(nav, /site-nav__lang-btn/);
 });
 
