@@ -1,4 +1,4 @@
-import { Theme } from "../theme.slint";
+import { Theme, GalleryView } from "../theme.slint";
 import { GroupBox, GroupBoxVariant } from "section.slint";
 import { Sidebar } from "../sidebar.slint";
 
@@ -8,7 +8,9 @@ export component SidebarExample inherits VerticalLayout {
     spacing: 24px;
     alignment: start;
 
-    GroupBox {
+    // Shown on a component page, hidden when the gallery is asked for a
+    // single finished screen.
+    if GalleryView.example != "last": GroupBox {
         title: "Basic Sidebar";
         variant: GroupBoxVariant.outline;
 
@@ -40,7 +42,9 @@ export component SidebarExample inherits VerticalLayout {
 
     // Collapsing keeps the icons and the header toggle; the labels, the group
     // headings, and the footer name are what leave.
-    GroupBox {
+    // Shown on a component page, hidden when the gallery is asked for a
+    // single finished screen.
+    if GalleryView.example != "last": GroupBox {
         title: "Collapsible Sidebar";
         variant: GroupBoxVariant.outline;
 
@@ -73,7 +77,9 @@ export component SidebarExample inherits VerticalLayout {
 
     // Groups are what carry the headings; an entry is the same shape whether it
     // sits in a titled group or an untitled one.
-    GroupBox {
+    // Shown on a component page, hidden when the gallery is asked for a
+    // single finished screen.
+    if GalleryView.example != "last": GroupBox {
         title: "Multiple Groups";
         variant: GroupBoxVariant.outline;
 

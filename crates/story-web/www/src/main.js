@@ -112,9 +112,13 @@ async function init() {
 
     // A documentation page can deep-link to the matching Rust story while the
     // standalone gallery keeps its normal overview.
-    const story = new URLSearchParams(window.location.search).get('story');
+    const params = new URLSearchParams(window.location.search);
+    const story = params.get('story');
+    // The code chip forwards to the documentation page that carries the source.
+    // A page showing only the finished screen asks for the gallery without it.
+    const source = params.get('source') !== '0';
     const theme = hostTheme();
-    await wasm.run(story || undefined, theme.dark, theme.name);
+    await wasm.run(story || undefined, theme.dark, theme.name, source);
     watchHostTheme(wasm, themeKey(theme));
 
     // Hide loading indicator

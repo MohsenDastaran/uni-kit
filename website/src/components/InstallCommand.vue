@@ -8,7 +8,19 @@ import FlowText from "./FlowText.vue";
 const MANAGERS = ["npx", "pnpm", "bun"] as const;
 type Manager = (typeof MANAGERS)[number];
 
+/**
+ * A component page lets the markdown pipeline decide both, so the bar carries
+ * the command for that page. A block gallery renders one instance per block, so
+ * each passes the component to install and the element to render into.
+ */
+const props = defineProps<{ slug?: string; host?: string }>();
+
 const STORAGE_KEY = "selected-package-manager";
+// The `storage` event only reaches *other* documents, so it never fires in the
+// page that wrote the value. A component page has one command and never noticed;
+// a block page has one per block, so the clicked block would update and the rest
+// would keep the old manager. This event carries the change within the page.
+const MANAGER_EVENT = "package-manager-change";
 const PACKAGE = "@dastaran/uni-kit@latest";
 
 const slug = ref("");
@@ -70,6 +82,10 @@ function onStorage(event: StorageEvent) {
     manager.value = event.newValue;
 }
 
+function onManagerChange() {
+  manager.value = readManager();
+}
+
 function mountFrameworkLogos() {
   document
     .querySelectorAll<HTMLButtonElement>("[data-framework-option]")
@@ -111,17 +127,7 @@ function pageSlug() {
 
 onMounted(() => {
   mountFrameworkLogos();
-  let host = document.querySelector<HTMLElement>(".install-command-host");
-  if (!host) {
-    const bar = document.querySelector(".doc-content .framework-bar");
-    const value = pageSlug();
-    if (!bar || !value) return;
-    host = document.createElement("div");
-    host.className = "install-command-host";
-    host.dataset.installSlug = value;
-    bar.insertBefore(host, bar.querySelector("[data-framework-status]"));
-  }
-  const page = host.dataset.installSlug;
+  const page = props.slug ?? hostSlug();
   if (!page || page === "index") return;
   slug.value = page;
   manager.value = readManager();
@@ -134,17 +140,39 @@ onMounted(() => {
     attributeFilter: ["data-framework"],
   });
   window.addEventListener("storage", onStorage);
+  window.addEventListener(MANAGER_EVENT, onManagerChange);
 });
+
+/**
+ * The component a page-wide bar installs, read from the host the markdown
+ * pipeline emitted. Creates that host when a component page has no bar of its
+ * own, which is how the command lands in the framework bar.
+ */
+function hostSlug(): string {
+  let host = document.querySelector<HTMLElement>(".install-command-host");
+  if (!host) {
+    const bar = document.querySelector(".doc-content .framework-bar");
+    const value = pageSlug();
+    if (!bar || !value) return "";
+    host = document.createElement("div");
+    host.className = "install-command-host";
+    host.dataset.installSlug = value;
+    bar.insertBefore(host, bar.querySelector("[data-framework-status]"));
+  }
+  return host.dataset.installSlug ?? "";
+}
 
 onBeforeUnmount(() => {
   observer?.disconnect();
   window.removeEventListener("storage", onStorage);
+  window.removeEventListener(MANAGER_EVENT, onManagerChange);
   clearTimeout(timer);
 });
 
 function select(next: Manager) {
   manager.value = next;
   localStorage.setItem(STORAGE_KEY, next);
+  window.dispatchEvent(new Event(MANAGER_EVENT));
 }
 
 function onKeydown(event: KeyboardEvent) {
@@ -199,7 +227,7 @@ async function copy() {
 <template>
   <div class="install-command-mount">
     <span class="sr-only" role="status">{{ status }}</span>
-    <Teleport v-if="slug" to=".install-command-host">
+    <Teleport v-if="slug" :to="props.host ?? '.install-command-host'">
       <div
         v-if="packaged"
         class="install-command__switch framework-switch"

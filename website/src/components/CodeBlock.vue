@@ -17,6 +17,10 @@ onMounted(() => {
     let next = 0;
     document.querySelectorAll<HTMLElement>(".doc-content pre").forEach((pre) => {
         if (pre.closest(".code-block")) return;
+        // Block galleries own their copy affordances. Wrapping their snippets in
+        // a second control would put two copy buttons on the same code, and the
+        // page-level one belongs to prose, not to a preview surface.
+        if (pre.closest(".blocks")) return;
         const host = document.createElement("div");
         host.className = "code-block";
         host.dataset.codeBlock = String(next);

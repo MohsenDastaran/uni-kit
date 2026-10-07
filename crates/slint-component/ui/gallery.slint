@@ -5,14 +5,15 @@ import "../fonts/Inter-Regular.ttf";
 import "../fonts/JetBrainsMono-Regular.ttf";
 import "../fonts/NotoEmoji.ttf";
 
-import { Theme } from "theme.slint";
+import { Theme, GalleryView } from "theme.slint";
 import { Scrollable } from "scrollable.slint";
 import { ExampleBridge } from "examples/bridge.slint";
 import { GalleryCatalog } from "gallery-catalog.slint";
 import { ComboSearch } from "combobox.slint";
 import { TableSort } from "data-table.slint";
 
-export { Theme, ExampleBridge, ComboSearch, TableSort }
+// Rust reaches these by name, so each one has to be exported from this file.
+export { Theme, GalleryView, ExampleBridge, ComboSearch, TableSort }
 
 export component Gallery inherits Window {
     in property <string> component: "button";

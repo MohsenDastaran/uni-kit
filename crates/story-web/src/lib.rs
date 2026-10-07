@@ -118,10 +118,14 @@ pub fn run(
     story: Option<String>,
     dark: Option<bool>,
     theme: Option<String>,
+    source: Option<bool>,
 ) -> Result<(), JsValue> {
     console_error_panic_hook::set_once();
+    // The code chip opens the matching source on the documentation page. That
+    // page has the source to open; a page that only shows the finished screen
+    // does not, so it asks for the gallery without it.
     #[cfg(target_family = "wasm")]
-    if story.is_some() {
+    if story.is_some() && source.unwrap_or(true) {
         example_bridge::install();
     }
 

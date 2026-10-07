@@ -10,6 +10,13 @@ slint::include_modules!();
 pub fn run(component: &str, dark: bool) -> Result<(), slint::PlatformError> {
     let gallery = Gallery::new()?;
     gallery.set_component(component.into());
+    // The Blocks page opens a page to show one finished screen, where the
+    // component page opens the same page to document every composition it has.
+    // The URL is what tells the two apart.
+    #[cfg(target_arch = "wasm32")]
+    gallery
+        .global::<GalleryView>()
+        .set_example(web::example_from_url().into());
     gallery.global::<Theme>().set_dark(dark);
     install_search(&gallery);
     install_table_sort(&gallery);
@@ -416,16 +423,26 @@ mod web {
         out
     }
 
-    pub(crate) fn component_from_url() -> String {
+    /// One query parameter from the page URL, or `None` when it is absent.
+    pub(crate) fn param_from_url(name: &str) -> Option<String> {
+        let prefix = format!("{name}=");
         web_sys::window()
             .and_then(|window| window.location().search().ok())
             .and_then(|search| {
                 search
                     .trim_start_matches('?')
                     .split('&')
-                    .find_map(|pair| pair.strip_prefix("component=").map(str::to_owned))
+                    .find_map(|pair| pair.strip_prefix(prefix.as_str()).map(str::to_owned))
             })
-            .unwrap_or_else(|| "button".to_owned())
+    }
+
+    pub(crate) fn component_from_url() -> String {
+        param_from_url("component").unwrap_or_else(|| "button".to_owned())
+    }
+
+    /// Which composition inside the page to show. Absent means all of them.
+    pub(crate) fn example_from_url() -> String {
+        param_from_url("example").unwrap_or_default()
     }
 
     #[wasm_bindgen(start)]

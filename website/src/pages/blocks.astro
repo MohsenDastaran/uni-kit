@@ -1,0 +1,144 @@
+---
+import { readFileSync } from 'node:fs';
+import { join } from 'node:path';
+import BlocksGallery from '../components/BlocksGallery.vue';
+import DocsLayout from '../layouts/DocsLayout.astro';
+import { highlight } from '../lib/highlight.js';
+
+const website = process.cwd();
+const repo = join(website, '..');
+
+// The first Rust fence long enough to be usage rather than an import: every
+// component page opens with a one-line `use`, which is not what a reader wants
+// to copy.
+function gpuiUsage(doc: string) {
+  try {
+    const md = readFileSync(join(website, 'component', `${doc}.md`), 'utf8');
+    const fences = [...md.matchAll(/```rust\n([\s\S]*?)```/g)].map((match) => match[1]);
+    return fences.find((fence) => fence.trim().split('\n').length > 5) ?? fences[0] ?? '';
+  } catch {
+    return '';
+  }
+}
+
+// The Slint gallery example is the block: the same file the live page runs.
+function slintExample(slug: string) {
+  try {
+    return readFileSync(
+      join(repo, 'crates/slint-component/ui/examples', `${slug}.slint`),
+      'utf8',
+    );
+  } catch {
+    return '';
+  }
+}
+
+// Every block below exists in both galleries, so the framework selector in the
+// top bar swaps the live example rather than emptying the frame. `story` is the
+// GPUI gallery's story name, `slug` the Slint page folder, `doc` the component
+// page whose Rust usage the Code tab shows.
+const definitions = [
+  {
+    id: 'settings',
+    title: 'Settings',
+    description:
+      'Titled groups of rows, each row a label, an explanation, and one control. The screen nearly every desktop application ends up with, and the one where the grouping and the spacing are the whole problem.',
+    story: 'Settings',
+    slug: 'settings',
+    doc: 'settings',
+  },
+  {
+    id: 'sidebar',
+    title: 'Sidebar',
+    description:
+      'A collapsible navigation rail with icon, offcanvas, and expanded modes, and the content area beside it.',
+    story: 'Sidebar',
+    slug: 'sidebar',
+    doc: 'sidebar',
+  },
+  {
+    id: 'dock',
+    title: 'Dock',
+    description:
+      'A workspace of dockable panels: drag to rearrange, zoom a panel, and serialize the layout.',
+    story: 'Dock',
+    slug: 'dock',
+    doc: 'dock',
+  },
+  {
+    id: 'editor',
+    title: 'Editor',
+    description:
+      'Editor chrome around a rope-backed text view, with the line numbers, diagnostics, and the states a document passes through.',
+    story: 'Editor',
+    slug: 'editor',
+    doc: 'editor',
+  },
+  {
+    id: 'table',
+    title: 'Table',
+    description:
+      'Rows that scroll without bound, with the selection, sorting, and resizing behaviour already decided.',
+    story: 'Table',
+    slug: 'table',
+    doc: 'table',
+  },
+];
+
+const blocks = await Promise.all(
+  definitions.map(async (block) => ({
+    ...block,
+    code: {
+      gpui: await highlight(gpuiUsage(block.doc)),
+      slint: await highlight(slintExample(block.slug), 'slint'),
+    },
+  })),
+);
+---
+
+<DocsLayout
+  title="Blocks — GPUI Kit"
+  description="Composed screens built from the component layer, shown as live examples you can run, copy, and install."
+>
+  <h1>Blocks</h1>
+  <p>
+    Clean, working screens built from the components. Each one is a composition
+    you can run, read, and copy into an application rather than a single control
+    you place yourself — the spacing, the grouping, and the keyboard path are
+    already decided.
+  </p>
+  <p>
+    Every block below is the real application, compiled to WebAssembly and
+    running in this page. Switch frameworks in the top bar and each one reloads
+    as its Slint counterpart; open a block's Code tab to copy its source or the
+    install command.
+  </p>
+
+  <BlocksGallery client:load blocks={blocks} baseUrl={import.meta.env.BASE_URL} />
+
+  <h2>Where a block sits</h2>
+  <p>
+    A component is one control — a <code>Button</code>, a <code>Table</code>, a
+    <code>DockArea</code>. A block is what several of them become once they are
+    arranged for a purpose. It carries the decisions a single control cannot
+    make: the spacing between groups, the order focus moves through them, and
+    the empty, loading, and error states the screen needs before anyone sees it
+    working.
+  </p>
+  <p>
+    That arrangement is repeated in every application and is rarely the
+    interesting part of one. Starting from a block leaves the product decisions
+    — what the screen is for, and where it should depart from the pattern — as
+    the work.
+  </p>
+
+  <h2>Taking one</h2>
+  <p>
+    A block is assembled from installed components rather than imported as a
+    unit. The Code tab on each block carries the command for the current
+    framework and package manager; the
+    <a href="/docs/installation">installation guide</a> covers the setup and
+    <a href="/component">the component pages</a> carry the full usage for each
+    control inside a block.
+  </p>
+</DocsLayout>

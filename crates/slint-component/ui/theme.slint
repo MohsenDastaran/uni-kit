@@ -9,6 +9,18 @@ export enum ButtonVariant { default, primary, secondary, danger, warning, succes
 
 export enum Status { default, info, success, warning, danger }
 
+// Set by the gallery from the page URL, so the same page can open differently in
+// two places. An example that carries several compositions reads this to show
+// one of them; every example that does not care ignores it, and an empty value
+// means "show everything".
+//
+// The component pages open a page to document every composition it has. The
+// website's Blocks page opens the same page to show a single finished screen, so
+// it asks for the last composition rather than repeating the component page.
+export global GalleryView {
+    in property <string> example;
+}
+
 export global Theme {
     in-out property <bool> dark: false;
     // The gallery writes the frame width here. Layouts read it instead of

@@ -1,0 +1,86 @@
+---
+import BlocksGallery from '../components/BlocksGallery.vue';
+import DocsLayout from '../layouts/DocsLayout.astro';
+
+// The gallery's own first screen. It runs in the GPUI gallery under the title
+// the story declares; the Slint gallery has no equivalent page, so `slug` is
+// empty and the frame says so rather than loading a 404.
+const welcome = [
+  {
+    id: 'introduction',
+    title: 'The gallery',
+    description:
+      'Every component in one running application. This is what `cargo run` opens, and the fastest way to see how a view is put together before writing one.',
+    story: 'Introduction',
+    slug: '',
+  },
+];
+---
+
+<DocsLayout
+  title="Starter — GPUI Kit"
+  description="A project to start from: the smallest working setup, and the paths out of it."
+>
+  <h1>Starter</h1>
+  <p>
+    The shortest path from an empty directory to a running window, and the ways
+    out of it once the window is not enough. Everything below is in this
+    repository and runs as written.
+  </p>
+
+  <BlocksGallery client:load blocks={welcome} baseUrl={import.meta.env.BASE_URL} />
+
+  <h2>Start from the repository</h2>
+  <p>
+    Clone it and run the smallest example. It opens one window with a handful of
+    components and no application structure to read around, which makes it the
+    fastest way to see how a GPUI Kit view is put together.
+  </p>
+  <pre><code>git clone https://github.com/MohsenDastaran/uni-kit
+cd uni-kit
+cargo run -p hello_world</code></pre>
+  <p>
+    Each example is its own crate, so <code>-p</code> names the one you want.
+    <code>cargo run</code> with no package runs the component gallery — the
+    application shown above.
+  </p>
+
+  <h2>Start in your own crate</h2>
+  <p>
+    Add the umbrella crate and it brings the layers with it — the styled
+    components, the base behaviour, and the default icon assets — along with a
+    pinned GPUI underneath, so an application depends on one package rather than
+    assembling a set of them.
+  </p>
+  <pre><code>[dependencies]
+gpui-kit = "0.7"</code></pre>
+  <p>
+    Then call <code>gpui_component::init(cx)</code> before any component is used,
+    and make the first view of a window a <code>Root</code>. The
+    <a href="/docs/installation">installation guide</a> walks through both, and
+    <a href="/docs/getting-started">getting started</a> takes it from there.
+  </p>
+
+  <h2>Take components rather than the whole crate</h2>
+  <p>
+    If you already have an application and want one control in it, copy the
+    component in instead of depending on the library. The registry writes the
+    component and everything it imports — including the icons it names — into
+    your own source tree, where you can change them:
+  </p>
+  <pre><code>npx @dastaran/uni-kit add slint alert-dialog
+npx @dastaran/uni-kit add slint table</code></pre>
+  <p>
+    <code>--dir</code> overrides where the files land. This trades the ability to
+    upgrade for the ability to edit, which is the point.
+  </p>
+
+  <h2>Where to go next</h2>
+  <ul>
+    <li><a href="/docs/installation">Installation</a> — toolchain setup for each platform.</li>
+    <li><a href="/docs/getting-started">Getting started</a> — the first window, step by step.</li>
+    <li><a href="/blocks">Blocks</a> — composed screens, once you need more than one control.</li>
+    <li><a href="/docs/design-guides">Design guides</a> — the conventions the components follow.</li>
+    <li><a href="/docs/coding-guides">Coding guides</a> — how to write against the library.</li>
+  </ul>
+</DocsLayout>

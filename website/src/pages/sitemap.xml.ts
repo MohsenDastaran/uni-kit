@@ -3,7 +3,7 @@ import { getCollection } from 'astro:content';
 import { SITE_URL } from '../lib/site';
 
 const collections = ['docs', 'component', 'base'] as const;
-const standalone = ['', 'skills'];
+const standalone = ['', 'blocks', 'starter', 'skills'];
 
 function escapeXml(value: string) {
   return value.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
