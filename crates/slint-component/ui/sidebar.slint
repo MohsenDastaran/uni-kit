@@ -59,6 +59,14 @@ export component Sidebar {
             spacing: 10px;
             cross-axis-alignment: center;
 
+            // The brand mark. Collapsed, the rail has room for this one 32px
+            // box and nothing else, so the expand control is not drawn here.
+            // A control at `x: root.width + …` would sit outside these bounds,
+            // where the application's content -- a later sibling -- paints over
+            // it; a second control in this row would overflow the rail exactly
+            // the same way. The application owns the trigger instead, as in
+            // shadcn: put a `panel-left` button in the header beside the
+            // sidebar and bind `collapsed <=> ` to it.
             Rectangle {
                 width: 28px;
                 height: 28px;
@@ -205,30 +213,9 @@ export component Sidebar {
         }
     }
 
-    // Collapsed, the rail is 56px wide and the content box inside it is 32px,
-    // so the toggle cannot sit in the header row: it would be pushed out and
-    // clipped. It floats just outside the rail's top-right corner instead,
-    // where it is always reachable.
-    if collapsed: Rectangle {
-        x: root.width + 6px;
-        y: 12px;
-        width: 28px;
-        height: 28px;
-        border-radius: Theme.radius-sm;
-        border-width: 1px;
-        border-color: Theme.border;
-        background: Theme.popover;
-
-        Icon {
-            x: (parent.width - self.width) / 2;
-            y: (parent.height - self.height) / 2;
-            name: "panel-right";
-            size: 16px;
-            color: Theme.muted-foreground;
-        }
-
-        TouchArea {
-            clicked => { root.collapsed = false; }
-        }
-    }
+    // The collapsed rail holds the brand mark and nothing else, so the control
+    // that expands it belongs to the application's own header beside the
+    // sidebar — the arrangement shadcn uses. It cannot live here: the rail's
+    // header has room for one 32px box, and a control placed outside these
+    // bounds is painted before the application's content, which covers it.
 }

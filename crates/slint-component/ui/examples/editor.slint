@@ -1,10 +1,12 @@
-import { Theme, ButtonVariant } from "../theme.slint";
+import { Theme, GalleryView, ButtonVariant } from "../theme.slint";
 import { GroupBox, GroupBoxVariant } from "section.slint";
 import { Editor } from "../editor.slint";
 import { Button } from "../button.slint";
+import { Toolbar, ToolbarGroup, ToolbarSeparator, ToolbarSpacer } from "../toolbar.slint";
 
 export component EditorExample inherits VerticalLayout {
     horizontal-stretch: 1;
+    vertical-stretch: 1;
     padding: Theme.page-padding(Theme.viewport);
     spacing: 24px;
     alignment: start;
@@ -12,10 +14,13 @@ export component EditorExample inherits VerticalLayout {
     private property <string> basic-text: "fn main() {\n    let name = \"GPUI Kit\";\n    println!(\"Hello, {name}!\");\n}\n";
     private property <string> options-text: "{\n  \"theme\": \"dark\",\n  \"fontSize\": 14,\n  \"lineNumbers\": true,\n  \"autoSave\": \"afterDelay\"\n}\n";
     private property <string> font-text: "# Release notes\n\n## 0.6.4\n\n- Add the Slint editor\n- Sharpen the gutter and the status bar\n- Measure the line count from the text\n";
+    private property <string> screen-text: "fn main() {\n    let name = \"GPUI Kit\";\n    let view = cx.new(|_| WorkspaceView);\n    println!(\"Hello, {name}!\");\n}\n";
     private property <string> events-text: "fn main() {\n    println!(\"Edit me\");\n}\n";
     private property <bool> events-dirty: false;
 
-    GroupBox {
+    // Shown on a component page, hidden when the gallery is asked for a
+    // single finished screen.
+    if GalleryView.example != "last": GroupBox {
         title: "Basic usage";
         variant: GroupBoxVariant.outline;
         Editor {
@@ -26,7 +31,9 @@ export component EditorExample inherits VerticalLayout {
         }
     }
 
-    GroupBox {
+    // Shown on a component page, hidden when the gallery is asked for a
+    // single finished screen.
+    if GalleryView.example != "last": GroupBox {
         title: "Editor options";
         variant: GroupBoxVariant.outline;
         Editor {
@@ -39,7 +46,9 @@ export component EditorExample inherits VerticalLayout {
         }
     }
 
-    GroupBox {
+    // Shown on a component page, hidden when the gallery is asked for a
+    // single finished screen.
+    if GalleryView.example != "last": GroupBox {
         title: "Font";
         variant: GroupBoxVariant.outline;
         Editor {
@@ -51,40 +60,46 @@ export component EditorExample inherits VerticalLayout {
         }
     }
 
-    GroupBox {
-        title: "Value and events";
-        variant: GroupBoxVariant.outline;
-        VerticalLayout {
-            spacing: 12px;
-            Editor {
-                height: 200px;
-                text <=> root.events-text;
-                filename: "events.rs";
-                language: "Rust";
-                dirty: root.events-dirty;
-                edited(text) => {
-                    root.events-dirty = true;
-                }
-            }
-            HorizontalLayout {
-                spacing: 8px;
-                cross-axis-alignment: center;
-                Text {
-                    text: root.events-dirty ? "Unsaved changes" : "All changes saved";
-                    color: Theme.muted-foreground;
-                    font-size: Theme.font-size-xs;
-                    vertical-alignment: center;
-                }
-                Rectangle { horizontal-stretch: 1; }
-                Button {
-                    text: "Save";
-                    variant: ButtonVariant.primary;
-                    enabled: root.events-dirty;
-                    clicked => {
-                        root.events-dirty = false;
+    // The finished screen: the file toolbar above the buffer. The editor brings
+    // its own header and status line, so the screen is the toolbar that opens
+    // files plus the editor that shows one.
+    // The gallery already frames the example, so this is the screen itself:
+    // no section title, no source icon beside one, and one border.
+    if GalleryView.example == "last": Rectangle {
+        vertical-stretch: 1;
+        width: 100%; height: 100%; border-width: 1px; border-color: Theme.border; border-radius: Theme.radius-lg; clip: true;
+
+            // The frame's layout carries its own box. A `Rectangle` sizes its
+            // child to the child's preferred size, so without this the layout
+            // shrinks to its content and anything that stretches inside it
+            // collapses to nothing.
+            VerticalLayout {
+                width: 100%;
+                height: 100%;
+                spacing: 0;
+
+                Toolbar {
+                    ToolbarGroup {
+                        Button { text: "New file"; icon: "plus"; }
+                        Button { text: "Open"; icon: "folder-open"; }
                     }
+                    ToolbarSeparator { width: 1px; }
+                    ToolbarGroup {
+                        Button { text: "Format"; icon: "sparkles"; }
+                        Button { text: "Run"; icon: "play"; variant: ButtonVariant.primary; }
+                    }
+                    // Keeps the commands at the leading edge. Without it the row
+                    // spreads its free space and the buttons stretch to fill.
+                    ToolbarSpacer { }
+                }
+
+                Editor {
+                    vertical-stretch: 1;
+                    text <=> root.screen-text;
+                    filename: "main.rs";
+                    language: "Rust";
+                    dirty: true;
                 }
             }
         }
-    }
 }

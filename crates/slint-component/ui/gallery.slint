@@ -34,12 +34,27 @@ export component Gallery inherits Window {
     max-height: 10000px;
 
     VerticalLayout {
-        Scrollable {
-            width: 100%;
-            height: 100%;
+        // A block asks for one finished screen: it is sized to the frame and the
+        // gallery must not turn it into a scroll area. `Scrollable` is explicit
+        // about this — its viewport is `max(container, content preferred
+        // height)`, so wrapping a screen in one makes it scroll however the
+        // screen stretches. The component pages keep the scroll: their examples
+        // are tours and are taller than any frame.
+        if GalleryView.example == "":
+            Scrollable {
+                width: 100%;
+                height: 100%;
+                GalleryCatalog {
+                    component: root.component;
+                }
+            }
+
+        if GalleryView.example != "":
             GalleryCatalog {
+                width: 100%;
+                height: 100%;
+                vertical-stretch: 1;
                 component: root.component;
             }
-        }
     }
 }

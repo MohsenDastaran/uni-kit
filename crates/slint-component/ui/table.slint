@@ -28,6 +28,10 @@ export component Table inherits Rectangle {
 
 // The header section of a `Table`: a muted band with a bottom separator.
 export component TableHeader inherits Rectangle {
+    // A band, not a region: it keeps its content height while the body takes the
+    // table's surplus. Without this the layout spreads the free space over every
+    // section and the header and footer balloon.
+    vertical-stretch: 0;
     background: Theme.muted.with-alpha(0.5);
 
     VerticalLayout {
@@ -44,11 +48,19 @@ export component TableHeader inherits Rectangle {
 }
 
 // The body section of a `Table`, wrapping data rows.
-export component TableBody inherits VerticalLayout { }
+export component TableBody inherits VerticalLayout {
+    // Fills the space between the two bands, and keeps the rows at their own
+    // height: a layout spreads free space over every child when none of them
+    // claims it, which is what made rows grow to fill a tall table.
+    vertical-stretch: 1;
+    alignment: start;
+}
 
 // The footer section of a `Table`: a muted band with a top separator.
 export component TableFooter inherits Rectangle {
+    vertical-stretch: 0;
     background: Theme.muted.with-alpha(0.5);
+
 
     VerticalLayout {
         padding-top: 1px;

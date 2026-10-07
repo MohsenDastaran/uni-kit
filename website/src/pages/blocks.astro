@@ -39,60 +39,98 @@ function slintExample(slug: string) {
 // page whose Rust usage the Code tab shows.
 const definitions = [
   {
-    id: 'settings',
-    title: 'Settings',
-    description:
-      'Titled groups of rows, each row a label, an explanation, and one control. The screen nearly every desktop application ends up with, and the one where the grouping and the spacing are the whole problem.',
-    story: 'Settings',
-    slug: 'settings',
-    doc: 'settings',
-  },
-  {
     id: 'sidebar',
     title: 'Sidebar',
     description:
-      'A collapsible navigation rail with icon, offcanvas, and expanded modes, and the content area beside it.',
+      'A workspace shell: grouped navigation beside the content it controls. Selecting an entry moves the panel with it, so the two halves are one screen rather than a sidebar on its own.',
     story: 'Sidebar',
     slug: 'sidebar',
     doc: 'sidebar',
+    // What the screen is built from, so the install command and the usage
+    // prompt name the whole composition rather than one control.
+    components: ['sidebar', 'card', 'button', 'table'],
+    // The page carries four compositions. A block is one finished screen, so
+    // the gallery is asked for the last of them.
+    slintExample: 'last',
+  },
+  {
+    id: 'settings',
+    title: 'Settings',
+    description:
+      'A preferences screen: the heading that says what saving will do, then the groups the rows belong to. The rows are the point, but the header and the folders around them are what make it a page.',
+    story: 'Settings',
+    slug: 'settings',
+    doc: 'settings',
+    components: ['settings', 'card', 'button'],
+    // The page tours every composition; the block is the finished screen.
+    slintExample: 'last',
   },
   {
     id: 'dock',
     title: 'Dock',
     description:
-      'A workspace of dockable panels: drag to rearrange, zoom a panel, and serialize the layout.',
+      'An application shell: a toolbar over a dockable workspace, with a status bar underneath. Drag a tab onto another group to join it, or onto an edge to split the centre.',
     story: 'Dock',
     slug: 'dock',
     doc: 'dock',
+    components: ['dock', 'button', 'toolbar', 'status-bar'],
+    // The page tours every composition; the block is the finished screen.
+    slintExample: 'last',
   },
   {
     id: 'editor',
     title: 'Editor',
     description:
-      'Editor chrome around a rope-backed text view, with the line numbers, diagnostics, and the states a document passes through.',
+      'A source view: the file toolbar above a buffer that brings its own header and status line. The toolbar does the work a document window needs, and the editor shows one.',
     story: 'Editor',
     slug: 'editor',
     doc: 'editor',
+    components: ['editor', 'button', 'toolbar'],
+    // The page tours every composition; the block is the finished screen.
+    slintExample: 'last',
+  },
+  {
+    id: 'paginated-table',
+    title: 'Paginated table',
+    description:
+      'A result set one page at a time: the table that shows the page, the count that says which part of the result is on screen, and the control that replaces the rows.',
+    story: 'Paginated Table',
+    slug: 'paginated-table',
+    doc: 'data-table',
+    // The page is a data table plus the control that moves it, so the install
+    // command and the usage prompt name both.
+    components: ['data-table', 'pagination', 'button', 'toolbar'],
+    // The page tours every composition; the block is the finished screen.
+    slintExample: 'last',
   },
   {
     id: 'table',
     title: 'Table',
     description:
-      'Rows that scroll without bound, with the selection, sorting, and resizing behaviour already decided.',
+      'An invoice list: the toolbar that shapes the query, the table it returns, and the footer that says how much of the result is on screen.',
     story: 'Table',
     slug: 'table',
     doc: 'table',
+    components: ['table', 'button', 'toolbar'],
+    // The page tours every composition; the block is the finished screen.
+    slintExample: 'last',
   },
 ];
 
 const blocks = await Promise.all(
-  definitions.map(async (block) => ({
-    ...block,
-    code: {
-      gpui: await highlight(gpuiUsage(block.doc)),
-      slint: await highlight(slintExample(block.slug), 'slint'),
-    },
-  })),
+  definitions.map(async (block) => {
+    const gpui = gpuiUsage(block.doc);
+    const slint = slintExample(block.slug);
+    return {
+      ...block,
+      // Highlighted for the page, plain for the usage prompt it copies.
+      code: {
+        gpui: await highlight(gpui),
+        slint: await highlight(slint, 'slint'),
+      },
+      text: { gpui, slint },
+    };
+  }),
 );
 ---
 

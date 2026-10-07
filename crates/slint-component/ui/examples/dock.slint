@@ -2,9 +2,12 @@
 // Each GroupBox title paints a code icon that scrolls the documentation page to
 // the matching section, so the titles below are the headings on that page.
 
-import { Theme } from "../theme.slint";
+import { Theme, GalleryView, ButtonVariant } from "../theme.slint";
 import { GroupBox, GroupBoxVariant } from "section.slint";
 import { DockArea, DockPanelDef, DockRegion } from "../dock.slint";
+import { Button } from "../button.slint";
+import { Toolbar, ToolbarGroup, ToolbarSeparator, ToolbarSpacer } from "../toolbar.slint";
+import { StatusBar, StatusItem, StatusItemKind } from "../status-bar.slint";
 
 export component DockExample inherits VerticalLayout {
     horizontal-stretch: 1;
@@ -13,7 +16,9 @@ export component DockExample inherits VerticalLayout {
     spacing: 24px;
     alignment: start;
 
-    GroupBox {
+    // Shown on a component page, hidden when the gallery is asked for a
+    // single finished screen.
+    if GalleryView.example != "last": GroupBox {
         title: "Create a dock area";
         variant: GroupBoxVariant.outline;
 
@@ -73,7 +78,9 @@ export component DockExample inherits VerticalLayout {
         }
     }
 
-    GroupBox {
+    // Shown on a component page, hidden when the gallery is asked for a
+    // single finished screen.
+    if GalleryView.example != "last": GroupBox {
         title: "Move a panel to another group";
         variant: GroupBoxVariant.outline;
 
@@ -82,6 +89,101 @@ export component DockExample inherits VerticalLayout {
             color: Theme.muted-foreground;
             font-size: Theme.font-size-sm;
             wrap: word-wrap;
+        }
+    }
+
+    // The finished screen: one command bar over a document workspace, with a
+    // status bar beneath it. The dock's own bar is a gallery convenience, so it
+    // is off here — a second chrome band directly under the first is what made
+    // this read as cluttered rather than as one window.
+    if GalleryView.example == "last": Rectangle {
+        vertical-stretch: 1;
+        width: 100%; height: 100%; border-width: 1px; border-color: Theme.border; border-radius: Theme.radius-lg; clip: true;
+
+        // The frame's layout carries its own box. A `Rectangle` sizes its child
+        // to the child's preferred size, so without this the layout shrinks to
+        // its content and the dock -- which stretches -- collapses to nothing.
+        VerticalLayout {
+            width: 100%;
+            height: 100%;
+            spacing: 0;
+
+            Toolbar {
+                ToolbarGroup {
+                    Button { text: "Open"; icon: "folder-open"; }
+                    Button { text: "Save"; icon: "download"; }
+                }
+                ToolbarSeparator { width: 1px; }
+                ToolbarGroup {
+                    Button { text: "Run"; icon: "play"; variant: ButtonVariant.primary; }
+                }
+                // Keeps the commands at the leading edge. Without it the row
+                // spreads its free space and the buttons stretch to fill.
+                ToolbarSpacer { }
+            }
+
+            DockArea {
+                vertical-stretch: 1;
+                toolbar: false;
+                // The default split already reads as a document workspace — a
+                // narrow explorer, a centre that takes the surplus, and a
+                // terminal band — so the proportions are left alone.
+                panels: [
+                    {
+                        name: "explorer",
+                        title: "Explorer",
+                        content: "Drag this tab into another group.",
+                        region: DockRegion.left,
+                        closable: true,
+                    },
+                    {
+                        name: "search",
+                        title: "Search",
+                        content: "Two panels can share one tab group.",
+                        region: DockRegion.left,
+                        closable: true,
+                    },
+                    {
+                        name: "editor",
+                        title: "main.rs",
+                        content: "Drop a tab near an edge to split this group.",
+                        region: DockRegion.center,
+                        closable: false,
+                    },
+                    {
+                        name: "lib",
+                        title: "lib.rs",
+                        content: "The centre pane takes the surplus width.",
+                        region: DockRegion.center,
+                        closable: true,
+                    },
+                    {
+                        name: "terminal",
+                        title: "Terminal",
+                        content: "The bottom dock shares the workspace column.",
+                        region: DockRegion.bottom,
+                        closable: true,
+                    },
+                    {
+                        name: "problems",
+                        title: "Problems",
+                        content: "No problems detected.",
+                        region: DockRegion.bottom,
+                        closable: true,
+                    },
+                ];
+            }
+
+            StatusBar {
+                left: [
+                    { kind: StatusItemKind.label, icon: "check", label: "Ready" },
+                    { kind: StatusItemKind.label, icon: "git-branch", label: "main" },
+                ];
+                right: [
+                    { kind: StatusItemKind.label, icon: "", label: "Rust" },
+                    { kind: StatusItemKind.label, icon: "", label: "Ln 1, Col 1" },
+                ];
+            }
         }
     }
 }

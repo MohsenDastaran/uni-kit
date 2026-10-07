@@ -116,12 +116,16 @@ function ensureSlintIncludePath(includeDir) {
 }
 
 function usage() {
-  console.log('Usage: uni-kit add <framework> <component> [--dir <path>]');
+  console.log('Usage: uni-kit add <framework> <component...> [--dir <path>]');
   console.log('Examples:');
   console.log('  npx uni-kit add slint alert-dialog');
   console.log('  npx uni-kit add egui alert-dialog');
   console.log('  npx uni-kit add gpui button');
   console.log('  npx uni-kit add quickgui button');
+  console.log('');
+  console.log('A screen is usually several components. Name them all and files they');
+  console.log('share are written once:');
+  console.log('  npx uni-kit add slint sidebar card button table');
 }
 
 async function main() {
@@ -133,11 +137,22 @@ async function main() {
 
   const command = args[0];
   const framework = args[1];
-  const component = args[2];
   const dirFlag = args.indexOf('--dir');
   const dirOverride = dirFlag === -1 ? undefined : args[dirFlag + 1];
+  // Everything after the framework that is not the `--dir` flag or its value.
+  const components = args
+    .slice(2)
+    .filter(
+      (value, index, all) =>
+        value !== '--dir' && all[index - 1] !== '--dir' && !value.startsWith('--'),
+    );
 
-  if (command !== 'add' || !framework || !component || (dirFlag !== -1 && !dirOverride)) {
+  if (
+    command !== 'add' ||
+    !framework ||
+    components.length === 0 ||
+    (dirFlag !== -1 && !dirOverride)
+  ) {
     usage();
     process.exit(1);
   }
@@ -149,10 +164,14 @@ async function main() {
     process.exit(1);
   }
 
-  const files = frameworkConfig.components?.[component];
-  if (!files || files.length === 0) {
-    console.error(`Component "${component}" for ${framework} is not in the registry yet.`);
-    process.exit(1);
+  // Validate before writing anything, so a typo in the last name cannot leave
+  // half a screen installed.
+  for (const component of components) {
+    const files = frameworkConfig.components?.[component];
+    if (!files || files.length === 0) {
+      console.error(`Component "${component}" for ${framework} is not in the registry yet.`);
+      process.exit(1);
+    }
   }
 
   const baseTargetDir = dirOverride ?? frameworkConfig.default_target_dir;
@@ -161,16 +180,23 @@ async function main() {
     process.exit(1);
   }
 
-  console.log(`Installing ${component} for ${framework}...`);
+  console.log(`Installing ${components.join(', ')} for ${framework}...`);
   const modules = new Set();
-  for (const item of files) {
-    if (item.target.includes('..') || path.isAbsolute(item.target)) {
-      throw new Error(`Refusing to write outside the target directory: ${item.target}`);
+  // Components share files — every one of them imports the theme, and many
+  // import the icon set. Written once, whichever name reached it first.
+  const written = new Set();
+  for (const component of components) {
+    for (const item of frameworkConfig.components[component]) {
+      if (item.target.includes('..') || path.isAbsolute(item.target)) {
+        throw new Error(`Refusing to write outside the target directory: ${item.target}`);
+      }
+      if (written.has(item.target)) continue;
+      written.add(item.target);
+      const destination = path.join(process.cwd(), baseTargetDir, item.target);
+      await placeFile(item, destination);
+      console.log(`  ${path.join(baseTargetDir, item.target)}`);
+      if (item.module) modules.add(item.module);
     }
-    const destination = path.join(process.cwd(), baseTargetDir, item.target);
-    await placeFile(item, destination);
-    console.log(`  ${path.join(baseTargetDir, item.target)}`);
-    if (item.module) modules.add(item.module);
   }
 
   if (modules.size > 0) {
@@ -183,7 +209,7 @@ async function main() {
 
   if (framework === 'slint') ensureSlintIncludePath(baseTargetDir);
 
-  console.log(`Installed ${component} into ${baseTargetDir}/`);
+  console.log(`Installed ${components.join(', ')} into ${baseTargetDir}/`);
 }
 
 main().catch((error) => {

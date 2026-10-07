@@ -1,12 +1,86 @@
-import { Theme, GalleryView } from "../theme.slint";
+import { Theme, GalleryView, ButtonVariant, ControlSize, Status } from "../theme.slint";
 import { GroupBox, GroupBoxVariant } from "section.slint";
-import { Sidebar } from "../sidebar.slint";
+import { Sidebar, SidebarGroup } from "../sidebar.slint";
+import { Button } from "../button.slint";
+import { Card } from "../card.slint";
+import { DataTable, DataTableColumn, DataTableRow, DataTableCell } from "../data-table.slint";
+import { Icon } from "../icon.slint";
 
 export component SidebarExample inherits VerticalLayout {
     horizontal-stretch: 1;
+    vertical-stretch: 1;
     padding: Theme.page-padding(Theme.viewport);
     spacing: 24px;
     alignment: start;
+
+    // The screen beside the sidebar reads the same navigation the sidebar draws,
+    // so the two halves cannot disagree about what is selected. Declared here
+    // rather than inside the sidebar because a component cannot hand its own
+    // model back out.
+    // The rows the panel's table shows, one set per entry, so clicking through
+    // the sidebar changes the table as well as the figures. Each set is its own
+    // typed property: a conditional cannot infer the element type from a bare
+    // array literal, and Slint has no index operator to look a set up with, so
+    // the selection is a choice between four arrays of the same type.
+    property <[DataTableRow]> rows-0: [
+        { id: "e0-0", cells: [ { text: "Design system", status: Status.default }, { text: "Jason Lee", status: Status.default }, { text: "Active", status: Status.success }, { text: "2h ago", status: Status.default } ] },
+        { id: "e0-1", cells: [ { text: "Mobile app", status: Status.default }, { text: "Priya Raman", status: Status.default }, { text: "In review", status: Status.warning }, { text: "Yesterday", status: Status.default } ] },
+        { id: "e0-2", cells: [ { text: "Marketing site", status: Status.default }, { text: "Tom Alvarez", status: Status.default }, { text: "Active", status: Status.success }, { text: "3d ago", status: Status.default } ] },
+    ];
+    property <[DataTableRow]> rows-1: [
+        { id: "e1-0", cells: [ { text: "Pipeline rework", status: Status.default }, { text: "Jason Lee", status: Status.default }, { text: "Merged", status: Status.success }, { text: "4h ago", status: Status.default } ] },
+        { id: "e1-1", cells: [ { text: "Token audit", status: Status.default }, { text: "Mia Chen", status: Status.default }, { text: "Open", status: Status.default }, { text: "2d ago", status: Status.default } ] },
+        { id: "e1-2", cells: [ { text: "Docs refresh", status: Status.default }, { text: "Tom Alvarez", status: Status.default }, { text: "Draft", status: Status.default }, { text: "1w ago", status: Status.default } ] },
+    ];
+    property <[DataTableRow]> rows-2: [
+        { id: "e2-0", cells: [ { text: "Q3 planning", status: Status.default }, { text: "Priya Raman", status: Status.default }, { text: "Active", status: Status.success }, { text: "30m ago", status: Status.default } ] },
+        { id: "e2-1", cells: [ { text: "Vendor review", status: Status.default }, { text: "Mia Chen", status: Status.default }, { text: "Blocked", status: Status.danger }, { text: "5d ago", status: Status.default } ] },
+        { id: "e2-2", cells: [ { text: "Hiring loop", status: Status.default }, { text: "Jason Lee", status: Status.default }, { text: "Active", status: Status.success }, { text: "6h ago", status: Status.default } ] },
+    ];
+    property <[DataTableRow]> rows-3: [
+        { id: "e3-0", cells: [ { text: "Roadmap review", status: Status.default }, { text: "Mia Chen", status: Status.default }, { text: "Scheduled", status: Status.info }, { text: "Tomorrow", status: Status.default } ] },
+        { id: "e3-1", cells: [ { text: "Retro notes", status: Status.default }, { text: "Tom Alvarez", status: Status.default }, { text: "Draft", status: Status.default }, { text: "4d ago", status: Status.default } ] },
+        { id: "e3-2", cells: [ { text: "Budget sheet", status: Status.default }, { text: "Priya Raman", status: Status.default }, { text: "Shared", status: Status.info }, { text: "2w ago", status: Status.default } ] },
+    ];
+
+    property <[DataTableRow]> panel-rows:
+        root.current-entry == 0 ? root.rows-0 :
+        root.current-entry == 1 ? root.rows-1 :
+        root.current-entry == 2 ? root.rows-2 :
+        root.rows-3;
+
+    // Two-way with the sidebar's own `collapsed`, so the header trigger below
+    // and the sidebar's header button both drive the same state.
+    in-out property <bool> sidebar-collapsed: false;
+
+    in-out property <int> current-group: 0;
+    in-out property <int> current-entry: 0;
+    property <[SidebarGroup]> nav: [
+        {
+            title: "Platform",
+            entries: [
+                { label: "Overview", icon: "layout-dashboard", suffix: "", trailing-icon: "", muted: false },
+                { label: "Activity", icon: "activity", suffix: "", trailing-icon: "", muted: false },
+                { label: "Starred", icon: "star", suffix: "3", trailing-icon: "", muted: false },
+                { label: "Settings", icon: "settings", suffix: "", trailing-icon: "", muted: false },
+            ],
+        },
+        {
+            title: "Workspace",
+            entries: [
+                { label: "Projects", icon: "folder", suffix: "", trailing-icon: "chevron-right", muted: false },
+                { label: "Members", icon: "users", suffix: "28", trailing-icon: "", muted: false },
+                { label: "Billing", icon: "gauge", suffix: "", trailing-icon: "chevron-right", muted: false },
+            ],
+        },
+        {
+            title: "",
+            entries: [
+                { label: "Documentation", icon: "book-open", suffix: "", trailing-icon: "", muted: false },
+                { label: "Archive", icon: "inbox", suffix: "", trailing-icon: "", muted: true },
+            ],
+        },
+    ];
 
     // Shown on a component page, hidden when the gallery is asked for a
     // single finished screen.
@@ -118,60 +192,165 @@ export component SidebarExample inherits VerticalLayout {
         }
     }
 
-    // The whole shape at once: a workspace header, two titled groups and an
-    // untitled one, entries with a figure, a trailing icon, or dimmed, and a
-    // named footer.
-    GroupBox {
-        title: "Admin Dashboard Sidebar";
-        variant: GroupBoxVariant.outline;
-
-        Rectangle {
-            width: 100%; height: 620px; border-width: 1px; border-color: Theme.border; border-radius: Theme.radius-lg; clip: true;
+    // The whole screen: navigation on the left and a workspace beside it. The
+    // panel heading is whichever entry the sidebar has selected, so clicking an
+    // item moves both halves at once.
+    // The gallery already frames the example, so this is the screen itself:
+    // no section title, no source icon beside one, and one border.
+    if GalleryView.example == "last": Rectangle {
+        vertical-stretch: 1;
+        width: 100%; height: 100%; border-width: 1px; border-color: Theme.border; border-radius: Theme.radius-lg; clip: true;
             HorizontalLayout {
                 width: 100%;
                 height: 100%;
-                // The section lays a fixed-width child out centred; a
-                // sidebar belongs against the left edge.
-                alignment: start;
+                // No `alignment: start`. It aligns along the main axis, so the
+                // panel beside the sidebar would keep its preferred width and
+                // leave the rest of the frame empty. The sidebar is a
+                // fixed-width child and the panel carries the stretch, so the
+                // sidebar still sits against the leading edge.
+
                 Sidebar {
                     height: 100%;
+                    collapsed <=> root.sidebar-collapsed;
+                    groups: root.nav;
                     header-icon: "box";
                     header-title: "Company Name";
                     header-subtitle: "Enterprise";
                     footer-initials: "JL";
                     footer-name: "Jason Lee";
-
-                    groups: [
-                        {
-                            title: "Platform",
-                            entries: [
-                                { label: "Playground", icon: "house", suffix: "", trailing-icon: "", muted: false },
-                                { label: "History", icon: "clock", suffix: "On", trailing-icon: "", muted: false },
-                                { label: "Starred", icon: "star", suffix: "", trailing-icon: "", muted: false },
-                                { label: "Settings", icon: "settings", suffix: "", trailing-icon: "", muted: false },
-                            ],
-                        },
-                        {
-                            title: "",
-                            entries: [
-                                { label: "Models", icon: "layers", suffix: "", trailing-icon: "chevron-right", muted: false },
-                                { label: "Documentation", icon: "file-text", suffix: "", trailing-icon: "chevron-right", muted: false },
-                                { label: "Settings", icon: "settings", suffix: "", trailing-icon: "chevron-right", muted: false },
-                            ],
-                        },
-                        {
-                            title: "Projects",
-                            entries: [
-                                { label: "Design Engineering", icon: "frame", suffix: "", trailing-icon: "bell", muted: false },
-                                { label: "Sales and Marketing", icon: "chart-column", suffix: "%", trailing-icon: "", muted: false },
-                                { label: "Travel", icon: "globe", suffix: "", trailing-icon: "", muted: true },
-                            ],
-                        },
-                    ];
                     selected-group: 0;
                     selected-entry: 0;
+                    changed(group, entry) => {
+                        root.current-group = group;
+                        root.current-entry = entry;
+                    }
+                }
+
+                Rectangle {
+                    horizontal-stretch: 1;
+                    height: 100%;
+                    background: Theme.background;
+
+                    VerticalLayout {
+                        padding: 24px;
+                        spacing: 20px;
+
+                        // The heading walks the model and keeps the entry that
+                        // matches the selection. A Slint array has no index
+                        // operator, so the match is done in the loop.
+                        HorizontalLayout {
+                            vertical-stretch: 0;
+                            spacing: 16px;
+                            // Centred so the 28px trigger keeps its own height
+                            // instead of stretching with the row.
+                            cross-axis-alignment: center;
+
+                            // Only while the rail is closed. Expanded, the
+                            // sidebar's own header carries the control, so a
+                            // second one here would be a duplicate.
+                            //
+                            // It lives in the content rather than the rail, which
+                            // is both where shadcn puts it and the only place it
+                            // cannot be covered: inside the rail there is no room
+                            // beside the brand mark, and outside it the rail's
+                            // bounds the application's content paints over it.
+                            if root.sidebar-collapsed: Rectangle {
+                                width: 28px;
+                                height: 28px;
+                                border-radius: Theme.radius-sm;
+                                border-width: 1px;
+                                border-color: Theme.border;
+                                background: trigger-hit.has-hover ? Theme.muted : transparent;
+                                accessible-role: button;
+                                accessible-label: "Open sidebar";
+                                accessible-action-default => { root.sidebar-collapsed = false; }
+
+                                Icon {
+                                    x: (parent.width - self.width) / 2;
+                                    y: (parent.height - self.height) / 2;
+                                    name: "panel-left";
+                                    size: 16px;
+                                    color: Theme.muted-foreground;
+                                }
+
+                                trigger-hit := TouchArea {
+                                    width: 100%;
+                                    height: 100%;
+                                    clicked => { root.sidebar-collapsed = false; }
+                                }
+                            }
+
+                            VerticalLayout {
+                                horizontal-stretch: 1;
+                                // Zero spacing so the wrappers that match nothing
+                                // collapse without leaving gaps between them.
+                                spacing: 0;
+                                for group[gi] in root.nav: VerticalLayout {
+                                    spacing: 0;
+                                    for entry[ei] in group.entries: VerticalLayout {
+                                        spacing: 0;
+                                        if gi == root.current-group && ei == root.current-entry: VerticalLayout {
+                                            spacing: 4px;
+                                            Text {
+                                                text: entry.label;
+                                                color: Theme.foreground;
+                                                font-size: 20px;
+                                                font-weight: 600;
+                                            }
+                                            Text {
+                                                text: "A quick view of your workspace activity.";
+                                                color: Theme.muted-foreground;
+                                                font-size: Theme.font-size-sm;
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+
+                            Button {
+                                text: "New project";
+                                icon: "plus";
+                                variant: ButtonVariant.primary;
+                            }
+                        }
+
+                        // The figures and the rows below them belong to the selected
+                        // section. The group picks the figures and the entry picks the
+                        // rows, so every click changes what is in the panel. A Slint
+                        // array has no index operator, so each choice is a branch.
+                        HorizontalLayout {
+                            vertical-stretch: 0;
+                            spacing: 12px;
+                            if root.current-group == 0: Card { horizontal-stretch: 1; title: "12"; description: "Active projects"; }
+                            if root.current-group == 0: Card { horizontal-stretch: 1; title: "28"; description: "Team members"; }
+                            if root.current-group == 0: Card { horizontal-stretch: 1; title: "84%"; description: "Tasks completed"; }
+                            if root.current-group == 1: Card { horizontal-stretch: 1; title: "9"; description: "Open projects"; }
+                            if root.current-group == 1: Card { horizontal-stretch: 1; title: "14"; description: "Contributors"; }
+                            if root.current-group == 1: Card { horizontal-stretch: 1; title: "3"; description: "Awaiting review"; }
+                            if root.current-group == 2: Card { horizontal-stretch: 1; title: "4"; description: "Drafts"; }
+                            if root.current-group == 2: Card { horizontal-stretch: 1; title: "7"; description: "Invitations"; }
+                            if root.current-group == 2: Card { horizontal-stretch: 1; title: "96%"; description: "Storage free"; }
+                        }
+
+                        // A `DataTable` rather than the table primitives: its
+                        // rows are a fixed height and its header is one row, so
+                        // the header cannot absorb the panel's spare height and
+                        // balloon the way a stretched hand-built table does.
+                        DataTable {
+                            horizontal-stretch: 1;
+                            vertical-stretch: 1;
+                            size: ControlSize.small;
+                            stripe: true;
+                            columns: [
+                                { key: "project", title: "Project", width: 0, align: TextHorizontalAlignment.left, sortable: true, resizable: false },
+                                { key: "owner", title: "Owner", width: 160px, align: TextHorizontalAlignment.left, sortable: true, resizable: false },
+                                { key: "status", title: "Status", width: 120px, align: TextHorizontalAlignment.left, sortable: true, resizable: false },
+                                { key: "updated", title: "Updated", width: 120px, align: TextHorizontalAlignment.right, sortable: true, resizable: false },
+                            ];
+                            rows: root.panel-rows;
+                        }
+                    }
                 }
             }
         }
-    }
 }

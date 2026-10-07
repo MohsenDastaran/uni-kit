@@ -101,6 +101,12 @@ export component DataTable inherits Rectangle {
     in-out property <ColumnSort> sort: ColumnSort.default;
     out property <int> first-visible-row: first-row;
     out property <int> row-count: row-order.length > 0 ? row-order.length : rows.length;
+    // The height the heading and every row need together, borders included. A
+    // caller showing a fixed number of rows -- one page of a result -- sizes the
+    // table with this instead of stretching it, which would leave a field of
+    // empty rows under the data and read as missing rather than as spare.
+    out property <length> content-height:
+        2 * self.border-width + row-height + 1px + row-count * row-height;
     callback sort-changed(/* column */ int, ColumnSort);
     callback row-selected(/* display index */ int);
     callback row-double-clicked(/* display index */ int);

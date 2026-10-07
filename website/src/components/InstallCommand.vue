@@ -11,9 +11,10 @@ type Manager = (typeof MANAGERS)[number];
 /**
  * A component page lets the markdown pipeline decide both, so the bar carries
  * the command for that page. A block gallery renders one instance per block, so
- * each passes the component to install and the element to render into.
+ * each passes what to install and the element to render into. A block is a
+ * composition, so `slugs` names every component it is built from.
  */
-const props = defineProps<{ slug?: string; host?: string }>();
+const props = defineProps<{ slug?: string; slugs?: string[]; host?: string }>();
 
 const STORAGE_KEY = "selected-package-manager";
 // The `storage` event only reaches *other* documents, so it never fires in the
@@ -23,7 +24,9 @@ const STORAGE_KEY = "selected-package-manager";
 const MANAGER_EVENT = "package-manager-change";
 const PACKAGE = "@dastaran/uni-kit@latest";
 
-const slug = ref("");
+// The component names to install. A component page installs one; a block
+// installs everything it composes.
+const targets = ref<string[]>([]);
 const manager = ref<Manager>("npx");
 const framework = ref("gpui");
 const copied = ref(false);
@@ -46,15 +49,21 @@ const namesFor = (name: string) =>
   (catalog as Record<string, string[]>)[name] ?? [];
 
 /** A registry entry copies files into the app. GPUI Kit itself is the crate. */
-const packaged = computed(() => namesFor(framework.value).includes(slug.value));
+const packaged = computed(
+  () =>
+    targets.value.length > 0 &&
+    targets.value.every((name) => namesFor(framework.value).includes(name)),
+);
 const crateInstall = computed(
   () => framework.value === "gpui" && !packaged.value,
 );
 
 const command = computed(() => {
-  if (!slug.value) return "";
+  if (targets.value.length === 0) return "";
   if (packaged.value) {
-    return `${runner.value} ${PACKAGE} add ${framework.value} ${slug.value}`;
+    // One command for the whole screen: the CLI takes every name and writes the
+    // files they share once.
+    return `${runner.value} ${PACKAGE} add ${framework.value} ${targets.value.join(" ")}`;
   }
   if (crateInstall.value) return "cargo add gpui-kit";
   return "";
@@ -127,9 +136,15 @@ function pageSlug() {
 
 onMounted(() => {
   mountFrameworkLogos();
-  const page = props.slug ?? hostSlug();
-  if (!page || page === "index") return;
-  slug.value = page;
+  // A block names the components it is composed from. A component page has no
+  // such list, so it derives the one component it installs from the bar the
+  // markdown pipeline emitted.
+  const passed = props.slugs?.filter(Boolean) ?? [];
+  const page = passed.length > 0 ? "" : (props.slug ?? hostSlug());
+  const names =
+    passed.length > 0 ? passed : page && page !== "index" ? [page] : [];
+  if (names.length === 0) return;
+  targets.value = names;
   manager.value = readManager();
   framework.value = readFramework();
   observer = new MutationObserver(() => {
@@ -227,7 +242,7 @@ async function copy() {
 <template>
   <div class="install-command-mount">
     <span class="sr-only" role="status">{{ status }}</span>
-    <Teleport v-if="slug" :to="props.host ?? '.install-command-host'">
+    <Teleport v-if="targets.length" :to="props.host ?? '.install-command-host'">
       <div
         v-if="packaged"
         class="install-command__switch framework-switch"
@@ -272,7 +287,7 @@ async function copy() {
             <span class="install-command__package">{{ PACKAGE }}</span>
             <span>add</span>
             <FlowText class="install-command__arg" :text="framework" />
-            <span class="install-command__arg">{{ slug }}</span>
+            <span class="install-command__arg">{{ targets.join(" ") }}</span>
           </code>
           <code v-else-if="crateInstall">
             <span class="install-command__run">cargo</span>

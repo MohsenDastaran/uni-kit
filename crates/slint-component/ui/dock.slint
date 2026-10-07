@@ -660,18 +660,22 @@ component DockBody inherits Rectangle {
     if panel >= 0: Rectangle {
         background: Theme.background;
 
-        HorizontalLayout {
-            padding-left: 12px;
-            padding-right: 12px;
-            spacing: 8px;
-            alignment: center;
+        // A panel body reads from its leading edge like a document. Centring it
+        // left one small muted line stranded in the middle of a large empty
+        // surface, and the empty state below already sits at the top left, so
+        // the two states of this surface disagreed about their alignment spine.
+        // The text is content, not a caption, so it takes the body size and the
+        // foreground colour, and wraps rather than eliding.
+        VerticalLayout {
+            padding: 16px;
+            alignment: start;
 
             Text {
+                horizontal-stretch: 1;
                 text: DockState.content(panel);
-                color: Theme.muted-foreground;
-                font-size: Theme.font-size-xs;
-                vertical-alignment: center;
-                overflow: elide;
+                color: Theme.foreground;
+                font-size: Theme.font-size-sm;
+                wrap: word-wrap;
             }
         }
     }
@@ -717,6 +721,16 @@ component DockPane inherits Rectangle {
 // the pointer for the right and bottom docks.
 component DockSplitter {
     in property <int> region;
+
+    // The component's own box, not just its child's. A plain component does not
+    // propagate a child's preferred size, so without these the splitter's size
+    // is left to the layout's stretch -- and a horizontal splitter then balloons
+    // to absorb the centre region's free space, opening a gap between the line
+    // and the dock below it.
+    min-width: root.vertical ? 5px : 0px;
+    min-height: root.vertical ? 0px : 5px;
+    max-width: root.vertical ? 5px : 100000px;
+    max-height: root.vertical ? 100000px : 5px;
     in property <bool> vertical: false;
     in property <bool> invert: false;
     in property <bool> enabled: true;
@@ -911,6 +925,7 @@ export component DockArea inherits Rectangle {
 
     init => { DockState.reset(root.panels); }
 
+
     VerticalLayout {
         spacing: 0;
 
@@ -1022,6 +1037,7 @@ export component DockArea inherits Rectangle {
                             vertical-stretch: 1;
                             min-height: 0px;
                             background: Theme.background;
+
 
                             HorizontalLayout {
                                 spacing: 0;

@@ -780,6 +780,7 @@ impl StoryState {
             "DialogStory" => story!(DialogStory),
             "SeparatorStory" => story!(SeparatorStory),
             "ShimmerStory" => story!(ShimmerStory),
+            "PaginatedTableStory" => story!(PaginatedTableStory),
             "PopoverStory" => story!(PopoverStory),
             "ProgressStory" => story!(ProgressStory),
             "ResizableStory" => story!(ResizableStory),

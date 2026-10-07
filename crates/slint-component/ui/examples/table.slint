@@ -1,10 +1,12 @@
-import { Theme, ControlSize } from "../theme.slint";
+import { Theme, GalleryView, ButtonVariant, ControlSize } from "../theme.slint";
 import { Button } from "../button.slint";
+import { Toolbar, ToolbarGroup, ToolbarSeparator, ToolbarSpacer } from "../toolbar.slint";
 import { GroupBox, GroupBoxVariant } from "section.slint";
 import { Table, TableHeader, TableBody, TableFooter, TableRow, TableHead, TableCell, TableCaption } from "../table.slint";
 
 export component TableExample inherits VerticalLayout {
     horizontal-stretch: 1;
+    vertical-stretch: 1;
     private property <int> wrap-cols: Theme.wrap-columns(Theme.viewport);
     padding: Theme.page-padding(Theme.viewport);
     spacing: 24px;
@@ -21,7 +23,9 @@ export component TableExample inherits VerticalLayout {
     private property <bool> bordered: true;
     private property <ControlSize> table-size: ControlSize.medium;
 
-    GroupBox {
+    // Shown on a component page, hidden when the gallery is asked for a
+    // single finished screen.
+    if GalleryView.example != "last": GroupBox {
         title: "Basic table";
         variant: GroupBoxVariant.outline;
         Table {
@@ -69,7 +73,9 @@ export component TableExample inherits VerticalLayout {
         }
     }
 
-    GroupBox {
+    // Shown on a component page, hidden when the gallery is asked for a
+    // single finished screen.
+    if GalleryView.example != "last": GroupBox {
         title: "Striped, bordered and sizes";
         variant: GroupBoxVariant.outline;
         GridLayout {
@@ -223,60 +229,98 @@ export component TableExample inherits VerticalLayout {
         }
     }
 
-    GroupBox {
-        title: "Column widths";
-        variant: GroupBoxVariant.outline;
-        Table {
-            TableHeader {
-                TableRow {
-                    TableHead {
-                        text: "ID";
-                        width: 80px;
+    // The finished screen: the toolbar that shapes the query, the table it
+    // returns, and the footer that says how much of the result is on screen.
+    // The gallery already frames the example, so this is the screen itself:
+    // no section title, no source icon beside one, and one border.
+    if GalleryView.example == "last": Rectangle {
+        vertical-stretch: 1;
+        width: 100%; height: 100%; border-width: 1px; border-color: Theme.border; border-radius: Theme.radius-lg; clip: true;
+
+            // The frame's layout carries its own box. A `Rectangle` sizes its
+            // child to the child's preferred size, so without this the layout
+            // shrinks to its content and anything that stretches inside it
+            // collapses to nothing.
+            VerticalLayout {
+                width: 100%;
+                height: 100%;
+                spacing: 0;
+
+                Toolbar {
+                    ToolbarGroup {
+                        Button { text: "Filter"; icon: "funnel"; }
+                        Button { text: "Columns"; icon: "list"; }
+                        Button { text: "Export"; icon: "download"; }
                     }
-                    TableHead {
-                        text: "Name";
+                    ToolbarSeparator { width: 1px; }
+                    ToolbarGroup {
+                        Button { text: "New invoice"; icon: "plus"; variant: ButtonVariant.primary; }
                     }
-                    TableHead {
-                        text: "Email";
-                        col-span: 2;
-                    }
-                    TableHead {
-                        text: "Date";
-                        width: 120px;
-                    }
+                    // Keeps the commands at the leading edge. Without it the row
+                    // spreads its free space and the buttons stretch to fill.
+                    ToolbarSpacer { }
                 }
-            }
-            TableBody {
-                for person[
-                    i
-                ]
-                in [
-                    { id: "1", name: "John Doe", email: "john@example.com", date: "2026-01-12" },
-                    { id: "2", name: "Jane Smith", email: "jane@example.com", date: "2026-02-03" },
-                    { id: "3", name: "Carlos Rivera", email: "carlos@example.com", date: "2026-03-21" },
-                ]
-                : TableRow {
-                    index: i;
-                    TableCell {
-                        text: person.id;
-                        width: 80px;
-                        mono: true;
-                        text-color: Theme.muted-foreground;
-                    }
-                    TableCell {
-                        text: person.name;
-                    }
-                    TableCell {
-                        text: person.email;
-                        col-span: 2;
-                    }
-                    TableCell {
-                        text: person.date;
-                        width: 120px;
-                        mono: true;
+
+                // Claims the height the toolbar leaves, so the table fills.
+                VerticalLayout {
+                    vertical-stretch: 1;
+                    width: 100%;
+                    padding: 16px;
+                    spacing: 12px;
+
+                    Table {
+                        vertical-stretch: 1;
+                        TableHeader {
+                            TableRow {
+                                TableHead { text: "Invoice"; }
+                                TableHead { text: "Customer"; }
+                                TableHead { text: "Status"; }
+                                TableHead { text: "Method"; }
+                                TableHead { text: "Amount"; align: TextHorizontalAlignment.right; }
+                            }
+                        }
+                        TableBody {
+                            TableRow {
+                                TableCell { text: "INV-0042"; mono: true; }
+                                TableCell { text: "Northwind Trading"; }
+                                TableCell { text: "Paid"; }
+                                TableCell { text: "Card"; }
+                                TableCell { text: "$1,250.00"; align: TextHorizontalAlignment.right; mono: true; }
+                            }
+                            TableRow {
+                                TableCell { text: "INV-0041"; mono: true; }
+                                TableCell { text: "Contoso Ltd"; }
+                                TableCell { text: "Pending"; }
+                                TableCell { text: "Bank transfer"; }
+                                TableCell { text: "$860.00"; align: TextHorizontalAlignment.right; mono: true; }
+                            }
+                            TableRow {
+                                TableCell { text: "INV-0040"; mono: true; }
+                                TableCell { text: "Fabrikam"; }
+                                TableCell { text: "Overdue"; }
+                                TableCell { text: "Card"; }
+                                TableCell { text: "$2,400.00"; align: TextHorizontalAlignment.right; mono: true; }
+                            }
+                            TableRow {
+                                TableCell { text: "INV-0039"; mono: true; }
+                                TableCell { text: "Adventure Works"; }
+                                TableCell { text: "Paid"; }
+                                TableCell { text: "Card"; }
+                                TableCell { text: "$415.00"; align: TextHorizontalAlignment.right; mono: true; }
+                            }
+                            TableRow {
+                                TableCell { text: "INV-0038"; mono: true; }
+                                TableCell { text: "Litware Inc"; }
+                                TableCell { text: "Draft"; }
+                                TableCell { text: "—"; }
+                                TableCell { text: "$980.00"; align: TextHorizontalAlignment.right; mono: true; }
+                            }
+                        }
+                        TableFooter {
+                            TableCaption { text: "5 of 48 invoices"; }
+                        }
                     }
                 }
             }
         }
-    }
 }

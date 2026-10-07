@@ -1,5 +1,7 @@
 <script setup lang="ts">
-import { computed, onBeforeUnmount, onMounted, ref } from "vue";
+import { onBeforeUnmount, onMounted, ref } from "vue";
+import { Monitor, RotateCw, Smartphone, Sparkles, Tablet } from "lucide-vue-next";
+import InstallCommand from "./InstallCommand.vue";
 
 // One block: a composed screen shown as the live example. `story` is the GPUI
 // gallery's story name, `slug` the Slint gallery's page folder, `doc` the
@@ -13,7 +15,22 @@ export interface Block {
   story: string;
   slug: string;
   doc?: string;
+  /**
+   * The components this screen is composed from. A block is a combination
+   * rather than one control, so the install command names all of them and the
+   * CLI writes the files they share once.
+   */
+  components?: string[];
+  /**
+   * Which composition inside the Slint page to show. A component page documents
+   * every one it has; a block is a single finished screen, so it asks for the
+   * last. Empty shows them all, which is what the component page wants.
+   */
+  slintExample?: string;
+  /** Highlighted HTML, for display. */
   code?: { gpui?: string; slint?: string };
+  /** The same source as plain text, for the prompt. */
+  text?: { gpui?: string; slint?: string };
 }
 
 const props = defineProps<{
@@ -27,52 +44,10 @@ const framework = ref<"gpui" | "slint">("gpui");
 const readFramework = () =>
   document.documentElement.dataset.framework === "slint" ? "slint" : "gpui";
 
-// Preview first: the example is what a reader judges a block by.
-const tabs = ref<Record<string, "preview" | "code">>({});
-const tabFor = (block: Block) => tabs.value[block.id] ?? "preview";
-function selectTab(block: Block, tab: "preview" | "code") {
-  tabs.value = { ...tabs.value, [block.id]: tab };
-}
 
-const MANAGERS = ["npx", "pnpm", "bun"] as const;
-type Manager = (typeof MANAGERS)[number];
-const MANAGER_KEY = "selected-package-manager";
 
-const manager = ref<Manager>("npx");
-function readManager(): Manager {
-  const stored = localStorage.getItem(MANAGER_KEY);
-  return stored === "pnpm" || stored === "bun" ? stored : "npx";
-}
-function selectManager(next: Manager) {
-  manager.value = next;
-  localStorage.setItem(MANAGER_KEY, next);
-}
 
-const runner = computed(() =>
-  manager.value === "pnpm" ? "pnpm dlx" : manager.value === "bun" ? "bunx" : "npx",
-);
 
-// The registry copies Slint component files into an app. GPUI ships as the
-// crate, so there is nothing to copy and the crate is the install.
-function commandFor(block: Block) {
-  if (framework.value === "slint") {
-    return block.doc ? `${runner.value} @dastaran/uni-kit@latest add slint ${block.doc}` : "";
-  }
-  return "cargo add gpui-kit";
-}
-
-const copied = ref("");
-async function copyCommand(block: Block) {
-  try {
-    await navigator.clipboard.writeText(commandFor(block));
-    copied.value = block.id;
-    window.setTimeout(() => {
-      if (copied.value === block.id) copied.value = "";
-    }, 1600);
-  } catch {
-    copied.value = "";
-  }
-}
 
 function onFrameworkChange() {
   const next = readFramework();
@@ -86,21 +61,27 @@ function onFrameworkChange() {
 }
 
 onMounted(() => {
-  framework.value = readFramework();
-  manager.value = readManager();
+  // Registered before anything else can throw: a failure here would otherwise
+  // leave the page deaf to the framework switch in the header, and the examples
+  // would silently keep showing the framework the page was built with.
   document.addEventListener("framework-change", onFrameworkChange);
+  framework.value = readFramework();
 });
-onBeforeUnmount(() =>
-  document.removeEventListener("framework-change", onFrameworkChange),
-);
+onBeforeUnmount(() => {
+  clearTimeout(promptTimer);
+  document.removeEventListener("framework-change", onFrameworkChange);
+});
 
 function srcFor(block: Block) {
   // The same two shapes the component pages use: the gallery takes a story
   // name, and each Slint page is its own folder.
   if (framework.value === "slint") {
-    return `${base}/slint-gallery/pages/${block.slug}?component=${block.slug}`;
+    const example = block.slintExample
+      ? `&example=${encodeURIComponent(block.slintExample)}`
+      : "";
+    return `${base}/slint-gallery/pages/${block.slug}?component=${block.slug}${example}`;
   }
-  return `${base}/gallery?story=${encodeURIComponent(block.story)}`;
+  return `${base}/gallery?story=${encodeURIComponent(block.story)}&source=0`;
 }
 
 // Each example is a multi-megabyte wasm. Mounting them together makes the page
@@ -128,6 +109,100 @@ function onFrameLoad(index: number) {
 }
 
 const hasSlint = (block: Block) => Boolean(block.slug);
+
+// A block can exist for one framework only: the starter page's introduction is
+// the GPUI gallery's opening screen and has no Slint page. Saying so is better
+// than pointing the frame at a page that is not there.
+const frameUnavailable = (block: Block) =>
+  framework.value === "slint" && !hasSlint(block);
+
+// Each block teleports its install bar into its own host, since the shared
+// component would otherwise put every one of them in the same place.
+const hostFor = (block: Block) => `[data-install-block="${block.id}"]`;
+
+// The frame narrows to a device width, the way a browser's responsive mode
+// does, so a block can be judged at the size it will actually be used at.
+const DEVICES = [
+  { id: "desktop", label: "Desktop width", icon: Monitor, width: "100%" },
+  { id: "tablet", label: "Tablet width", icon: Tablet, width: "834px" },
+  { id: "phone", label: "Phone width", icon: Smartphone, width: "390px" },
+] as const;
+type DeviceId = (typeof DEVICES)[number]["id"];
+
+const device = ref<Record<string, DeviceId>>({});
+const deviceFor = (block: Block) => device.value[block.id] ?? "desktop";
+const widthFor = (block: Block) =>
+  DEVICES.find((entry) => entry.id === deviceFor(block))?.width ?? "100%";
+function selectDevice(block: Block, id: DeviceId) {
+  device.value = { ...device.value, [block.id]: id };
+}
+
+// The same offer the component pages make: hand an assistant the framework, the
+// install command and the source, so it can write the screen rather than guess
+// at it. The label matches theirs.
+const managerRunner = () =>
+  localStorage.getItem("selected-package-manager") === "pnpm"
+    ? "pnpm dlx"
+    : localStorage.getItem("selected-package-manager") === "bun"
+      ? "bunx"
+      : "npx";
+
+const promptLabel = "Copy Usage Prompt for AI";
+const prompted = ref("");
+let promptTimer: ReturnType<typeof setTimeout> | undefined;
+
+function buildPrompt(block: Block) {
+  const source = block.text?.[framework.value] ?? "";
+  const library = framework.value === "slint" ? "Slint" : "gpui-component";
+  const live = framework.value === "slint" ? "Rust, Slint & WASM" : "Rust, GPUI & WASM";
+  const names = block.components?.length
+    ? block.components
+    : [block.doc ?? block.slug].filter(Boolean);
+  const install =
+    framework.value === "slint"
+      ? `${managerRunner()} @dastaran/uni-kit@latest add slint ${names.join(" ")}`
+      : "cargo add gpui-kit";
+  return [
+    `Use this ${framework.value === "slint" ? "Slint" : "GPUI"} example in my application. Keep the framework, file layout, and API below; do not invent a different component or asset path.`,
+    "",
+    "## Framework",
+    `${framework.value === "slint" ? "Slint" : "GPUI"} (${live}). Library: ${library}.`,
+    "",
+    "## Block",
+    block.title,
+    ...(block.components?.length
+      ? [`Composed from: ${block.components.join(", ")}`]
+      : []),
+    `Page: ${window.location.href.split("#")[0]}`,
+    "",
+    "## Install",
+    install,
+    "",
+    "## Source",
+    source,
+  ].join("\n");
+}
+
+async function copyUsagePrompt(block: Block) {
+  try {
+    await navigator.clipboard.writeText(buildPrompt(block));
+  } catch {
+    return;
+  }
+  prompted.value = block.id;
+  clearTimeout(promptTimer);
+  promptTimer = setTimeout(() => {
+    if (prompted.value === block.id) prompted.value = "";
+  }, 1600);
+}
+
+// Reloading replaces the frame: the nonce is part of its key, so Vue tears the
+// old one down and the example starts from the beginning again.
+const reloads = ref<Record<string, number>>({});
+function reload(block: Block) {
+  loaded.value = { ...loaded.value, [block.id]: false };
+  reloads.value = { ...reloads.value, [block.id]: (reloads.value[block.id] ?? 0) + 1 };
+}
 </script>
 
 <template>
@@ -138,100 +213,100 @@ const hasSlint = (block: Block) => Boolean(block.slug);
       :key="block.id"
       class="block"
     >
-      <header class="block__head">
-        <div
-          class="block__tabs framework-switch"
-          role="tablist"
-          :aria-label="`${block.title} view`"
-        >
+      <!-- The same bar the component pages use: a label, the switcher, and the
+           install command on one row. Here the switcher picks Preview or Code,
+           the title takes the flexible column, and the actions sit before the
+           command. -->
+      <header class="framework-bar block__bar">
+        <h2 class="block__title">{{ block.title }}</h2>
+
+        <div class="block__actions">
           <button
-            v-for="tab in ['preview', 'code'] as const"
-            :key="tab"
+            v-for="entry in DEVICES"
+            :key="entry.id"
             type="button"
-            role="tab"
-            class="framework-switch__option block__tab capitalize"
-            :aria-selected="tabFor(block) === tab"
-            :tabindex="tabFor(block) === tab ? 0 : -1"
-            @click="selectTab(block, tab)"
+            class="block__action"
+            :class="{ 'is-active': deviceFor(block) === entry.id }"
+            :aria-pressed="deviceFor(block) === entry.id"
+            :title="entry.label"
+            :aria-label="entry.label"
+            @click="selectDevice(block, entry.id)"
           >
-            {{ tab }}
+            <component :is="entry.icon" :size="15" aria-hidden="true" />
+          </button>
+          <button
+            type="button"
+            class="block__action"
+            title="Reload example"
+            aria-label="Reload example"
+            @click="reload(block)"
+          >
+            <RotateCw :size="15" aria-hidden="true" />
           </button>
         </div>
-        <h2 class="block__title">{{ block.title }}</h2>
-        <p class="block__description">{{ block.description }}</p>
+
+        <div class="block__install" :data-install-block="block.id" />
       </header>
 
-      <div v-show="tabFor(block) === 'preview'" class="block__frame">
-        <iframe
-          v-if="index < mounted"
-          :src="srcFor(block)"
-          :title="`${block.title} example`"
-          class="block__iframe"
-          allow="cross-origin-isolated"
-          @load="onFrameLoad(index)"
-        />
-        <div v-else class="block__status" role="status">
-          <span class="block__spinner" aria-hidden="true" />
-          Waiting for the example above
-        </div>
+      <!-- Outside the bar, as on a component page. Inside it, the component's
+           own wrapper becomes another grid cell: the row shifts, and the command
+           is measured against a grid area instead of the row it sits in. -->
+      <InstallCommand :slug="block.doc" :slugs="block.components" :host="hostFor(block)" />
 
-        <div
-          v-if="index < mounted && !loaded[block.id]"
-          class="block__status"
-          role="status"
+      <!-- Under the bar: the sentence says what the button is for, and the
+           button sits at the trailing edge of the row. -->
+      <div class="block__prompt-row">
+        <p class="block__prompt-note">
+          Installed and ran the command? To build this block yourself, hand this
+          prompt to your AI.
+        </p>
+        <button
+          type="button"
+          class="block__prompt"
+          :title="promptLabel"
+          :aria-label="promptLabel"
+          :data-copied="prompted === block.id || null"
+          @click="copyUsagePrompt(block)"
         >
-          <span class="block__spinner" aria-hidden="true" />
-          Loading {{ block.title }}
-        </div>
+          <Sparkles :size="13" aria-hidden="true" />
+          {{ prompted === block.id ? "Copied" : "Usage prompt for this block" }}
+        </button>
       </div>
 
-      <div v-show="tabFor(block) === 'code'" class="block__code">
-        <div class="block__install">
+      <div class="block__frame">
+        <div class="block__sizer" :style="{ maxWidth: widthFor(block) }">
+          <iframe
+            v-if="index < mounted && !frameUnavailable(block)"
+            :key="`${srcFor(block)}:${reloads[block.id] ?? 0}`"
+            :src="srcFor(block)"
+            :title="`${block.title} example`"
+            class="block__iframe"
+            allow="cross-origin-isolated"
+            @load="onFrameLoad(index)"
+          />
           <div
-            class="install-command__switch framework-switch"
-            role="radiogroup"
-            aria-label="Package manager"
-            :data-selected="manager"
+            v-else-if="frameUnavailable(block)"
+            class="block__status block__status--note"
+            role="status"
           >
-            <span class="framework-switch__thumb" aria-hidden="true" />
-            <button
-              v-for="name in MANAGERS"
-              :key="name"
-              type="button"
-              class="framework-switch__option install-command__option capitalize"
-              role="radio"
-              :aria-checked="manager === name"
-              :tabindex="manager === name ? 0 : -1"
-              @click="selectManager(name)"
-            >
-              {{ name }}
-            </button>
+            This example runs in the GPUI gallery only.
           </div>
-          <code class="block__command">{{ commandFor(block) }}</code>
-          <button type="button" class="block__copy" @click="copyCommand(block)">
-            {{ copied === block.id ? "Copied" : "Copy" }}
-          </button>
-        </div>
+          <div v-else class="block__status" role="status">
+            <span class="block__spinner" aria-hidden="true" />
+            Waiting for the example above
+          </div>
 
-        <!-- Both frameworks are rendered; the framework panels switch on CSS
-             alone, the same way the component pages do. Rendering one and
-             swapping it in script would leave the other out of the HTML. -->
-        <div v-if="block.code?.gpui || block.code?.slint" class="block__snippets">
-          <div class="framework-code__panel" data-framework-panel="gpui">
-            <div v-if="block.code?.gpui" class="block__snippet" v-html="block.code.gpui" />
-            <p v-else class="block__note">No GPUI source for this block yet.</p>
-          </div>
-          <div class="framework-code__panel" data-framework-panel="slint">
-            <div v-if="block.code?.slint" class="block__snippet" v-html="block.code.slint" />
-            <p v-else class="block__note">No Slint source for this block yet.</p>
+          <div
+            v-if="index < mounted && !loaded[block.id] && !frameUnavailable(block)"
+            class="block__status"
+            role="status"
+          >
+            <span class="block__spinner" aria-hidden="true" />
+            Loading {{ block.title }}
           </div>
         </div>
-        <p v-else class="block__note">No source to copy for this block yet.</p>
       </div>
 
-      <p v-if="!hasSlint(block) && framework === 'slint'" class="block__note">
-        This block has no Slint version yet.
-      </p>
     </section>
   </div>
 </template>
@@ -244,41 +319,164 @@ const hasSlint = (block: Block) => Boolean(block.slug);
   margin-block: 2rem;
 }
 
-/* The title and description sit above the example, which is what the reader
-   scans before deciding whether the screen is worth opening. */
-.block__head {
-  margin-bottom: 1rem;
+/* The bar the component pages use, with the four columns read as
+   tabs | title | actions | install. The global rule puts a `.framework-switch`
+   in column three, which is right for the component page's bar and wrong here.
+
+   Row one is stated rather than inferred. Measured in a browser it came out
+   46.39px against 32px controls, because the title's line box is taller than the
+   controls beside it, and centring three equal controls against a taller row put
+   the middle one 7.2px below the others. Pinning the row and the alignment
+   removes the ambiguity: the controls are all the control height, so they share
+   one top edge. */
+.block__bar {
+  margin-block: 0 0.75rem;
+  grid-template-rows: 2rem auto;
+  align-items: center;
 }
 
-.block__tabs {
-  display: inline-flex;
-  margin-bottom: 0.85rem;
-}
 
-.block__tab {
-  min-width: 4.5rem;
-}
+
 
 .block__title {
+  grid-area: 1 / 1 / 2 / 3;
+  min-width: 0;
   margin: 0;
-  font-size: 1.35rem;
-  font-weight: 640;
-  letter-spacing: -0.022em;
+  overflow: hidden;
+  font-size: 0.9375rem;
+  font-weight: 560;
+  letter-spacing: -0.012em;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
-.block__description {
-  margin: 0.4rem 0 0;
-  max-width: 46rem;
-  color: var(--muted-foreground);
+/* `contents` lets the teleported parts join this bar's grid, which is how the
+   component page's bar places them: the manager switch in column four of the
+   first row, the command across the second. */
+.block__install {
+  display: contents;
 }
+
+/* The command sits directly under the bar here. The component page draws a rule
+   above it, which reads as a second header on a page of previews. */
+.block__bar :deep(.install-command__line) {
+  border-top: 0;
+}
+
+/* `margin: 0` matters more than it looks. A prose-spacing rule in the docs
+   layout gives this box `margin-top: 14.4px`; with `align-self: center` half of
+   that margin pushes it down, which measured as the whole row sitting 7.2px
+   below the title and the switch. */
+.block__actions {
+  grid-area: 1 / 3 / 2 / 4;
+  margin: 0;
+  display: flex;
+  align-items: center;
+  gap: 0.125rem;
+}
+
+/* Stated per item rather than inherited, for the same reason. */
+.block__bar > .block__title,
+.block__bar > .block__actions,
+.block__bar :deep(.install-command__switch) {
+  align-self: center;
+}
+
+/* The title is an `h2` inside `.doc-content`, so it inherits the documentation
+   rule that draws a rule under a heading, and its line box grew row one to
+   46.4px -- taller than the 32px controls in it, which is what left them unable
+   to agree on a top edge. Dropping the rule and pinning the line box to the
+   control height makes row one exactly one row of controls. */
+.block__bar > .block__title {
+  border-bottom: 0;
+  padding-block: 0;
+  line-height: 2rem;
+}
+
+.block__bar :deep(.install-command__switch) {
+  grid-area: 1 / 4 / 2 / 5;
+  height: 2rem;
+}
+
+/* A row of its own under the bar: the sentence explains the button, the button
+   sits at the trailing edge. */
+.block__prompt-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-block: 0 0.75rem;
+}
+
+.block__prompt-note {
+  min-width: 0;
+  max-width: 46rem;
+  margin: 0;
+  color: var(--muted-foreground);
+  font-size: 0.8125rem;
+  line-height: 1.5;
+}
+
+/* Same treatment as the install command's copy button — hairline border and
+   `--radius-control` — so the two read as the same family of controls. */
+.block__prompt {
+  display: inline-flex;
+  flex: none;
+  align-items: center;
+  gap: 0.3rem;
+  height: 1.75rem;
+  padding: 0 0.6rem;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-control);
+  background: var(--background);
+  color: var(--muted-foreground);
+  font: 500 0.75rem/1 var(--font-sans);
+  letter-spacing: -0.011em;
+  cursor: pointer;
+  transition:
+    background 140ms ease,
+    color 140ms ease;
+}
+
+.block__prompt:hover,
+.block__prompt[data-copied] {
+  background: var(--secondary);
+  color: var(--foreground);
+}
+
+.block__action {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 2rem;
+  height: 2rem;
+  border-radius: var(--radius-control);
+  color: var(--muted-foreground);
+  cursor: pointer;
+}
+
+.block__action:hover,
+.block__action.is-active {
+  background: var(--secondary);
+  color: var(--foreground);
+}
+
 
 .block__frame {
-  position: relative;
   height: clamp(26rem, 62vh, 44rem);
   overflow: hidden;
   border: 1px solid var(--border);
   border-radius: var(--radius-surface);
   background: var(--card);
+}
+
+/* Centred, so a narrow device width reads as a device rather than as a frame
+   that failed to fill its container. */
+.block__sizer {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  margin-inline: auto;
 }
 
 .block__iframe {
@@ -300,6 +498,13 @@ const hasSlint = (block: Block) => Boolean(block.slug);
   font-size: 0.875rem;
 }
 
+/* A frame with nothing to load. The status styling already reads as a note, so
+   this only keeps a sentence from running the full width of the frame. */
+.block__status--note {
+  padding-inline: 2rem;
+  text-align: center;
+}
+
 .block__spinner {
   width: 0.95rem;
   height: 0.95rem;
@@ -319,57 +524,5 @@ const hasSlint = (block: Block) => Boolean(block.slug);
   .block__spinner {
     animation: none;
   }
-}
-
-.block__code {
-  overflow: hidden;
-  border: 1px solid var(--border);
-  border-radius: var(--radius-surface);
-  background: var(--card);
-}
-
-.block__install {
-  display: flex;
-  align-items: center;
-  gap: 0.75rem;
-  padding: 0.75rem 0.9rem;
-  border-bottom: 1px solid var(--border);
-}
-
-.block__command {
-  flex: 1;
-  min-width: 0;
-  overflow-x: auto;
-  color: var(--foreground);
-  font-family: var(--font-mono);
-  font-size: 0.8125rem;
-  white-space: nowrap;
-}
-
-.block__copy {
-  flex: none;
-  padding: 0.25rem 0.6rem;
-  border: 1px solid var(--border);
-  border-radius: var(--radius-control);
-  background: transparent;
-  color: var(--muted-foreground);
-  font-size: 0.75rem;
-  cursor: pointer;
-}
-
-.block__copy:hover {
-  color: var(--foreground);
-  border-color: color-mix(in srgb, var(--foreground) 28%, transparent);
-}
-
-.block__snippet :deep(pre) {
-  margin: 0;
-  border-radius: 0;
-}
-
-.block__note {
-  margin: 0.85rem;
-  color: var(--muted-foreground);
-  font-size: 0.8125rem;
 }
 </style>

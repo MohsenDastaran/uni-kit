@@ -98,8 +98,13 @@ fn render_catalog(examples: &Path, only: &[String]) -> String {
     }
     out.push_str(
         "\nexport component GalleryCatalog inherits VerticalLayout {\n    \
-         in property <string> component;\n    \
-         alignment: start;\n\n",
+         in property <string> component;\n\
+         \n    \
+         // No `alignment: start`. It aligns along the main axis, so every\n    \
+         // example would keep its preferred height and leave the surplus at the\n    \
+         // bottom, and a finished screen could never fill the frame however it\n    \
+         // stretched. The tours are unaffected: each of their children sets an\n    \
+         // explicit height, so none of them claims the free space.\n\n",
     );
     for page in &pages {
         out.push_str(&format!(

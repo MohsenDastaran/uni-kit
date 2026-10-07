@@ -1,0 +1,372 @@
+// The paginated table gallery page: the same invoice list as the table block,
+// one page at a time, with the control that moves between pages.
+
+import { Theme, GalleryView, ButtonVariant, ControlSize, Status } from "../theme.slint";
+import { Button } from "../button.slint";
+import { Toolbar, ToolbarGroup, ToolbarSeparator, ToolbarSpacer } from "../toolbar.slint";
+import { GroupBox, GroupBoxVariant } from "section.slint";
+import { DataTable, DataTableColumn, DataTableRow, DataTableCell } from "../data-table.slint";
+import { Pagination } from "../pagination.slint";
+
+export component PaginatedTableExample inherits VerticalLayout {
+    horizontal-stretch: 1;
+    vertical-stretch: 1;
+    padding: Theme.page-padding(Theme.viewport);
+    spacing: 24px;
+    alignment: start;
+
+    // Which page the screen is showing. The table and the footer both read it,
+    // so the control moves the rows and the count together.
+    in-out property <int> page: 1;
+    private property <int> page-size: 5;
+    private property <int> pages: 20;
+    private property <int> total: root.page-size * root.pages;
+    private property <int> first: (root.page - 1) * root.page-size + 1;
+    private property <int> last: root.page * root.page-size;
+
+    property <[DataTableColumn]> columns: [
+        { key: "invoice", title: "Invoice", width: 120px, align: TextHorizontalAlignment.left, sortable: true, resizable: false },
+        { key: "customer", title: "Customer", width: 0, align: TextHorizontalAlignment.left, sortable: true, resizable: false },
+        { key: "status", title: "Status", width: 120px, align: TextHorizontalAlignment.left, sortable: true, resizable: false },
+        { key: "method", title: "Method", width: 140px, align: TextHorizontalAlignment.left, sortable: true, resizable: false },
+        { key: "amount", title: "Amount", width: 120px, align: TextHorizontalAlignment.right, sortable: true, resizable: false },
+    ];
+
+    // One cell, typed, so a row's `cells` array is a `[DataTableCell]` rather
+    // than an array of anonymous structs.
+    function cell(text: string, status: Status) -> DataTableCell {
+        { text: text, status: status }
+    }
+
+    function invoice(id: string, customer: string, status: string, tone: Status, method: string, amount: string) -> DataTableRow {
+        {
+            id: id,
+            cells: [
+                root.cell(id, Status.default),
+                root.cell(customer, Status.default),
+                root.cell(status, tone),
+                root.cell(method, Status.default),
+                root.cell(amount, Status.default),
+            ],
+        }
+    }
+
+    // One set of rows per page. Twenty pages of a result is the point of the
+    // block: the control has somewhere to go. Each set is its own typed
+    // property because a conditional cannot infer the element type from a
+    // bare array literal, and Slint has no index operator to look a page up
+    // with, so the selection below is a chain of choices.
+    property <[DataTableRow]> rows-1: [
+        root.invoice("INV-0100", "Northwind Trading", "Paid", Status.success, "Card", "$120.00"),
+        root.invoice("INV-0099", "Wide World Importers", "Paid", Status.success, "Card", "$1,677.37"),
+        root.invoice("INV-0098", "Alpine Ski House", "Pending", Status.warning, "Bank transfer", "$4,031.74"),
+        root.invoice("INV-0097", "Graphic Design Institute", "Paid", Status.success, "Card", "$788.11"),
+        root.invoice("INV-0096", "Litware Inc", "Overdue", Status.danger, "Bank transfer", "$3,142.48"),
+    ];
+    property <[DataTableRow]> rows-2: [
+        root.invoice("INV-0095", "Trey Research", "Draft", Status.default, "—", "$4,699.85"),
+        root.invoice("INV-0094", "Southridge Video", "Pending", Status.warning, "Bank transfer", "$2,253.22"),
+        root.invoice("INV-0093", "Contoso Ltd", "Paid", Status.success, "Card", "$3,810.59"),
+        root.invoice("INV-0092", "Fourth Coffee", "Paid", Status.success, "Card", "$1,364.96"),
+        root.invoice("INV-0091", "Humongous Insurance", "Paid", Status.success, "Card", "$2,921.33"),
+    ];
+    property <[DataTableRow]> rows-3: [
+        root.invoice("INV-0090", "School of Fine Art", "Pending", Status.warning, "Bank transfer", "$475.70"),
+        root.invoice("INV-0089", "Tailspin Toys", "Paid", Status.success, "Card", "$2,032.07"),
+        root.invoice("INV-0088", "Blue Yonder Airlines", "Overdue", Status.danger, "Bank transfer", "$4,386.44"),
+        root.invoice("INV-0087", "VanArsdel Ltd", "Draft", Status.default, "—", "$1,940.81"),
+        root.invoice("INV-0086", "Fabrikam", "Pending", Status.warning, "Bank transfer", "$3,497.18"),
+    ];
+    property <[DataTableRow]> rows-4: [
+        root.invoice("INV-0085", "Wingtip Toys", "Paid", Status.success, "Card", "$1,051.55"),
+        root.invoice("INV-0084", "Margie's Travel", "Paid", Status.success, "Card", "$2,608.92"),
+        root.invoice("INV-0083", "VanArsdel Research", "Paid", Status.success, "Card", "$162.29"),
+        root.invoice("INV-0082", "Proseware", "Pending", Status.warning, "Bank transfer", "$1,719.66"),
+        root.invoice("INV-0081", "Coho Vineyard", "Paid", Status.success, "Card", "$4,073.03"),
+    ];
+    property <[DataTableRow]> rows-5: [
+        root.invoice("INV-0080", "Woodgrove Bank", "Overdue", Status.danger, "Bank transfer", "$830.40"),
+        root.invoice("INV-0079", "Adventure Works", "Draft", Status.default, "—", "$3,184.77"),
+        root.invoice("INV-0078", "Lucerne Publishing", "Pending", Status.warning, "Bank transfer", "$4,741.14"),
+        root.invoice("INV-0077", "Relecloud", "Paid", Status.success, "Card", "$2,295.51"),
+        root.invoice("INV-0076", "Northwind Trading", "Paid", Status.success, "Card", "$4,649.88"),
+    ];
+    property <[DataTableRow]> rows-6: [
+        root.invoice("INV-0075", "Wide World Importers", "Paid", Status.success, "Card", "$1,406.25"),
+        root.invoice("INV-0074", "Alpine Ski House", "Pending", Status.warning, "Bank transfer", "$3,760.62"),
+        root.invoice("INV-0073", "Graphic Design Institute", "Paid", Status.success, "Card", "$517.99"),
+        root.invoice("INV-0072", "Litware Inc", "Overdue", Status.danger, "Bank transfer", "$2,871.36"),
+        root.invoice("INV-0071", "Trey Research", "Draft", Status.default, "—", "$4,428.73"),
+    ];
+    property <[DataTableRow]> rows-7: [
+        root.invoice("INV-0070", "Southridge Video", "Pending", Status.warning, "Bank transfer", "$1,982.10"),
+        root.invoice("INV-0069", "Contoso Ltd", "Paid", Status.success, "Card", "$3,539.47"),
+        root.invoice("INV-0068", "Fourth Coffee", "Paid", Status.success, "Card", "$1,093.84"),
+        root.invoice("INV-0067", "Humongous Insurance", "Paid", Status.success, "Card", "$2,650.21"),
+        root.invoice("INV-0066", "School of Fine Art", "Pending", Status.warning, "Bank transfer", "$204.58"),
+    ];
+    property <[DataTableRow]> rows-8: [
+        root.invoice("INV-0065", "Tailspin Toys", "Paid", Status.success, "Card", "$2,558.95"),
+        root.invoice("INV-0064", "Blue Yonder Airlines", "Overdue", Status.danger, "Bank transfer", "$4,115.32"),
+        root.invoice("INV-0063", "VanArsdel Ltd", "Draft", Status.default, "—", "$1,669.69"),
+        root.invoice("INV-0062", "Fabrikam", "Pending", Status.warning, "Bank transfer", "$3,226.06"),
+        root.invoice("INV-0061", "Wingtip Toys", "Paid", Status.success, "Card", "$780.43"),
+    ];
+    property <[DataTableRow]> rows-9: [
+        root.invoice("INV-0060", "Margie's Travel", "Paid", Status.success, "Card", "$2,337.80"),
+        root.invoice("INV-0059", "VanArsdel Research", "Paid", Status.success, "Card", "$4,691.17"),
+        root.invoice("INV-0058", "Proseware", "Pending", Status.warning, "Bank transfer", "$1,448.54"),
+        root.invoice("INV-0057", "Coho Vineyard", "Paid", Status.success, "Card", "$3,802.91"),
+        root.invoice("INV-0056", "Woodgrove Bank", "Overdue", Status.danger, "Bank transfer", "$559.28"),
+    ];
+    property <[DataTableRow]> rows-10: [
+        root.invoice("INV-0055", "Adventure Works", "Draft", Status.default, "—", "$2,913.65"),
+        root.invoice("INV-0054", "Lucerne Publishing", "Pending", Status.warning, "Bank transfer", "$467.02"),
+        root.invoice("INV-0053", "Relecloud", "Paid", Status.success, "Card", "$2,024.39"),
+        root.invoice("INV-0052", "Northwind Trading", "Paid", Status.success, "Card", "$4,378.76"),
+        root.invoice("INV-0051", "Wide World Importers", "Paid", Status.success, "Card", "$1,135.13"),
+    ];
+    property <[DataTableRow]> rows-11: [
+        root.invoice("INV-0050", "Alpine Ski House", "Pending", Status.warning, "Bank transfer", "$3,489.50"),
+        root.invoice("INV-0049", "Graphic Design Institute", "Paid", Status.success, "Card", "$246.87"),
+        root.invoice("INV-0048", "Litware Inc", "Overdue", Status.danger, "Bank transfer", "$2,600.24"),
+        root.invoice("INV-0047", "Trey Research", "Draft", Status.default, "—", "$4,157.61"),
+        root.invoice("INV-0046", "Southridge Video", "Pending", Status.warning, "Bank transfer", "$1,711.98"),
+    ];
+    property <[DataTableRow]> rows-12: [
+        root.invoice("INV-0045", "Contoso Ltd", "Paid", Status.success, "Card", "$3,268.35"),
+        root.invoice("INV-0044", "Fourth Coffee", "Paid", Status.success, "Card", "$822.72"),
+        root.invoice("INV-0043", "Humongous Insurance", "Paid", Status.success, "Card", "$2,379.09"),
+        root.invoice("INV-0042", "School of Fine Art", "Pending", Status.warning, "Bank transfer", "$4,733.46"),
+        root.invoice("INV-0041", "Tailspin Toys", "Paid", Status.success, "Card", "$2,287.83"),
+    ];
+    property <[DataTableRow]> rows-13: [
+        root.invoice("INV-0040", "Blue Yonder Airlines", "Overdue", Status.danger, "Bank transfer", "$3,844.20"),
+        root.invoice("INV-0039", "VanArsdel Ltd", "Draft", Status.default, "—", "$1,398.57"),
+        root.invoice("INV-0038", "Fabrikam", "Pending", Status.warning, "Bank transfer", "$2,955.94"),
+        root.invoice("INV-0037", "Wingtip Toys", "Paid", Status.success, "Card", "$509.31"),
+        root.invoice("INV-0036", "Margie's Travel", "Paid", Status.success, "Card", "$2,066.68"),
+    ];
+    property <[DataTableRow]> rows-14: [
+        root.invoice("INV-0035", "VanArsdel Research", "Paid", Status.success, "Card", "$4,420.05"),
+        root.invoice("INV-0034", "Proseware", "Pending", Status.warning, "Bank transfer", "$1,177.42"),
+        root.invoice("INV-0033", "Coho Vineyard", "Paid", Status.success, "Card", "$3,531.79"),
+        root.invoice("INV-0032", "Woodgrove Bank", "Overdue", Status.danger, "Bank transfer", "$288.16"),
+        root.invoice("INV-0031", "Adventure Works", "Draft", Status.default, "—", "$2,642.53"),
+    ];
+    property <[DataTableRow]> rows-15: [
+        root.invoice("INV-0030", "Lucerne Publishing", "Pending", Status.warning, "Bank transfer", "$196.90"),
+        root.invoice("INV-0029", "Relecloud", "Paid", Status.success, "Card", "$1,753.27"),
+        root.invoice("INV-0028", "Northwind Trading", "Paid", Status.success, "Card", "$4,107.64"),
+        root.invoice("INV-0027", "Wide World Importers", "Paid", Status.success, "Card", "$864.01"),
+        root.invoice("INV-0026", "Alpine Ski House", "Pending", Status.warning, "Bank transfer", "$3,218.38"),
+    ];
+    property <[DataTableRow]> rows-16: [
+        root.invoice("INV-0025", "Graphic Design Institute", "Paid", Status.success, "Card", "$4,775.75"),
+        root.invoice("INV-0024", "Litware Inc", "Overdue", Status.danger, "Bank transfer", "$2,329.12"),
+        root.invoice("INV-0023", "Trey Research", "Draft", Status.default, "—", "$3,886.49"),
+        root.invoice("INV-0022", "Southridge Video", "Pending", Status.warning, "Bank transfer", "$1,440.86"),
+        root.invoice("INV-0021", "Contoso Ltd", "Paid", Status.success, "Card", "$2,997.23"),
+    ];
+    property <[DataTableRow]> rows-17: [
+        root.invoice("INV-0020", "Fourth Coffee", "Paid", Status.success, "Card", "$551.60"),
+        root.invoice("INV-0019", "Humongous Insurance", "Paid", Status.success, "Card", "$2,905.97"),
+        root.invoice("INV-0018", "School of Fine Art", "Pending", Status.warning, "Bank transfer", "$4,462.34"),
+        root.invoice("INV-0017", "Tailspin Toys", "Paid", Status.success, "Card", "$2,016.71"),
+        root.invoice("INV-0016", "Blue Yonder Airlines", "Overdue", Status.danger, "Bank transfer", "$3,573.08"),
+    ];
+    property <[DataTableRow]> rows-18: [
+        root.invoice("INV-0015", "VanArsdel Ltd", "Draft", Status.default, "—", "$1,127.45"),
+        root.invoice("INV-0014", "Fabrikam", "Pending", Status.warning, "Bank transfer", "$2,684.82"),
+        root.invoice("INV-0013", "Wingtip Toys", "Paid", Status.success, "Card", "$238.19"),
+        root.invoice("INV-0012", "Margie's Travel", "Paid", Status.success, "Card", "$1,795.56"),
+        root.invoice("INV-0011", "VanArsdel Research", "Paid", Status.success, "Card", "$4,149.93"),
+    ];
+    property <[DataTableRow]> rows-19: [
+        root.invoice("INV-0010", "Proseware", "Pending", Status.warning, "Bank transfer", "$906.30"),
+        root.invoice("INV-0009", "Coho Vineyard", "Paid", Status.success, "Card", "$3,260.67"),
+        root.invoice("INV-0008", "Woodgrove Bank", "Overdue", Status.danger, "Bank transfer", "$814.04"),
+        root.invoice("INV-0007", "Adventure Works", "Draft", Status.default, "—", "$2,371.41"),
+        root.invoice("INV-0006", "Lucerne Publishing", "Pending", Status.warning, "Bank transfer", "$4,725.78"),
+    ];
+    property <[DataTableRow]> rows-20: [
+        root.invoice("INV-0005", "Relecloud", "Paid", Status.success, "Card", "$1,482.15"),
+        root.invoice("INV-0004", "Northwind Trading", "Paid", Status.success, "Card", "$3,836.52"),
+        root.invoice("INV-0003", "Wide World Importers", "Paid", Status.success, "Card", "$593.89"),
+        root.invoice("INV-0002", "Alpine Ski House", "Pending", Status.warning, "Bank transfer", "$2,947.26"),
+        root.invoice("INV-0001", "Graphic Design Institute", "Paid", Status.success, "Card", "$4,504.63"),
+    ];
+
+    property <[DataTableRow]> page-rows:
+        root.page == 1 ? root.rows-1 :
+        root.page == 2 ? root.rows-2 :
+        root.page == 3 ? root.rows-3 :
+        root.page == 4 ? root.rows-4 :
+        root.page == 5 ? root.rows-5 :
+        root.page == 6 ? root.rows-6 :
+        root.page == 7 ? root.rows-7 :
+        root.page == 8 ? root.rows-8 :
+        root.page == 9 ? root.rows-9 :
+        root.page == 10 ? root.rows-10 :
+        root.page == 11 ? root.rows-11 :
+        root.page == 12 ? root.rows-12 :
+        root.page == 13 ? root.rows-13 :
+        root.page == 14 ? root.rows-14 :
+        root.page == 15 ? root.rows-15 :
+        root.page == 16 ? root.rows-16 :
+        root.page == 17 ? root.rows-17 :
+        root.page == 18 ? root.rows-18 :
+        root.page == 19 ? root.rows-19 :
+        root.rows-20;
+
+    // Shown on a component page, hidden when the gallery is asked for a
+    // single finished screen.
+    if GalleryView.example != "last": GroupBox {
+        title: "Table with pagination";
+        variant: GroupBoxVariant.outline;
+
+        VerticalLayout {
+            spacing: 12px;
+
+            DataTable {
+                height: 260px;
+                size: ControlSize.small;
+                stripe: true;
+                columns: root.columns;
+                rows: root.page-rows;
+            }
+
+            // The count names the rows on screen; the control replaces them.
+            HorizontalLayout {
+                vertical-stretch: 0;
+                spacing: 12px;
+
+                Text {
+                    text: "Showing \{root.first}–\{root.last} of \{root.total} invoices";
+                    color: Theme.muted-foreground;
+                    font-size: Theme.font-size-sm;
+                    vertical-alignment: center;
+                }
+                Rectangle { horizontal-stretch: 1; }
+                Pagination {
+                    page <=> root.page;
+                    pages: root.pages;
+                    compact: false;
+                }
+            }
+        }
+    }
+
+    // Shown on a component page, hidden when the gallery is asked for a
+    // single finished screen.
+    if GalleryView.example != "last": GroupBox {
+        title: "Pagination";
+        variant: GroupBoxVariant.outline;
+
+        VerticalLayout {
+            spacing: 12px;
+            alignment: start;
+
+            Text {
+                text: "Compact, which is how a table footer uses it.";
+                color: Theme.muted-foreground;
+                font-size: Theme.font-size-sm;
+            }
+            Pagination {
+                page: 4;
+                pages: 20;
+                compact: true;
+            }
+
+            Text {
+                text: "Labelled, for a page that has room for the words.";
+                color: Theme.muted-foreground;
+                font-size: Theme.font-size-sm;
+            }
+            Pagination {
+                page: 4;
+                pages: 20;
+                compact: false;
+            }
+        }
+    }
+
+    // The finished screen: the toolbar that shapes the query, one page of the
+    // table it returns, and the footer that says which page is on screen and
+    // moves to the next. The gallery already frames the example, so this is the
+    // screen itself: no section title, no source icon beside one, one border.
+    if GalleryView.example == "last": Rectangle {
+        vertical-stretch: 1;
+        width: 100%; height: 100%; border-width: 1px; border-color: Theme.border; border-radius: Theme.radius-lg; clip: true;
+
+        // The frame's layout carries its own box. A `Rectangle` sizes its child
+        // to the child's preferred size, so without this the layout shrinks to
+        // its content and anything that stretches inside it collapses.
+        VerticalLayout {
+            width: 100%;
+            height: 100%;
+            spacing: 0;
+
+            Toolbar {
+                ToolbarGroup {
+                    Button { text: "Filter"; icon: "funnel"; }
+                    Button { text: "Columns"; icon: "list"; }
+                    Button { text: "Export"; icon: "download"; }
+                }
+                ToolbarSeparator { width: 1px; }
+                ToolbarGroup {
+                    Button { text: "New invoice"; icon: "plus"; variant: ButtonVariant.primary; }
+                }
+                // Keeps the commands at the leading edge. Without it the row
+                // spreads its free space and the buttons stretch to fill.
+                ToolbarSpacer { }
+            }
+
+            // Claims the height the toolbar leaves, so the table fills.
+            VerticalLayout {
+                vertical-stretch: 1;
+                width: 100%;
+                padding: 16px;
+                spacing: 12px;
+
+                // As tall as the page it shows: a heading and five rows. Stretching
+                // it to the frame left a field of empty body under the last row,
+                // which reads as missing data rather than as room to spare.
+                DataTable {
+                    vertical-stretch: 0;
+                    height: self.content-height;
+                    size: ControlSize.small;
+                    stripe: true;
+                    columns: root.columns;
+                    rows: root.page-rows;
+                }
+
+                // Takes the height the table leaves, so the footer stays against
+                // the bottom edge instead of drifting up under the rows.
+                Rectangle { vertical-stretch: 1; }
+
+                // The footer: where the page sits in the result, and the control
+                // that moves it. Pinned below the table rather than scrolling
+                // with it, so the control stays reachable however many rows a
+                // page holds.
+                HorizontalLayout {
+                    vertical-stretch: 0;
+                    spacing: 12px;
+
+                    Text {
+                        text: "Showing \{root.first}–\{root.last} of \{root.total} invoices";
+                        color: Theme.muted-foreground;
+                        font-size: Theme.font-size-sm;
+                        vertical-alignment: center;
+                    }
+                    Rectangle { horizontal-stretch: 1; }
+                    Pagination {
+                        page <=> root.page;
+                        pages: root.pages;
+                        compact: false;
+                    }
+                }
+            }
+        }
+    }
+}

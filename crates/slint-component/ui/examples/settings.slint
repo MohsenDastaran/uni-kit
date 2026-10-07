@@ -1,14 +1,19 @@
-import { Theme } from "../theme.slint";
+import { Theme, GalleryView, ButtonVariant } from "../theme.slint";
 import { GroupBox, GroupBoxVariant } from "section.slint";
 import { Settings } from "../settings.slint";
+import { Button } from "../button.slint";
+import { Card } from "../card.slint";
 
 export component SettingsExample inherits VerticalLayout {
     horizontal-stretch: 1;
+    vertical-stretch: 1;
     padding: Theme.page-padding(Theme.viewport);
     spacing: 24px;
     alignment: start;
 
-    GroupBox {
+    // Shown on a component page, hidden when the gallery is asked for a
+    // single finished screen.
+    if GalleryView.example != "last": GroupBox {
         title: "Basic Settings";
         variant: GroupBoxVariant.outline;
 
@@ -24,7 +29,9 @@ export component SettingsExample inherits VerticalLayout {
     // A settings page stacks rows and lets the surrounding group carry the
     // surface. The filled block below shows the other treatment: the frame
     // takes the muted fill instead of an outline.
-    GroupBox {
+    // Shown on a component page, hidden when the gallery is asked for a
+    // single finished screen.
+    if GalleryView.example != "last": GroupBox {
         title: "Group Variants";
         variant: GroupBoxVariant.outline;
 
@@ -76,17 +83,75 @@ export component SettingsExample inherits VerticalLayout {
         }
     }
 
-    GroupBox {
-        title: "Complete Settings Example";
-        variant: GroupBoxVariant.outline;
+    // The finished screen: a page heading with its actions, then the groups the
+    // settings belong to. A settings page is the rows, the surface around them,
+    // and the heading that says what saving will do.
+    // The gallery already frames the example, so this is the screen itself:
+    // no section title, no source icon beside one, and one border.
+    if GalleryView.example == "last": Rectangle {
+        vertical-stretch: 1;
+        width: 100%; height: 100%; border-width: 1px; border-color: Theme.border; border-radius: Theme.radius-lg; clip: true;
+            background: Theme.muted.with-alpha(0.25);
 
-        Settings {
-            rows: [
-                { title: "Sync across devices", description: "Keep every device on the same revision.", checked: true },
-                { title: "Auto-save", description: "Write changes every 30 seconds.", checked: true },
-                { title: "Spell check", description: "Underline unknown words.", checked: false },
-                { title: "Telemetry", description: "Share anonymous performance data.", checked: false },
-            ];
+            // The frame's layout carries its own box. A `Rectangle` sizes its
+            // child to the child's preferred size, so without this the layout
+            // shrinks to its content and anything that stretches inside it
+            // collapses to nothing.
+            VerticalLayout {
+                width: 100%;
+                height: 100%;
+                padding: 24px;
+                spacing: 20px;
+
+                HorizontalLayout {
+                    vertical-stretch: 0;
+                    spacing: 16px;
+
+                    VerticalLayout {
+                        horizontal-stretch: 1;
+                        spacing: 4px;
+                        Text {
+                            text: "Preferences";
+                            color: Theme.foreground;
+                            font-size: 20px;
+                            font-weight: 600;
+                        }
+                        Text {
+                            text: "Changes apply to this device as soon as you save.";
+                            color: Theme.muted-foreground;
+                            font-size: Theme.font-size-sm;
+                        }
+                    }
+
+                    Button { text: "Reset"; }
+                    Button { text: "Save changes"; variant: ButtonVariant.primary; }
+                }
+
+                Card {
+                    title: "Appearance";
+                    description: "How the application looks on this machine.";
+
+                    Settings {
+                        rows: [
+                            { title: "Dark mode", description: "Use the dark palette.", checked: true },
+                            { title: "Reduce motion", description: "Skip non-essential animation.", checked: false },
+                            { title: "Compact density", description: "Fit more rows on screen.", checked: true },
+                        ];
+                    }
+                }
+
+                Card {
+                    title: "Notifications";
+                    description: "What the application is allowed to interrupt you with.";
+
+                    Settings {
+                        rows: [
+                            { title: "Desktop alerts", description: "Show a banner for new activity.", checked: true },
+                            { title: "Sounds", description: "Play a sound for new messages.", checked: false },
+                            { title: "Weekly summary", description: "Email a digest every Monday.", checked: false },
+                        ];
+                    }
+                }
+            }
         }
-    }
 }
