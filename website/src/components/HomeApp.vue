@@ -455,7 +455,9 @@ html[lang^="zh"] .section-kicker {
     grid-template-columns: minmax(0, 0.93fr) minmax(0, 1.07fr);
     align-items: center;
     gap: clamp(2rem, 4vw, 3.5rem);
-    width: min(100% - 3rem, var(--page));
+    /* Wider than the page's 1280px column, and with a narrower gutter: the
+       junction needs the room and the copy caps its own measure anyway. */
+    width: min(100% - 2rem, 1520px);
     margin-inline: auto;
     padding-block: clamp(2.75rem, 5vw, 4.25rem);
 }
