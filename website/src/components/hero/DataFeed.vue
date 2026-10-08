@@ -1,11 +1,38 @@
 <script setup lang="ts">
+import { onBeforeUnmount, onMounted, ref } from "vue";
+
 /**
  * The reverseui "DataFeedingIn", ported verbatim from its source. The seven
  * dashed paths, the gradient mask, and the seven travelling pulse gradients are
  * copied as authored; framer-motion's `x1`/`x2` animation is the SVG SMIL
  * `<animate>` below with the same 1.5s linear loop, 0.25s delay, and the rows'
  * staggered fade-in is CSS with the same delays.
+ *
+ * The card reads as the thing the navbar's framework picker drives: the lines
+ * already run downward into it, and `framework-change` makes them surge and the
+ * card charge in the framework's colour while the rows feed in again.
  */
+const powered = ref(false);
+const flow = ref(0);
+let powerTimer: ReturnType<typeof setTimeout> | undefined;
+
+function onFrameworkChange() {
+  // Clear first so the animation restarts even on a rapid second switch.
+  powered.value = false;
+  flow.value += 1;
+  requestAnimationFrame(() => {
+    powered.value = true;
+    clearTimeout(powerTimer);
+    powerTimer = setTimeout(() => (powered.value = false), 1400);
+  });
+}
+
+onMounted(() => document.addEventListener("framework-change", onFrameworkChange));
+onBeforeUnmount(() => {
+  document.removeEventListener("framework-change", onFrameworkChange);
+  clearTimeout(powerTimer);
+});
+
 const PATHS = [
   "M0 100H55.022C61.8914 100 68.6451 101.769 74.6324 105.137L120.368 130.863C126.355 134.231 133.109 136 139.978 136H201.5",
   "M0 60H48.2171C59.2463 60 69.7861 64.5539 77.3451 72.5854L117.655 115.415C125.214 123.446 135.754 128 146.783 128H201.5",
@@ -18,7 +45,7 @@ const PATHS = [
 </script>
 
 <template>
-  <div class="data-feed">
+  <div class="data-feed" :class="{ 'is-powered': powered }">
     <div class="data-feed__pulse">
       <svg viewBox="0 0 202 288" fill="none">
         <template v-for="(d, index) in PATHS" :key="index">
@@ -80,7 +107,7 @@ const PATHS = [
           <span class="data-feed__barline" />
         </div>
       </div>
-      <div class="data-feed__body" aria-hidden="true">
+      <div class="data-feed__body" :key="flow" aria-hidden="true">
         <div class="data-feed__row" v-for="i in 6" :key="`r${i}`" :style="{ animationDelay: `${1.25 + (i - 1) * 1.5}s` }">
           <div class="data-feed__cell" v-for="j in 3" :key="`c${j}`">
             <span class="data-feed__barline" />
@@ -103,7 +130,13 @@ const PATHS = [
   height: 5rem;
   transform-origin: right center;
   transform: rotate(90deg) translateX(2.5rem) translateY(0);
-  color: #716fff;
+  /* The conduit carries the selected framework's colour, the way the picker
+     above it does: blue for GPUI, the light the monochrome Slint mark uses. */
+  color: var(--feed-accent, #716fff);
+}
+
+.data-feed__pulse stop {
+  stop-color: var(--feed-accent, #716fff);
 }
 
 .data-feed__pulse svg {
@@ -199,11 +232,54 @@ const PATHS = [
   }
 }
 
+/* A power-on: the lines flare, the card takes the charge, then both settle. */
+.data-feed.is-powered .data-feed__pulse {
+  animation: feed-surge 1.2s ease-out both;
+}
+
+.data-feed.is-powered .data-feed__card {
+  animation: feed-charge 1.4s ease-out both;
+}
+
+@keyframes feed-surge {
+  0% {
+    filter: brightness(1);
+  }
+  16% {
+    filter: brightness(2.6) saturate(1.35);
+  }
+  100% {
+    filter: brightness(1);
+  }
+}
+
+@keyframes feed-charge {
+  0%,
+  10% {
+    border-color: var(--border);
+    box-shadow: none;
+  }
+  24% {
+    border-color: var(--feed-accent, #716fff);
+    box-shadow:
+      0 0 0 1px var(--feed-accent, #716fff),
+      0 0 44px -6px var(--feed-accent, #716fff);
+  }
+  100% {
+    border-color: var(--border);
+    box-shadow: none;
+  }
+}
+
 @media (prefers-reduced-motion: reduce) {
   .data-feed__row {
     animation: none;
   }
   .data-feed__pulse svg animate {
+    animation: none;
+  }
+  .data-feed.is-powered .data-feed__pulse,
+  .data-feed.is-powered .data-feed__card {
     animation: none;
   }
 }

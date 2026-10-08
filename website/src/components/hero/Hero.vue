@@ -110,6 +110,13 @@ onBeforeUnmount(() => clearTimeout(copyTimer));
    `.hero` prefix outranks the theme's `.hero__*` rules. */
 .hero {
     isolation: isolate;
+    /* GPUI's mark in the picker carries blue; the Slint mark is monochrome, so
+       the conduit below follows the same two. */
+    --feed-accent: #3b82f6;
+}
+
+html[data-framework="slint"] .hero {
+    --feed-accent: #cbd5e1;
 }
 
 .hero__laser {
@@ -240,6 +247,9 @@ onBeforeUnmount(() => clearTimeout(copyTimer));
     align-items: center;
     justify-content: flex-end;
     min-height: 480px;
+    /* Centring inside a shorter content box lifts the card, so the conduit
+       reaches the navbar the picker sits in instead of stopping short of it. */
+    padding-bottom: 44px;
 }
 
 @media (max-width: 760px) {
