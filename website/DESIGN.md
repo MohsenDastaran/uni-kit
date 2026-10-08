@@ -303,8 +303,12 @@ apps through PRs in [longbridge/gpui-kit-showcases](https://github.com/longbridg
 
 ## Attribution
 
-The footer is the one place the site states GPUI's origin, in one plain
-line: built on GPUI, from Zed Industries, also Apache-2.0. The landing page
-footer and the docs footer say the same thing. Do not repeat it in the hero,
-tutorials or API pages, where the product is GPUI Kit, and do not grow it into
-a disclaimer.
+The footer is the one place the site states where the work came from, and it
+states both debts: that uni-kit is a fork of GPUI Kit, by Longbridge, and that
+it is built on GPUI, the UI framework from Zed Industries. All three are
+Apache-2.0, and the footer says so.
+
+Two short paragraphs is the size of it — enough to name the projects and link
+them, not a licence notice. The landing page footer and the docs footer say the
+same thing. Do not repeat the attribution in the hero, the tutorials or the API
+pages, where the subject is this project, and do not grow it into a disclaimer.

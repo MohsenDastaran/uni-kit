@@ -6,8 +6,8 @@ function url(path: string) {
 }
 
 const links = [
-  { text: 'Design Guides', href: url('docs/design-guides') },
-  { text: 'Coding Guides', href: url('docs/coding-guides') },
+  { text: 'Docs', href: url('docs') },
+  { text: 'Components', href: url('component') },
   { text: 'Blocks', href: url('blocks') },
   { text: 'Starter', href: url('starter') },
   { text: 'Skills', href: url('skills') },
@@ -18,11 +18,16 @@ const links = [
 
 const copy = {
   nav: 'Footer navigation',
-  prefix: 'Open source under the Apache-2.0 License, developed by',
-  suffix: '.',
+  // The origin of the work, which is also the reason the project can exist at
+  // all: everything here started as GPUI Kit.
+  fromPrefix: 'A fork of',
+  fromMid: 'by',
+  fromEnd:
+    '. The component catalog, the guides, and most of what is on this site began there; this project is that tree carried on under its own name, and it would not exist without it.',
+  // The framework underneath, which is the other debt worth naming.
   builtOn: 'Built on',
   attributionMid: ', the UI framework from ',
-  attributionEnd: ', also Apache-2.0.',
+  attributionEnd: '. GPUI, GPUI Kit and this fork are all Apache-2.0.',
   iconCredits: 'Icons by',
   and: 'and',
   period: '.',
@@ -31,12 +36,18 @@ const copy = {
 
 <footer class="site-footer">
   <div class="site-footer__brand">
-    <strong>GPUI Kit</strong>
+    <strong>uni-kit</strong>
     <p>
-      {copy.prefix}{' '}<a href="https://longbridge.com" target="_blank" rel="noopener noreferrer">Longbridge</a
-      >{copy.suffix}
+      {copy.fromPrefix}{' '}<a
+        href="https://gpui-kit.com"
+        target="_blank"
+        rel="noopener noreferrer">GPUI Kit</a
+      >{' '}{copy.fromMid}{' '}<a
+        href="https://longbridge.com"
+        target="_blank"
+        rel="noopener noreferrer">Longbridge</a
+      >{copy.fromEnd}
     </p>
-    <!-- The one place the site names GPUI's origin. See DESIGN.md, "Attribution". -->
     <p>
       {copy.builtOn}{' '}<a href="https://gpui.rs" target="_blank" rel="noopener noreferrer">GPUI</a
       >{copy.attributionMid}<a
