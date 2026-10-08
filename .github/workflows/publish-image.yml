@@ -5,24 +5,22 @@ name: Publish Website Image
 # 14 GiB machine, and the built galleries total several gigabytes. So the image
 # is assembled here, where the runners have the memory, and Coolify only pulls
 # the result.
+#
+# A release publishes it. A merge to main does not: this image is what Coolify
+# serves, so what goes live should be a version someone chose rather than
+# whatever landed last. Release events carry no `paths` filter, so the workflow
+# runs for every release rather than only those touching the site.
 on:
-  push:
-    branches: [main]
-    paths:
-      - "website/**"
-      - "crates/**"
-      - "themes/**"
-      - "Cargo.toml"
-      - "Cargo.lock"
-      - "Dockerfile"
-      - ".dockerignore"
-      - "deploy/**"
-      - ".github/workflows/publish-image.yml"
+  release:
+    types: [published]
   workflow_dispatch:
 
 concurrency:
   group: publish-website-image
-  cancel-in-progress: true
+  # Releases are deliberate and rare, and each one is the only chance to publish
+  # its image. Cancelling a build in flight would leave that release with no
+  # artifact, so a later release waits rather than replacing an earlier one.
+  cancel-in-progress: false
 
 jobs:
   publish:
