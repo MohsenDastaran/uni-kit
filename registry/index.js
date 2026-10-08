@@ -11,7 +11,12 @@ const RAW_REPO_BASE = 'https://raw.githubusercontent.com/MohsenDastaran/uni-kit/
 
 const here = path.dirname(fileURLToPath(import.meta.url));
 const localRegistry = path.resolve(here, 'components.json');
-const localRoot = path.resolve(here, '..');
+// In this repository the CLI sits in `registry/`, so the sources are one level
+// up. Installed, `index.js` is the package root and there is no `crates/` to
+// find: npm cannot publish files outside the package directory, so those runs
+// read the sources from the repository instead.
+const repoRoot = path.resolve(here, '..');
+const localRoot = fs.existsSync(path.join(repoRoot, 'crates')) ? repoRoot : null;
 
 function fetchBuffer(url) {
   return new Promise((resolve, reject) => {
@@ -54,7 +59,10 @@ async function loadRegistry() {
 async function readSource(item) {
   const root = process.env.UNI_KIT_ROOT;
   if (root) return fs.readFileSync(path.join(root, item.src));
-  if (fs.existsSync(localRegistry)) return fs.readFileSync(path.join(localRoot, item.src));
+  if (localRoot) {
+    const local = path.join(localRoot, item.src);
+    if (fs.existsSync(local)) return fs.readFileSync(local);
+  }
   const base = process.env.UNI_KIT_RAW ?? RAW_REPO_BASE;
   return await fetchBuffer(`${base}/${item.src}`);
 }
