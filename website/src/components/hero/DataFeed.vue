@@ -124,6 +124,13 @@ const PATHS = [
   flex-direction: column;
   align-items: center;
   justify-content: center;
+  /* Fluid: 400px is the source's card width, kept as a ceiling. Below it the
+     card gives way rather than overflowing a narrow column and being clipped
+     by the hero. `min-width: 0` is what lets a flex item shrink past its
+     content at all. */
+  width: 100%;
+  max-width: 400px;
+  min-width: 0;
 }
 
 .data-feed__pulse {
@@ -148,8 +155,10 @@ const PATHS = [
 
 .data-feed__card {
   width: 100%;
-  max-width: 400px;
-  height: 260px;
+  /* Proportional, so a narrow phone gets a smaller card rather than a clipped
+     one; at the 400px ceiling this is the source's 260px. */
+  aspect-ratio: 400 / 260;
+  height: auto;
   overflow: hidden;
   border-radius: 14px;
   background: linear-gradient(

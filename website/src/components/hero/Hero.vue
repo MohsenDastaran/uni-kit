@@ -233,16 +233,75 @@ html[data-framework="slint"] .hero {
     display: flex;
     align-items: center;
     justify-content: flex-end;
-    min-height: 480px;
+    /* Tracks the viewport when it is short, so a landscape phone does not
+       scroll a full screen of empty column before the card. */
+    min-height: min(480px, 66vh);
     /* Centring inside a shorter content box lifts the card, so the conduit
        reaches the navbar the picker sits in instead of stopping short of it. */
     padding-bottom: 44px;
 }
 
-@media (max-width: 760px) {
+/* ── Responsive ──────────────────────────────────────────────────────────
+   The hero stacks into one column at 1080px (its grid lives in HomeApp).
+   Stacked, the conduit no longer lines up under the navbar picker, so the
+   card centres and the lift that closed that gap is dropped with it. */
+@media (max-width: 1080px) {
     .hero__visual {
-        min-height: 340px;
+        min-height: 0;
+        padding-bottom: 0;
+        padding-top: clamp(1.5rem, 4vw, 2.5rem);
         justify-content: center;
+    }
+}
+
+@media (max-width: 640px) {
+    .hero .hero__inner {
+        padding-block: 2.75rem;
+    }
+    .hero__visual {
+        padding-top: 1rem;
+    }
+}
+
+/* The title's clamp bottoms out at 2.2rem, which is five lines in a 288px
+   column on the smallest phones. One step down fits it to four. */
+@media (max-width: 420px) {
+    .hero .hero__copy h1 {
+        font-size: 1.95rem;
+    }
+}
+
+/* A landscape phone, or a laptop window pulled short: the hero should reach
+   its actions without a screen of padding above them. */
+@media (max-height: 660px) {
+    .hero .hero__inner {
+        padding-block: 2rem;
+    }
+    .hero__visual {
+        min-height: 0;
+        padding-bottom: 0;
+    }
+}
+
+/* Short but wide -- a phone on its side. Two columns fit, and stacking there
+   makes the hero twice the height of the screen, so it keeps them. The `.hero`
+   prefix outranks the collapse rule in HomeApp. */
+@media (max-height: 660px) and (min-width: 760px) {
+    .hero .hero__inner {
+        grid-template-columns: minmax(0, 0.93fr) minmax(0, 1.07fr);
+    }
+    .hero__visual {
+        padding-top: 0;
+        justify-content: flex-end;
+    }
+    /* The conduit is 202px of the column's height and reaches ~122px above the
+       card's own top. There is no room for that here: it rode up under the
+       navbar. The card keeps the piece and its animation, shortened. */
+    .data-feed__pulse {
+        display: none;
+    }
+    .data-feed__card {
+        max-height: 200px;
     }
 }
 </style>
