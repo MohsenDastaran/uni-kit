@@ -2160,6 +2160,15 @@ html[data-framework="slint"]
   flex: none;
 }
 
+/* Bun's mark is a mascot rather than a flat glyph, so its face needs a little
+   more room than the marks beside it to stay legible at text size. */
+.framework-switch__logo--bun {
+  width: 1.05rem;
+  height: 1.05rem;
+  border-radius: 50%;
+  object-fit: contain;
+}
+
 html.dark .framework-switch__logo-accent {
   fill: #419cff;
 }

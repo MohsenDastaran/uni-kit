@@ -5,6 +5,8 @@ import { toggleLogos } from "../lib/toggle-logos.js";
 import catalog from "../lib/registry-slugs.json" with { type: "json" };
 import FlowText from "./FlowText.vue";
 
+const baseUrl = import.meta.env.BASE_URL;
+
 const MANAGERS = ["npx", "pnpm", "bun"] as const;
 type Manager = (typeof MANAGERS)[number];
 
@@ -262,7 +264,16 @@ async function copy() {
           :tabindex="manager === name ? 0 : -1"
           @click="select(name)"
         >
+          <!-- Bun's mark is the mascot, so it is an image rather than a path. -->
+          <img
+            v-if="name === 'bun'"
+            class="framework-switch__logo framework-switch__logo--bun"
+            :src="`${baseUrl}bun.png`"
+            alt=""
+            aria-hidden="true"
+          />
           <svg
+            v-else
             class="framework-switch__logo"
             :viewBox="toggleLogos[name].viewBox"
             aria-hidden="true"
