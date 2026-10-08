@@ -43,61 +43,54 @@ function watchPlatformInput() {
   }).observe(document.body, { childList: true });
 }
 
-// The gallery is embedded same-origin in the documentation site, so it can read
-// the host page's theme directly. That keeps the very first frame correct;
-// asking the host to post it to us would paint the default theme first.
+// Read mode, name, and the source JSON before the first frame. The host sets
+// these on <html> before paint, so a newly added website theme works even if
+// the gallery's embedded fallback themes have not been rebuilt yet.
 function hostTheme() {
-  if (!embedded) return { name: undefined, dark: undefined };
+  if (!embedded) return { dark: undefined, name: undefined, source: undefined };
   try {
     const root = window.parent.document.documentElement;
-    return {
-      name: root.dataset.themeName || undefined,
-      dark: root.classList.contains('dark'),
-    };
+    return { dark: root.classList.contains('dark'), name: root.dataset.themeName, source: root.dataset.themeSource };
   } catch {
     // Cross-origin embedding: fall back to the viewer's own preference.
-    return {
-      name: undefined,
-      dark: window.matchMedia('(prefers-color-scheme: dark)').matches,
-    };
+    return { dark: window.matchMedia('(prefers-color-scheme: dark)').matches, name: undefined, source: undefined };
   }
 }
 
-function themeKey(theme) {
-  return `${theme.name ?? ''}\0${theme.dark}`;
+const themeFiles = new Map();
+function loadThemeSource(source) {
+  if (!source) return Promise.resolve(undefined);
+  if (!themeFiles.has(source)) {
+    themeFiles.set(source, fetch(source)
+      .then((response) => response.ok ? response.text() : undefined)
+      .catch(() => undefined));
+  }
+  return themeFiles.get(source);
 }
 
-// Follow the host page as soon as it changes theme. `themechange` runs in the
-// same turn as the palette click. The observer covers the system appearance
-// switch, which only flips the `dark` class.
-function watchHostTheme(wasm, appliedKey) {
+// Follow the host page when the reader toggles its theme.
+function watchHostTheme(wasm, applied) {
   if (!embedded) return;
   let root;
-  let parentDocument;
   try {
-    parentDocument = window.parent.document;
-    root = parentDocument.documentElement;
+    root = window.parent.document.documentElement;
   } catch {
     return;
   }
 
-  let applied = appliedKey;
-  const apply = () => {
+  let current = applied;
+  const sync = () => {
     const next = hostTheme();
-    const key = themeKey(next);
-    if (key === applied) return;
-    applied = key;
-    document.documentElement.classList.toggle('dark', Boolean(next.dark));
-    wasm.set_theme(next.name ?? null, Boolean(next.dark));
+    if (next.dark !== current.dark || next.name !== current.name || next.source !== current.source) {
+      current = next;
+      document.documentElement.classList.toggle('dark', next.dark);
+      loadThemeSource(next.source).then((json) => {
+        if (current === next) wasm.set_theme(next.dark, next.name, json);
+      });
+    }
   };
-
-  parentDocument.addEventListener('themechange', apply);
-  new MutationObserver(apply).observe(root, {
-    attributes: true,
-    attributeFilter: ['class', 'data-theme-name'],
-  });
-  // A change during WASM startup happened before this listener existed.
-  apply();
+  new MutationObserver(sync).observe(root, { attributes: true, attributeFilter: ['class', 'data-theme-name'] });
+  sync();
 }
 
 async function init() {
@@ -112,14 +105,11 @@ async function init() {
 
     // A documentation page can deep-link to the matching Rust story while the
     // standalone gallery keeps its normal overview.
-    const params = new URLSearchParams(window.location.search);
-    const story = params.get('story');
-    // The code chip forwards to the documentation page that carries the source.
-    // A page showing only the finished screen asks for the gallery without it.
-    const source = params.get('source') !== '0';
+    const story = new URLSearchParams(window.location.search).get('story');
     const theme = hostTheme();
-    await wasm.run(story || undefined, theme.dark, theme.name, source);
-    watchHostTheme(wasm, themeKey(theme));
+    const themeJson = await loadThemeSource(theme.source);
+    await wasm.run(story || undefined, theme.dark, theme.name, themeJson);
+    watchHostTheme(wasm, theme);
 
     // Hide loading indicator
     loadingEl?.remove();

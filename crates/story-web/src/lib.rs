@@ -1,88 +1,57 @@
 use std::borrow::Cow;
 use std::cell::RefCell;
 
-#[cfg(target_family = "wasm")]
-mod example_bridge;
-
 use gpui_component_story::{Gallery, StoryRoot};
 use gpui_kit::assets::Assets;
-use gpui_kit::component::{
-    Root,
-    theme::{Theme, ThemeMode, ThemeRegistry},
-};
+use gpui_kit::component::theme::{Theme, ThemeMode, ThemeRegistry, ThemeSet};
 use gpui_kit::{prelude::*, *};
 use wasm_bindgen::prelude::*;
 
 thread_local! {
     static APPLICATION: RefCell<Option<ApplicationHandle>> = const { RefCell::new(None) };
-    // The page theme to apply. Written as soon as the page changes, and read
-    // when the gallery actually starts, which can be after `run` returns.
-    static SITE_THEME: RefCell<Option<(Option<String>, bool)>> = const { RefCell::new(None) };
 }
 
-/// Applies a theme mode and restores the bundled web fonts.
-///
-/// `Theme::change` reapplies the theme config, which can carry its own font
-/// family; the host system fonts are unavailable in wasm, so the bundled ones
-/// are put back afterwards.
-fn apply_theme(mode: ThemeMode, cx: &mut App) {
-    Theme::change(mode, None, cx);
+/// Applies the selected theme and restores the bundled web fonts. Theme files
+/// may name system fonts that are unavailable in wasm.
+fn apply_theme(mode: ThemeMode, name: Option<&str>, source_json: Option<&str>, cx: &mut App) {
+    let registry = ThemeRegistry::global(cx);
+    let source_config = source_json
+        .and_then(|json| serde_json::from_str::<ThemeSet>(json).ok())
+        .and_then(|set| {
+            set.themes
+                .into_iter()
+                .find(|theme| Some(theme.name.as_ref()) == name)
+        })
+        .map(std::rc::Rc::new);
+    let config = source_config
+        .or_else(|| name.and_then(|name| registry.themes().get(name).cloned()))
+        .unwrap_or_else(|| match mode {
+            ThemeMode::Dark => registry.default_dark_theme().clone(),
+            ThemeMode::Light => registry.default_light_theme().clone(),
+        });
     Theme::update(cx, |theme| {
+        theme.apply_config(&config);
         theme.font_family = "Inter Variable".into();
         theme.mono_font_family = "JetBrains Mono".into();
     });
 }
 
-/// Applies the documentation page's selected theme.
+/// Applies the host website's selected theme after the gallery is running.
 ///
-/// A named theme is one of the files the gallery already loaded, so this
-/// resolves without a request. Light, dark, and system have no name and use
-/// that mode's default theme. The bundled fonts go back on afterwards: a
-/// theme file may name a family the browser does not have.
-fn remember_site_theme(name: Option<String>, dark: bool) {
-    SITE_THEME.with(|slot| *slot.borrow_mut() = Some((name, dark)));
-}
-
-fn apply_site_theme(name: Option<&str>, dark: bool, cx: &mut App) {
-    let config = name.and_then(|name| {
-        let key = SharedString::from(name);
-        ThemeRegistry::global(cx).themes().get(&key).cloned()
-    });
-    if let Some(config) = config {
-        Theme::update(cx, |theme| {
-            theme.apply_config(&config);
-            theme.font_family = "Inter Variable".into();
-            theme.mono_font_family = "JetBrains Mono".into();
-        });
-        return;
-    }
-    apply_theme(
-        if dark {
-            ThemeMode::Dark
-        } else {
-            ThemeMode::Light
-        },
-        cx,
-    );
-}
-
-/// Follows the documentation page's theme after the gallery is running.
-///
-/// `name` is the page's `data-theme-name`. An empty name means the page is on
-/// its light, dark, or system theme, and `dark` selects which of those.
+/// The embedding documentation page calls this when its own appearance
+/// changes, so the gallery never sits in a dark page wearing a light theme.
 #[cfg(target_family = "wasm")]
 #[wasm_bindgen]
-pub fn set_theme(name: Option<String>, dark: bool) {
-    let name = name.filter(|value| !value.is_empty());
-    remember_site_theme(name.clone(), dark);
+pub fn set_theme(dark: bool, name: Option<String>, source_json: Option<String>) {
+    let mode = if dark {
+        ThemeMode::Dark
+    } else {
+        ThemeMode::Light
+    };
     APPLICATION.with(|application| {
         if let Some(handle) = application.borrow().as_ref() {
             handle.update(|cx| {
-                // Graphics startup calls back into the page before the theme
-                // registry exists. The remembered theme is applied once it does.
-                if cx.has_global::<ThemeRegistry>() {
-                    apply_site_theme(name.as_deref(), dark, cx);
-                }
+                apply_theme(mode, name.as_deref(), source_json.as_deref(), cx);
             });
         }
     });
@@ -117,17 +86,10 @@ fn web_application() -> Application {
 pub fn run(
     story: Option<String>,
     dark: Option<bool>,
-    theme: Option<String>,
-    source: Option<bool>,
+    theme_name: Option<String>,
+    theme_json: Option<String>,
 ) -> Result<(), JsValue> {
     console_error_panic_hook::set_once();
-    // The code chip opens the matching source on the documentation page. That
-    // page has the source to open; a page that only shows the finished screen
-    // does not, so it asks for the gallery without it.
-    #[cfg(target_family = "wasm")]
-    if story.is_some() && source.unwrap_or(true) {
-        example_bridge::install();
-    }
 
     // Initialize logging to browser console
     console_log::init_with_level(log::Level::Info).expect("Failed to initialize logger");
@@ -143,7 +105,6 @@ pub fn run(
     let app = web_application();
 
     let app = app.with_assets(Assets::new("https://gpui-kit.com/gallery/"));
-    remember_site_theme(theme.filter(|name| !name.is_empty()), dark == Some(true));
     let launch = move |cx: &mut App| {
         gpui_component_story::init(cx);
 
@@ -168,27 +129,31 @@ pub fn run(
             .add_fonts(vec![ui_font, cjk_font, jetbrains_mono, system_font])
             .expect("Failed to load fonts");
 
-        // Apply whatever the page is showing now, including a change that
-        // arrived while graphics were still starting. The theme is already in
-        // the registry `init` just loaded, so this does not wait on a request.
-        let (theme_name, prefers_dark) =
-            SITE_THEME.with(|slot| slot.borrow().clone().unwrap_or((None, false)));
-        apply_site_theme(theme_name.as_deref(), prefers_dark, cx);
+        // Apply the embedding page's appearance before the first frame, so an
+        // embedded gallery never flashes a light theme inside a dark page.
+        apply_theme(
+            match dark {
+                Some(true) => ThemeMode::Dark,
+                _ => ThemeMode::Light,
+            },
+            theme_name.as_deref(),
+            theme_json.as_deref(),
+            cx,
+        );
 
-        cx.open_window(WindowOptions::default(), move |window, cx| {
+        gpui_kit::open_window(WindowOptions::default(), cx, move |window, cx| {
             let embedded = story.is_some();
             let view = match story.as_deref() {
                 Some(story) => Gallery::embedded_view(story, window, cx),
                 None => Gallery::view(None, window, cx),
             };
-            let story_root = cx.new(|cx| {
+            cx.new(|cx| {
                 if embedded {
                     StoryRoot::embedded(view, window, cx)
                 } else {
                     StoryRoot::new("GPUI Component", view, window, cx)
                 }
-            });
-            cx.new(|cx| Root::new(story_root, window, cx))
+            })
         })
         .expect("Failed to open window");
         cx.activate(true);

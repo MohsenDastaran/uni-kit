@@ -1550,6 +1550,31 @@ console.log(answer);
 
     #[test]
     #[cfg(feature = "tree-sitter-languages")]
+    fn test_kotlin_highlights_string_templates() {
+        let kotlin = "fun greet(name: String) = \"hi $name, ${name.length}\"\n";
+
+        let rope = Rope::from_str(kotlin);
+        let mut highlighter = SyntaxHighlighter::new("kotlin");
+        highlighter.update(None, &rope, None);
+
+        let highlights = highlighter.match_styles(0..kotlin.len());
+
+        assert!(
+            has_highlight_covering(&highlights, kotlin, "fun", "keyword"),
+            "Kotlin keywords should be highlighted"
+        );
+        assert!(
+            has_highlight_covering(&highlights, kotlin, "$", "punctuation.special"),
+            "A string template's `$` should be highlighted"
+        );
+        assert!(
+            has_highlight_covering(&highlights, kotlin, "${", "punctuation.special"),
+            "A string template's `${{` should be highlighted"
+        );
+    }
+
+    #[test]
+    #[cfg(feature = "tree-sitter-languages")]
     fn test_markdown_fenced_code_injects_captured_language() {
         let markdown = "```rs\nfn first() {}\n```\n\n```rust\nfn second() {}\n```\n";
         let rope = Rope::from_str(markdown);

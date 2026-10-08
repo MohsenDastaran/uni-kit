@@ -23,6 +23,10 @@ pub struct TextViewStyle {
     /// Highlight theme for code blocks. Default: [`HighlightTheme::default_light()`]
     pub highlight_theme: Arc<HighlightTheme>,
     /// The style refinement for code blocks.
+    ///
+    /// Set `overflow.y` to `Overflow::Scroll` with a max height here to scroll
+    /// long code inside the block, e.g.
+    /// `TextViewStyle::default().code_block({ let mut s = StyleRefinement::default().max_h(px(320.)); s.overflow.y = Some(Overflow::Scroll); s })`.
     pub code_block: StyleRefinement,
     /// Style refinement applied to the table container (the bordered wrapper
     /// in wrap mode, the scroll viewport in horizontal-scroll mode).
@@ -106,6 +110,9 @@ impl TextViewStyle {
         self
     }
     /// Set style for code blocks.
+    ///
+    /// Set `overflow.y` to `Overflow::Scroll` with a max height on the
+    /// refinement to scroll long code inside the block instead of growing it.
     pub fn code_block(mut self, style: StyleRefinement) -> Self {
         self.code_block = style;
         self

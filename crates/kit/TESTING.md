@@ -38,6 +38,31 @@ gate](tests/input/README.md#operation-coverage-and-review-gate) explains how to
 use these tests when reviewing an input change and which native platform checks
 remain necessary.
 
+For a component regression example, start with the
+[Input, Textarea and Editor suite](tests/input/README.md). It groups real editing
+workflows by behavior and explains how to add a case without bypassing focus,
+keyboard bindings or pointer dispatch. The separate `input_focus` target covers
+Tab/Shift-Tab traversal, addon button focus and activation, and Textarea/Editor
+body clicks. Run both from the repository root:
+
+```sh
+cargo test -p gpui-kit --features test-support --test input --test input_focus --locked
+```
+
+For a focused investigation, select a module such as
+`--test input --locked -- history::`, or an exact case as shown in the suite README.
+Append `-- --list` to the combined command to inspect discovery without running
+cases. These are reproduction commands, not recorded test results. A passing run
+establishes only the asserted workflows on that revision and platform; OS IME,
+accessibility actions, system clipboard adapters and pixels need separate evidence.
+
+For changes to Input, Textarea or Editor, run `script/test-input` from the
+repository root. It combines Kit UI workflows with Base editing/IME/token
+regressions and Component InputGroup tests. The [operation coverage and review
+gate](tests/input/README.md#operation-coverage-and-review-gate) explains how to
+use these tests when reviewing an input change and which native platform checks
+remain necessary.
+
 ## Core semantics
 
 - `find` requires a target and explains missing/ambiguous paths; `try_find` permits absence.
