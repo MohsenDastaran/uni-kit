@@ -82,19 +82,6 @@ onBeforeUnmount(() => clearTimeout(copyTimer));
                     <li><Scale :size="14" /> {{ copy.signalLicense }}</li>
                     <li><Monitor :size="14" /> {{ copy.signalPlatforms }}</li>
                 </ul>
-                <div class="hero__install">
-                    <span class="hero__install-label">Cargo.toml</span>
-                    <code>{{ installCommand }}</code>
-                    <button
-                        type="button"
-                        :aria-label="copy.copyLabel"
-                        :data-copied="copied || null"
-                        @click="copyInstall"
-                    >
-                        <Check v-if="copied" :size="13" />
-                        <Copy v-else :size="13" />
-                    </button>
-                </div>
             </div>
 
             <div class="hero__visual">
