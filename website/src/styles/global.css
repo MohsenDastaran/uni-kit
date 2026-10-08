@@ -3057,3 +3057,9 @@ html[data-framework="slint"]
 .kit-footer__column a:hover {
   background: color-mix(in srgb, var(--foreground) 5%, transparent);
 }
+
+.kit-footer__socials {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
