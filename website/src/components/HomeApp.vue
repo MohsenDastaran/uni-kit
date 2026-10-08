@@ -81,10 +81,10 @@ const copy = {
     caps: [
         {
             icon: "perf",
-            title: "120 FPS rendering",
+            title: "Any Charts you need",
             description:
-                "Every frame is drawn by the GPU, so dense interfaces stay smooth instead of dropping frames.",
-            apis: ["RenderOnce", "GPU"],
+                "Charts, plots and visualizations, all drawn by the GPU so dense interfaces stay smooth instead of dropping frames.",
+            apis: ["Chart", "Plot", "GPU"],
         },
         {
             icon: "table",
@@ -95,28 +95,29 @@ const copy = {
         },
         {
             icon: "list",
-            title: "Virtualized lists",
+            title: "Easy install with npx, pnpm and bun",
             description:
-                "Only the visible range is rendered, so very long lists keep scrolling smoothly.",
-            apis: ["VirtualList", "List"],
+                "Add any component with a single command — run it through npx, pnpm or bun and it drops straight into your project.",
+            apis: ["npx", "pnpm dlx", "bunx"],
         },
         {
             icon: "editor",
-            title: "A real code editor",
+            title: "A real Starter templates",
             description:
-                "Rope-backed text that stays stable at 200K lines, with Tree-sitter highlighting and LSP diagnostics, completion and hover.",
-            apis: ["Rope", "Tree-Sitter", "LSP", "Highlighter"],
+                "Production-ready starter templates to scaffold a new project, wire up navigation and ship a first release in minutes.",
+            apis: ["Starter", "Template", "Scaffold", "CLI"],
         },
+
         {
             icon: "dock",
-            title: "Freeform dock layout",
+            title: "Composable blocks",
             description:
-                "Dockable panels with drag-to-rearrange and zooming — all serializable.",
-            apis: ["DockArea", "DockLayout", "TabGroup"],
+                "Prebuilt blocks that snap together into full screens, so you assemble layouts instead of writing them from scratch.",
+            apis: ["Block", "BlockSection", "BlockGrid"],
         },
         {
             icon: "theme",
-            title: "Multi-theme support",
+            title: "Multi-theme support across frameworks",
             description:
                 "Light, dark and custom themes driven by semantic tokens instead of endless style fields.",
             apis: ["Theme", "ThemeColor", "ActiveTheme"],
