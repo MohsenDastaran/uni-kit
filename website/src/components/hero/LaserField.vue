@@ -219,7 +219,9 @@ function onMove(event: MouseEvent) {
   if (!c) return;
   const rect = c.getBoundingClientRect();
   mouseX = event.clientX - rect.left;
-  mouseY = event.clientY - rect.top;
+  // gl_FragCoord counts up from the bottom, so the pointer has to as well.
+  // Passing screen coordinates here inverted the junction's reach.
+  mouseY = rect.height - (event.clientY - rect.top);
   lastMouseMove = performance.now();
   if (reducedMotion) {
     reducedMotion = false;

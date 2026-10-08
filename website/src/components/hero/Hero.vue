@@ -2,14 +2,12 @@
 import { onBeforeUnmount, ref } from "vue";
 import { ArrowRight, Check, Copy, Monitor, Scale, Star } from "lucide-vue-next";
 import LaserField from "./LaserField.vue";
-import AsciiLogos from "./AsciiLogos.vue";
 import DataFeed from "./DataFeed.vue";
 
 /**
- * The hero, re-arranged around three open-source blocks:
+ * The hero, re-arranged around two open-source blocks:
  *   - LaserField (ThreeUI "matrix-field" WebGL) behind everything,
- *   - DataFeed (reverseui "DataFeedingIn") on the right,
- *   - AsciiLogos (ascii.rest "rust", cycling rust -> gpui -> slint) on top of it.
+ *   - DataFeed (reverseui "DataFeedingIn") against the right edge.
  * The left column keeps the existing title, lead, buttons, signals and install.
  */
 
@@ -76,7 +74,6 @@ onBeforeUnmount(() => clearTimeout(copyTimer));
       </div>
 
       <div class="hero__visual">
-        <div class="hero__ascii"><AsciiLogos /></div>
         <DataFeed />
       </div>
     </div>
@@ -167,39 +164,18 @@ onBeforeUnmount(() => clearTimeout(copyTimer));
   color: #e6e9ef;
 }
 
-/* Right column: the data card with the ascii logo floating over its corner. */
+/* Right column: the data card sits against the right edge of the hero. */
 .hero__visual {
   position: relative;
   display: flex;
   align-items: center;
-  justify-content: center;
+  justify-content: flex-end;
   min-height: 420px;
-}
-
-.hero__ascii {
-  position: absolute;
-  top: 0;
-  right: 0;
-  z-index: 2;
-  pointer-events: none;
-  color: #e8ebf1;
-}
-
-.ascii-logos {
-  margin: 0;
-  font: 400 9px/1 var(--font-mono);
-  white-space: pre;
-  transition: opacity 300ms ease;
-  opacity: 1;
 }
 
 @media (max-width: 760px) {
   .hero__visual {
     min-height: 340px;
-  }
-  .hero__ascii {
-    position: static;
-    display: flex;
     justify-content: center;
   }
 }
