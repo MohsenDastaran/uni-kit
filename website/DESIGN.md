@@ -236,7 +236,7 @@ through motion alone.
 
 ## App Stories
 
-`AppsApp.vue` lists reviewed applications built with GPUI Kit. Submit and review
+`AppsApp.vue` lists reviewed applications built with uni-kit. Submit and review
 apps through PRs in [longbridge/gpui-kit-showcases](https://github.com/longbridge/gpui-kit-showcases).
 
 - **Manifests are the source of truth.** Each app has `apps/<app-id>/manifest.json`
@@ -287,12 +287,12 @@ apps through PRs in [longbridge/gpui-kit-showcases](https://github.com/longbridg
   guaranteed, and maintainers adjust Featured as apps evolve.
   The submission CTA links to the repository's PR instructions.
 - **Automatic publishing.** On approved changes merged to Showcase `main`, its
-  workflow validates the catalog, updates and commits GitHub Stars, and dispatches GPUI Kit's `release-docs.yml`.
+  workflow validates the catalog, updates and commits GitHub Stars, and dispatches uni-kit's `release-docs.yml`.
   Release Docs checks out the latest Showcase `main` at `.showcases` and provides
   `SHOWCASES_DIR` to the website build. The Showcase repository needs a dedicated
-  `DOCS_DISPATCH_TOKEN` secret with Actions: write on GPUI Kit.
+  `DOCS_DISPATCH_TOKEN` secret with Actions: write on uni-kit.
 - **Local development.** Clone the Showcase repository at `../gpui-kit-showcases`
-  alongside GPUI Kit, or set `SHOWCASES_DIR` to an existing checkout. Local builds
+  alongside uni-kit, or set `SHOWCASES_DIR` to an existing checkout. Local builds
   read that checkout, allowing manifests and website changes to be tested together.
 
 ## Files
@@ -311,7 +311,7 @@ apps through PRs in [longbridge/gpui-kit-showcases](https://github.com/longbridg
 ## Attribution
 
 The footer is the one place the site states where the work came from, and it
-states both debts: that uni-kit is a fork of GPUI Kit, by Longbridge, and that
+states both debts: that uni-kit is a fork of uni-kit, by Longbridge, and that
 it is built on GPUI, the UI framework from Zed Industries. All three are
 Apache-2.0, and the footer says so.
 

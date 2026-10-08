@@ -6,11 +6,11 @@ example: false
 
 # Root View
 
-[Root] is the Base-owned root view of every GPUI Kit window. `gpui_kit::open_window` is the application entry point and always creates this type. Base does not expose a separate window helper; `component::Root` re-exports the Base type.
+[Root] is the Base-owned root view of every uni-kit window. `gpui_kit::open_window` is the application entry point and always creates this type. Base does not expose a separate window helper; `component::Root` re-exports the Base type.
 
 Base owns the content and overlay host, keyboard traversal and selection copying. Calling `gpui_component::init` explicitly registers the styled window extension: dialogs, sheets, notifications, tooltips, menus, touch selection, theme and window chrome. Initialize it before creating windows. A Base-only application calls `gpui_base::init` and needs no Component or Kit dependency. Cargo feature unification does not change the root type.
 
-This complete **Tested consumer recipe** is compiled from the isolated `gpui-kit` consumer workspace. It initializes GPUI Kit, then opens a window whose root is a `Root` wrapping the application view.
+This complete **Tested consumer recipe** is compiled from the isolated `gpui-kit` consumer workspace. It initializes uni-kit, then opens a window whose root is a `Root` wrapping the application view.
 
 <!-- recipe:bootstrap:start -->
 ```rust

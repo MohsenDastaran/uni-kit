@@ -1,4 +1,4 @@
-# GPUI Kit website
+# uni-kit website
 
 To install dependencies:
 
@@ -16,7 +16,7 @@ This project was created using `bun init` in bun v1.2.23. [Bun](https://bun.com)
 
 ## App Stories data
 
-Clone the reviewed app catalog alongside the GPUI Kit checkout:
+Clone the reviewed app catalog alongside the uni-kit checkout:
 
 ```bash
 git clone https://github.com/longbridge/gpui-kit-showcases.git ../../gpui-kit-showcases

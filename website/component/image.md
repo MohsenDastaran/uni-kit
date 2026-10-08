@@ -5,13 +5,13 @@ description: Display embedded, local, and remote images with sizing, loading, an
 
 # Image
 
-GPUI's `img()` draws an image, and `svg()` draws a single-color icon. GPUI Kit re-exports both from `gpui_kit`. This page shows the patterns an application uses most; [Images](../docs/image.md) explains sources, loading, sizing, `svg()`, caching, and HTTP caching in detail.
+GPUI's `img()` draws an image, and `svg()` draws a single-color icon. uni-kit re-exports both from `gpui_kit`. This page shows the patterns an application uses most; [Images](../docs/image.md) explains sources, loading, sizing, `svg()`, caching, and HTTP caching in detail.
 
 ## Start with a working image
 
-This complete native `src/main.rs` uses an icon already bundled by GPUI Kit, so it needs no extra asset file. Add `gpui-kit = "{{gpui_kit_version}}"` to `Cargo.toml`. The same asset is shown as a color-preserving image and as a monochrome SVG.
+This complete native `src/main.rs` uses an icon already bundled by uni-kit, so it needs no extra asset file. Add `gpui-kit = "{{gpui_kit_version}}"` to `Cargo.toml`. The same asset is shown as a color-preserving image and as a monochrome SVG.
 
-This complete native `src/main.rs` uses an icon already bundled by GPUI Kit, so it needs no extra asset file. Add `gpui-kit = "{{gpui_kit_version}}"` to `Cargo.toml`. The same asset is shown as a color-preserving image and as a theme-colored monochrome SVG; the difference is explained below.
+This complete native `src/main.rs` uses an icon already bundled by uni-kit, so it needs no extra asset file. Add `gpui-kit = "{{gpui_kit_version}}"` to `Cargo.toml`. The same asset is shown as a color-preserving image and as a theme-colored monochrome SVG; the difference is explained below.
 
 ```rust
 use gpui_kit::*;
@@ -84,7 +84,7 @@ Use `ObjectFit::Contain` (the default) for logos and diagrams that must stay ful
 
 ## Gallery with selection
 
-A thumbnail that changes the main image is a control. Give it a real `Button` so keyboard activation and an accessible name work, and keep the selected index in the view's retained state. This complete `src/main.rs` uses three icons already shipped with GPUI Kit; replace the source array with your own registered image keys for a photo gallery. Run it with the same `gpui-kit = "{{gpui_kit_version}}"` dependency as the first example.
+A thumbnail that changes the main image is a control. Give it a real `Button` so keyboard activation and an accessible name work, and keep the selected index in the view's retained state. This complete `src/main.rs` uses three icons already shipped with uni-kit; replace the source array with your own registered image keys for a photo gallery. Run it with the same `gpui-kit = "{{gpui_kit_version}}"` dependency as the first example.
 
 ```rust
 use gpui_kit::*;

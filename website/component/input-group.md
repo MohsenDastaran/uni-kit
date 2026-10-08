@@ -8,7 +8,7 @@ description: Combine inputs and textareas with text, icons, buttons, and toolbar
 Use `InputGroup` to place text, icons, buttons, or toolbars around an input or
 textarea inside one frame. For a simple prefix or suffix, use [Input](./input.md).
 
-The examples below define views for an initialized GPUI Kit application. See
+The examples below define views for an initialized uni-kit application. See
 [Getting Started](../docs/getting-started.md) for application setup.
 
 ## Input with a clear button

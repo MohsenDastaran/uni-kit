@@ -34,13 +34,13 @@ test('indexable pages have canonical and English alternates', () => {
   }
 });
 
-test('titles contain the GPUI Kit brand exactly once', () => {
+test('titles contain the uni-kit brand exactly once', () => {
   for (const file of htmlFiles(dist.pathname)) {
     if (file.endsWith('/404.html') || file.endsWith('/og-template.html')) continue;
     if (/<meta[^>]+http-equiv="refresh"/i.test(readFileSync(file, 'utf8'))) continue;
     const html = readFileSync(file, 'utf8');
     const title = tag(html, /<title>([\s\S]*?)<\/title>/);
-    assert.equal((title.match(/GPUI Kit/g) ?? []).length, 1, `${file} title: ${title}`);
+    assert.equal((title.match(/uni-kit/g) ?? []).length, 1, `${file} title: ${title}`);
   }
 });
 
@@ -136,7 +136,7 @@ test('primary navigation follows the Kit section order', () => {
   const html = read('docs/index.html');
   const nav = html.match(/<nav class="site-nav"[\s\S]*?<\/nav>/)?.[0] ?? '';
   const links = [...nav.matchAll(/<a\s+href="([^"]+)"\s+class="site-nav__link[^"]*"[^>]*>\s*([^<]+?)\s*<\/a>/g)];
-  assert.deepEqual(links.slice(0, 3).map(match => match[2]), ['Docs', 'Component', 'Blocks']);
+  assert.deepEqual(links.slice(0, 3).map(match => match[2]), ['Component', 'Blocks', 'Starter']);
   assert.deepEqual(links.slice(0, 3).map(match => match[1]), ['/docs', '/component', '/blocks']);
   assert.doesNotMatch(nav, /site-nav__lang-btn/);
 });

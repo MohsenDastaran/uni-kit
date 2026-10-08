@@ -18,7 +18,7 @@ use gpui_kit::component::description_list::{DescriptionList, DescriptionItem, De
 
 ```rust
 DescriptionList::new()
-    .item("Name", "GPUI Kit", 1)
+    .item("Name", "uni-kit", 1)
     .item("Version", "0.1.0", 1)
     .item("License", "Apache-2.0", 1)
 ```
@@ -28,7 +28,7 @@ DescriptionList::new()
 ```rust
 DescriptionList::new()
     .children([
-        DescriptionItem::new("Name").value("GPUI Kit"),
+        DescriptionItem::new("Name").value("uni-kit"),
         DescriptionItem::new("Description").value("UI components for building desktop applications"),
         DescriptionItem::new("Version").value("0.1.0"),
     ])
@@ -44,7 +44,7 @@ DescriptionList::horizontal()
 
 // Vertical layout
 DescriptionList::vertical()
-    .item("Name", "GPUI Kit", 1)
+    .item("Name", "uni-kit", 1)
     .item("Description", "A comprehensive Rust desktop framework", 1)
 ```
 
@@ -53,7 +53,7 @@ DescriptionList::vertical()
 ```rust
 DescriptionList::new()
     .columns(3)
-    .child(DescriptionItem::new("Name").value("GPUI Kit").span(1))
+    .child(DescriptionItem::new("Name").value("uni-kit").span(1))
     .children([
         DescriptionItem::new("Version").value("0.1.0").span(1),
         DescriptionItem::new("License").value("Apache-2.0").span(1),
@@ -70,7 +70,7 @@ DescriptionList::new()
 
 ```rust
 DescriptionList::new()
-    .item("Name", "GPUI Kit", 1)
+    .item("Name", "uni-kit", 1)
     .item("Version", "0.1.0", 1)
     .separator() // Add a visual separator
     .item("Author", "Longbridge", 1)
@@ -100,7 +100,7 @@ DescriptionList::new()
 ```rust
 DescriptionList::new()
     .bordered(false) // Remove borders for a cleaner look
-    .item("Name", "GPUI Kit", 1)
+    .item("Name", "uni-kit", 1)
     .item("Type", "UI Library", 1)
 ```
 
@@ -123,7 +123,7 @@ use gpui_kit::component::text::markdown;
 DescriptionList::new()
     .columns(2)
     .children([
-        DescriptionItem::new("Name").value("GPUI Kit"),
+        DescriptionItem::new("Name").value("uni-kit"),
         DescriptionItem::new("Description").value(
             markdown(
                 "UI components for building **fantastic** desktop applications.",
@@ -139,7 +139,7 @@ DescriptionList::new()
     .columns(3)
     .label_width(px(150.0))
     .children([
-        DescriptionItem::new("Project Name").value("GPUI Kit").span(1),
+        DescriptionItem::new("Project Name").value("uni-kit").span(1),
         DescriptionItem::new("Version").value("0.1.0").span(1),
         DescriptionItem::new("Status").value("Active").span(1),
 
