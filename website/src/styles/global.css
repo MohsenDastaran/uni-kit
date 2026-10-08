@@ -2788,3 +2788,235 @@ html[data-framework="slint"]
     animation: none;
   }
 }
+
+/* ── Footer ─────────────────────────────────────────────────────────────────
+   A port of `components/uitripled/footer-block-baseui.tsx`: a brand column
+   beside four link columns, then a bar with social, copyright and back-to-top
+   over a soft brand glow. The reference's framer-motion reveals become CSS
+   transitions, which need no JavaScript. */
+
+.kit-footer {
+  position: relative;
+  width: 100%;
+  margin-top: 4rem;
+  overflow: hidden;
+  border-top: 1px solid var(--border);
+  background: color-mix(in srgb, var(--card) 92%, transparent);
+}
+
+.kit-footer__glow {
+  position: absolute;
+  top: -8rem;
+  left: 50%;
+  z-index: 0;
+  width: 20rem;
+  height: 20rem;
+  transform: translateX(-50%);
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--primary) 20%, transparent);
+  filter: blur(160px);
+  pointer-events: none;
+}
+
+.kit-footer__inner {
+  position: relative;
+  z-index: 1;
+  max-width: 1280px;
+  margin: 0 auto;
+  padding: clamp(2.5rem, 5vw, 4rem) var(--gutter, 1.5rem);
+}
+
+.kit-footer__top {
+  display: grid;
+  grid-template-columns: minmax(0, 1.4fr) minmax(0, 2fr);
+  gap: clamp(2rem, 4vw, 4rem);
+}
+
+@media (max-width: 900px) {
+  .kit-footer__top {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+.kit-footer__badges {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  margin-bottom: 1rem;
+}
+
+.kit-footer__badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.25rem 0.75rem;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  color: var(--muted-foreground);
+  font: 0.72rem/1.4 var(--font-mono);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.kit-footer__badge--brand {
+  font-size: 1rem;
+  font-weight: 640;
+  letter-spacing: -0.02em;
+  text-transform: none;
+  color: var(--foreground);
+  border-radius: var(--radius-card);
+}
+
+.kit-footer__lede {
+  max-width: 26rem;
+  margin: 0 0 0.85rem;
+  font-size: 1.35rem;
+  font-weight: 640;
+  letter-spacing: -0.03em;
+}
+
+.kit-footer__blurb {
+  max-width: 32rem;
+  margin: 0;
+  color: var(--muted-foreground);
+  font-size: 0.9rem;
+  line-height: 1.7;
+}
+
+.kit-footer__blurb a {
+  color: var(--foreground);
+  text-decoration: none;
+  border-bottom: 1px solid var(--border-hover);
+}
+
+.kit-footer__blurb a:hover {
+  border-bottom-color: var(--foreground);
+}
+
+.kit-footer__columns {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 1.5rem;
+}
+
+@media (max-width: 700px) {
+  .kit-footer__columns {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+.kit-footer__column h3 {
+  margin: 0 0 1rem;
+  font-size: 0.85rem;
+  font-weight: 600;
+}
+
+.kit-footer__column ul {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.kit-footer__column li + li {
+  margin-top: 0.5rem;
+}
+
+.kit-footer__column a {
+  display: inline-block;
+  color: var(--muted-foreground);
+  font-size: 0.875rem;
+  text-decoration: none;
+  transition:
+    color 160ms ease,
+    transform 160ms ease;
+}
+
+.kit-footer__column a:hover {
+  color: var(--foreground);
+  transform: translateX(4px);
+}
+
+.kit-footer__divider {
+  height: 1px;
+  margin: 2.5rem 0;
+  background: var(--border);
+}
+
+.kit-footer__bottom {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+}
+
+@media (min-width: 768px) {
+  .kit-footer__bottom {
+    flex-direction: row;
+  }
+}
+
+.kit-footer__social,
+.kit-footer__top-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 2.25rem;
+  height: 2.25rem;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  background: transparent;
+  color: var(--muted-foreground);
+  transition:
+    background 160ms ease,
+    color 160ms ease,
+    border-color 160ms ease;
+}
+
+.kit-footer__social:hover,
+.kit-footer__top-btn:hover {
+  border-color: var(--border-hover);
+  background: color-mix(in srgb, var(--primary) 10%, transparent);
+  color: var(--foreground);
+}
+
+.kit-footer__social:hover svg {
+  transform: scale(1.05);
+}
+
+.kit-footer__top-btn svg {
+  animation: footer-nudge 1.5s ease-in-out infinite;
+}
+
+@keyframes footer-nudge {
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-3px);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .kit-footer__top-btn svg {
+    animation: none;
+  }
+  .kit-footer__column a:hover {
+    transform: none;
+  }
+}
+
+.kit-footer__copy {
+  margin: 0;
+  color: var(--muted-foreground);
+  font-size: 0.85rem;
+}
+
+.kit-footer__copy a {
+  color: var(--foreground);
+  text-decoration: none;
+}
+
+.kit-footer__copy a:hover {
+  text-decoration: underline;
+}
