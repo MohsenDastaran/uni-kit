@@ -11,7 +11,7 @@ GPUI Kit offers three levels of motion. Choose by **what owns the changing value
 | Level | Use it for | State and policy |
 | --- | --- | --- |
 | GPUI `Animation` and `AnimationExt` | An element entering, pulsing, or running a fixed series while mounted | GPUI retains playback under the wrapper's [`ElementId`](./element_id); the caller chooses duration, easing, and visual property. |
-| [GPUI Base Motion](../base/motion.md) | A target that changes during motion, an exit before unmount, keyframes, or measured reveal | Base retains each channel under a stable key and requests frames through [Window](./window) while active; the caller chooses the visual result. |
+| GPUI Base Motion | A target that changes during motion, an exit before unmount, keyframes, or measured reveal | Base retains each channel under a stable key and requests frames through [Window](./window) while active; the caller chooses the visual result. |
 | GPUI Component motion | A styled control whose appearance follows the theme | `cx.theme().motion_tokens()` supplies semantic timing, easing, springs, and distances; components compose these with GPUI or Base. |
 
 The application owns the semantic state: whether a dialog is open, which tab is selected, or where a slider points. An animation samples that state for presentation. Keep the result understandable at both endpoints and when motion is disabled.
@@ -280,7 +280,7 @@ Base also provides the following choices:
 | Delay repeated items | `Stagger` | Computes a delay by index and origin; it does not own the list or its IDs. |
 | Expand content of unknown height | `MotionReveal` | Measures the child and clips its visible height by caller-supplied progress. It does not sample or animate progress itself. |
 
-See the [Base Motion guide](../base/motion.md) for the full signatures, validation rules, examples, and benchmark. Its `Transition` is distinct from the older `gpui_kit::base::animation::EffectTransition`, which wraps GPUI `with_animation` to apply predefined fade, slide, width, and height effects. For new target-driven work, use `base::motion` primitives and apply the sampled value yourself.
+See the Base Motion guide for the full signatures, validation rules, examples, and benchmark. Its `Transition` is distinct from the older `gpui_kit::base::animation::EffectTransition`, which wraps GPUI `with_animation` to apply predefined fade, slide, width, and height effects. For new target-driven work, use `base::motion` primitives and apply the sampled value yourself.
 
 ## GPUI Component: semantic motion policy
 

@@ -30,7 +30,7 @@ Use `gpui-component` for polished controls with one coherent visual language,
 or build your own design system on the reusable behavior and infrastructure in
 `gpui-base`. This section covers GPUI Kit setup, shared design and coding guides, and
 application development. For library APIs, see [GPUI Component](../component/index.md),
-[GPUI Base](../base/index.md), and [GPUI Shell](../shell/index.md).
+GPUI Base, and GPUI Shell.
 
 Read [Focus](./focus) for `FocusHandle`, Tab order, and the keyboard target, then
 [Action](./action) for command dispatch. [KeyBinding](./keybinding) explains how to bind actions and
@@ -144,7 +144,7 @@ Run `cargo run` from the project directory. The window shows a label and button;
 
 ## Community & Support
 
-Learn how to build interruptible animation in the [GPUI Base Motion guide](../base/motion.md).
+Learn how to build interruptible animation in the GPUI Base Motion guide.
 
 - [GitHub Repository](https://github.com/MohsenDastaran/uni-kit)
 - [Issue Tracker](https://github.com/MohsenDastaran/uni-kit/issues)

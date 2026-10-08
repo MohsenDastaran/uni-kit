@@ -135,7 +135,7 @@ The key must include every input that changes the cached **geometry**: projected
 
 ## Virtualization avoids work instead of replaying it
 
-For a long collection, caching a view containing every row still leaves an expensive first render and invalidations. GPUI Kit's [`VirtualList`](../base/virtual-list) accepts item sizes and calls its render closure for the visible range (with a small overdraw); it may also render one representative item for cross-axis measurement. It never constructs most offscreen row elements in that frame. Its `VirtualListScrollHandle` is retained separately in the owner so scrolling survives element rebuilds.
+For a long collection, caching a view containing every row still leaves an expensive first render and invalidations. GPUI Kit's `VirtualList` accepts item sizes and calls its render closure for the visible range (with a small overdraw); it may also render one representative item for cross-axis measurement. It never constructs most offscreen row elements in that frame. Its `VirtualListScrollHandle` is retained separately in the owner so scrolling survives element rebuilds.
 
 ```rust
 use std::rc::Rc;

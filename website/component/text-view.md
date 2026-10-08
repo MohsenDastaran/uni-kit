@@ -7,9 +7,9 @@ description: Renders Markdown and HTML text with optional custom Markdown plugin
 
 `TextView` renders formatted text in GPUI. It supports Markdown and simple HTML, text selection, code block actions, and custom Markdown plugins for project-specific syntax.
 
-The canonical implementation now lives in `gpui-base`; this module remains a compatibility re-export and provides component-theme adaptation. Base-only setup, complete default styling, and opt-in syntax highlighting are documented on [GPUI Base TextView](../base/text-view.md).
+The canonical implementation now lives in `gpui-base`; this module remains a compatibility re-export and provides component-theme adaptation. Base-only setup, complete default styling, and opt-in syntax highlighting are documented on GPUI Base TextView.
 
-TextView is selectable by default and uses the shared window selection engine from `gpui-base`. Use `.selectable(false)` only when selection must be disabled. See [GPUI Base Text Selection](../base/text-selection.md) when integrating plain text or a custom renderer with the same selection.
+TextView is selectable by default and uses the shared window selection engine from `gpui-base`. Use `.selectable(false)` only when selection must be disabled. See GPUI Base Text Selection when integrating plain text or a custom renderer with the same selection.
 
 ## Import
 
@@ -92,7 +92,7 @@ reduced motion. Nothing animates unless the view opts in.
 
 Pass a `TextViewMotion` through `.motion(...)` to choose the duration or
 easing yourself, or to reveal each chunk word by word; see
-[GPUI Base TextView](../base/text-view.md#retained-state-and-streaming-updates).
+GPUI Base TextView.
 
 ### Highlight ranges
 
@@ -391,7 +391,7 @@ fn is_block(&self) -> bool {
 }
 ```
 
-Inline plugins use the default `is_block() == false` and return `Option<InlineElement>` from `render_inline`. Wrap any GPUI element with `InlineElement::new(...)`, use native styles and events, and set an optional baseline. TextView measures and selects the whole element as one atom, with plain/Markdown copying, text fallback, and explicit asynchronous layout invalidation. See [Inline plugin](../base/text-view.md#inline-plugin) for the contract and `.plugin(...)` registration example. The component facade exports the same `InlineElement` and `InlineRenderContext` types.
+Inline plugins use the default `is_block() == false` and return `Option<InlineElement>` from `render_inline`. Wrap any GPUI element with `InlineElement::new(...)`, use native styles and events, and set an optional baseline. TextView measures and selects the whole element as one atom, with plain/Markdown copying, text fallback, and explicit asynchronous layout invalidation. See Inline plugin for the contract and `.plugin(...)` registration example. The component facade exports the same `InlineElement` and `InlineRenderContext` types.
 
 ## YAML Frontmatter
 

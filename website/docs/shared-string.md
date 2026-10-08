@@ -14,7 +14,7 @@ Small costs add up. In UI code, a cost built into an ordinary component call is 
 
 Small copies and allocations are a long-term budget to control when choosing framework types, not a burden to leave at every call site. If a label API required each caller to supply a newly owned buffer, ordinary composition would repeat full text copies across many components. By accepting `SharedString` for retained text, a component can keep an owned value while callers reuse the one they already hold. Authors do not need a hand-written cache around each label for that common path.
 
-This default avoids repeated **full text** copies, not all work: cloning inline text copies its small bytes, cloning shared heap text updates a reference count, and `format!(...).into()` still constructs new text each time it runs. Other costs have their own tools, such as [virtualization](../base/virtual-list) for offscreen rows and [view caching](./view-cache) for an unchanged subtree.
+This default avoids repeated **full text** copies, not all work: cloning inline text copies its small bytes, cloning shared heap text updates a reference count, and `format!(...).into()` still constructs new text each time it runs. Other costs have their own tools, such as virtualization for offscreen rows and [view caching](./view-cache) for an unchanged subtree.
 
 ## Why use it instead of `String` for UI text?
 
