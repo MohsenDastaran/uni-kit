@@ -151,6 +151,53 @@ const promptLabel = "Copy Usage Prompt for AI";
 const prompted = ref("");
 let promptTimer: ReturnType<typeof setTimeout> | undefined;
 
+// The gallery's own source is written for the gallery: imports climb out of
+// `examples/`, the tours are guarded by a `GalleryView` flag only the gallery
+// sets, and they wrap themselves in a section helper the component library does
+// not ship. Handed to an assistant as-is, that produces files whose imports do
+// not resolve — so the prompt carries the screen itself instead.
+function withoutTours(source: string) {
+  const lines = source.split("\n");
+  const kept: string[] = [];
+  for (let i = 0; i < lines.length; i += 1) {
+    if (/^\s*if GalleryView\.example != "last":/.test(lines[i])) {
+      // Skip the whole element, counting braces so its body goes with it.
+      let depth = 0;
+      let opened = false;
+      for (; i < lines.length; i += 1) {
+        for (const char of lines[i]) {
+          if (char === "{") {
+            depth += 1;
+            opened = true;
+          } else if (char === "}") {
+            depth -= 1;
+          }
+        }
+        if (opened && depth <= 0) break;
+      }
+      continue;
+    }
+    kept.push(lines[i]);
+  }
+  return kept.join("\n");
+}
+
+// What the install command actually produces: one flat directory of files that
+// import each other by bare name.
+function installableSource(source: string) {
+  return (
+    withoutTours(source)
+      // The screen, not the gallery's branch that selects it.
+      .replace(/^(\s*)if GalleryView\.example == "last": /gm, "$1")
+      // Every component lands beside the app's own files.
+      .replace(/from "\.\.\//g, 'from "')
+      // GroupBox belonged to the tours; with them gone nothing imports it.
+      .replace(/^import \{[^}]*\} from "section\.slint";\n/gm, "")
+      .replace(/import \{ Theme, GalleryView, /, "import { Theme, ")
+      .replace(/import \{ Theme, GalleryView \}/, "import { Theme }")
+  );
+}
+
 function buildPrompt(block: Block) {
   const source = block.text?.[framework.value] ?? "";
   const library = framework.value === "slint" ? "Slint" : "gpui-component";
@@ -178,8 +225,11 @@ function buildPrompt(block: Block) {
     "## Install",
     install,
     "",
+    "## Files",
+    `Every file lands in ui/components/ beside the others, and the command adds that directory to the Slint include path in build.rs. Imports between them are by bare file name, as below.`,
+    "",
     "## Source",
-    source,
+    framework.value === "slint" ? installableSource(source) : source,
   ].join("\n");
 }
 

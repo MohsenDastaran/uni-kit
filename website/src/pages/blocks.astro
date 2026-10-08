@@ -48,7 +48,9 @@ const definitions = [
     doc: 'sidebar',
     // What the screen is built from, so the install command and the usage
     // prompt name the whole composition rather than one control.
-    components: ['sidebar', 'card', 'button', 'table'],
+    // The screen's table is a DataTable: sorting, fixed rows, and a body that
+    // pages. `table` was the primitive it used before it moved over.
+    components: ['sidebar', 'card', 'button', 'data-table'],
     // The page carries four compositions. A block is one finished screen, so
     // the gallery is asked for the last of them.
     slintExample: 'last',

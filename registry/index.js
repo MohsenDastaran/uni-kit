@@ -48,19 +48,15 @@ async function loadRegistry() {
   return JSON.parse((await fetchBuffer(REGISTRY_URL)).toString('utf8'));
 }
 
-async function placeFile(item, destination) {
-  fs.mkdirSync(path.dirname(destination), { recursive: true });
+// Reads one source and returns its bytes. Nothing is written here: the caller
+// collects every file first, so a missing source stops the install instead of
+// leaving half a screen behind.
+async function readSource(item) {
   const root = process.env.UNI_KIT_ROOT;
-  if (root) {
-    fs.copyFileSync(path.join(root, item.src), destination);
-    return;
-  }
-  if (fs.existsSync(localRegistry)) {
-    fs.copyFileSync(path.join(localRoot, item.src), destination);
-    return;
-  }
+  if (root) return fs.readFileSync(path.join(root, item.src));
+  if (fs.existsSync(localRegistry)) return fs.readFileSync(path.join(localRoot, item.src));
   const base = process.env.UNI_KIT_RAW ?? RAW_REPO_BASE;
-  fs.writeFileSync(destination, await fetchBuffer(`${base}/${item.src}`));
+  return await fetchBuffer(`${base}/${item.src}`);
 }
 
 function ensureModule(modFile, moduleName) {
@@ -180,11 +176,17 @@ async function main() {
     process.exit(1);
   }
 
+  // `path.resolve` reads an absolute --dir as itself and a relative one as
+  // relative to the app. Joining the raw value under the cwd turned
+  // `--dir /tmp/app` into `<cwd>/tmp/app`.
+  const targetRoot = path.resolve(process.cwd(), baseTargetDir);
+
   console.log(`Installing ${components.join(', ')} for ${framework}...`);
   const modules = new Set();
   // Components share files — every one of them imports the theme, and many
   // import the icon set. Written once, whichever name reached it first.
   const written = new Set();
+  const plan = [];
   for (const component of components) {
     for (const item of frameworkConfig.components[component]) {
       if (item.target.includes('..') || path.isAbsolute(item.target)) {
@@ -192,11 +194,30 @@ async function main() {
       }
       if (written.has(item.target)) continue;
       written.add(item.target);
-      const destination = path.join(process.cwd(), baseTargetDir, item.target);
-      await placeFile(item, destination);
-      console.log(`  ${path.join(baseTargetDir, item.target)}`);
+      plan.push({ item, destination: path.join(targetRoot, item.target) });
       if (item.module) modules.add(item.module);
     }
+  }
+
+  // Read every source before writing any of it. A component pulls in the icon
+  // set, so a screen is well over a hundred files, and a failure in the middle
+  // of that used to leave a half-installed screen with no indication of which
+  // files were missing.
+  const contents = [];
+  for (const { item, destination } of plan) {
+    let data;
+    try {
+      data = await readSource(item);
+    } catch (error) {
+      throw new Error(`Could not read ${item.src}: ${error.message}`);
+    }
+    contents.push({ destination, data });
+  }
+
+  for (const { destination, data } of contents) {
+    fs.mkdirSync(path.dirname(destination), { recursive: true });
+    fs.writeFileSync(destination, data);
+    console.log(`  ${path.relative(process.cwd(), destination)}`);
   }
 
   if (modules.size > 0) {
