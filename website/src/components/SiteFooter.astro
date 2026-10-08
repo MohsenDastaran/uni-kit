@@ -56,7 +56,7 @@ const year = new Date().getFullYear();
 
   <div class="kit-footer__inner">
     <div class="kit-footer__top">
-      <div class="kit-footer__brand">
+      <div class="kit-footer__brand kit-footer__reveal">
         <div class="kit-footer__badges">
           <span class="kit-footer__badge kit-footer__badge--brand">uni-kit</span>
           <span class="kit-footer__badge">{version}</span>
@@ -78,8 +78,8 @@ const year = new Date().getFullYear();
 
       <div class="kit-footer__columns">
         {
-          columns.map((column) => (
-            <div class="kit-footer__column">
+          columns.map((column, index) => (
+            <div class="kit-footer__column kit-footer__reveal" style={`--i: ${index + 1}`}>
               <h3>{column.title}</h3>
               <ul>
                 {column.links.map((link) => (
@@ -104,7 +104,7 @@ const year = new Date().getFullYear();
 
     <div class="kit-footer__bottom">
       <a
-        class="kit-footer__social"
+        class="kit-footer__social kit-footer__reveal" style="--i: 5"
         href="https://github.com/MohsenDastaran/uni-kit"
         target="_blank"
         rel="noopener noreferrer"
@@ -115,14 +115,14 @@ const year = new Date().getFullYear();
         </svg>
       </a>
 
-      <p class="kit-footer__copy">
+      <p class="kit-footer__copy kit-footer__reveal" style="--i: 6">
         © {year} uni-kit. Icons by
         <a href="https://lucide.dev" target="_blank" rel="noopener noreferrer">Lucide</a>
         and
         <a href="https://isocons.app" target="_blank" rel="noopener noreferrer">Isocons</a>.
       </p>
 
-      <button class="kit-footer__top-btn" type="button" id="footer-to-top" aria-label="Back to top">
+      <button class="kit-footer__top-btn kit-footer__reveal" style="--i: 7" type="button" id="footer-to-top" aria-label="Back to top">
         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
           <path d="M12 19V5" />
           <path d="m5 12 7-7 7 7" />
@@ -133,7 +133,29 @@ const year = new Date().getFullYear();
 </footer>
 
 <script>
-  // The reference block scrolls to top; the arrow bobs while the page is live.
+  // The reference animates each part in as it scrolls into view. That is an
+  // intersection here rather than framer-motion's `whileInView`, and the parts
+  // stagger by their `--i`.
+  const footer = document.querySelector('.kit-footer');
+  const parts = footer?.querySelectorAll('.kit-footer__reveal') ?? [];
+  const still = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+  if (footer && parts.length && !still) {
+    const observer = new IntersectionObserver(
+      (entries) => {
+        for (const entry of entries) {
+          if (!entry.isIntersecting) continue;
+          entry.target.classList.add('is-in');
+          observer.unobserve(entry.target);
+        }
+      },
+      { rootMargin: '0px 0px -10% 0px' },
+    );
+    for (const part of parts) observer.observe(part);
+  } else {
+    for (const part of parts) part.classList.add('is-in');
+  }
+
   document.getElementById('footer-to-top')?.addEventListener('click', () => {
     window.scrollTo({ top: 0, behavior: 'smooth' });
   });

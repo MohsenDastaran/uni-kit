@@ -3020,3 +3020,40 @@ html[data-framework="slint"]
 .kit-footer__copy a:hover {
   text-decoration: underline;
 }
+
+/* The reference's `whileInView` reveals: each part fades up as it arrives, in
+   the order its `--i` sets. Without JavaScript -- or with motion reduced -- the
+   parts are simply visible, because `.is-in` is only skipped, never required. */
+.kit-footer__reveal {
+  opacity: 0;
+  transform: translateY(20px);
+  transition:
+    opacity 500ms ease,
+    transform 500ms ease;
+  transition-delay: calc(var(--i, 0) * 100ms);
+}
+
+.kit-footer__reveal.is-in {
+  opacity: 1;
+  transform: none;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .kit-footer__reveal {
+    opacity: 1;
+    transform: none;
+    transition: none;
+  }
+}
+
+/* The links carry their own padding so the pointer has somewhere to land; the
+   negative margin keeps the text aligned with the column headings. */
+.kit-footer__column a {
+  padding: 0.3rem 0.6rem;
+  margin-left: -0.6rem;
+  border-radius: var(--radius-control);
+}
+
+.kit-footer__column a:hover {
+  background: color-mix(in srgb, var(--foreground) 5%, transparent);
+}
