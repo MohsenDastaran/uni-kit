@@ -191,6 +191,9 @@ function resize() {
 function draw(now: number) {
   const c = canvas.value;
   if (!c || !gl || !program) return;
+  // Hidden, the canvas reports no size. Do nothing rather than draw into a
+  // zero-sized viewport: the loop keeps its frame so it resumes when shown.
+  if (!c.clientWidth || !c.clientHeight) return;
   resize();
   gl.viewport(0, 0, c.width, c.height);
   gl.useProgram(program);

@@ -243,23 +243,40 @@ html[data-framework="slint"] .hero {
 
 /* ── Responsive ──────────────────────────────────────────────────────────
    The hero stacks into one column at 1080px (its grid lives in HomeApp).
-   Stacked, the conduit no longer lines up under the navbar picker, so the
-   card centres and the lift that closed that gap is dropped with it. */
+   Stacked, it drops the illustration: the junction is a wide, bright
+   composition whose beam runs across the whole screen in one column, and the
+   card is a wide one that reads as a lost fragment in a narrow one. The dark
+   ground and the copy stay, so the hero keeps its identity and the light ink
+   keeps its contrast. */
 @media (max-width: 1080px) {
+    .hero__laser .laser-field {
+        display: none;
+    }
     .hero__visual {
-        min-height: 0;
-        padding-bottom: 0;
-        padding-top: clamp(1.5rem, 4vw, 2.5rem);
-        justify-content: center;
+        display: none;
+    }
+    /* A static wash where the junction was, so the hero is not a flat slab.
+       It takes the same accent the conduit used, so the stacked hero still
+       answers the framework picker. */
+    .hero__laser {
+        background:
+            radial-gradient(
+                120% 80% at 12% 0%,
+                color-mix(in srgb, var(--feed-accent) 22%, transparent),
+                transparent 62%
+            ),
+            radial-gradient(
+                90% 70% at 100% 100%,
+                color-mix(in srgb, var(--feed-accent) 12%, transparent),
+                transparent 58%
+            ),
+            #020307;
     }
 }
 
 @media (max-width: 640px) {
     .hero .hero__inner {
-        padding-block: 2.75rem;
-    }
-    .hero__visual {
-        padding-top: 1rem;
+        padding-block: 3.25rem;
     }
 }
 
@@ -283,20 +300,11 @@ html[data-framework="slint"] .hero {
     }
 }
 
-/* Short but wide -- a phone on its side. Two columns fit, and stacking there
-   makes the hero twice the height of the screen, so it keeps them. The `.hero`
-   prefix outranks the collapse rule in HomeApp. */
-@media (max-height: 660px) and (min-width: 760px) {
-    .hero .hero__inner {
-        grid-template-columns: minmax(0, 0.93fr) minmax(0, 1.07fr);
-    }
-    .hero__visual {
-        padding-top: 0;
-        justify-content: flex-end;
-    }
-    /* The conduit is 202px of the column's height and reaches ~122px above the
-       card's own top. There is no room for that here: it rode up under the
-       navbar. The card keeps the piece and its animation, shortened. */
+/* Short but wide, where the two columns are kept and the illustration with
+   them. There is no room for the conduit at this height -- it reaches ~122px
+   above the card's own top and rode up under the navbar at 1280x500 -- so the
+   card keeps the piece and its animation, shortened. */
+@media (max-height: 660px) and (min-width: 1081px) {
     .data-feed__pulse {
         display: none;
     }
