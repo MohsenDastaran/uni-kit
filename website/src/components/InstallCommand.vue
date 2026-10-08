@@ -48,7 +48,7 @@ const runner = computed(() =>
 const namesFor = (name: string) =>
   (catalog as Record<string, string[]>)[name] ?? [];
 
-/** A registry entry copies files into the app. GPUI Kit itself is the crate. */
+/** A registry entry copies files into the app. uni-kit itself is the crate. */
 const packaged = computed(
   () =>
     targets.value.length > 0 &&

@@ -2,7 +2,7 @@ import { readdirSync, readFileSync, statSync } from 'node:fs';
 import { extname, join, relative, resolve } from 'node:path';
 import { expandDocVariables } from './doc-variables.js';
 
-const SITE_TITLE = 'GPUI Kit';
+const SITE_TITLE = 'uni-kit';
 const SITE_DESCRIPTION =
   'A comprehensive Rust framework for building fantastic, high-performance desktop apps with GPUI.';
 const BASE_URL = import.meta.env.BASE_URL.replace(/\/$/, '');
@@ -26,15 +26,15 @@ const TESTED_RECIPE_LABEL = 'Tested consumer recipe';
 /** Keep the machine-readable documentation exports in step with the HTML footer. */
 export function documentationLicenseNotice(lang: 'en' | 'zh-CN', source: string): string {
   if (lang === 'zh-CN') {
-    return `文档许可：GPUI Kit 有权授权的原创正文与图示另以 CC BY 4.0 提供。复制或改编时请署名 GPUI Kit，链接原文（${source}）及 https://creativecommons.org/licenses/by/4.0/，并注明修改。代码示例与软件源码采用 Apache-2.0；第三方内容保留原许可；既有 Apache-2.0 使用权不受影响。`;
+    return `文档许可：uni-kit 有权授权的原创正文与图示另以 CC BY 4.0 提供。复制或改编时请署名 uni-kit，链接原文（${source}）及 https://creativecommons.org/licenses/by/4.0/，并注明修改。代码示例与软件源码采用 Apache-2.0；第三方内容保留原许可；既有 Apache-2.0 使用权不受影响。`;
   }
-  return `Documentation license: original prose and illustrations for which GPUI Kit holds licensing rights are also offered under CC BY 4.0. When copying or adapting, credit GPUI Kit, link the source (${source}) and https://creativecommons.org/licenses/by/4.0/, and indicate changes. Code examples and software source use Apache-2.0; third-party material retains its terms; existing Apache-2.0 permissions remain.`;
+  return `Documentation license: original prose and illustrations for which uni-kit holds licensing rights are also offered under CC BY 4.0. When copying or adapting, credit uni-kit, link the source (${source}) and https://creativecommons.org/licenses/by/4.0/, and indicate changes. Code examples and software source use Apache-2.0; third-party material retains its terms; existing Apache-2.0 permissions remain.`;
 }
 
 function documentationLicenseSummary(lang: 'en' | 'zh-CN', source: string): string {
   return lang === 'zh-CN'
-    ? `许可：GPUI Kit 有权授权的正文与原创图示另适用 CC BY 4.0；引用请署名 GPUI Kit、链接 ${source} 与 https://creativecommons.org/licenses/by/4.0/ 并注明修改。代码示例适用 Apache-2.0。`
-    : `License: GPUI Kit-authorized prose and original illustrations are also CC BY 4.0; credit GPUI Kit, link ${source} and https://creativecommons.org/licenses/by/4.0/, and indicate changes. Code examples use Apache-2.0.`;
+    ? `许可：uni-kit 有权授权的正文与原创图示另适用 CC BY 4.0；引用请署名 uni-kit、链接 ${source} 与 https://creativecommons.org/licenses/by/4.0/ 并注明修改。代码示例适用 Apache-2.0。`
+    : `License: uni-kit-authorized prose and original illustrations are also CC BY 4.0; credit uni-kit, link ${source} and https://creativecommons.org/licenses/by/4.0/, and indicate changes. Code examples use Apache-2.0.`;
 }
 
 function recipeDestinations(websiteRoot: string): Map<string, string[]> {

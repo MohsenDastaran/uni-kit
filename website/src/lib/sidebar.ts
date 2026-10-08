@@ -232,8 +232,8 @@ const PRODUCTION = import.meta.env.PROD === true;
 export const enDocsSidebar = generateSidebar({
   contentDir: join(WEBSITE_ROOT, 'docs'),
   baseUrl: `${BASE}/docs`,
-  rootGroupText: 'GPUI Kit',
-  rootLinkText: 'GPUI Kit',
+  rootGroupText: 'uni-kit',
+  rootLinkText: 'uni-kit',
 });
 
 export const enComponentSidebar = generateSidebar({

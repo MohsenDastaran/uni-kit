@@ -1,4 +1,4 @@
-// Renders a page's `maturity` frontmatter as labels under its title. GPUI Kit
+// Renders a page's `maturity` frontmatter as labels under its title. uni-kit
 // is used in production, but its capabilities do not share one track record;
 // a label on the page states that where the reader decides whether to use it.
 // Each label links to the definitions on the documentation home.

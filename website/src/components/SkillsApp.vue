@@ -30,9 +30,9 @@ defineProps<{
     skills: Skill[];
 }>();
 
-const title = "GPUI Kit Skills";
+const title = "uni-kit Skills";
 const description =
-    "Skills available for working with GPUI Kit. These skills provide guidance and best practices for building GPUI applications.";
+    "Skills available for working with uni-kit. These skills provide guidance and best practices for building GPUI applications.";
 </script>
 
 <style>
