@@ -2446,3 +2446,336 @@ html[data-framework="slint"]
   background: color-mix(in srgb, var(--brand) 22%, transparent);
   color: var(--foreground);
 }
+
+/* ── Starter templates ──────────────────────────────────────────────────────
+   Two forkable projects on /starter. The section is markup and these rules; the
+   folder beside each title is a CSS port of
+   `components/uitripled/folder-animation-carbon.tsx`, which is a React
+   component driven by framer-motion. Neither is part of this site, so the
+   sequence below is keyframes and the trigger is `:hover` / `:focus-visible` —
+   which also means the illustration costs no JavaScript. */
+
+.starter {
+  margin: 2.75rem 0 0;
+}
+
+.starter__grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 1.25rem;
+  margin: 1.75rem 0 0;
+}
+
+@media (max-width: 760px) {
+  .starter__grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+.starter-card {
+  display: flex;
+  flex-direction: column;
+  padding: 0.5rem;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-surface);
+  background: var(--background);
+  transition:
+    border-color 180ms ease,
+    box-shadow 180ms ease;
+}
+
+.starter-card:hover {
+  border-color: var(--border-hover);
+  box-shadow: var(--shadow-panel);
+}
+
+.starter-card__meta {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin: 1.1rem 0.75rem 0;
+  color: var(--muted-foreground);
+  font: 0.72rem/1 var(--font-mono);
+}
+
+.starter-card__title {
+  margin: 0.6rem 0.75rem 0;
+  font-size: 1.15rem;
+  font-weight: 640;
+  letter-spacing: -0.02em;
+}
+
+.starter-card__body {
+  margin: 0.5rem 0.75rem 0;
+  color: var(--muted-foreground);
+  font-size: 0.88rem;
+  line-height: 1.65;
+}
+
+/* The card's one action, styled the way the site styles a primary button:
+   solid brand fill, control radius, the icon sitting beside the label. */
+.starter-card__link {
+  align-self: flex-start;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  min-height: 2.25rem;
+  margin: 1.25rem 0.75rem 0.75rem;
+  padding: 0 0.9rem;
+  border: 1px solid var(--brand);
+  border-radius: var(--radius-control);
+  background: var(--brand);
+  color: var(--brand-contrast);
+  font-size: 0.85rem;
+  font-weight: 600;
+  text-decoration: none;
+  box-shadow: var(--shadow-raise);
+  transition:
+    background 150ms ease,
+    border-color 150ms ease;
+}
+
+.starter-card__link:hover {
+  border-color: var(--brand-hover);
+  background: var(--brand-hover);
+}
+
+.starter-card__link:focus-visible {
+  outline: 2px solid var(--brand);
+  outline-offset: 2px;
+}
+
+/* The illustration. Its resting frame is the folder closed and centred; the
+   cycle plays only while the stage is hovered or focused. */
+
+.folder__stage {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 12rem;
+  overflow: hidden;
+  border-radius: var(--radius-card);
+  background: var(--muted);
+  cursor: pointer;
+}
+
+.folder__stage:focus-visible {
+  outline: 2px solid var(--brand);
+  outline-offset: -2px;
+}
+
+/* A zero-length settle so leaving mid-cycle eases home rather than snapping.
+   Both animations omit their `from`, so they start wherever the folder is. */
+.folder__track {
+  position: absolute;
+  animation: folder-settle 0.45s ease-out;
+}
+
+.folder__art {
+  position: relative;
+  width: 7rem;
+  height: 6rem;
+  animation: folder-settle-blur 0.35s ease-out;
+}
+
+.folder__track,
+.folder__art {
+  will-change: transform, opacity, filter;
+}
+
+.folder__stage:hover .folder__track,
+.folder__stage:focus-visible .folder__track {
+  animation: folder-cycle 3.4s infinite;
+}
+
+.folder__stage:hover .folder__art,
+.folder__stage:focus-visible .folder__art {
+  animation: folder-cycle-blur 3.4s infinite;
+}
+
+.folder__back {
+  position: absolute;
+  inset: 0;
+  border: 1px solid color-mix(in srgb, var(--primary) 20%, transparent);
+  border-radius: var(--radius-card);
+  background: color-mix(in srgb, var(--primary) 10%, transparent);
+}
+
+.folder__sheet {
+  position: absolute;
+  right: 0.5rem;
+  bottom: 0.5rem;
+  left: 0.5rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  height: 5rem;
+  padding: 0.5rem;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-control);
+  background: var(--background);
+  box-shadow: 0 1px 2px rgb(0 0 0 / 6%);
+}
+
+.folder__sheet--tilt-left {
+  transform: rotate(-3deg);
+  transform-origin: bottom left;
+}
+
+.folder__sheet--tilt-right {
+  z-index: 10;
+  transform: rotate(3deg);
+  transform-origin: bottom right;
+}
+
+.folder__front {
+  position: absolute;
+  inset: auto 0 0;
+  z-index: 20;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 3.5rem;
+  border: 1px solid color-mix(in srgb, var(--primary) 10%, transparent);
+  border-top-color: color-mix(in srgb, #ffffff 20%, transparent);
+  border-radius: var(--radius-card);
+  background: linear-gradient(
+    to bottom right,
+    color-mix(in srgb, var(--primary) 20%, transparent),
+    color-mix(in srgb, var(--primary) 5%, transparent)
+  );
+  box-shadow: 0 10px 15px -3px rgb(0 0 0 / 10%);
+  backdrop-filter: blur(6px);
+}
+
+.folder__front::after {
+  content: "";
+  width: 2rem;
+  height: 0.25rem;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--primary) 20%, transparent);
+}
+
+.folder__row {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-bottom: 0.25rem;
+}
+
+.folder__dot {
+  width: 1rem;
+  height: 1rem;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--primary) 10%, transparent);
+}
+
+.folder__line {
+  height: 1px;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--muted-foreground) 45%, transparent);
+}
+
+.folder__line--narrow {
+  width: 2rem;
+  background: var(--muted-foreground);
+}
+
+.folder__line--half {
+  width: 50%;
+}
+
+.folder__line--three-quarters {
+  width: 75%;
+}
+
+/* One cycle is 3.4s: 1.5s out, an instant reposition, 1.5s back, then the
+   reference's 400ms rest. Percentages are those times over the cycle. The two
+   entrances carry their own easing, which is how the reference uses `easeIn`
+   out and `easeOut` back rather than one curve for the whole loop. */
+
+@keyframes folder-cycle {
+  0% {
+    transform: translateX(0);
+    opacity: 1;
+    animation-timing-function: ease-in;
+  }
+  30.9% {
+    opacity: 1;
+  }
+  44.1% {
+    transform: translateX(150%);
+    opacity: 0;
+  }
+  44.2% {
+    transform: translateX(-150%);
+    opacity: 0;
+    animation-timing-function: ease-out;
+  }
+  57.4% {
+    opacity: 1;
+  }
+  88.2% {
+    transform: translateX(0);
+    opacity: 1;
+  }
+  100% {
+    transform: translateX(0);
+    opacity: 1;
+  }
+}
+
+@keyframes folder-cycle-blur {
+  0% {
+    filter: blur(0);
+    animation-timing-function: ease-in;
+  }
+  22.1% {
+    filter: blur(0);
+  }
+  33.1% {
+    filter: blur(8px);
+  }
+  44.1% {
+    filter: blur(16px);
+  }
+  44.2% {
+    filter: blur(16px);
+    animation-timing-function: ease-out;
+  }
+  55.2% {
+    filter: blur(8px);
+  }
+  66.2% {
+    filter: blur(0);
+  }
+  100% {
+    filter: blur(0);
+  }
+}
+
+@keyframes folder-settle {
+  to {
+    transform: translateX(0);
+    opacity: 1;
+  }
+}
+
+@keyframes folder-settle-blur {
+  to {
+    filter: blur(0);
+  }
+}
+
+/* The reference returns to centre and stays there instead of animating. */
+@media (prefers-reduced-motion: reduce) {
+  .folder__track,
+  .folder__art,
+  .folder__stage:hover .folder__track,
+  .folder__stage:hover .folder__art,
+  .folder__stage:focus-visible .folder__track,
+  .folder__stage:focus-visible .folder__art {
+    animation: none;
+  }
+}
