@@ -31,7 +31,7 @@ function url(path: string) {
 const stars = props.starCount;
 const starLabel = stars >= 1000 ? `${(stars / 1000).toFixed(1)}k` : `${stars}`;
 
-const gettingStartedHref = url("docs/getting-started");
+const gettingStartedHref = url("component");
 const componentsHref = url("component");
 const skillsHref = url("skills");
 const llmsHref = url("llms-full.txt");
