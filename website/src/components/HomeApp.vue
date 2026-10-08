@@ -29,6 +29,7 @@ const stars = props.starCount;
 
 const gettingStartedHref = url("component");
 const componentsHref = url("component");
+const starterHref = url("starter");
 const skillsHref = url("skills");
 const llmsHref = url("llms-full.txt");
 
@@ -133,6 +134,9 @@ const copy = {
         "Light and dark themes included",
         "Interaction details already handled",
     ],
+    // The hero's two actions, so the path section below keeps its own wording.
+    ctaPrimary: "Start building",
+    ctaSecondary: "View the components",
     startComponent: "Get started",
     ownTitle: "Own the design system",
     ownDescription:
@@ -177,6 +181,7 @@ const copy = {
             :copy="copy"
             :getting-started-href="gettingStartedHref"
             :components-href="componentsHref"
+            :starter-href="starterHref"
             :star-count="stars"
             :install-command="installCommand"
         />

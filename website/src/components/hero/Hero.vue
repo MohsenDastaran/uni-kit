@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { onBeforeUnmount, ref } from "vue";
-import { ArrowRight, Check, Copy, Monitor, Scale, Star } from "lucide-vue-next";
+import { ArrowRight, Check, Copy, Monitor, Scale, Sparkles, Star } from "lucide-vue-next";
 import LaserField from "./LaserField.vue";
 import DataFeed from "./DataFeed.vue";
 
@@ -15,6 +15,7 @@ const props = defineProps<{
   copy: Record<string, any>;
   gettingStartedHref: string;
   componentsHref: string;
+  starterHref: string;
   starCount: number;
   installCommand: string;
 }>();
@@ -53,10 +54,14 @@ onBeforeUnmount(() => clearTimeout(copyTimer));
         <h1>{{ copy.title }}</h1>
         <p class="hero__lead">{{ copy.lead }}</p>
         <div class="hero__actions">
-          <a :href="gettingStartedHref" class="btn btn--primary">
-            {{ copy.startComponent }} <ArrowRight :size="16" />
+          <a :href="starterHref" class="btn btn--primary">
+            {{ copy.ctaPrimary }}
+            <Sparkles :size="16" class="cta-icon cta-icon--scale" />
           </a>
-          <a :href="componentsHref" class="btn">{{ copy.componentsAction }}</a>
+          <a :href="componentsHref" class="btn">
+            {{ copy.ctaSecondary }}
+            <ArrowRight :size="16" class="cta-icon cta-icon--shift" />
+          </a>
         </div>
         <ul class="hero__signals">
           <li><Star :size="14" /><strong>{{ starLabel }}</strong> {{ copy.signalStars }}</li>
@@ -129,10 +134,52 @@ onBeforeUnmount(() => clearTimeout(copyTimer));
   color: #b9c0cc;
 }
 
+.hero .hero__actions {
+  gap: 1rem;
+}
+
 .hero .hero__actions .btn {
+  min-height: 2.75rem;
+  padding: 0 2rem;
+  gap: 0.5rem;
+  border-radius: var(--radius-control);
   border-color: rgb(255 255 255 / 0.14);
   background: rgb(255 255 255 / 0.04);
   color: #e6e9ef !important;
+  font-size: 0.875rem;
+  font-weight: 500;
+  transition:
+    background 150ms ease,
+    border-color 150ms ease,
+    color 150ms ease;
+}
+
+.hero .hero__actions .btn:focus-visible {
+  outline: 2px solid var(--brand);
+  outline-offset: 2px;
+}
+
+/* The icon answers the pointer: the sparkle swells, the arrow steps forward. */
+.hero .hero__actions .cta-icon {
+  transition: transform 160ms ease;
+}
+
+.hero .hero__actions .btn:hover .cta-icon--scale {
+  transform: scale(1.12);
+}
+
+.hero .hero__actions .btn:hover .cta-icon--shift {
+  transform: translateX(0.25rem);
+}
+
+@media (max-width: 640px) {
+  .hero .hero__actions {
+    flex-direction: column;
+    align-items: stretch;
+  }
+  .hero .hero__actions .btn {
+    width: 100%;
+  }
 }
 
 .hero .hero__actions .btn--primary {
