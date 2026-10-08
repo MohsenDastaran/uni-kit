@@ -1,22 +1,19 @@
 <script setup lang="ts">
-import { onBeforeUnmount, ref } from "vue";
 import {
     ArrowRight,
     Blocks,
     Braces,
     Check,
-    Copy,
     Gauge,
     Layers3,
     LayoutDashboard,
     List,
-    Monitor,
     Palette,
-    Scale,
     SquareCode,
-    Star,
     Table2,
 } from "lucide-vue-next";
+
+import Hero from "./hero/Hero.vue";
 
 const props = defineProps<{
     starCount: number;
@@ -29,7 +26,6 @@ function url(path: string) {
 }
 
 const stars = props.starCount;
-const starLabel = stars >= 1000 ? `${(stars / 1000).toFixed(1)}k` : `${stars}`;
 
 const gettingStartedHref = url("component");
 const componentsHref = url("component");
@@ -65,20 +61,6 @@ const capIcons: Record<string, any> = {
 // carries every layer. The line on screen is what the clipboard gets, with
 // the `[dependencies]` header so it pastes straight into Cargo.toml.
 const installCommand = 'gpui-kit = "0.6.0"';
-const installSnippet = ["[dependencies]", installCommand].join("\n");
-
-const copied = ref(false);
-let copyTimer: ReturnType<typeof setTimeout> | undefined;
-const copyInstall = async () => {
-    try {
-        await navigator.clipboard.writeText(installSnippet);
-        copied.value = true;
-        clearTimeout(copyTimer);
-        copyTimer = setTimeout(() => (copied.value = false), 1600);
-    } catch {}
-};
-
-onBeforeUnmount(() => clearTimeout(copyTimer));
 
 const copy = {
     copyLabel: "Copy install command",
@@ -191,76 +173,13 @@ const copy = {
 
 <template>
     <main class="home">
-        <section class="hero">
-            <div class="hero__grid" aria-hidden="true"></div>
-            <div class="hero__inner">
-                <div class="hero__copy">
-                    <span class="eyebrow">
-                        <span class="eyebrow__pulse" aria-hidden="true"></span>
-                        {{ copy.eyebrow }}
-                    </span>
-                    <h1>{{ copy.title }}</h1>
-                    <p class="hero__lead">{{ copy.lead }}</p>
-                    <div class="hero__actions">
-                        <a :href="gettingStartedHref" class="btn btn--primary">
-                            {{ copy.startComponent }} <ArrowRight :size="16" />
-                        </a>
-                        <a :href="componentsHref" class="btn">{{
-                            copy.componentsAction
-                        }}</a>
-                    </div>
-                    <ul class="hero__signals">
-                        <li>
-                            <Star :size="14" /><strong>{{ starLabel }}</strong>
-                            {{ copy.signalStars }}
-                        </li>
-                        <li><Scale :size="14" /> {{ copy.signalLicense }}</li>
-                        <li>
-                            <Monitor :size="14" /> {{ copy.signalPlatforms }}
-                        </li>
-                    </ul>
-                    <div class="hero__install">
-                        <span class="hero__install-label">Cargo.toml</span>
-                        <code>{{ installCommand }}</code>
-                        <button
-                            type="button"
-                            :aria-label="copy.copyLabel"
-                            :data-copied="copied || null"
-                            @click="copyInstall"
-                        >
-                            <Check v-if="copied" :size="13" />
-                            <Copy v-else :size="13" />
-                        </button>
-                    </div>
-                </div>
-
-                <div class="hero__code mac-window">
-                    <div class="mac-window__bar">
-                        <span class="mac-window__lights" aria-hidden="true"
-                            ><i /><i /><i
-                        /></span>
-                        <span class="mac-window__title">main.rs</span>
-                    </div>
-                    <pre><code><span class="c-kw">use</span> gpui_kit::component::{<span class="c-mod">button</span>::*, *};
-
-<span class="c-kw">impl</span> <span class="c-type">Render</span> <span class="c-kw">for</span> <span class="c-type">HelloWorld</span> {
-    <span class="c-kw">fn</span> <span class="c-fn">render</span>(&<span class="c-kw">mut</span> self, _: &<span class="c-kw">mut</span> <span class="c-type">Window</span>, cx: &<span class="c-kw">mut</span> <span class="c-type">Context</span>&lt;Self&gt;) -&gt; <span class="c-kw">impl</span> <span class="c-type">IntoElement</span> {
-        <span class="c-fn">div</span>()
-            .<span class="c-fn">v_flex</span>()
-            .<span class="c-fn">gap_2</span>()
-            .<span class="c-fn">items_center</span>()
-            .<span class="c-fn">child</span>(<span class="c-str">"Hello, World!"</span>)
-            .<span class="c-fn">child</span>(
-                <span class="c-type">Button</span>::<span class="c-fn">new</span>(<span class="c-str">"ok"</span>)
-                    .<span class="c-fn">primary</span>()
-                    .<span class="c-fn">label</span>(<span class="c-str">"Let's Go!"</span>)
-                    .<span class="c-fn">on_click</span>(cx.<span class="c-fn">listener</span>(Self::go)),
-            )
-    }
-}</code></pre>
-                </div>
-            </div>
-        </section>
+        <Hero
+            :copy="copy"
+            :getting-started-href="gettingStartedHref"
+            :components-href="componentsHref"
+            :star-count="stars"
+            :install-command="installCommand"
+        />
 
         <section class="band">
             <div class="band__inner">
