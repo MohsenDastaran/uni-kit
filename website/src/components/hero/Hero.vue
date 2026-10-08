@@ -79,7 +79,7 @@ onBeforeUnmount(() => clearTimeout(copyTimer));
                         <Star :size="14" /><strong>{{ starLabel }}</strong>
                         {{ copy.signalStars }}
                     </li>
-                    <li><Scale :size="14" /> {{ copy.signalLicense }}</li>
+
                     <li><Monitor :size="14" /> {{ copy.signalPlatforms }}</li>
                 </ul>
             </div>
@@ -242,17 +242,18 @@ html[data-framework="slint"] .hero {
 }
 
 /* ── Responsive ──────────────────────────────────────────────────────────
-   The hero stacks into one column at 1080px (its grid lives in HomeApp).
-   Stacked, it drops the illustration: the junction is a wide, bright
-   composition whose beam runs across the whole screen in one column, and the
-   card is a wide one that reads as a lost fragment in a narrow one. The dark
-   ground and the copy stay, so the hero keeps its identity and the light ink
-   keeps its contrast. */
+   Three bands.
+
+   Phone (under 768): the copy alone on the dark ground. Stacked, the junction
+   runs its beam the width of the screen and the card reads as a fragment.
+
+   Tablet (768 to 1080): the junction still goes, for the same reason, but the
+   card stays -- beside the copy as it is on the desktop, and smaller, because
+   the column is narrower.
+
+   Desktop (1081 up): both, as authored. */
 @media (max-width: 1080px) {
     .hero__laser .laser-field {
-        display: none;
-    }
-    .hero__visual {
         display: none;
     }
     /* A static wash where the junction was, so the hero is not a flat slab.
@@ -271,6 +272,32 @@ html[data-framework="slint"] .hero {
                 transparent 58%
             ),
             #020307;
+    }
+}
+
+/* Tablet: two columns again, card to the right, capped so it stays whole in a
+   column that is about 44% of the width. The cap carries the height with it,
+   since the card is proportional. */
+@media (min-width: 768px) and (max-width: 1080px) {
+    .hero .hero__inner {
+        grid-template-columns: minmax(0, 1fr) minmax(0, 0.8fr);
+    }
+    .hero__visual {
+        min-height: 0;
+        padding-top: 0;
+        padding-bottom: 0;
+        justify-content: flex-end;
+    }
+    .data-feed,
+    .data-feed__card {
+        max-width: 300px;
+    }
+}
+
+/* Phones: the card goes with the junction. */
+@media (max-width: 767px) {
+    .hero__visual {
+        display: none;
     }
 }
 
@@ -304,7 +331,7 @@ html[data-framework="slint"] .hero {
    them. There is no room for the conduit at this height -- it reaches ~122px
    above the card's own top and rode up under the navbar at 1280x500 -- so the
    card keeps the piece and its animation, shortened. */
-@media (max-height: 660px) and (min-width: 1081px) {
+@media (max-height: 660px) and (min-width: 768px) {
     .data-feed__pulse {
         display: none;
     }
