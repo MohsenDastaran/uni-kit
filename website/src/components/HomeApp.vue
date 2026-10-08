@@ -459,7 +459,7 @@ html[lang^="zh"] .section-kicker {
        junction needs the room and the copy caps its own measure anyway. */
     width: min(100% - 2rem, 1520px);
     margin-inline: auto;
-    padding-block: clamp(2.75rem, 5vw, 4.25rem);
+    padding-block: clamp(3.25rem, 6vw, 5rem);
 }
 
 .eyebrow {

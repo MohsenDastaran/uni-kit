@@ -41,7 +41,7 @@ onBeforeUnmount(() => clearTimeout(copyTimer));
   <section class="hero">
     <div class="hero__grid" aria-hidden="true"></div>
     <div class="hero__laser" aria-hidden="true">
-      <LaserField />
+      <LaserField :pointer="false" />
     </div>
 
     <div class="hero__inner">
@@ -101,6 +101,9 @@ onBeforeUnmount(() => clearTimeout(copyTimer));
   width: 100%;
   height: 100%;
   display: block;
+  /* The junction's centre sits left of middle; nudge the whole field right.
+     The strip this leaves on the left is the same near-black behind it. */
+  transform: translateX(4%);
 }
 
 .hero__inner {
@@ -170,7 +173,7 @@ onBeforeUnmount(() => clearTimeout(copyTimer));
   display: flex;
   align-items: center;
   justify-content: flex-end;
-  min-height: 420px;
+  min-height: 480px;
 }
 
 @media (max-width: 760px) {

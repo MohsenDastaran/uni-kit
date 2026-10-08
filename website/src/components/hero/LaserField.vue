@@ -11,6 +11,9 @@ import { onBeforeUnmount, onMounted, ref } from "vue";
  * ramp are copied as authored. The source's `patch()` folds `size` and `length`
  * into the beam intensity, which is reproduced below; the other knobs are
  * accepted but unused for this variant, exactly as in the source.
+ *
+ * `pointer` turns the reach toward the cursor off, leaving only the beams and
+ * their travelling pulses. The hero runs with it off.
  */
 const props = withDefaults(
   defineProps<{
@@ -22,6 +25,7 @@ const props = withDefaults(
     hue?: number;
     saturation?: number;
     brightness?: number;
+    pointer?: boolean;
   }>(),
   {
     size: 1,
@@ -32,6 +36,7 @@ const props = withDefaults(
     hue: 0,
     saturation: 1,
     brightness: 1,
+    pointer: true,
   },
 );
 
@@ -204,7 +209,7 @@ function draw(now: number) {
   gl.uniform2f(u.resolution, c.width, c.height);
   gl.uniform1f(u.time, reducedMotion ? 0 : (now - startedAt) * 0.001);
   gl.uniform2f(u.mouse, mouseX, mouseY);
-  gl.uniform1f(u.active, reducedMotion ? 0 : currentMouseActive);
+  gl.uniform1f(u.active, props.pointer && !reducedMotion ? currentMouseActive : 0);
 
   gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);
 }
@@ -264,7 +269,7 @@ onMounted(() => {
   lastMouseMove = startedAt;
   reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
 
-  window.addEventListener("mousemove", onMove);
+  if (props.pointer) window.addEventListener("mousemove", onMove);
   draw(performance.now());
   if (!reducedMotion) raf = requestAnimationFrame(loop);
 });
