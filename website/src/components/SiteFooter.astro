@@ -71,7 +71,7 @@ const year = new Date().getFullYear();
           by <a href="https://longbridge.com" target="_blank" rel="noopener noreferrer">Longbridge</a>.
           It is built on <a href="https://gpui.rs" target="_blank" rel="noopener noreferrer">GPUI</a>,
           the UI framework from
-          <a href="https://zed.dev" target="_blank" rel="noopener noreferrer">Zed Industries</a>.
+          <a classNam href="https://zed.dev" target="_blank" rel="noopener noreferrer">Zed Industries</a>.
           GPUI, GPUI Kit and this fork are all Apache-2.0.
         </p>
       </div>
@@ -196,7 +196,10 @@ const year = new Date().getFullYear();
           observer.unobserve(entry.target);
         }
       },
-      { rootMargin: '0px 0px -10% 0px' },
+      // No negative bottom margin: the last row sits at the very bottom of the
+      // page, where anything that shrinks the viewport would keep it hidden
+      // forever rather than merely late.
+      { rootMargin: '0px' },
     );
     for (const part of parts) observer.observe(part);
   } else {
