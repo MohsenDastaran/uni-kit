@@ -1,0 +1,44 @@
+---
+// The folder from `components/uitripled/folder-animation-carbon.tsx`, which is
+// a React component driven by framer-motion. Neither React nor framer-motion is
+// part of this site, so the sequence is CSS keyframes and the hover state is
+// `:hover` / `:focus-visible` — which also means the animation costs no
+// JavaScript and works with the page's HTML alone. The timings live in
+// `global.css`, beside the folder's own rules.
+export interface Props {
+  /**
+   * Accessible name for the illustration. It is decorative beside the card's
+   * heading, so the default says what it is rather than what it does.
+   */
+  label?: string;
+}
+
+const { label = "Animated folder illustration" } = Astro.props;
+---
+
+<div class="folder">
+  <div class="folder__stage" role="img" aria-label={label} tabindex="0">
+    <div class="folder__track">
+      <div class="folder__art">
+        <div class="folder__back"></div>
+
+        <div class="folder__sheet folder__sheet--tilt-left">
+          <span class="folder__line folder__line--narrow"></span>
+          <span class="folder__line"></span>
+          <span class="folder__line folder__line--half"></span>
+        </div>
+
+        <div class="folder__sheet folder__sheet--tilt-right">
+          <span class="folder__row">
+            <span class="folder__dot"></span>
+            <span class="folder__line folder__line--half"></span>
+          </span>
+          <span class="folder__line"></span>
+          <span class="folder__line folder__line--three-quarters"></span>
+        </div>
+
+        <div class="folder__front"></div>
+      </div>
+    </div>
+  </div>
+</div>
