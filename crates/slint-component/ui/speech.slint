@@ -35,6 +35,9 @@ export global Speech {
 // Nothing is drawn while the host reports no recognizer, unless
 // `show-when-unsupported` is set, so an application can place the button
 // unconditionally.
+//
+// The button is a ghost icon button with a localized tooltip and accessible
+// name, like GPUI's.
 export component SpeechButton {
     in property <SpeechStatus> status: SpeechStatus.idle;
     // Whether this build has a recognizer and an input at all, the question
@@ -63,6 +66,12 @@ export component SpeechButton {
     out property <bool> active: Speech.is-active(root.status);
     out property <bool> capturing: Speech.is-capturing(root.status);
 
+    // A control, not a spacer. Without this the implicit root claims the free
+    // space of whatever lays it out, so this button and the waveform beside it
+    // drift to opposite ends of the field they sit in.
+    horizontal-stretch: 0;
+    vertical-stretch: 0;
+
     // A running session stays stoppable even if the recognizer turns
     // unavailable mid-way, the exception GPUI's button makes too.
     private property <bool> usable: root.active || root.available;
@@ -73,7 +82,12 @@ export component SpeechButton {
     private property <bool> interactive: root.enabled && root.usable
         && root.status != SpeechStatus.stopping;
 
-    if root.shown: Tooltip {
+    // `visible` rather than an `if`: a conditional at the root of a component
+    // makes the whole element claim the free space of whatever lays it out,
+    // which is what the stretch above is holding down. An invisible element
+    // takes no space at all and is not hovered.
+    Tooltip {
+        visible: root.shown;
         text: root.label;
 
         Button {
@@ -98,6 +112,10 @@ export component SpeechButton {
 // the leading edge, so a short history grows from the right. Before any audio,
 // nothing is drawn.
 //
+// Set `interval` to the rate the host pushes levels at. Each bar takes that
+// long to reach its next level, so the trail glides from one to the next
+// instead of stepping once per push and standing still in between.
+//
 // It is 96 px wide by default and its height follows `size`; size it like any
 // element, for example `width: 48px` beside the button.
 export component SpeechWaveform {
@@ -106,9 +124,15 @@ export component SpeechWaveform {
     // Coloured primary while the host captures, muted otherwise.
     in property <bool> capturing: false;
     in property <ControlSize> size: ControlSize.medium;
+    // The time one level covers: the host's push rate, or the bars wait out
+    // the rest of it before moving again. GPUI's meter pushes every 80 ms.
+    in property <duration> interval: 80ms;
 
+    // A control, not a spacer: see `SpeechButton`.
     width: 96px;
     height: root.bar-height;
+    horizontal-stretch: 0;
+    vertical-stretch: 0;
 
     // GPUI's heights, one per size.
     private property <length> bar-height: root.size == ControlSize.xsmall ? 12px
@@ -146,7 +170,9 @@ export component SpeechWaveform {
             height: max(root.bar, root.bar-height * root.level-at(index));
             border-radius: self.width / 2;
             background: root.tone;
-            animate height { duration: 120ms; easing: ease-out; }
+            // Linear, over exactly one level: the next push lands as the
+            // previous move finishes, so the wave never stands still.
+            animate height { duration: root.interval; easing: linear; }
         }
     }
 }

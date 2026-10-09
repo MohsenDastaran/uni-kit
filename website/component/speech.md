@@ -39,13 +39,17 @@ properties and one callback:
   `is_available()` answers: false for a language the machine cannot recognize.
   The button stays drawn, and is disabled with the unavailable label.
 - `levels` — the recent input levels, oldest first, in `0.0..=1.0`, one per
-  level the application pushes. `SpeechWaveform` draws them.
+  level the application pushes. `SpeechWaveform` draws them, one bar each, the
+  newest against the trailing edge, and glides from one level to the next over
+  `interval`: set that to the rate the levels are pushed at (80 ms is the rate
+  GPUI's meter reports at) so the trail never stands still between them.
 - `toggled(active)` — the reader asked to start (`true`) or stop (`false`) the
   session. The application starts or stops its own session and moves `status`.
 
-`Speech.is-active(status)` and `Speech.is-capturing(status)` are the two
-questions a layout asks, and `SpeechStatus` carries the same four values as the
-GPUI enum. There is no `SpeechState` here: the state a GPUI application gets
+`SpeechButton` carries its label as its accessible name, and shows it on hover
+the way the GPUI button does. `Speech.is-active(status)` and
+`Speech.is-capturing(status)` are the two questions a layout asks, and
+`SpeechStatus` carries the same four values as the GPUI enum. There is no `SpeechState` here: the state a GPUI application gets
 from the crate is the state a Slint application owns itself, which is where the
 recognizer and the microphone live in both frameworks. Linux and the web have no
 recognizer built in, so `has-recognizer: false` is how an application that has
@@ -58,8 +62,12 @@ import { Speech, SpeechButton, SpeechStatus, SpeechWaveform } from "speech.slint
 Input {
     placeholder: "Type or dictate";
 
-    if Speech.is-capturing(root.status): SpeechWaveform {
+    // One bar per level, newest against the trailing edge. An empty history
+    // draws nothing, so no condition is needed to keep it out of the way.
+    SpeechWaveform {
         levels: root.levels;
+        capturing: Speech.is-capturing(root.status);
+        interval: root.level-interval;
         size: ControlSize.xsmall;
         width: 48px;
     }

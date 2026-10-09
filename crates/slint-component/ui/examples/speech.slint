@@ -26,6 +26,8 @@ export component SpeechExample inherits VerticalLayout {
     private property <string> transcript: "";
     private property <SpeechStatus> status: SpeechStatus.idle;
     private property <int> state-cols: Theme.wrap-columns(Theme.viewport);
+    // How often a level is reported. The waveform moves on the same interval.
+    private property <duration> level-interval: 90ms;
     // Oldest first, newest last, which is the order the waveform expects. The
     // trail is sampled from `clock` rather than stored, so it scrolls without
     // the page keeping a buffer.
@@ -91,40 +93,44 @@ export component SpeechExample inherits VerticalLayout {
         final.running = false;
     }
 
-    // The recognizer: connecting, then a word per tick, then the final result.
-    // An application gets all three from its own service.
+    // The recognizer, in two parts. The level clock runs at the rate a meter
+    // reports at, which is what the waveform glides on; the words arrive more
+    // slowly, one every third tick.
     tick := Timer {
-        interval: 240ms;
+        interval: root.level-interval;
         running: Speech.is-capturing(root.status);
         triggered => {
             if root.status == SpeechStatus.connecting {
                 root.status = SpeechStatus.recording;
             }
-            if root.status == SpeechStatus.recording {
-                root.clock = root.clock + 1.0;
-                if root.spoken < root.script.length {
-                    root.transcript = root.spoken == 0
-                        ? root.script[0]
-                        : root.transcript + " " + root.script[root.spoken];
-                    // The application decides where the text goes; this input
-                    // takes every word as it arrives.
-                    field.text = root.spoken == 0
-                        ? root.script[0]
-                        : field.text + " " + root.script[root.spoken];
-                    root.spoken = root.spoken + 1;
-                } else {
-                    root.stop-session();
-                }
+            root.clock = root.clock + 1.0;
+
+            if root.status != SpeechStatus.recording {
+                return;
+            }
+            // One word per three ticks, the cadence GPUI's story hears a word
+            // at, counted in levels so the two stay in step.
+            if floor(root.clock / 3.0) > root.spoken && root.spoken < root.script.length {
+                root.transcript = root.spoken == 0
+                    ? root.script[0]
+                    : root.transcript + " " + root.script[root.spoken];
+                root.spoken = root.spoken + 1;
+            } else if root.spoken >= root.script.length {
+                root.stop-session();
             }
         }
     }
 
     final := Timer {
-        interval: 600ms;
+        interval: 500ms;
         running: false;
         triggered => {
             self.running = false;
             if root.status == SpeechStatus.stopping {
+                // The final result: the application commits the transcript
+                // where the text belongs, the way GPUI's `Final` event is
+                // inserted into the input.
+                field.text = root.transcript;
                 root.status = SpeechStatus.idle;
             }
         }
@@ -138,9 +144,13 @@ export component SpeechExample inherits VerticalLayout {
             field := Input {
                 placeholder: "Type or dictate";
                 min-width: 280px;
-                if Speech.is-capturing(root.status): SpeechWaveform {
+                // No `if` around it: an empty history draws nothing, and a
+                // conditional here would move both controls off the trailing
+                // edge.
+                SpeechWaveform {
                     levels: root.levels;
-                    capturing: true;
+                    capturing: Speech.is-capturing(root.status);
+                    interval: root.level-interval;
                     size: ControlSize.xsmall;
                     width: 48px;
                 }
@@ -184,6 +194,7 @@ export component SpeechExample inherits VerticalLayout {
                 SpeechWaveform {
                     levels: root.levels;
                     capturing: Speech.is-capturing(root.status);
+                    interval: root.level-interval;
                     size: ControlSize.small;
                     width: 96px;
                 }
@@ -250,6 +261,9 @@ export component SpeechExample inherits VerticalLayout {
                 col: Theme.wrap-col(0, root.state-cols);
                 spacing: Theme.spacing-xs;
                 alignment: center;
+                // The cell is as wide as its caption, so the button needs
+                // centring across it.
+                cross-axis-alignment: center;
                 SpeechButton {
                     status: SpeechStatus.idle;
                     size: ControlSize.xsmall;
@@ -266,6 +280,9 @@ export component SpeechExample inherits VerticalLayout {
                 col: Theme.wrap-col(1, root.state-cols);
                 spacing: Theme.spacing-xs;
                 alignment: center;
+                // The cell is as wide as its caption, so the button needs
+                // centring across it.
+                cross-axis-alignment: center;
                 SpeechButton {
                     status: SpeechStatus.recording;
                     size: ControlSize.xsmall;
@@ -282,6 +299,9 @@ export component SpeechExample inherits VerticalLayout {
                 col: Theme.wrap-col(2, root.state-cols);
                 spacing: Theme.spacing-xs;
                 alignment: center;
+                // The cell is as wide as its caption, so the button needs
+                // centring across it.
+                cross-axis-alignment: center;
                 SpeechButton {
                     status: SpeechStatus.stopping;
                     size: ControlSize.xsmall;
@@ -298,6 +318,9 @@ export component SpeechExample inherits VerticalLayout {
                 col: Theme.wrap-col(3, root.state-cols);
                 spacing: Theme.spacing-xs;
                 alignment: center;
+                // The cell is as wide as its caption, so the button needs
+                // centring across it.
+                cross-axis-alignment: center;
                 SpeechButton {
                     status: SpeechStatus.idle;
                     size: ControlSize.xsmall;
@@ -315,6 +338,9 @@ export component SpeechExample inherits VerticalLayout {
                 col: Theme.wrap-col(4, root.state-cols);
                 spacing: Theme.spacing-xs;
                 alignment: center;
+                // The cell is as wide as its caption, so the button needs
+                // centring across it.
+                cross-axis-alignment: center;
                 SpeechButton {
                     available: false;
                     size: ControlSize.xsmall;
@@ -331,6 +357,9 @@ export component SpeechExample inherits VerticalLayout {
                 col: Theme.wrap-col(5, root.state-cols);
                 spacing: Theme.spacing-xs;
                 alignment: center;
+                // The cell is as wide as its caption, so the button needs
+                // centring across it.
+                cross-axis-alignment: center;
                 SpeechButton {
                     has-recognizer: false;
                     size: ControlSize.xsmall;
