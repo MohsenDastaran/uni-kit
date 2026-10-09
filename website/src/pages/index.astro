@@ -3,6 +3,7 @@ import HomeLayout from '../layouts/HomeLayout.astro';
 import Nav from '../components/Nav.astro';
 import SiteFooter from '../components/SiteFooter.astro';
 import HomeApp from '../components/HomeApp.vue';
+import HomeFaq from '../components/HomeFaq.astro';
 import { fetchStarCount } from '../lib/github';
 
 let starCount = 0;
@@ -18,6 +19,8 @@ const base = import.meta.env.BASE_URL;
   <Nav currentPath={Astro.url.pathname} starCount={starCount} />
 
   <HomeApp client:load starCount={starCount} base={base} />
+
+  <HomeFaq />
 
   <SiteFooter />
 </HomeLayout>

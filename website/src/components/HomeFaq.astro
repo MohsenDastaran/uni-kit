@@ -1,0 +1,374 @@
+---
+// Frequently asked, answered close to the code: the questions people ask
+// before their first install.
+//
+// Static on purpose. `<details>` already carries the open state, the keyboard
+// path and the screen-reader semantics, and `name` makes the group behave as an
+// accordion, so the block needs no island — it reads and works before
+// hydration, and without scripting at all. The aurora is CSS.
+const REPO = 'https://github.com/MohsenDastaran/uni-kit';
+
+const faqs = [
+  {
+    question: 'What is uni-kit?',
+    answer:
+      'A fork of GPUI Kit that keeps the component library and the applications built on it, and carries the same catalogue past a single framework. GPUI is what it builds on today; Slint is the second target, from source written for it.',
+  },
+  {
+    question: 'How do I install a component?',
+    answer:
+      'Run <code>npx @dastaran/uni-kit add gpui &lt;name&gt;</code> for GPUI, or the same command with <code>slint</code>. It copies the component into your project — <code>src/components/</code> for GPUI, <code>ui/components/</code> for Slint — and prints the <code>mod</code> line when one is needed. The bar over every component and block page carries the exact command.',
+  },
+  {
+    question: 'Do existing GPUI applications keep working?',
+    answer:
+      'Yes. The imports you already have are unchanged, including <code>use gpui_kit::component::button::Button;</code>, so an application written against GPUI Kit compiles here without edits.',
+  },
+  {
+    question: 'What is a block?',
+    answer:
+      'A whole screen built from the components — a sidebar, a dock, a settings page — with the spacing, grouping and focus order already decided. Blocks install with the same command, and each one shows its source on the page.',
+  },
+  {
+    question: 'Which framework should I choose?',
+    answer:
+      'GPUI if you want the components as a Rust crate on Zed’s GPUI. Slint if you want the same catalogue as <code>.slint</code> files inside your own project. The catalogue is shared; only the language the components are written in changes.',
+  },
+  {
+    question: 'Can I use it in a commercial application?',
+    answer:
+      'Yes. The crates are Apache-2.0, the same licence as GPUI itself, so you can ship them in closed-source products. The documentation is covered separately.',
+  },
+  {
+    question: 'Where do I report a bug or ask a question?',
+    answer:
+      'Open an issue for something broken, and a discussion for anything else — a question about an approach, a request for a component, or a framework you would like to see supported next. Both are linked just below.',
+  },
+];
+---
+
+<section class="band band--faq" aria-labelledby="faq-title">
+  <div class="band__inner">
+    <header class="section-head faq__head">
+      <span class="faq__badge">
+        <svg
+          width="13"
+          height="13"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          stroke-width="2"
+          stroke-linecap="round"
+          stroke-linejoin="round"
+          aria-hidden="true"
+        >
+          <circle cx="12" cy="12" r="10"></circle>
+          <path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"></path>
+          <path d="M12 17h.01"></path>
+        </svg>
+        FAQ
+      </span>
+      <h2 id="faq-title">Frequently asked questions</h2>
+      <p>
+        What people ask before their first install. Anything missing belongs in
+        Discussions.
+      </p>
+    </header>
+
+    <div class="faq">
+      {
+        faqs.map((faq, index) => (
+          <details class="faq__item" name="faq" open={index === 0}>
+            <span class="faq__glow" aria-hidden="true" />
+            <summary class="faq__summary">
+              <span class="faq__question">{faq.question}</span>
+              <span class="faq__toggle" aria-hidden="true" />
+            </summary>
+            <div class="faq__panel">
+              <p class="faq__answer" set:html={faq.answer} />
+            </div>
+          </details>
+        ))
+      }
+    </div>
+
+    <div class="faq__cta">
+      <svg
+        class="faq__cta-icon"
+        width="26"
+        height="26"
+        viewBox="0 0 24 24"
+        fill="none"
+        stroke="currentColor"
+        stroke-width="1.75"
+        stroke-linecap="round"
+        stroke-linejoin="round"
+        aria-hidden="true"
+      >
+        <path
+          d="M2.992 16.342a2 2 0 0 1 .094 1.167l-1.065 3.29a1 1 0 0 0 1.236 1.168l3.413-.998a2 2 0 0 1 1.099.092 10 10 0 1 0-4.777-4.719"
+        ></path>
+      </svg>
+      <h3>Still have questions?</h3>
+      <p>
+        Ask in Discussions, or open an issue if something is broken. Both go to
+        <a href={REPO} target="_blank" rel="noopener noreferrer">the repository</a>.
+      </p>
+      <div class="faq__actions">
+        <a
+          class="btn btn--primary"
+          href={`${REPO}/discussions`}
+          target="_blank"
+          rel="noopener noreferrer">Start a discussion</a
+        >
+        <a
+          class="btn"
+          href={`${REPO}/issues`}
+          target="_blank"
+          rel="noopener noreferrer">Open an issue</a
+        >
+      </div>
+    </div>
+  </div>
+</section>
+
+<style>
+  /* The aurora is three blurred gradients behind the open card: it blooms as
+     the card detaches and settles into a glow. Every colour is a theme token,
+     mixed with the brand, so it follows light, dark and any palette. */
+  .faq__head {
+    max-width: 44rem;
+  }
+
+  .faq__badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
+    padding: 0.2rem 0.55rem 0.2rem 0.45rem;
+    border: 1px solid var(--border);
+    border-radius: 999px;
+    background: var(--secondary);
+    color: var(--secondary-foreground);
+    font-size: 0.75rem;
+    font-weight: 560;
+    letter-spacing: 0.02em;
+  }
+
+  .faq {
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+    max-width: 44rem;
+  }
+
+  .faq__item {
+    position: relative;
+    isolation: isolate;
+    overflow: hidden;
+    border: 1px solid var(--border);
+    border-radius: var(--radius-card, 0.5rem);
+    background: var(--card);
+    /* Lets the answer's height animate with `::details-content` below; where
+       that is not supported the panel simply appears. */
+    interpolate-size: allow-keywords;
+  }
+
+  .faq__item[open] {
+    border-color: color-mix(in srgb, var(--brand) 34%, var(--border));
+    background: color-mix(in srgb, var(--brand) 3%, var(--card));
+  }
+
+  .faq__glow {
+    position: absolute;
+    inset: -30% -12% -40%;
+    z-index: -1;
+    opacity: 0;
+    pointer-events: none;
+    filter: blur(2.75rem);
+    background:
+      radial-gradient(
+        ellipse 80% 90% at 18% 10%,
+        color-mix(in srgb, var(--brand) 22%, var(--chart-1)) 0%,
+        transparent 60%
+      ),
+      radial-gradient(
+        ellipse 70% 80% at 85% 25%,
+        color-mix(in srgb, var(--brand) 22%, var(--chart-2)) 0%,
+        transparent 55%
+      ),
+      radial-gradient(
+        ellipse 90% 70% at 55% 95%,
+        color-mix(in srgb, var(--brand) 22%, var(--chart-3)) 0%,
+        transparent 60%
+      );
+  }
+
+  .faq__item[open] .faq__glow {
+    animation: faq-bloom 1400ms ease-out both;
+  }
+
+  @keyframes faq-bloom {
+    0% {
+      opacity: 0;
+    }
+    35% {
+      opacity: 0.85;
+    }
+    100% {
+      opacity: 0.4;
+    }
+  }
+
+  .faq__summary {
+    position: relative;
+    z-index: 1;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem;
+    padding: 1rem 1.15rem;
+    cursor: pointer;
+    list-style: none;
+  }
+
+  .faq__summary::-webkit-details-marker {
+    display: none;
+  }
+
+  .faq__question {
+    color: var(--foreground);
+    font-size: 1rem;
+    font-weight: 600;
+    letter-spacing: -0.012em;
+  }
+
+  /* A plus that turns into a close mark: two bars, so no icon is involved. */
+  .faq__toggle {
+    position: relative;
+    flex: none;
+    width: 1.25rem;
+    height: 1.25rem;
+    color: var(--muted-foreground);
+    transition:
+      rotate 320ms cubic-bezier(0.22, 1, 0.36, 1),
+      color 200ms ease;
+  }
+
+  .faq__toggle::before,
+  .faq__toggle::after {
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    translate: -50% -50%;
+    border-radius: 999px;
+    background: currentColor;
+  }
+
+  .faq__toggle::before {
+    width: 0.875rem;
+    height: 1.5px;
+  }
+
+  .faq__toggle::after {
+    width: 1.5px;
+    height: 0.875rem;
+  }
+
+  .faq__item[open] .faq__toggle {
+    rotate: 45deg;
+    color: var(--brand);
+  }
+
+  /* The answer slides in a step behind the card's own height. */
+  .faq__panel {
+    position: relative;
+    z-index: 1;
+  }
+
+  .faq__answer code {
+    padding: 0.1em 0.35em;
+    border: 1px solid var(--border);
+    border-radius: 0.25rem;
+    background: var(--secondary);
+    color: var(--foreground);
+    font-size: 0.84em;
+    line-height: 1.2;
+  }
+
+  .faq__answer {
+    margin: 0;
+    padding: 0 1.15rem 1.15rem;
+    color: var(--muted-foreground);
+    font-size: 0.9375rem;
+    line-height: 1.55;
+  }
+
+  .faq__item::details-content {
+    block-size: 0;
+    overflow: hidden;
+    transition:
+      block-size 320ms cubic-bezier(0.22, 1, 0.36, 1),
+      content-visibility 320ms;
+    transition-behavior: allow-discrete;
+  }
+
+  .faq__item[open]::details-content {
+    block-size: auto;
+  }
+
+  .faq__cta {
+    max-width: 44rem;
+    margin-top: 2.5rem;
+    padding: 1.75rem;
+    border: 1px solid var(--border);
+    border-radius: var(--radius-card, 0.5rem);
+    background: var(--card);
+    text-align: center;
+  }
+
+  .faq__cta-icon {
+    color: var(--brand);
+  }
+
+  .faq__cta h3 {
+    margin: 0.75rem 0 0.4rem;
+    color: var(--foreground);
+    font-size: 1.25rem;
+    font-weight: 640;
+    letter-spacing: -0.02em;
+  }
+
+  .faq__cta p {
+    margin: 0 auto 1.25rem;
+    max-width: 32rem;
+    color: var(--muted-foreground);
+    font-size: 0.9375rem;
+    line-height: 1.55;
+  }
+
+  .faq__cta a {
+    color: var(--foreground);
+    text-decoration: underline;
+    text-underline-offset: 0.15em;
+  }
+
+  .faq__actions {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 0.6rem;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .faq__item[open] .faq__glow {
+      animation: none;
+      opacity: 0.4;
+    }
+
+    .faq__toggle,
+    .faq__item::details-content {
+      transition: none;
+    }
+  }
+</style>
