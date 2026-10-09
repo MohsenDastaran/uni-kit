@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { onBeforeUnmount, onMounted, ref } from "vue";
+import { computed, nextTick, onBeforeUnmount, onMounted, ref } from "vue";
 import { Monitor, RotateCw, Smartphone, Sparkles, Tablet } from "lucide-vue-next";
 import InstallCommand from "./InstallCommand.vue";
 
@@ -68,17 +68,33 @@ function onFrameworkChange() {
   loaded.value = {};
 }
 
-onMounted(() => {
+onMounted(async () => {
   // Registered before anything else can throw: a failure here would otherwise
   // leave the page deaf to the framework switch in the header, and the examples
   // would silently keep showing the framework the page was built with.
   document.addEventListener("framework-change", onFrameworkChange);
   framework.value = readFramework();
+  // After the framework is known and its frames have rendered, because which
+  // frames exist is what the framework decides.
+  await nextTick();
+  reconcileFrames();
 });
 onBeforeUnmount(() => {
   clearTimeout(promptTimer);
   document.removeEventListener("framework-change", onFrameworkChange);
 });
+
+/**
+ * The blocks for the framework in force. A block is not required to exist in
+ * both: only a framework with a file to copy can offer one to install, and a
+ * screen worth reading in a gallery is not automatically a screen a command
+ * can write.
+ */
+const visible = computed(() =>
+  framework.value === "gpui"
+    ? props.blocks.filter((block) => block.gpuiInstall?.length)
+    : props.blocks,
+);
 
 function srcFor(block: Block) {
   // The same two shapes the component pages use: the gallery takes a story
@@ -104,7 +120,7 @@ type IdleWindow = Window & {
 };
 
 function onFrameLoad(index: number) {
-  const block = props.blocks[index];
+  const block = visible.value[index];
   if (block) loaded.value[block.id] = true;
   const next = index + 1;
   if (mounted.value !== next) return;
@@ -114,6 +130,37 @@ function onFrameLoad(index: number) {
   const idle = (window as IdleWindow).requestIdleCallback;
   if (idle) idle(advance, { timeout: 2000 });
   else window.setTimeout(advance, 300);
+}
+
+/**
+ * The frames the server sent, reconciled once the island is alive.
+ *
+ * Astro renders this component on the server, so the first frame is in the HTML
+ * and the browser starts loading it while the page is still being parsed. That
+ * makes it faster — the wasm boots beside the page rather than after it — and it
+ * also means the `load` event can be over before the listener in the template
+ * exists: the frame sits there loaded, under a loading overlay that never
+ * clears, and no frame after it ever mounts.
+ *
+ * A frame that already finished says so through its document, so ask it. The
+ * ones still in flight are covered by the listener; a frame reporting
+ * `about:blank` has not committed yet and is one of them.
+ */
+function reconcileFrames() {
+  document.querySelectorAll<HTMLIFrameElement>(".block__iframe").forEach((frame) => {
+    const index = Number(frame.dataset.blockIndex);
+    if (!Number.isInteger(index)) return;
+    try {
+      const frameDocument = frame.contentDocument;
+      const committed = frameDocument?.location?.href !== "about:blank";
+      if (frameDocument?.readyState === "complete" && committed) onFrameLoad(index);
+      else frame.addEventListener("load", () => onFrameLoad(index), { once: true });
+    } catch {
+      // A cross-origin frame cannot be inspected, so its `load` event is the
+      // only signal there is, and it is still coming.
+      frame.addEventListener("load", () => onFrameLoad(index), { once: true });
+    }
+  });
 }
 
 const hasSlint = (block: Block) => Boolean(block.slug);
@@ -278,7 +325,7 @@ function reload(block: Block) {
 <template>
   <div class="blocks">
     <section
-      v-for="(block, index) in blocks"
+      v-for="(block, index) in visible"
       :id="block.id"
       :key="block.id"
       class="block"
@@ -354,6 +401,7 @@ function reload(block: Block) {
             :key="`${srcFor(block)}:${reloads[block.id] ?? 0}`"
             :src="srcFor(block)"
             :title="`${block.title} example`"
+            :data-block-index="index"
             class="block__iframe"
             allow="cross-origin-isolated"
             @load="onFrameLoad(index)"

@@ -165,11 +165,13 @@ const blocks = await Promise.all(
   </p>
   <p>
     Every block below is the real application, compiled to WebAssembly and
-    running in this page. Switch frameworks in the top bar and each one reloads
-    as its Slint counterpart. The bar over each block carries the install
-    command for the current framework; the buttons beside it size the example,
-    and <strong>Usage prompt for this block</strong> copies the screen's source
-    together with that command, to hand to an assistant.
+    running in this page. The selector in the top bar swaps each live example
+    for its counterpart in the other framework, and the list with it: a
+    framework offers the blocks it has, so GPUI shows the three that can be
+    installed and Slint shows its full set. The bar over each block carries the
+    install command for the current framework; the buttons beside it size the
+    example, and <strong>Usage prompt for this block</strong> copies the
+    screen's source together with that command, to hand to an assistant.
   </p>
 
   <BlocksGallery client:load blocks={blocks} baseUrl={import.meta.env.BASE_URL} />

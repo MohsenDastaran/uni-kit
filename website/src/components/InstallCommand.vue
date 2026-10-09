@@ -51,6 +51,21 @@ const manager = ref<Manager>("npx");
 const framework = ref<"gpui" | "slint">("gpui");
 const copied = ref(false);
 const status = ref("");
+/**
+ * Whether the bar may be teleported yet.
+ *
+ * Vue's server renderer sends a teleport's content to `ssrContext.teleports`,
+ * and Astro's integration does not write those out: the server markup for this
+ * component is an empty `<!--teleport start--><!--teleport end-->` pair. The
+ * client hydrates the teleport with the command in it, which is a mismatch —
+ * and an island that hydrated mismatched stops patching correctly, so a block
+ * list that later shrank stayed on screen.
+ *
+ * Waiting until the component is mounted keeps the server's markup and the
+ * client's first pass identical: both render nothing there. The bar appears as
+ * the island mounts, which is when it had the content to show anyway.
+ */
+const clientReady = ref(false);
 let timer: ReturnType<typeof setTimeout> | undefined;
 let observer: MutationObserver | undefined;
 
@@ -180,6 +195,8 @@ onMounted(() => {
   pageNames.value = page;
   manager.value = readManager();
   framework.value = readFramework();
+  // The bar itself is client-side only; see `clientReady`.
+  clientReady.value = true;
   observer = new MutationObserver(() => {
     framework.value = readFramework();
   });
@@ -275,7 +292,7 @@ async function copy() {
 <template>
   <div class="install-command-mount">
     <span class="sr-only" role="status">{{ status }}</span>
-    <Teleport v-if="targets.length" :to="props.host ?? '.install-command-host'">
+    <Teleport v-if="clientReady && targets.length" :to="props.host ?? '.install-command-host'">
       <div
         v-if="packaged"
         class="install-command__switch framework-switch"
