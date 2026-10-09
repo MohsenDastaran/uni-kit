@@ -18,12 +18,55 @@ function renderItems(items: SidebarItem[], depth = 0): any[] {
 ---
 
 <aside class="docs-sidebar" aria-label="Documentation navigation">
+  <noscript>
+    <style>
+      /* Without scripting the field cannot open, so the control is not shown. */
+      .sidebar-search {
+        display: none;
+      }
+    </style>
+  </noscript>
+
+  <div class="sidebar-search" data-sidebar-search>
+    <input
+      id="sidebar-search-field"
+      class="sidebar-search__field"
+      type="search"
+      placeholder="Filter components"
+      aria-label="Filter components"
+      autocomplete="off"
+      spellcheck="false"
+    />
+    <button
+      class="sidebar-search__toggle"
+      type="button"
+      aria-expanded="false"
+      aria-controls="sidebar-search-field"
+      aria-label="Filter components"
+    >
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+        <circle cx="11" cy="11" r="8" />
+        <path d="m21 21-4.35-4.35" />
+      </svg>
+    </button>
+  </div>
+
   <nav>
     {items.map(group => (
       <div class="sidebar-group">
-        {group.text && (
+        {group.textByFramework ? (
+          <>
+            {/* One heading per framework, and the selector's own CSS shows the
+                one in force — the label is set before the first paint. */}
+            {Object.entries(group.textByFramework)
+              .filter(([, text]) => Boolean(text))
+              .map(([framework, text]) => (
+                <div class="sidebar-group__title" data-framework-only={framework}>{text}</div>
+              ))}
+          </>
+        ) : group.text ? (
           <div class="sidebar-group__title">{group.text}</div>
-        )}
+        ) : null}
         {group.items && (
           <ul class="sidebar-group__items">
             {group.items.map(item => (
@@ -79,7 +122,95 @@ function renderItems(items: SidebarItem[], depth = 0): any[] {
       </div>
     ))}
   </nav>
+
+  <p class="sidebar-search__empty" data-sidebar-empty role="status" hidden>
+    No component matches that filter. Clear it to see them all.
+  </p>
 </aside>
+
+<script is:inline>
+  // The icon opens a field that filters the links below it: a link that does
+  // not match is hidden, and so is the group, subgroup or heading left with no
+  // visible link of its own. Nothing here talks to the framework selector.
+  (function () {
+    const sidebar = document.querySelector('.docs-sidebar');
+    const search = sidebar && sidebar.querySelector('[data-sidebar-search]');
+    if (!sidebar || !search) return;
+
+    const toggle = search.querySelector('.sidebar-search__toggle');
+    const field = search.querySelector('.sidebar-search__field');
+    const empty = sidebar.querySelector('[data-sidebar-empty]');
+    const links = () => Array.from(sidebar.querySelectorAll('.sidebar-item'));
+    // The label and the address it leads to. The example counts sit inside the
+    // same link, and a query is never a count.
+    const haystack = (link) =>
+      ((link.querySelector('.sidebar-item__label') || link).textContent + ' ' + (link.getAttribute('href') || '')).toLowerCase();
+    const holder = (link) => link.closest('li');
+    const shown = (link) => holder(link).style.display !== 'none';
+    let open = false;
+
+    function apply() {
+      const query = field.value.trim().toLowerCase();
+      let hits = 0;
+
+      for (const link of links()) {
+        const hit = query === '' || haystack(link).includes(query);
+        holder(link).style.display = hit ? '' : 'none';
+        if (hit) hits += 1;
+      }
+
+      // Innermost lists first: a wrapper goes once nothing inside it is left,
+      // and the group goes with it.
+      for (const list of Array.from(sidebar.querySelectorAll('ul')).reverse()) {
+        for (const item of Array.from(list.children)) {
+          const any = Array.from(item.querySelectorAll('.sidebar-item')).some(shown);
+          item.style.display = any ? '' : 'none';
+        }
+      }
+      for (const group of sidebar.querySelectorAll('.sidebar-group')) {
+        const any = Array.from(group.querySelectorAll('.sidebar-item')).some(shown);
+        group.style.display = any ? '' : 'none';
+      }
+
+      if (empty) empty.hidden = !(query !== '' && hits === 0);
+    }
+
+    function setOpen(next) {
+      open = next;
+      search.toggleAttribute('data-open', open);
+      toggle.setAttribute('aria-expanded', String(open));
+      if (open) {
+        field.focus();
+      } else {
+        field.value = '';
+        apply();
+        toggle.focus();
+      }
+    }
+
+    toggle.addEventListener('click', function () {
+      setOpen(!open);
+    });
+
+    field.addEventListener('input', apply);
+
+    field.addEventListener('keydown', function (event) {
+      if (event.key === 'Escape') {
+        event.preventDefault();
+        setOpen(false);
+        return;
+      }
+      // One link left: the filter has done its job, so Enter takes it.
+      if (event.key === 'Enter') {
+        const matches = links().filter(shown);
+        if (matches.length === 1) {
+          event.preventDefault();
+          window.location.assign(matches[0].href);
+        }
+      }
+    });
+  })();
+</script>
 
 <script is:inline>
   (function () {

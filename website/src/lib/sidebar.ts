@@ -2,8 +2,15 @@ import { readdirSync, readFileSync, statSync } from 'node:fs';
 import { extname, join, relative } from 'node:path';
 import { exampleSourcesAvailable, galleryCounts, type GalleryCounts } from './example-counts';
 
+export type FrameworkText = Partial<Record<'gpui' | 'slint', string>>;
+
 export interface SidebarItem {
   text: string;
+  /**
+   * A label that follows the framework selector, for a heading that names one.
+   * `text` stays the fallback for anything that reads no framework.
+   */
+  textByFramework?: FrameworkText;
   link?: string;
   items?: SidebarItem[];
   collapsed?: boolean;
@@ -18,6 +25,8 @@ export interface SidebarGeneratorConfig {
   baseUrl: string;
   /** Top-level group label */
   rootGroupText: string;
+  /** Top-level group label per framework, when it should follow the selector. */
+  rootGroupTextByFramework?: FrameworkText;
   /** If set, prepend this as the first item pointing to baseUrl */
   rootLinkText?: string;
   /** Count the examples each component's gallery window paints. */
@@ -203,6 +212,7 @@ export function generateSidebar(config: SidebarGeneratorConfig): SidebarItem[] {
 
   const rootGroup: SidebarItem = {
     text: config.rootGroupText,
+    textByFramework: config.rootGroupTextByFramework,
     collapsed: false,
     items,
   };
@@ -239,7 +249,10 @@ export const enDocsSidebar = generateSidebar({
 export const enComponentSidebar = generateSidebar({
   contentDir: join(WEBSITE_ROOT, 'component'),
   baseUrl: `${BASE}/component`,
+  // The catalog is the same source hand-written per framework, so the heading
+  // names the one the reader has selected rather than always GPUI.
   rootGroupText: 'GPUI Component',
+  rootGroupTextByFramework: { gpui: 'GPUI Component', slint: 'Slint Component' },
   rootLinkText: 'Components',
   countExamples: true,
 });

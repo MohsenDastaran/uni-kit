@@ -1438,6 +1438,69 @@ html[lang^="ja"] .example-prompt {
   margin-top: 1.35rem;
 }
 
+/* The filter over the links below it: an icon at the trailing edge of a sticky
+   row, which opens the field in its place. Sticky, so it stays reachable when
+   the list is longer than the column. */
+.sidebar-search {
+  position: sticky;
+  top: 0;
+  z-index: 2;
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  margin: -0.55rem -0.15rem 0.4rem -0.15rem;
+  padding: 0.55rem 0.15rem 0.4rem 0.15rem;
+  background: var(--background);
+}
+
+.sidebar-search__field {
+  display: none;
+  flex: 1;
+  min-width: 0;
+  height: 1.75rem;
+  padding: 0 0.5rem;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-control);
+  background: var(--background);
+  color: var(--foreground);
+  font: 400 0.8125rem/1 var(--font-sans);
+}
+
+.sidebar-search[data-open] .sidebar-search__field {
+  display: block;
+}
+
+.sidebar-search__toggle {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex: none;
+  width: 1.75rem;
+  height: 1.75rem;
+  margin-left: auto;
+  border: 0;
+  border-radius: var(--radius-control);
+  background: transparent;
+  color: var(--muted-foreground);
+  cursor: pointer;
+  transition:
+    background 140ms ease,
+    color 140ms ease;
+}
+
+.sidebar-search__toggle:hover,
+.sidebar-search__toggle[aria-expanded='true'] {
+  background: var(--secondary);
+  color: var(--foreground);
+}
+
+.sidebar-search__empty {
+  margin: 0.4rem 0.55rem;
+  color: var(--muted-foreground);
+  font-size: 0.8125rem;
+  line-height: 1.45;
+}
+
 /* Section labels share the UI sans with the links. A short, medium-weight
    kicker reads as structure; the old monospace stamp at a tenth of an em
    tracked the letters apart and made the column feel stamped rather than set. */
