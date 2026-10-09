@@ -158,21 +158,49 @@ const blocks = await Promise.all(
 >
   <h1>Blocks</h1>
   <p>
-    Clean, working screens built from the components. Each one is a composition
-    you can run, read, and copy into an application rather than a single control
-    you place yourself — the spacing, the grouping, and the keyboard path are
-    already decided.
+    Composed screens built from the components: run them, read them, install
+    them.
   </p>
-  <p>
-    Every block below is the real application, compiled to WebAssembly and
-    running in this page. The selector in the top bar swaps each live example
-    for its counterpart in the other framework, and the list with it: a
-    framework offers the blocks it has, so GPUI shows the three that can be
-    installed and Slint shows its full set. The bar over each block carries the
-    install command for the current framework; the buttons beside it size the
-    example, and <strong>Usage prompt for this block</strong> copies the
-    screen's source together with that command, to hand to an assistant.
-  </p>
+
+  <ul class="blocks-keys">
+    <li class="blocks-key">
+      <span class="blocks-key__label">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <path d="M8 3 4 7l4 4" />
+          <path d="M4 7h16" />
+          <path d="m16 21 4-4-4-4" />
+          <path d="M20 17H4" />
+        </svg>
+        Framework
+      </span>
+      <span class="blocks-key__note">
+        The top-bar selector swaps each example, and the list with it.
+      </span>
+    </li>
+    <li class="blocks-key">
+      <span class="blocks-key__label">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <path d="M12 19h8" />
+          <path d="m4 17 6-6-6-6" />
+        </svg>
+        Install
+      </span>
+      <span class="blocks-key__note">
+        The bar over each block carries that framework's command.
+      </span>
+    </li>
+    <li class="blocks-key">
+      <span class="blocks-key__label">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <path d="M11.017 2.814a1 1 0 0 1 1.966 0l1.051 5.558a2 2 0 0 0 1.594 1.594l5.558 1.051a1 1 0 0 1 0 1.966l-5.558 1.051a2 2 0 0 0-1.594 1.594l-1.051 5.558a1 1 0 0 1-1.966 0l-1.051-5.558a2 2 0 0 0-1.594-1.594l-5.558-1.051a1 1 0 0 1 0-1.966l5.558-1.051a2 2 0 0 0 1.594-1.594z" />
+        </svg>
+        Usage prompt
+      </span>
+      <span class="blocks-key__note">
+        Copies the screen's source, with that command, for an assistant.
+      </span>
+    </li>
+  </ul>
 
   <BlocksGallery client:load blocks={blocks} baseUrl={import.meta.env.BASE_URL} />
 
@@ -209,3 +237,57 @@ const blocks = await Promise.all(
     control inside a block.
   </p>
 </DocsLayout>
+
+<style>
+  /* The three controls a reader needs before the first block: what the
+     selector does, where the command is, and what the prompt button is for.
+     A strip rather than a paragraph, because it is read once and referred back
+     to while scrolling. */
+  .blocks-keys {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 1px;
+    margin: 1.75rem 0 0;
+    padding: 0;
+    border: 1px solid var(--border);
+    border-radius: var(--radius-card);
+    background: var(--border);
+    overflow: hidden;
+    list-style: none;
+  }
+
+  .blocks-key {
+    display: flex;
+    flex-direction: column;
+    gap: 0.3rem;
+    padding: 0.7rem 0.85rem;
+    background: var(--card);
+  }
+
+  .blocks-key__label {
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
+    color: var(--foreground);
+    font-size: 0.8125rem;
+    font-weight: 560;
+    letter-spacing: -0.011em;
+  }
+
+  .blocks-key__label svg {
+    flex: none;
+    color: var(--muted-foreground);
+  }
+
+  .blocks-key__note {
+    color: var(--muted-foreground);
+    font-size: 0.8125rem;
+    line-height: 1.45;
+  }
+
+  @media (max-width: 780px) {
+    .blocks-keys {
+      grid-template-columns: minmax(0, 1fr);
+    }
+  }
+</style>
