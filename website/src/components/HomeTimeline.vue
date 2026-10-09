@@ -89,8 +89,10 @@ let travel = 0;
 /** Where each dot lights and each card arrives, as a fraction of the journey. */
 let dotStops: number[] = [];
 let cardStops: number[] = [];
-/** The rail's own length, and where it sits on the page when it is a column. */
-let railWidth = 0;
+/** Where the rail starts and how long it is: first stop to last stop. */
+let railStart = 0;
+let railLength = 1;
+/** The column's own height and where it sits on the page, for the scroll map. */
 let railHeight = 0;
 let railTop = 0;
 
@@ -145,10 +147,29 @@ function measure() {
         journeyEl.style.height = `${Math.round(viewportHeight + travel)}px`;
     }
 
-    railWidth = itemsEl?.offsetWidth ?? 0;
+    // Where the stops sit along the rail, measured from the container that
+    // both the rail and the dots are laid out in. The rail spans the first stop
+    // to the last, so it neither starts above the journey nor trails past it.
+    const railPositions = items.map((item) => {
+        const dot = item
+            .querySelector<HTMLElement>(".journey__dot")
+            ?.getBoundingClientRect();
+        if (!dot) return driven ? item.offsetLeft : item.offsetTop;
+        return driven
+            ? dot.left + dot.width / 2 - (itemsEl?.getBoundingClientRect().left ?? 0)
+            : dot.top + dot.height / 2 - (itemsEl?.getBoundingClientRect().top ?? 0);
+    });
+    railStart = railPositions[0] ?? 0;
+    railLength = Math.max(
+        1,
+        (railPositions[railPositions.length - 1] ?? 0) - railStart,
+    );
+    journeyEl.style.setProperty("--journey-rail-start", `${railStart.toFixed(2)}px`);
+    journeyEl.style.setProperty("--journey-rail-length", `${railLength.toFixed(2)}px`);
+
     if (driven) {
-        dotStops = items.map((item) =>
-            clamp((padStart + item.offsetLeft) / Math.max(1, railWidth)),
+        dotStops = railPositions.map((position) =>
+            clamp((position - railStart) / railLength),
         );
         // A card fades in as its leading edge enters the view, so the reader
         // meets it on the way in rather than as an empty slot.
@@ -162,9 +183,7 @@ function measure() {
         const itemsRect = itemsEl?.getBoundingClientRect();
         railHeight = itemsEl?.offsetHeight ?? 0;
         railTop = (itemsRect?.top ?? 0) + window.scrollY;
-        dotStops = items.map((item) =>
-            clamp(item.offsetTop / Math.max(1, railHeight)),
-        );
+        dotStops = railPositions.map((position) => clamp(position / railLength));
         cardStops = items.map((item) =>
             clamp(
                 (item.offsetTop + item.offsetHeight - viewportHeight * 0.9) /
@@ -212,7 +231,7 @@ function paint() {
 
     journeyEl.style.setProperty(
         "--journey-head",
-        `${Math.round(progress * (driven ? railWidth : railHeight))}px`,
+        `${Math.round(progress * railLength)}px`,
     );
 
     const nextLit = new Set<string>();
@@ -374,18 +393,18 @@ onBeforeUnmount(() => {
 .journey__fill {
     position: absolute;
     top: 50%;
-    left: 0;
+    left: var(--journey-rail-start, 0px);
     height: 1px;
     border-radius: 999px;
 }
 
 .journey__rail {
-    width: 100%;
+    width: var(--journey-rail-length, 100%);
     background: var(--border);
 }
 
 .journey__fill {
-    width: min(var(--journey-head), 100%);
+    width: min(var(--journey-head), var(--journey-rail-length, 100%));
     background: var(--brand);
 }
 
@@ -565,7 +584,6 @@ onBeforeUnmount(() => {
         flex-direction: column;
         align-items: stretch;
         gap: 0;
-        padding-left: 0.3125rem;
     }
 
     .journey__item,
@@ -588,14 +606,14 @@ onBeforeUnmount(() => {
 
     .journey__rail,
     .journey__fill {
-        top: 0;
+        top: var(--journey-rail-start, 0px);
         left: 0;
         width: 1px;
-        height: 100%;
+        height: var(--journey-rail-length, 100%);
     }
 
     .journey__fill {
-        height: min(var(--journey-head), 100%);
+        height: min(var(--journey-head), var(--journey-rail-length, 100%));
     }
 
     .journey__dot {
