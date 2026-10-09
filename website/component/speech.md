@@ -20,6 +20,63 @@ uses the recognizer built into macOS or Windows and the default microphone.
 Implement `SpeechRecognizer` to use a cloud service or a local model, and
 `AudioInput` to feed audio from elsewhere.
 
+<!-- framework: slint -->
+
+## In a Slint application
+
+`speech.slint` holds the part of this component a Slint file can be: the button
+and the waveform. Slint cannot capture audio or recognize speech, so the
+application owns the session — it captures, it recognizes, and it puts the
+transcript where the text belongs — and drives the component with three
+properties and one callback:
+
+- `status` — where the session is: `idle`, `connecting`, `recording`, or
+  `stopping`.
+- `has-recognizer` — whether this build has a recognizer and an input at all,
+  the question GPUI's `has_recognizer()` answers. While it is false,
+  `SpeechButton` draws nothing, unless `show-when-unsupported: true`.
+- `available` — whether the recognizer works right now, the question
+  `is_available()` answers: false for a language the machine cannot recognize.
+  The button stays drawn, and is disabled with the unavailable label.
+- `levels` — the recent input levels, oldest first, in `0.0..=1.0`, one per
+  level the application pushes. `SpeechWaveform` draws them.
+- `toggled(active)` — the reader asked to start (`true`) or stop (`false`) the
+  session. The application starts or stops its own session and moves `status`.
+
+`Speech.is-active(status)` and `Speech.is-capturing(status)` are the two
+questions a layout asks, and `SpeechStatus` carries the same four values as the
+GPUI enum. There is no `SpeechState` here: the state a GPUI application gets
+from the crate is the state a Slint application owns itself, which is where the
+recognizer and the microphone live in both frameworks. Linux and the web have no
+recognizer built in, so `has-recognizer: false` is how an application that has
+none hides the button.
+
+```slint
+import { ControlSize } from "theme.slint";
+import { Speech, SpeechButton, SpeechStatus, SpeechWaveform } from "speech.slint";
+
+Input {
+    placeholder: "Type or dictate";
+
+    if Speech.is-capturing(root.status): SpeechWaveform {
+        levels: root.levels;
+        size: ControlSize.xsmall;
+        width: 48px;
+    }
+
+    SpeechButton {
+        status: root.status;
+        has-recognizer: root.has-recognizer;
+        available: root.available;
+        size: ControlSize.xsmall;
+        // The application starts or stops its own session here.
+        toggled(active) => { root.request-dictation(active); }
+    }
+}
+```
+
+<!-- framework: gpui -->
+
 ## Enable the feature
 
 The microphone and the system recognizer are behind the `speech` feature:
@@ -331,6 +388,8 @@ let speech = cx.new(|cx| SpeechState::new(cx).recognizer(recognizer).input(Silen
 `0.0..=1.0` with the oldest first, one per 80 ms of audio, for an application
 that renders its own meter. Peaks rise at once and fall back smoothly, and
 background noise reads as `0.0`.
+
+<!-- framework: gpui -->
 
 ## Platform support
 

@@ -1,0 +1,347 @@
+import { Theme, ControlSize } from "../theme.slint";
+import { GroupBox, GroupBoxVariant } from "section.slint";
+import { Button } from "../button.slint";
+import { Input } from "../input.slint";
+import { Speech, SpeechButton, SpeechStatus, SpeechWaveform } from "../speech.slint";
+
+// A dictation input, the states the button takes, and the session the host
+// drives.
+//
+// Slint cannot capture audio or recognize speech, so this page plays a script
+// instead: one word per tick, with a level that rises and falls like speech,
+// and a final result a beat after the last word. An application runs the same
+// machine around its own recognizer and drives the component with it.
+export component SpeechExample inherits VerticalLayout {
+    horizontal-stretch: 1;
+    padding: Theme.page-padding(Theme.viewport);
+    spacing: 24px;
+    alignment: start;
+
+    // What a session would recognize, in order.
+    private property <[string]> script: [
+        "Speech", "input", "turns", "what", "you", "say", "into", "text.",
+    ];
+    private property <float> clock: 0.0;
+    private property <int> spoken: 0;
+    private property <string> transcript: "";
+    private property <SpeechStatus> status: SpeechStatus.idle;
+    private property <int> state-cols: Theme.wrap-columns(Theme.viewport);
+    // Oldest first, newest last, which is the order the waveform expects. The
+    // trail is sampled from `clock` rather than stored, so it scrolls without
+    // the page keeping a buffer.
+    private property <[float]> levels: !Speech.is-active(root.status) ? []
+        : [
+            root.envelope(root.clock - 11.0),
+            root.envelope(root.clock - 10.0),
+            root.envelope(root.clock - 9.0),
+            root.envelope(root.clock - 8.0),
+            root.envelope(root.clock - 7.0),
+            root.envelope(root.clock - 6.0),
+            root.envelope(root.clock - 5.0),
+            root.envelope(root.clock - 4.0),
+            root.envelope(root.clock - 3.0),
+            root.envelope(root.clock - 2.0),
+            root.envelope(root.clock - 1.0),
+            root.envelope(root.clock),
+        ];
+
+    // A level that rises and falls like speech, sampled one tick apart.
+    pure function envelope(tick: float) -> float {
+        // Degrees, so one tick moves the wave a ninth of a turn.
+        return 0.12 + 0.88 * abs(sin(tick * 37deg));
+    }
+
+    pure function status-text() -> string {
+        if root.status == SpeechStatus.connecting {
+            return "connecting";
+        }
+        if root.status == SpeechStatus.recording {
+            return "recording";
+        }
+        if root.status == SpeechStatus.stopping {
+            return "stopping";
+        }
+        return "idle";
+    }
+
+    // What an application does to the session it owns: start, stop, cancel.
+    function start-session() {
+        if Speech.is-active(root.status) {
+            return;
+        }
+        root.clock = 0.0;
+        root.spoken = 0;
+        root.transcript = "";
+        root.status = SpeechStatus.connecting;
+    }
+
+    function stop-session() {
+        if !Speech.is-capturing(root.status) {
+            return;
+        }
+        root.status = SpeechStatus.stopping;
+        final.running = true;
+    }
+
+    function cancel-session() {
+        root.status = SpeechStatus.idle;
+        root.clock = 0.0;
+        root.spoken = 0;
+        root.transcript = "";
+        final.running = false;
+    }
+
+    // The recognizer: connecting, then a word per tick, then the final result.
+    // An application gets all three from its own service.
+    tick := Timer {
+        interval: 240ms;
+        running: Speech.is-capturing(root.status);
+        triggered => {
+            if root.status == SpeechStatus.connecting {
+                root.status = SpeechStatus.recording;
+            }
+            if root.status == SpeechStatus.recording {
+                root.clock = root.clock + 1.0;
+                if root.spoken < root.script.length {
+                    root.transcript = root.spoken == 0
+                        ? root.script[0]
+                        : root.transcript + " " + root.script[root.spoken];
+                    // The application decides where the text goes; this input
+                    // takes every word as it arrives.
+                    field.text = root.spoken == 0
+                        ? root.script[0]
+                        : field.text + " " + root.script[root.spoken];
+                    root.spoken = root.spoken + 1;
+                } else {
+                    root.stop-session();
+                }
+            }
+        }
+    }
+
+    final := Timer {
+        interval: 600ms;
+        running: false;
+        triggered => {
+            self.running = false;
+            if root.status == SpeechStatus.stopping {
+                root.status = SpeechStatus.idle;
+            }
+        }
+    }
+
+    GroupBox {
+        title: "Dictate into an input";
+        variant: GroupBoxVariant.outline;
+        VerticalLayout {
+            spacing: Theme.spacing-sm;
+            field := Input {
+                placeholder: "Type or dictate";
+                min-width: 280px;
+                if Speech.is-capturing(root.status): SpeechWaveform {
+                    levels: root.levels;
+                    capturing: true;
+                    size: ControlSize.xsmall;
+                    width: 48px;
+                }
+                SpeechButton {
+                    status: root.status;
+                    size: ControlSize.xsmall;
+                    toggled(active) => {
+                        if active {
+                            root.start-session();
+                        }
+                        else {
+                            root.stop-session();
+                        }
+                    }
+                }
+            }
+            if Speech.is-active(root.status): Text {
+                text: root.transcript;
+                color: Theme.muted-foreground;
+                font-size: Theme.font-size-sm;
+                wrap: word-wrap;
+            }
+        }
+    }
+
+    GroupBox {
+        title: "Events";
+        variant: GroupBoxVariant.outline;
+        VerticalLayout {
+            spacing: Theme.spacing-sm;
+            Text {
+                text: "Every event carries the whole transcript, so the latest one is the preview.";
+                color: Theme.muted-foreground;
+                font-size: Theme.font-size-sm;
+                wrap: word-wrap;
+            }
+            HorizontalLayout {
+                spacing: Theme.spacing-md;
+                alignment: start;
+                cross-axis-alignment: center;
+                SpeechWaveform {
+                    levels: root.levels;
+                    capturing: Speech.is-capturing(root.status);
+                    size: ControlSize.small;
+                    width: 96px;
+                }
+                Text {
+                    text: root.transcript == "" ? "Nothing yet" : root.transcript;
+                    color: root.transcript == "" ? Theme.muted-foreground : Theme.foreground;
+                    font-size: Theme.font-size-sm;
+                    wrap: word-wrap;
+                    vertical-alignment: center;
+                }
+            }
+        }
+    }
+
+    GroupBox {
+        title: "Session control";
+        variant: GroupBoxVariant.outline;
+        VerticalLayout {
+            spacing: Theme.spacing-sm;
+            HorizontalLayout {
+                spacing: Theme.spacing-sm;
+                alignment: start;
+                Button {
+                    text: "Start";
+                    size: ControlSize.xsmall;
+                    enabled: !Speech.is-active(root.status);
+                    clicked => {
+                        root.start-session();
+                    }
+                }
+                Button {
+                    text: "Stop";
+                    size: ControlSize.xsmall;
+                    enabled: Speech.is-capturing(root.status);
+                    clicked => {
+                        root.stop-session();
+                    }
+                }
+                Button {
+                    text: "Cancel";
+                    size: ControlSize.xsmall;
+                    enabled: Speech.is-active(root.status);
+                    clicked => {
+                        root.cancel-session();
+                    }
+                }
+            }
+            Text {
+                text: "status: " + root.status-text();
+                color: Theme.muted-foreground;
+                font-size: Theme.font-size-sm;
+            }
+        }
+    }
+
+    GroupBox {
+        title: "Button states";
+        variant: GroupBoxVariant.outline;
+        GridLayout {
+            horizontal-stretch: 1;
+            spacing: 16px;
+            VerticalLayout {
+                row: Theme.wrap-row(0, root.state-cols);
+                col: Theme.wrap-col(0, root.state-cols);
+                spacing: Theme.spacing-xs;
+                alignment: center;
+                SpeechButton {
+                    status: SpeechStatus.idle;
+                    size: ControlSize.xsmall;
+                }
+                Text {
+                    text: "Idle";
+                    font-size: Theme.font-size-xs;
+                    color: Theme.muted-foreground;
+                    horizontal-alignment: center;
+                }
+            }
+            VerticalLayout {
+                row: Theme.wrap-row(1, root.state-cols);
+                col: Theme.wrap-col(1, root.state-cols);
+                spacing: Theme.spacing-xs;
+                alignment: center;
+                SpeechButton {
+                    status: SpeechStatus.recording;
+                    size: ControlSize.xsmall;
+                }
+                Text {
+                    text: "Capturing";
+                    font-size: Theme.font-size-xs;
+                    color: Theme.muted-foreground;
+                    horizontal-alignment: center;
+                }
+            }
+            VerticalLayout {
+                row: Theme.wrap-row(2, root.state-cols);
+                col: Theme.wrap-col(2, root.state-cols);
+                spacing: Theme.spacing-xs;
+                alignment: center;
+                SpeechButton {
+                    status: SpeechStatus.stopping;
+                    size: ControlSize.xsmall;
+                }
+                Text {
+                    text: "Stopping";
+                    font-size: Theme.font-size-xs;
+                    color: Theme.muted-foreground;
+                    horizontal-alignment: center;
+                }
+            }
+            VerticalLayout {
+                row: Theme.wrap-row(3, root.state-cols);
+                col: Theme.wrap-col(3, root.state-cols);
+                spacing: Theme.spacing-xs;
+                alignment: center;
+                SpeechButton {
+                    status: SpeechStatus.idle;
+                    size: ControlSize.xsmall;
+                    enabled: false;
+                }
+                Text {
+                    text: "Disabled";
+                    font-size: Theme.font-size-xs;
+                    color: Theme.muted-foreground;
+                    horizontal-alignment: center;
+                }
+            }
+            VerticalLayout {
+                row: Theme.wrap-row(4, root.state-cols);
+                col: Theme.wrap-col(4, root.state-cols);
+                spacing: Theme.spacing-xs;
+                alignment: center;
+                SpeechButton {
+                    available: false;
+                    size: ControlSize.xsmall;
+                }
+                Text {
+                    text: "Unavailable";
+                    font-size: Theme.font-size-xs;
+                    color: Theme.muted-foreground;
+                    horizontal-alignment: center;
+                }
+            }
+            VerticalLayout {
+                row: Theme.wrap-row(5, root.state-cols);
+                col: Theme.wrap-col(5, root.state-cols);
+                spacing: Theme.spacing-xs;
+                alignment: center;
+                SpeechButton {
+                    has-recognizer: false;
+                    size: ControlSize.xsmall;
+                }
+                Text {
+                    text: "Hidden";
+                    font-size: Theme.font-size-xs;
+                    color: Theme.muted-foreground;
+                    horizontal-alignment: center;
+                }
+            }
+        }
+    }
+}

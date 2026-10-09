@@ -1,0 +1,152 @@
+// Speech input: a microphone button and a live waveform of the input level.
+//
+// Mirrors GPUI Component's `speech` module. Slint cannot capture audio or
+// recognize speech, so the host owns the session: it drives `status`,
+// `available` and `levels`, writes the transcript where it belongs, and starts
+// or stops the session on `toggled`. `Clipboard` is the same seam.
+
+import { Theme, ControlSize, ButtonVariant } from "theme.slint";
+import { Button } from "button.slint";
+import { Tooltip } from "tooltip.slint";
+
+// Where a session is. Mirrors GPUI's `SpeechStatus`.
+export enum SpeechStatus {
+    idle,
+    connecting,
+    recording,
+    stopping,
+}
+
+// The questions a status answers, the way GPUI's `is_active()` and
+// `is_capturing()` do.
+export global Speech {
+    public pure function is-active(status: SpeechStatus) -> bool {
+        return status != SpeechStatus.idle;
+    }
+
+    public pure function is-capturing(status: SpeechStatus) -> bool {
+        return status == SpeechStatus.connecting || status == SpeechStatus.recording;
+    }
+}
+
+// Starts and stops a session: a microphone at rest, a stop glyph while it
+// captures, and a spinner while the final result is pending.
+//
+// Nothing is drawn while the host reports no recognizer, unless
+// `show-when-unsupported` is set, so an application can place the button
+// unconditionally.
+export component SpeechButton {
+    in property <SpeechStatus> status: SpeechStatus.idle;
+    // Whether this build has a recognizer and an input at all, the question
+    // GPUI's `has_recognizer()` answers. While it is false nothing is drawn,
+    // unless `show-when-unsupported` is set, so an application can place the
+    // button unconditionally.
+    in property <bool> has-recognizer: true;
+    // Whether the recognizer works right now, the question GPUI's
+    // `is_available()` answers: false for a language the machine cannot
+    // recognize. The button stays drawn, and is disabled with the unavailable
+    // label.
+    in property <bool> available: true;
+    // Draw a disabled button, instead of nothing, when there is no recognizer.
+    in property <bool> show-when-unsupported: false;
+    // Disable it for application reasons, such as a readonly field.
+    in property <bool> enabled: true;
+    in property <ControlSize> size: ControlSize.medium;
+    in property <string> start-label: "Start dictation";
+    in property <string> stop-label: "Stop dictation";
+    in property <string> unavailable-label: "Speech input is not available";
+
+    // The host starts a session when `active` is true, and stops the running
+    // one when it is false.
+    callback toggled(active: bool);
+
+    out property <bool> active: Speech.is-active(root.status);
+    out property <bool> capturing: Speech.is-capturing(root.status);
+
+    // A running session stays stoppable even if the recognizer turns
+    // unavailable mid-way, the exception GPUI's button makes too.
+    private property <bool> usable: root.active || root.available;
+    private property <bool> shown: root.has-recognizer || root.show-when-unsupported;
+    private property <string> label: !root.usable ? root.unavailable-label
+        : root.capturing ? root.stop-label
+        : root.start-label;
+    private property <bool> interactive: root.enabled && root.usable
+        && root.status != SpeechStatus.stopping;
+
+    if root.shown: Tooltip {
+        text: root.label;
+
+        Button {
+            icon: root.capturing ? "square" : "mic";
+            variant: ButtonVariant.ghost;
+            size: root.size;
+            selected: root.capturing;
+            loading: root.status == SpeechStatus.stopping;
+            enabled: root.interactive;
+            accessible-label: root.label;
+            clicked => {
+                root.toggled(!root.capturing);
+            }
+        }
+    }
+}
+
+// A live waveform of the input levels the host pushes.
+//
+// Each level is a bar that grows up and down from the midline; silence is a
+// dot. The newest level enters at the trailing edge and older ones trail toward
+// the leading edge, so a short history grows from the right. Before any audio,
+// nothing is drawn.
+//
+// It is 96 px wide by default and its height follows `size`; size it like any
+// element, for example `width: 48px` beside the button.
+export component SpeechWaveform {
+    // Oldest first, newest last: the order a session pushes levels in.
+    in property <[float]> levels;
+    // Coloured primary while the host captures, muted otherwise.
+    in property <bool> capturing: false;
+    in property <ControlSize> size: ControlSize.medium;
+
+    width: 96px;
+    height: root.bar-height;
+
+    // GPUI's heights, one per size.
+    private property <length> bar-height: root.size == ControlSize.xsmall ? 12px
+        : root.size == ControlSize.small ? 16px
+        : root.size == ControlSize.medium ? 20px
+        : 24px;
+    // Bars thicken with the waveform so a tall one does not read as hairlines,
+    // and stand apart so a run of silence reads as a row of dots.
+    private property <length> bar: clamp(root.bar-height * 0.125, 2px, 4px);
+    private property <length> gap: root.bar * 2.5;
+    private property <length> pitch: root.bar + root.gap;
+    // How many bars the width holds, and never more than there are levels.
+    private property <int> limit: max(0, floor((root.width + root.gap) / root.pitch));
+    private property <int> bar-count: min(root.levels.length, root.limit);
+    private property <color> tone: root.capturing ? Theme.primary : Theme.muted-foreground;
+
+    // The level of the bar `from-start` bars from the leading edge: the window
+    // of levels that fits, so the newest sits against the trailing edge.
+    pure function level-at(from-start: int) -> float {
+        if from-start < 0 || from-start >= root.bar-count {
+            return 0.0;
+        }
+        return clamp(root.levels[root.levels.length - root.bar-count + from-start], 0.0, 1.0);
+    }
+
+    HorizontalLayout {
+        width: 100%;
+        height: 100%;
+        alignment: end;
+        cross-axis-alignment: center;
+        spacing: root.gap;
+
+        for index in root.bar-count: Rectangle {
+            width: root.bar;
+            height: max(root.bar, root.bar-height * root.level-at(index));
+            border-radius: self.width / 2;
+            background: root.tone;
+            animate height { duration: 120ms; easing: ease-out; }
+        }
+    }
+}

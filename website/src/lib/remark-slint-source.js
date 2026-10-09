@@ -904,7 +904,10 @@ export function remarkSlintSource({ root = process.cwd() } = {}) {
           usageHeadings.push({ node, parent, heading, depth: node.depth });
         }
       }
-      if (node.type === 'code' && node.lang !== 'slint' && parent && index !== undefined) {
+      // Only Rust fences are GPUI samples. A page's `toml` or `xml` snippet is
+      // not one, and counting it would make it the anchor the import panel is
+      // written after — shifting every sample below it by one.
+      if (node.type === 'code' && node.lang === 'rust' && parent && index !== undefined) {
         rust.push({ node, parent, heading, headingNode });
       }
     });
