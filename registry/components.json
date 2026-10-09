@@ -21808,7 +21808,29 @@
   "gpui": {
     "default_target_dir": "src/components",
     "mod_file": "src/components/mod.rs",
-    "components": {}
+    "components": {
+      "dock": [
+        {
+          "src": "crates/blocks/src/dock.rs",
+          "target": "dock.rs",
+          "module": "dock"
+        }
+      ],
+      "settings": [
+        {
+          "src": "crates/blocks/src/settings.rs",
+          "target": "settings.rs",
+          "module": "settings"
+        }
+      ],
+      "sidebar": [
+        {
+          "src": "crates/blocks/src/sidebar.rs",
+          "target": "sidebar.rs",
+          "module": "sidebar"
+        }
+      ]
+    }
   },
   "quickgui": {
     "default_target_dir": "src/components",

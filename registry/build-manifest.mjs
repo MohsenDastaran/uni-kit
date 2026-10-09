@@ -1,6 +1,6 @@
-// Rebuilds registry/components.json from the Slint sources.
-// Rust toolkits stay in the manifest with an empty component map until their
-// files exist. Adding one is a new entry here, not a new CLI release.
+// Rebuilds registry/components.json from the Slint sources and the GPUI block
+// sources. Rust toolkits without files yet stay in the manifest with an empty
+// component map. Adding one is a new entry here, not a new CLI release.
 import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -78,10 +78,33 @@ const rust = (dir) => ({
   components: {},
 });
 
+// The GPUI components themselves ship in the `gpui-kit` crate, so what the
+// registry copies for this framework is a composed screen: one file per block,
+// which the CLI writes into the app and reaches with a `pub mod` line. The name
+// is the registry key, the file name and the module name at once.
+const GPUI_BLOCKS = ['dock', 'settings', 'sidebar'];
+const gpui = rust('src/components');
+for (const name of GPUI_BLOCKS) {
+  if (!/^[a-z][a-z0-9_]*$/.test(name)) {
+    // `uni-kit add` refuses a module name it cannot write as `pub mod <name>;`,
+    // so a name the CLI would reject must not reach the manifest.
+    throw new Error(`GPUI block "${name}" is not a valid Rust module name.`);
+  }
+  const src = `crates/blocks/src/${name}.rs`;
+  if (!fs.existsSync(path.join(root, src))) {
+    throw new Error(
+      `GPUI block "${name}" has no source at ${src}. ` +
+        `A manifest entry whose source resolves to nothing installs a broken set, ` +
+        `so the file is required before the entry exists.`,
+    );
+  }
+  gpui.components[name] = [{ src, target: `${name}.rs`, module: name }];
+}
+
 const registry = {
   slint,
   egui: rust('src/components'),
-  gpui: rust('src/components'),
+  gpui,
   quickgui: rust('src/components'),
 };
 
@@ -100,5 +123,6 @@ fs.writeFileSync(
   `${JSON.stringify(slugs, null, 2)}\n`,
 );
 console.log(
-  `slint components: ${Object.keys(slint.components).length}, icons: ${icons.length}`,
+  `slint components: ${Object.keys(slint.components).length}, icons: ${icons.length}, ` +
+    `gpui blocks: ${GPUI_BLOCKS.length}`,
 );

@@ -221,6 +221,16 @@ Build these in both frameworks:
 
 **Done when:** all three blocks are on the site, with copy-paste source for GPUI and Slint.
 
+**Where this stands.** The Blocks page exists (`website/src/pages/blocks.astro`), with live examples from both
+galleries rather than markdown pages, and six blocks instead of the three above. Three of them — sidebar, dock,
+settings — are installable for GPUI: the source is `crates/blocks/src/<name>.rs` and `npx uni-kit add gpui <name>`
+copies it. That departs from phase 9's "there is no installer": a GPUI application already gets every control from
+the `gpui-kit` crate, so the block file is the only thing a command can usefully write. Slint still installs the
+controls a block composes, and its blocks are not installable as files.
+
+Login and Dashboard are not built, and the GPUI previews are the gallery stories rather than the finished screen the
+installed file draws. Both are open.
+
 ---
 
 ## 8. Starter templates

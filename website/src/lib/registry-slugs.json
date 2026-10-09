@@ -80,6 +80,10 @@
     "virtual-list"
   ],
   "egui": [],
-  "gpui": [],
+  "gpui": [
+    "dock",
+    "settings",
+    "sidebar"
+  ],
   "quickgui": []
 }

@@ -39,6 +39,12 @@ function fetchBuffer(url) {
   });
 }
 
+function bundledRegistry() {
+  return fs.existsSync(localRegistry)
+    ? JSON.parse(fs.readFileSync(localRegistry, 'utf8'))
+    : null;
+}
+
 async function loadRegistry() {
   if (process.env.UNI_KIT_REGISTRY) {
     const given = process.env.UNI_KIT_REGISTRY;
@@ -47,10 +53,22 @@ async function loadRegistry() {
     }
     return JSON.parse(fs.readFileSync(given, 'utf8'));
   }
-  if (fs.existsSync(localRegistry)) {
-    return JSON.parse(fs.readFileSync(localRegistry, 'utf8'));
+  // A checkout reads the manifest it just edited. An installed package reads the
+  // one on `main` instead, because the copy shipped in the tarball is frozen at
+  // publish time: without this, every added component would need a new release,
+  // which is the opposite of what the README promises. The bundled copy is still
+  // the fallback, so an install with no network can still name a component.
+  if (localRoot) {
+    return bundledRegistry() ?? JSON.parse((await fetchBuffer(REGISTRY_URL)).toString('utf8'));
   }
-  return JSON.parse((await fetchBuffer(REGISTRY_URL)).toString('utf8'));
+  try {
+    return JSON.parse((await fetchBuffer(REGISTRY_URL)).toString('utf8'));
+  } catch (error) {
+    const bundled = bundledRegistry();
+    if (!bundled) throw error;
+    console.log(`  Could not read the registry (${error.message}); using the copy in the package.`);
+    return bundled;
+  }
 }
 
 // Reads one source and returns its bytes. Nothing is written here: the caller
@@ -119,17 +137,40 @@ function ensureSlintIncludePath(includeDir) {
   console.log(`  ${path.relative(process.cwd(), buildRs)} searches ${includeDir} for component imports`);
 }
 
+// The module an application reaches the installed files by. `src/components`
+// is `mod components;` in the crate root; a directory outside the crate has
+// nothing to declare.
+function parentModule(targetDir) {
+  const relative = path.relative(process.cwd(), path.resolve(process.cwd(), targetDir));
+  if (!relative || relative.startsWith('..') || path.isAbsolute(relative)) return '';
+  const parts = relative.split(path.sep).filter((part) => part && part !== '.');
+  if (parts[0] === 'src') parts.shift();
+  return parts.join('::');
+}
+
+// The crate root a module declaration would go in, if the app has one.
+function crateRoot() {
+  for (const candidate of ['src/lib.rs', 'src/main.rs']) {
+    const file = path.join(process.cwd(), candidate);
+    if (fs.existsSync(file)) return { name: candidate, file };
+  }
+  return null;
+}
+
 function usage() {
   console.log('Usage: uni-kit add <framework> <component...> [--dir <path>]');
   console.log('Examples:');
   console.log('  npx uni-kit add slint alert-dialog');
+  console.log('  npx uni-kit add gpui sidebar');
   console.log('  npx uni-kit add egui alert-dialog');
-  console.log('  npx uni-kit add gpui button');
   console.log('  npx uni-kit add quickgui button');
   console.log('');
   console.log('A screen is usually several components. Name them all and files they');
   console.log('share are written once:');
   console.log('  npx uni-kit add slint sidebar card button table');
+  console.log('');
+  console.log('GPUI blocks compose the controls that ship in the gpui-kit crate:');
+  console.log('  npx uni-kit add gpui sidebar dock settings');
 }
 
 async function main() {
@@ -228,15 +269,35 @@ async function main() {
     console.log(`  ${path.relative(process.cwd(), destination)}`);
   }
 
+  let declaredModule = false;
   if (modules.size > 0) {
     const modFile = path.resolve(process.cwd(), frameworkConfig.mod_file ?? path.join(baseTargetDir, 'mod.rs'));
     for (const moduleName of modules) {
       const added = ensureModule(modFile, moduleName);
-      if (added) console.log(`  ${path.relative(process.cwd(), modFile)} += pub mod ${moduleName};`);
+      if (added) {
+        console.log(`  ${path.relative(process.cwd(), modFile)} += pub mod ${moduleName};`);
+        declaredModule = true;
+      }
     }
   }
 
   if (framework === 'slint') ensureSlintIncludePath(baseTargetDir);
+
+  // The `pub mod` line only makes the file reachable from the directory's own
+  // module; the crate still has to declare that module, and nothing else will
+  // say so. An app that already declares it is not told again.
+  const parent = parentModule(baseTargetDir);
+  if (declaredModule && parent) {
+    const root = crateRoot();
+    const declared =
+      root !== null &&
+      new RegExp(`^\\s*(pub\\s+)?mod\\s+${parent}\\s*;`, 'm').test(fs.readFileSync(root.file, 'utf8'));
+    if (!declared) {
+      console.log(
+        `  Add \`mod ${parent};\` to ${root ? root.name : 'the crate root'} so the installed modules are compiled.`,
+      );
+    }
+  }
 
   console.log(`Installed ${components.join(', ')} into ${baseTargetDir}/`);
 }

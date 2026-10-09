@@ -13,10 +13,25 @@ type Manager = (typeof MANAGERS)[number];
 /**
  * A component page lets the markdown pipeline decide both, so the bar carries
  * the command for that page. A block gallery renders one instance per block, so
- * each passes what to install and the element to render into. A block is a
- * composition, so `slugs` names every component it is built from.
+ * each passes what to install and the element to render into.
+ *
+ * `slugs` is keyed by framework because the two agree on neither the names nor
+ * their meaning. A Slint block is composed of controls, and every control is a
+ * file that `add slint` copies. A GPUI block is one file of usage, because the
+ * controls it composes ship in the `gpui-kit` crate.
  */
-const props = defineProps<{ slug?: string; slugs?: string[]; host?: string }>();
+const props = defineProps<{
+  slug?: string;
+  slugs?: Partial<Record<"gpui" | "slint", string[]>>;
+  host?: string;
+}>();
+
+/**
+ * Whether the names came from a block rather than from a component page. A
+ * block has to say so: the names are the same words either way, and a page that
+ * documents a control cannot install one.
+ */
+const fromBlock = computed(() => Boolean(props.slugs));
 
 const STORAGE_KEY = "selected-package-manager";
 // The `storage` event only reaches *other* documents, so it never fires in the
@@ -27,10 +42,13 @@ const MANAGER_EVENT = "package-manager-change";
 const PACKAGE = "@dastaran/uni-kit@latest";
 
 // The component names to install. A component page installs one; a block
-// installs everything it composes.
-const targets = ref<string[]>([]);
+// installs every name its framework needs (see `slugs`).
+const pageNames = ref<string[]>([]);
+const targets = computed(() =>
+  fromBlock.value ? (props.slugs?.[framework.value] ?? []) : pageNames.value,
+);
 const manager = ref<Manager>("npx");
-const framework = ref("gpui");
+const framework = ref<"gpui" | "slint">("gpui");
 const copied = ref(false);
 const status = ref("");
 let timer: ReturnType<typeof setTimeout> | undefined;
@@ -54,25 +72,41 @@ const namesFor = (name: string) =>
 const packaged = computed(
   () =>
     targets.value.length > 0 &&
-    targets.value.every((name) => namesFor(framework.value).includes(name)),
+    targets.value.every((name) => namesFor(framework.value).includes(name)) &&
+    // The GPUI names that reach the registry are block files, so a component
+    // page naming the same word (`sidebar`) is not offering to install it.
+    (framework.value !== "gpui" || fromBlock.value),
 );
 const crateInstall = computed(
   () => framework.value === "gpui" && !packaged.value,
 );
 
+/**
+ * The crate the installed files are written against. A GPUI block imports
+ * `gpui_kit`, so the dependency is the other half of the same setup and the bar
+ * carries both.
+ */
+const crateCommand = computed(() =>
+  packaged.value && framework.value === "gpui" ? "cargo add gpui-kit" : "",
+);
+
+const blockCommand = computed(() => {
+  if (targets.value.length === 0) return "";
+  // One command for the whole screen: the CLI takes every name and writes the
+  // files they share once.
+  return `${runner.value} ${PACKAGE} add ${framework.value} ${targets.value.join(" ")}`;
+});
+
 const command = computed(() => {
   if (targets.value.length === 0) return "";
-  if (packaged.value) {
-    // One command for the whole screen: the CLI takes every name and writes the
-    // files they share once.
-    return `${runner.value} ${PACKAGE} add ${framework.value} ${targets.value.join(" ")}`;
-  }
+  if (packaged.value) return [crateCommand.value, blockCommand.value].filter(Boolean).join("\n");
   if (crateInstall.value) return "cargo add gpui-kit";
   return "";
 });
 
 const unavailableLabel = "No files to install for this framework.";
 const crateLabel = "Ships in the gpui-kit crate.";
+const crateInstalledLabel = "the components come from this crate";
 const copyLabel = "Copy command";
 const copiedLabel = "Copied";
 const managerLabel = "Package manager";
@@ -138,15 +172,12 @@ function pageSlug() {
 
 onMounted(() => {
   mountFrameworkLogos();
-  // A block names the components it is composed from. A component page has no
-  // such list, so it derives the one component it installs from the bar the
-  // markdown pipeline emitted.
-  const passed = props.slugs?.filter(Boolean) ?? [];
-  const page = passed.length > 0 ? "" : (props.slug ?? hostSlug());
-  const names =
-    passed.length > 0 ? passed : page && page !== "index" ? [page] : [];
-  if (names.length === 0) return;
-  targets.value = names;
+  // A block names what it installs per framework. A component page has no such
+  // list, so it derives the one component it installs from the bar the markdown
+  // pipeline emitted.
+  const page = [props.slug ?? hostSlug()].filter((name) => name && name !== "index");
+  if (!fromBlock.value && page.length === 0) return;
+  pageNames.value = page;
   manager.value = readManager();
   framework.value = readFramework();
   observer = new MutationObserver(() => {
@@ -289,17 +320,30 @@ async function copy() {
         </button>
       </div>
       <div class="install-command__line">
-        <div class="install-command__body">
+        <div
+          class="install-command__body"
+          :class="{ 'install-command__body--stacked': Boolean(crateCommand) }"
+        >
           <p v-if="!packaged && !crateInstall" class="install-command__note">
             {{ unavailableLabel }}
           </p>
-          <code v-if="packaged">
-            <FlowText class="install-command__run" :text="runner" />
-            <span class="install-command__package">{{ PACKAGE }}</span>
-            <span>add</span>
-            <FlowText class="install-command__arg" :text="framework" />
-            <span class="install-command__arg">{{ targets.join(" ") }}</span>
-          </code>
+          <template v-if="packaged">
+            <!-- The dependency first: the file below does not compile without
+                 it, and the application may not have it yet. -->
+            <code v-if="crateCommand">
+              <span class="install-command__run">cargo</span>
+              <span>add</span>
+              <span class="install-command__package">gpui-kit</span>
+              <span class="install-command__comment"># {{ crateInstalledLabel }}</span>
+            </code>
+            <code>
+              <FlowText class="install-command__run" :text="runner" />
+              <span class="install-command__package">{{ PACKAGE }}</span>
+              <span>add</span>
+              <FlowText class="install-command__arg" :text="framework" />
+              <span class="install-command__arg">{{ targets.join(" ") }}</span>
+            </code>
+          </template>
           <code v-else-if="crateInstall">
             <span class="install-command__run">cargo</span>
             <span>add</span>

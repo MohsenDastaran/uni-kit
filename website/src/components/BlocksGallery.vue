@@ -16,11 +16,19 @@ export interface Block {
   slug: string;
   doc?: string;
   /**
-   * The components this screen is composed from. A block is a combination
-   * rather than one control, so the install command names all of them and the
-   * CLI writes the files they share once.
+   * The components this screen is composed from. For Slint that is also what
+   * the install command names: a block is assembled from installed controls
+   * rather than imported as a unit, and the CLI writes the files they share
+   * once.
    */
   components?: string[];
+  /**
+   * The registry names this block installs for GPUI, where the block itself is
+   * the copyable unit: the controls it composes ship in the `gpui-kit` crate.
+   * Absent means no GPUI block file exists yet, and the bar falls back to the
+   * crate.
+   */
+  gpuiInstall?: string[];
   /**
    * Which composition inside the Slint page to show. A component page documents
    * every one it has; a block is a single finished screen, so it asks for the
@@ -202,18 +210,26 @@ function buildPrompt(block: Block) {
   const source = block.text?.[framework.value] ?? "";
   const library = framework.value === "slint" ? "Slint" : "gpui-component";
   const live = framework.value === "slint" ? "Rust, Slint & WASM" : "Rust, GPUI & WASM";
+  const slint = framework.value === "slint";
   const names = block.components?.length
     ? block.components
     : [block.doc ?? block.slug].filter(Boolean);
-  const install =
-    framework.value === "slint"
-      ? `${managerRunner()} @dastaran/uni-kit@latest add slint ${names.join(" ")}`
+  // Slint installs the controls the screen is built from. GPUI installs the
+  // screen itself, and the crate it is written against alongside it.
+  const gpuiNames = block.gpuiInstall ?? [];
+  const install = slint
+    ? `${managerRunner()} @dastaran/uni-kit@latest add slint ${names.join(" ")}`
+    : gpuiNames.length > 0
+      ? [
+          "cargo add gpui-kit",
+          `${managerRunner()} @dastaran/uni-kit@latest add gpui ${gpuiNames.join(" ")}`,
+        ].join("\n")
       : "cargo add gpui-kit";
   return [
-    `Use this ${framework.value === "slint" ? "Slint" : "GPUI"} example in my application. Keep the framework, file layout, and API below; do not invent a different component or asset path.`,
+    `Use this ${slint ? "Slint" : "GPUI"} example in my application. Keep the framework, file layout, and API below; do not invent a different component or asset path.`,
     "",
     "## Framework",
-    `${framework.value === "slint" ? "Slint" : "GPUI"} (${live}). Library: ${library}.`,
+    `${slint ? "Slint" : "GPUI"} (${live}). Library: ${library}.`,
     "",
     "## Block",
     block.title,
@@ -226,10 +242,14 @@ function buildPrompt(block: Block) {
     install,
     "",
     "## Files",
-    `Every file lands in ui/components/ beside the others, and the command adds that directory to the Slint include path in build.rs. Imports between them are by bare file name, as below.`,
+    slint
+      ? "Every file lands in ui/components/ beside the others, and the command adds that directory to the Slint include path in build.rs. Imports between them are by bare file name, as below."
+      : gpuiNames.length > 0
+        ? `The command writes src/components/${gpuiNames[0]}.rs and adds \`pub mod ${gpuiNames[0]};\` to src/components/mod.rs. Declare \`mod components;\` in the crate root so it is compiled. That file is the screen: the controls it composes come from the gpui-kit crate through \`gpui_kit::component\`, and it needs no asset file of its own.`
+        : "The screen is written against the gpui-kit crate; the controls it composes come from `gpui_kit::component`.",
     "",
     "## Source",
-    framework.value === "slint" ? installableSource(source) : source,
+    slint ? installableSource(source) : source,
   ].join("\n");
 }
 
@@ -301,7 +321,11 @@ function reload(block: Block) {
       <!-- Outside the bar, as on a component page. Inside it, the component's
            own wrapper becomes another grid cell: the row shifts, and the command
            is measured against a grid area instead of the row it sits in. -->
-      <InstallCommand :slug="block.doc" :slugs="block.components" :host="hostFor(block)" />
+      <InstallCommand
+        :slug="block.doc"
+        :slugs="{ gpui: block.gpuiInstall ?? [block.id], slint: block.components }"
+        :host="hostFor(block)"
+      />
 
       <!-- Under the bar: the sentence says what the button is for, and the
            button sits at the trailing edge of the row. -->

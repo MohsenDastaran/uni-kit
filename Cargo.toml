@@ -41,6 +41,7 @@ members = [
     "crates/shell/rquickjs-compat",
     "crates/component-shell",
     "crates/registry-cli",
+    "crates/blocks",
 ]
 # Slint components build in their own workspace, so Slint's dependency graph
 # never enters GPUI Kit's lockfile or its builds.

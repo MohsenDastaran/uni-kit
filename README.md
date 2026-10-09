@@ -14,7 +14,7 @@ GPUI and Slint are in the catalog now. egui, QuickGUI, and other toolkits join t
 
 | Framework | How an app uses it | Status |
 | --- | --- | --- |
-| [GPUI](https://github.com/zed-industries/zed) | Depend on the `gpui-kit` crate. Copy a sample from the component page. | On the site |
+| [GPUI](https://github.com/zed-industries/zed) | Depend on the `gpui-kit` crate for the controls; `npx uni-kit add gpui <block>` copies a composed screen into `src/components/`. | On the site, three [blocks](crates/blocks) |
 | [Slint](https://slint.dev) | `npx uni-kit add slint <component>` copies the `.slint` files into `ui/components/`. | On the site |
 | egui, QuickGUI, and others | The same pages, once the source exists. | [Roadmap](docs/roadmap.md) |
 
@@ -22,13 +22,14 @@ The site docs stay one site, in English. A framework selector on each component 
 
 ```bash
 npx uni-kit add slint alert-dialog
-bunx uni-kit add slint alert-dialog
-pnpm dlx uni-kit add slint alert-dialog
+
+npx uni-kit add gpui sidebar
+npx uni-kit add gpui sidebar dock settings
 ```
 
-The same command takes `egui`, `gpui`, or `quickgui` once that toolkit's files are in the manifest. Slint writes `ui/components/`. The Rust toolkits write `src/components/` and can add a `pub mod` line. `--dir` overrides the directory.
+The same command takes `egui` or `quickgui` once that toolkit's files are in the manifest. Slint writes `ui/components/`, one file per control. GPUI writes `src/components/`, one file per block, because the controls for that framework ship in the crate rather than as source. Both can add a `pub mod` line, and `--dir` overrides the directory.
 
-Blocks (Login, Dashboard, Settings) and starter templates are next. See the [roadmap](docs/roadmap.md).
+Login, Dashboard, and the remaining GPUI blocks are next. See the [roadmap](docs/roadmap.md).
 
 ## GPUI
 

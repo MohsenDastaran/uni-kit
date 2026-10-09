@@ -1,0 +1,16 @@
+[package]
+name = "blocks"
+description = "Composed GPUI screens the registry copies into an application (`uni-kit add gpui <name>`)."
+version = "0.7.1"
+publish = false
+edition.workspace = true
+
+[[bin]]
+name = "blocks"
+path = "src/main.rs"
+
+[dependencies]
+gpui-kit.workspace = true
+
+[lints]
+workspace = true

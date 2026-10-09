@@ -1115,6 +1115,15 @@ html[lang^="ja"] .example-prompt {
     min-width: 0;
   }
 
+  /* A GPUI block needs the crate it is written against as well as the file
+     itself, so the bar carries two commands. Side by side they read as one long
+     line and wrap; stacked, the second is plainly the one to run next. */
+  .install-command__body--stacked {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.3rem;
+  }
+
   .install-command__note {
     margin: 0;
     color: var(--muted-foreground);

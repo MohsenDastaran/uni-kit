@@ -1,6 +1,6 @@
 {
   "name": "@dastaran/uni-kit",
-  "version": "0.3.1",
+  "version": "0.3.2",
   "description": "Copy Uni Kit components into a Rust app. One command for Slint, egui, GPUI, and QuickGUI.",
   "type": "module",
   "bin": {

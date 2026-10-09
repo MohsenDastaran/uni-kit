@@ -6,6 +6,7 @@ on:
       - "registry/**"
       - ".github/workflows/test-docs.yml"
       - "crates/base/**"
+      - "crates/blocks/**"
       - "crates/story-web/**"
       - "crates/slint-component/**"
 

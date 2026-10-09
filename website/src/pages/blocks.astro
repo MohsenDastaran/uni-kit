@@ -33,10 +33,22 @@ function slintExample(slug: string) {
   }
 }
 
+// The GPUI block is a file you install, so the prompt carries it verbatim
+// rather than a component page's usage. A block with no file yet falls back to
+// that usage, which is what the crate alone can offer.
+function gpuiBlock(id: string) {
+  try {
+    return readFileSync(join(repo, 'crates/blocks/src', `${id}.rs`), 'utf8');
+  } catch {
+    return '';
+  }
+}
+
 // Every block below exists in both galleries, so the framework selector in the
 // top bar swaps the live example rather than emptying the frame. `story` is the
 // GPUI gallery's story name, `slug` the Slint page folder, `doc` the component
-// page whose Rust usage the Code tab shows.
+// page whose Rust usage the prompt shows when a block has no GPUI file of its
+// own, and `gpuiInstall` the registry name `add gpui` copies.
 const definitions = [
   {
     id: 'sidebar',
@@ -51,6 +63,8 @@ const definitions = [
     // The screen's table is a DataTable: sorting, fixed rows, and a body that
     // pages. `table` was the primitive it used before it moved over.
     components: ['sidebar', 'card', 'button', 'data-table'],
+    // The GPUI block, which the registry copies as a file.
+    gpuiInstall: ['sidebar'],
     // The page carries four compositions. A block is one finished screen, so
     // the gallery is asked for the last of them.
     slintExample: 'last',
@@ -64,6 +78,7 @@ const definitions = [
     slug: 'settings',
     doc: 'settings',
     components: ['settings', 'card', 'button'],
+    gpuiInstall: ['settings'],
     // The page tours every composition; the block is the finished screen.
     slintExample: 'last',
   },
@@ -76,6 +91,7 @@ const definitions = [
     slug: 'dock',
     doc: 'dock',
     components: ['dock', 'button', 'toolbar', 'status-bar'],
+    gpuiInstall: ['dock'],
     // The page tours every composition; the block is the finished screen.
     slintExample: 'last',
   },
@@ -121,7 +137,7 @@ const definitions = [
 
 const blocks = await Promise.all(
   definitions.map(async (block) => {
-    const gpui = gpuiUsage(block.doc);
+    const gpui = gpuiBlock(block.id) || gpuiUsage(block.doc);
     const slint = slintExample(block.slug);
     return {
       ...block,
@@ -150,8 +166,10 @@ const blocks = await Promise.all(
   <p>
     Every block below is the real application, compiled to WebAssembly and
     running in this page. Switch frameworks in the top bar and each one reloads
-    as its Slint counterpart; open a block's Code tab to copy its source or the
-    install command.
+    as its Slint counterpart. The bar over each block carries the install
+    command for the current framework; the buttons beside it size the example,
+    and <strong>Usage prompt for this block</strong> copies the screen's source
+    together with that command, to hand to an assistant.
   </p>
 
   <BlocksGallery client:load blocks={blocks} baseUrl={import.meta.env.BASE_URL} />
@@ -174,10 +192,17 @@ const blocks = await Promise.all(
 
   <h2>Taking one</h2>
   <p>
-    A block is assembled from installed components rather than imported as a
-    unit. The Code tab on each block carries the command for the current
-    framework and package manager; the
-    installation guide covers the setup and
+    What the command copies depends on the framework, because the two give an
+    application different things. Slint has no component crate, so a block is
+    assembled from installed controls: the command writes the <code>.slint</code>
+    files into <code>ui/components/</code> and adds that directory to the Slint
+    include path, and the screen comes from the source the prompt carries. GPUI
+    already has every control in the <code>gpui-kit</code> crate, so the command
+    writes the block itself — <code>src/components/sidebar.rs</code> and its
+    <code>pub mod</code> line — and the screen is in that file.
+  </p>
+  <p>
+    The bar names the whole setup for the framework you are reading, and
     <a href="/component">the component pages</a> carry the full usage for each
     control inside a block.
   </p>

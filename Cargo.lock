@@ -961,6 +961,13 @@ dependencies = [
 ]
 
 [[package]]
+name = "blocks"
+version = "0.7.1"
+dependencies = [
+ "gpui-kit",
+]
+
+[[package]]
 name = "borsh"
 version = "1.8.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
