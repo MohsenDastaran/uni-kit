@@ -14,6 +14,7 @@ import {
 } from "lucide-vue-next";
 
 import Hero from "./hero/Hero.vue";
+import HomeTimeline from "./HomeTimeline.vue";
 
 const props = defineProps<{
     starCount: number;
@@ -313,6 +314,8 @@ const copy = {
                 </div>
             </div>
         </section>
+
+        <HomeTimeline />
 
         <section class="band band--principle">
             <div class="principle__grid" aria-hidden="true"></div>
