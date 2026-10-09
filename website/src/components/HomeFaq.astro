@@ -138,6 +138,9 @@ const faqs = [
      mixed with the brand, so it follows light, dark and any palette. */
   .faq__head {
     max-width: 44rem;
+    /* A question list reads as one column, so this band centres it. */
+    margin-inline: auto;
+    text-align: center;
   }
 
   .faq__badge {
@@ -159,6 +162,7 @@ const faqs = [
     flex-direction: column;
     gap: 0.75rem;
     max-width: 44rem;
+    margin-inline: auto;
   }
 
   .faq__item {
@@ -319,6 +323,7 @@ const faqs = [
 
   .faq__cta {
     max-width: 44rem;
+    margin-inline: auto;
     margin-top: 2.5rem;
     padding: 1.75rem;
     border: 1px solid var(--border);

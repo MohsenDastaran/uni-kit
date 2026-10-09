@@ -322,9 +322,6 @@ const copy = {
 <style>
 /* Styles from the original index.vue — kept as global since this is the page root */
 .home {
-    --page: 1280px;
-    --gutter: 1.5rem;
-    --section-gap: clamp(3.5rem, 6vw, 5.5rem);
     color: var(--foreground);
 }
 

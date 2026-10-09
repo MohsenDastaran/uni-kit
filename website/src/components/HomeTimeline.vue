@@ -378,7 +378,9 @@ onBeforeUnmount(() => {
 
 .journey__track {
     width: max-content;
-    padding-inline: clamp(1.5rem, 7vw, 7rem) clamp(2rem, 24vw, 20rem);
+    /* The band's own measure, so the first stop lines up with the heading. */
+    padding-inline: max(1.5rem, calc((100% - var(--page)) / 2))
+        clamp(2rem, 24vw, 20rem);
 }
 
 .journey__items {

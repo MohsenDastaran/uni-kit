@@ -29,6 +29,11 @@ html.dark .alignment-dark {
    ==================================================================== */
 
 :root {
+  /* The home page's measure. Its bands live both inside the home island and
+     beside it as Astro components, and they all size themselves with these. */
+  --page: 1280px;
+  --gutter: 1.5rem;
+  --section-gap: clamp(3.5rem, 6vw, 5.5rem);
   --radius-control: 0.375rem;
   --radius-card: 0.5rem;
   --radius-surface: 0.75rem;
