@@ -316,29 +316,6 @@ const copy = {
         </section>
 
         <HomeTimeline />
-
-        <section class="band band--principle">
-            <div class="principle__grid" aria-hidden="true"></div>
-            <div class="band__inner principle">
-                <div class="principle__quote">
-                    <span class="section-kicker">{{
-                        copy.principleKicker
-                    }}</span>
-                    <blockquote>
-                        <span>{{ copy.principleLead }}</span>
-                        <span class="principle__accent">{{
-                            copy.principleTail
-                        }}</span>
-                    </blockquote>
-                </div>
-                <div class="principle__aside">
-                    <p>{{ copy.principleDetail }}</p>
-                    <a :href="componentsHref" class="btn btn--primary"
-                        >{{ copy.baseAction }} <ArrowRight :size="16"
-                    /></a>
-                </div>
-            </div>
-        </section>
     </main>
 </template>
 
