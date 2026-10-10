@@ -28,9 +28,17 @@ RUN apt-get update \
 
 # The base examples build with `cargo +nightly`; story-web and the Slint gallery
 # use the default stable toolchain. CI installs both, so both get the target.
-RUN rustup toolchain install nightly --profile minimal \
- && rustup target add wasm32-unknown-unknown \
- && rustup target add wasm32-unknown-unknown --toolchain nightly
+#
+# The nightly is dated, and installed with everything the story-web toolchain
+# file asks for (rustfmt, clippy, the wasm target). Nothing may be installed while
+# the wasm build runs: rustup would replace the toolchain's wasm32 std, and that
+# replacement renames the old directory into `$RUSTUP_HOME/tmp`, which fails with
+# `Invalid cross-device link` because the toolchain sits in a lower overlay layer.
+# Keep the date in step with `crates/story-web/rust-toolchain.toml`.
+RUN rustup toolchain install nightly-2026-10-10 --profile minimal \
+      --component rustfmt --component clippy \
+      --target wasm32-unknown-unknown \
+ && rustup target add wasm32-unknown-unknown
 
 # The web half of every gallery is a bun build. The version matches CI.
 RUN curl -fsSL https://bun.sh/install | bash

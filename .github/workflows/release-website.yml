@@ -35,8 +35,12 @@ jobs:
 
       - name: Setup nightly Rust for GPUI Base WASM
         run: |
-          rustup toolchain install nightly --profile minimal
-          rustup target add wasm32-unknown-unknown --toolchain nightly
+          # Dated, matching crates/story-web/rust-toolchain.toml and the
+          # Dockerfile: a moving channel can replace the installed wasm32 std
+          # mid-build, which fails inside a container.
+          rustup toolchain install nightly-2026-10-10 --profile minimal \
+            --component rustfmt --component clippy
+          rustup target add wasm32-unknown-unknown --toolchain nightly-2026-10-10
 
       - name: Install wasm-bindgen-cli
         # Keep the CLI version in sync with the `wasm-bindgen` crate in Cargo.lock

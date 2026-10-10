@@ -1,4 +1,10 @@
+# Pinned to a dated nightly rather than the floating channel. A channel that
+# moves makes rustup replace the installed wasm32 std in the middle of a build,
+# and inside a container that replacement fails with `Invalid cross-device link`
+# (the toolchain sits in a lower overlay layer, the backup it renames into does
+# not). The date is deliberately the same one the Dockerfile installs and the one
+# `.github/workflows/release-website.yml` sets up; keep the three in step.
 [toolchain]
-channel = "nightly"
+channel = "nightly-2026-10-10"
 components = ["rustfmt", "clippy"]
 targets = ["wasm32-unknown-unknown"]
