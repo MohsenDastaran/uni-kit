@@ -48,7 +48,7 @@ const targets = computed(() =>
   fromBlock.value ? (props.slugs?.[framework.value] ?? []) : pageNames.value,
 );
 const manager = ref<Manager>("npx");
-const framework = ref<"gpui" | "slint">("gpui");
+const framework = ref<"gpui" | "slint">("slint");
 const copied = ref(false);
 const status = ref("");
 /**
@@ -132,9 +132,9 @@ function readManager(): Manager {
 }
 
 function readFramework() {
-  return document.documentElement.dataset.framework === "slint"
-    ? "slint"
-    : "gpui";
+  return document.documentElement.dataset.framework === "gpui"
+    ? "gpui"
+    : "slint";
 }
 
 function onStorage(event: StorageEvent) {

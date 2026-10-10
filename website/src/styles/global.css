@@ -1569,15 +1569,15 @@ html[lang^="ja"] .example-prompt {
   opacity: 0.8;
 }
 
-html[data-framework='slint'] .sidebar-item__count[data-framework-count='gpui'],
-html:not([data-framework='slint']) .sidebar-item__count[data-framework-count='slint'] {
+html:not([data-framework="gpui"]) .sidebar-item__count[data-framework-count='gpui'],
+html[data-framework="gpui"] .sidebar-item__count[data-framework-count='slint'] {
   display: none;
 }
 
 /* The navbar hides a framework-scoped link the same way the sidebar hides a
    framework-scoped count. */
-html[data-framework='slint'] .site-nav__link[data-framework-link='gpui'],
-html:not([data-framework='slint']) .site-nav__link[data-framework-link='slint'] {
+html:not([data-framework="gpui"]) .site-nav__link[data-framework-link='gpui'],
+html[data-framework="gpui"] .site-nav__link[data-framework-link='slint'] {
   display: none;
 }
 
@@ -2209,7 +2209,7 @@ html[lang^="ja"] .sidebar-group__title {
 
 /* Before the script runs, the stored choice on <html> positions the thumb, so
    a returning reader never sees it jump from GPUI to Slint. */
-html[data-framework="slint"]
+html:not([data-framework="gpui"])
   .framework-bar
   > .framework-switch:not([data-selected])
   .framework-switch__thumb,
@@ -2255,10 +2255,10 @@ html.dark .framework-switch__logo-accent {
 }
 
 .framework-switch__option:hover,
-html:not([data-framework="slint"])
+html[data-framework="gpui"]
   .framework-switch:not([data-selected])
   [data-framework-option="gpui"],
-html[data-framework="slint"]
+html:not([data-framework="gpui"])
   .framework-switch:not([data-selected])
   [data-framework-option="slint"],
 .framework-switch[data-selected="gpui"] [data-framework-option="gpui"],
@@ -2271,28 +2271,28 @@ html[data-framework="slint"]
 }
 
 .framework-code__panel[data-framework-panel="slint"],
-html[data-framework="slint"]
+html:not([data-framework="gpui"])
   .framework-code__panel[data-framework-panel="gpui"] {
   display: none;
 }
 
-html[data-framework="slint"]
+html:not([data-framework="gpui"])
   .framework-code__panel[data-framework-panel="slint"] {
   display: block;
 }
 
-html[data-framework="slint"] [data-framework-only="gpui"],
-html:not([data-framework="slint"]) [data-framework-only="slint"] {
+html:not([data-framework="gpui"]) [data-framework-only="gpui"],
+html[data-framework="gpui"] [data-framework-only="slint"] {
   display: none;
 }
 
 .framework-api__panel[data-framework-panel="slint"],
-html[data-framework="slint"]
+html:not([data-framework="gpui"])
   .framework-api__panel[data-framework-panel="gpui"] {
   display: none;
 }
 
-html[data-framework="slint"]
+html:not([data-framework="gpui"])
   .framework-api__panel[data-framework-panel="slint"] {
   display: block;
 }

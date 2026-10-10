@@ -48,9 +48,9 @@ const props = defineProps<{
 
 const base = props.baseUrl.replace(/\/$/, "");
 
-const framework = ref<"gpui" | "slint">("gpui");
+const framework = ref<"gpui" | "slint">("slint");
 const readFramework = () =>
-  document.documentElement.dataset.framework === "slint" ? "slint" : "gpui";
+  document.documentElement.dataset.framework === "gpui" ? "gpui" : "slint";
 
 
 

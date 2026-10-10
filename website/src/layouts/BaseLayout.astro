@@ -101,7 +101,7 @@ const jsonLd = JSON.stringify(structuredData ?? defaultStructuredData).replace(/
     <script is:inline>
       (function () {
         const stored = localStorage.getItem('selected-framework');
-        document.documentElement.dataset.framework = stored === 'slint' ? 'slint' : 'gpui';
+        document.documentElement.dataset.framework = stored === 'gpui' ? 'gpui' : 'slint';
       })();
     </script>
 

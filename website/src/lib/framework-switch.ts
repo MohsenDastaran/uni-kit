@@ -14,7 +14,7 @@ const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)');
 const isFramework = (value: unknown): value is Framework =>
   FRAMEWORKS.includes(value as Framework);
 
-let target: Framework = isFramework(root.dataset.framework) ? root.dataset.framework : 'gpui';
+let target: Framework = isFramework(root.dataset.framework) ? root.dataset.framework : 'slint';
 let loadingTimer: number | undefined;
 let enterTimer: number | undefined;
 

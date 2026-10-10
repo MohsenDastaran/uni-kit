@@ -32,7 +32,7 @@ const label = 'Framework';
     </svg>
   </button>
   <div id="framework-select-menu" class="framework-select__menu" role="listbox" aria-label={label} inert>
-    <button class="framework-select__option" type="button" role="option" data-framework-option="gpui" aria-selected="true" tabindex="-1">
+    <button class="framework-select__option" type="button" role="option" data-framework-option="gpui" aria-selected="false" tabindex="-1">
       <svg class="framework-select__logo" viewBox="0 0 32 32" aria-hidden="true">
         <path d="M4 4h24v5H10v14h18v5H4V4Z" fill="currentColor"></path>
         <path class="framework-switch__logo-accent" d="M16 13h12v10h-5v-5h-7v-5Z" fill="#3B82F6"></path>
@@ -42,7 +42,7 @@ const label = 'Framework';
         <path d="m20 6-11 11-5-5"></path>
       </svg>
     </button>
-    <button class="framework-select__option" type="button" role="option" data-framework-option="slint" aria-selected="false" tabindex="-1">
+    <button class="framework-select__option" type="button" role="option" data-framework-option="slint" aria-selected="true" tabindex="-1">
       <svg class="framework-select__logo" viewBox="0 0 24 24" aria-hidden="true">
         <path
           fill="currentColor"
@@ -302,8 +302,8 @@ const label = 'Framework';
     gap: 0.4rem;
   }
 
-  :global(html[data-framework='slint']) .framework-select:not([data-selected]) .framework-select__value[data-framework-value='gpui'],
-  :global(html:not([data-framework='slint'])) .framework-select:not([data-selected]) .framework-select__value[data-framework-value='slint'],
+  :global(html:not([data-framework='gpui'])) .framework-select:not([data-selected]) .framework-select__value[data-framework-value='gpui'],
+  :global(html[data-framework='gpui']) .framework-select:not([data-selected]) .framework-select__value[data-framework-value='slint'],
   .framework-select[data-selected='gpui'] .framework-select__value[data-framework-value='slint'],
   .framework-select[data-selected='slint'] .framework-select__value[data-framework-value='gpui'] {
     display: none;
@@ -372,8 +372,8 @@ const label = 'Framework';
     background: var(--secondary);
   }
 
-  :global(html:not([data-framework='slint'])) .framework-select:not([data-selected]) [data-framework-option='gpui'],
-  :global(html[data-framework='slint']) .framework-select:not([data-selected]) [data-framework-option='slint'],
+  :global(html[data-framework='gpui']) .framework-select:not([data-selected]) [data-framework-option='gpui'],
+  :global(html:not([data-framework='gpui'])) .framework-select:not([data-selected]) [data-framework-option='slint'],
   .framework-select[data-selected='gpui'] [data-framework-option='gpui'],
   .framework-select[data-selected='slint'] [data-framework-option='slint'] {
     background: var(--secondary);
@@ -390,8 +390,8 @@ const label = 'Framework';
     opacity: 0;
   }
 
-  :global(html:not([data-framework='slint'])) .framework-select:not([data-selected]) [data-framework-option='gpui'] .framework-select__check,
-  :global(html[data-framework='slint']) .framework-select:not([data-selected]) [data-framework-option='slint'] .framework-select__check,
+  :global(html[data-framework='gpui']) .framework-select:not([data-selected]) [data-framework-option='gpui'] .framework-select__check,
+  :global(html:not([data-framework='gpui'])) .framework-select:not([data-selected]) [data-framework-option='slint'] .framework-select__check,
   .framework-select[data-selected='gpui'] [data-framework-option='gpui'] .framework-select__check,
   .framework-select[data-selected='slint'] [data-framework-option='slint'] .framework-select__check {
     opacity: 1;
@@ -480,8 +480,8 @@ const label = 'Framework';
   }
 
   /* It names the framework the reader is not on, the inverse of the trigger. */
-  :global(html[data-framework='slint']) .framework-hint__value[data-framework-value='slint'],
-  :global(html:not([data-framework='slint'])) .framework-hint__value[data-framework-value='gpui'] {
+  :global(html:not([data-framework='gpui'])) .framework-hint__value[data-framework-value='slint'],
+  :global(html[data-framework='gpui']) .framework-hint__value[data-framework-value='gpui'] {
     display: none;
   }
 

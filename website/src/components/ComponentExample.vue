@@ -121,11 +121,11 @@ const frameworkList: Record<string, Framework> = {
 };
 
 const readFramework = () => {
-  const value = document.documentElement.dataset.framework ?? "gpui";
-  return value in frameworkList ? value : "gpui";
+  const value = document.documentElement.dataset.framework ?? "slint";
+  return value in frameworkList ? value : "slint";
 };
 
-const selected = shallowRef("gpui");
+const selected = shallowRef("slint");
 const framework = computed(() => selected.value);
 const available = computed(
   () =>
