@@ -2583,9 +2583,18 @@ html:not([data-framework="gpui"])
   display: flex;
   align-items: center;
   gap: 0.5rem;
+  align-self: flex-start;
   margin: 1.1rem 0.75rem 0;
   color: var(--muted-foreground);
   font: 0.72rem/1 var(--font-mono);
+  text-decoration: none;
+}
+
+/* It names where the project lives, so it goes there. */
+.starter-card__meta:hover {
+  color: var(--foreground);
+  text-decoration: underline;
+  text-underline-offset: 0.2em;
 }
 
 .starter-card__title {

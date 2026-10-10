@@ -13,6 +13,7 @@ const slintTemplates = [
     id: 'blank',
     title: 'Blank template',
     repo: 'MohsenDastaran/slint-rust-template',
+    repoHref: 'https://github.com/MohsenDastaran/slint-rust-template',
     href: 'https://github.com/MohsenDastaran/slint-rust-template/fork',
     label: 'Fork this repo',
     external: true,
@@ -23,6 +24,7 @@ const slintTemplates = [
     id: 'sidebar',
     title: 'Sidebar example',
     repo: 'MohsenDastaran/slint-rust-template-sidebar',
+    repoHref: 'https://github.com/MohsenDastaran/slint-rust-template-sidebar',
     href: 'https://github.com/MohsenDastaran/slint-rust-template-sidebar/fork',
     label: 'Fork this repo',
     external: true,
@@ -33,6 +35,7 @@ const slintTemplates = [
 
 const gpuiStart = {
   repo: 'gpui-kit.com',
+  repoHref: 'https://gpui-kit.com/',
   title: 'GPUI Kit quick start',
   href: 'https://gpui-kit.com/docs/getting-started/',
   label: 'Read the guide',
@@ -72,7 +75,12 @@ const gpuiStart = {
     <div class="starter__grid">
       <article class="starter-card" data-framework-only="gpui">
         <FolderAnimation label="Getting started guide illustration" />
-        <p class="starter-card__meta">{gpuiStart.repo}</p>
+        <a
+          class="starter-card__meta"
+          href={gpuiStart.repoHref}
+          target="_blank"
+          rel="noopener noreferrer">{gpuiStart.repo}</a
+        >
         <h3 class="starter-card__title">{gpuiStart.title}</h3>
         <p class="starter-card__body">{gpuiStart.description}</p>
         <a
@@ -93,7 +101,12 @@ const gpuiStart = {
         slintTemplates.map((template) => (
           <article class="starter-card" data-framework-only="slint">
             <FolderAnimation />
-            <p class="starter-card__meta">{template.repo}</p>
+            <a
+              class="starter-card__meta"
+              href={template.repoHref}
+              target="_blank"
+              rel="noopener noreferrer">{template.repo}</a
+            >
             <h3 class="starter-card__title">{template.title}</h3>
             <p class="starter-card__body">{template.description}</p>
             <a
