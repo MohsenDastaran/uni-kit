@@ -17,13 +17,15 @@ import { computed, onMounted, ref } from "vue";
  *   and the size, where it is known. `Feedback reflects reality`: a number this
  *   side cannot compute is not printed.
  * - `measured` — the bytes are being fetched and counted.
- * - `starting` — the download is done and the frame is booting from the cache.
+ *
+ * One state, not two: the preview's own gallery removes a `#loading` element
+ * when it has rendered its first frame, and the page keeps this loader up until
+ * then. So the download and the boot read as one wait, and the gallery's plain
+ * "Loading…" is never what the reader sees.
  */
 const props = defineProps<{
   /** What is being loaded, e.g. "Loading Sidebar". */
   label: string;
-  /** The same wait once the download has finished, e.g. "Starting Sidebar". */
-  startLabel?: string;
   /** Bytes on the wire, when the build measured them. */
   size?: number;
   /** The module's files, relative to the site root, when the build found them. */
@@ -40,14 +42,9 @@ const megabytes = (bytes: number) => {
 const sizeLabel = computed(() =>
   props.size && props.size > 0 ? megabytes(props.size) : null,
 );
-const startingLabel = computed(
-  () => props.startLabel ?? props.label.replace(/^Loading/, "Starting"),
-);
 
 /** 0–100 while measuring, null when there is nothing honest to count. */
 const percent = ref<number | null>(null);
-/** The measured download finished (or was never measurable); the frame boots. */
-const started = ref(false);
 
 /** Resolves to `fallback` if the work has not finished in time. */
 function withTimeout<T>(work: Promise<T>, ms: number, fallback: T) {
@@ -120,7 +117,6 @@ onMounted(async () => {
   } finally {
     // Always, and whatever happened above: the frame starts now. Waiting for a
     // manifest that arrives late would leave the preview unmounted for good.
-    started.value = true;
     emit("downloaded");
   }
 });
@@ -130,16 +126,11 @@ onMounted(async () => {
   <div class="loader" role="status" aria-live="polite">
     <span class="loader__spinner" aria-hidden="true" />
     <p class="loader__text">
-      <template v-if="started && percent !== null">{{ startingLabel }}</template>
-      <template v-else>
-        {{ label }}
-        <span v-if="percent !== null && percent < 100" class="loader__size">
-          · {{ percent }}% of {{ sizeLabel }}
-        </span>
-        <span v-else-if="sizeLabel" class="loader__size">
-          · {{ sizeLabel }} download
-        </span>
-      </template>
+      {{ label }}
+      <span v-if="percent !== null && percent < 100" class="loader__size">
+        · {{ percent }}% of {{ sizeLabel }}
+      </span>
+      <span v-else-if="sizeLabel" class="loader__size"> · {{ sizeLabel }} </span>
     </p>
   </div>
 </template>

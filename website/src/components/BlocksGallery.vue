@@ -70,6 +70,7 @@ function onFrameworkChange() {
   // for, and the new first block loads on its own.
   primed.value = {};
   loaded.value = {};
+  for (const block of props.blocks) stopWatching(block);
 }
 
 onMounted(() => {
@@ -85,6 +86,7 @@ onMounted(() => {
 onBeforeUnmount(() => {
   clearTimeout(promptTimer);
   document.removeEventListener("framework-change", onFrameworkChange);
+  for (const block of props.blocks) stopWatching(block);
 });
 
 /**
@@ -127,8 +129,69 @@ function request(block: Block) {
   requested.value = { ...requested.value, [block.id]: true };
 }
 
-function onFrameLoad(block: Block) {
-  loaded.value = { ...loaded.value, [block.id]: true };
+/**
+ * The frame's own gallery is the one that knows when the preview is ready: each
+ * gallery removes its `#loading` element once the app has drawn its first frame.
+ * The overlay stays until then, so the download and the boot read as one wait
+ * and the gallery's plain "Loading…" is never what the reader sees. A frame that
+ * cannot be inspected — a cross-origin one — falls back to its `load` event, and
+ * a boot that never reports in is revealed anyway rather than trapping the page
+ * behind an overlay forever.
+ */
+const readyObservers = new Map<string, MutationObserver>();
+const readyTimers = new Map<string, number>();
+const BOOT_LIMIT = 120_000;
+
+function stopWatching(block: Block) {
+  readyObservers.get(block.id)?.disconnect();
+  readyObservers.delete(block.id);
+  const timer = readyTimers.get(block.id);
+  if (timer !== undefined) window.clearTimeout(timer);
+  readyTimers.delete(block.id);
+}
+
+function watchFrame(frame: HTMLIFrameElement, block: Block) {
+  stopWatching(block);
+  const settle = () => {
+    stopWatching(block);
+    loaded.value = { ...loaded.value, [block.id]: true };
+  };
+
+  let document_: Document | null = null;
+  try {
+    document_ = frame.contentDocument;
+  } catch {
+    // A cross-origin frame cannot be inspected, so its `load` is all there is.
+    settle();
+    return;
+  }
+  if (!document_ || !document_.body) {
+    settle();
+    return;
+  }
+
+  const stillLoading = () => document_?.getElementById("loading") ?? null;
+  if (!stillLoading()) {
+    settle();
+    return;
+  }
+  // `#loading` is a child of `body`, so watching the body's children is enough
+  // and does not walk the whole document on every mutation of the app.
+  const observer = new MutationObserver(() => {
+    if (!stillLoading()) settle();
+  });
+  observer.observe(document_.body, { childList: true });
+  readyObservers.set(block.id, observer);
+  readyTimers.set(
+    block.id,
+    window.setTimeout(settle, BOOT_LIMIT),
+  );
+}
+
+function onFrameLoad(event: Event, block: Block) {
+  const frame = event.target;
+  if (frame instanceof HTMLIFrameElement) watchFrame(frame, block);
+  else loaded.value = { ...loaded.value, [block.id]: true };
 }
 
 // The galleries' sizes and file names arrive from the page that rendered this
@@ -303,6 +366,7 @@ async function copyUsagePrompt(block: Block) {
 // old one down and the example starts from the beginning again.
 const reloads = ref<Record<string, number>>({});
 function reload(block: Block) {
+  stopWatching(block);
   loaded.value = { ...loaded.value, [block.id]: false };
   reloads.value = { ...reloads.value, [block.id]: (reloads.value[block.id] ?? 0) + 1 };
 }
@@ -391,7 +455,7 @@ function reload(block: Block) {
             :title="`${block.title} example`"
             class="block__iframe"
             allow="cross-origin-isolated"
-            @load="onFrameLoad(block)"
+            @load="onFrameLoad($event, block)"
           />
           <div
             v-else-if="frameUnavailable(block)"
@@ -422,7 +486,6 @@ function reload(block: Block) {
           >
             <PreviewLoader
               :label="`Loading ${block.title}…`"
-              :start-label="`Starting ${block.title}…`"
               :size="sizeFor(block)"
               :files="primed[block.id] ? undefined : filesFor(block)"
               @downloaded="prime(block)"

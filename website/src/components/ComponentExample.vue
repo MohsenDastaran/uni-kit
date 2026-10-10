@@ -190,9 +190,6 @@ const missingLabel = computed(
 const loadingLabel = computed(
   () => `Loading the ${active.value.name} example…`,
 );
-const startingLabel = computed(
-  () => `Starting the ${active.value.name} example…`,
-);
 
 // The galleries' sizes and file names arrive from the page that rendered this
 // island, so the server's HTML already says how big the download is.
@@ -219,6 +216,64 @@ const activeFiles = computed(() =>
 // page. The loader fetches them with a percentage; switching frameworks away
 // and back re-runs the measurement only when the module was never primed.
 const primed = reactive(new Set<string>());
+
+/**
+ * The gallery inside the frame says when the preview is ready: it removes its
+ * `#loading` element once the app has drawn its first frame. The overlay stays
+ * until then, so the download and the boot are one wait rather than two, and
+ * the gallery's own "Loading…" is never what the reader sees. A frame that
+ * cannot be inspected falls back to its `load` event, and a boot that never
+ * reports in is revealed anyway.
+ */
+const readyObservers = new Map<string, MutationObserver>();
+const readyTimers = new Map<string, number>();
+const BOOT_LIMIT = 120_000;
+
+function stopWatching(name: string) {
+  readyObservers.get(name)?.disconnect();
+  readyObservers.delete(name);
+  const timer = readyTimers.get(name);
+  if (timer !== undefined) window.clearTimeout(timer);
+  readyTimers.delete(name);
+}
+
+function watchFrame(frame: HTMLIFrameElement, name: string) {
+  stopWatching(name);
+  const settle = () => {
+    stopWatching(name);
+    loaded.add(name);
+  };
+
+  let document_: Document | null = null;
+  try {
+    document_ = frame.contentDocument;
+  } catch {
+    // A cross-origin frame cannot be inspected, so its `load` is all there is.
+    settle();
+    return;
+  }
+  if (!document_ || !document_.body) {
+    settle();
+    return;
+  }
+  const stillLoading = () => document_?.getElementById("loading") ?? null;
+  if (!stillLoading()) {
+    settle();
+    return;
+  }
+  const observer = new MutationObserver(() => {
+    if (!stillLoading()) settle();
+  });
+  observer.observe(document_.body, { childList: true });
+  readyObservers.set(name, observer);
+  readyTimers.set(name, window.setTimeout(settle, BOOT_LIMIT));
+}
+
+function onFrameLoad(event: Event, name: string) {
+  const frame = event.target;
+  if (frame instanceof HTMLIFrameElement) watchFrame(frame, name);
+  else loaded.add(name);
+}
 
 const target = shallowRef<HTMLElement>();
 
@@ -702,6 +757,7 @@ const reloadNonce = reactive<Record<string, number>>({});
 function reloadExample() {
   if (!available.value) return;
   const name = framework.value;
+  stopWatching(name);
   loaded.delete(name);
   reloadNonce[name] = (reloadNonce[name] ?? 0) + 1;
 }
@@ -755,6 +811,7 @@ watch(framework, () => {
   syncPrompts();
 });
 onBeforeUnmount(() => {
+  for (const name of [...readyObservers.keys()]) stopWatching(name);
   window.removeEventListener("message", onExampleMessage);
   observer?.disconnect();
   clearTimeout(promptTimer);
@@ -828,7 +885,7 @@ onBeforeUnmount(() => {
               :class="`component-example__frame--${frame.name}`"
               :title="`${component} interactive example (${frameworkList[frame.name].name})`"
               allow="cross-origin-isolated"
-              @load="loaded.add(frame.name)"
+              @load="onFrameLoad($event, frame.name)"
             />
           </template>
           <div
@@ -838,7 +895,6 @@ onBeforeUnmount(() => {
           >
             <PreviewLoader
               :label="loadingLabel"
-              :start-label="startingLabel"
               :size="activeSize"
               :files="primed.has(framework) ? undefined : activeFiles"
               @downloaded="primed.add(framework)"
