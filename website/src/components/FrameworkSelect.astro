@@ -173,6 +173,22 @@ const label = 'Framework';
       dismiss();
     };
 
+    // Aim the arrow at the selector, or put it away when the selector is too
+    // far from this corner for the arrow to mean anything.
+    const pointArrow = () => {
+      const card = hint.getBoundingClientRect();
+      const target = trigger.getBoundingClientRect();
+      const x = target.left + target.width / 2 - card.left;
+      const near = x > 12 && x < card.width - 12;
+      hint.toggleAttribute('data-arrow-hidden', !near);
+      if (!near) return;
+      hint.style.setProperty('--framework-hint-arrow-x', x.toFixed(1) + 'px');
+      hint.style.setProperty(
+        '--framework-hint-arrow-flip',
+        x < card.width / 2 ? '-1' : '1',
+      );
+    };
+
     const dismiss = () => {
       if (!shown) return;
       shown = false;
@@ -182,6 +198,7 @@ const label = 'Framework';
       window.removeEventListener('keydown', onKey);
       document.removeEventListener('framework-change', switched);
       trigger.removeEventListener('keydown', onTriggerKey);
+      window.removeEventListener('resize', pointArrow);
     };
 
     const onKey = (event: KeyboardEvent) => {
@@ -195,8 +212,13 @@ const label = 'Framework';
     window.setTimeout(() => {
       // The reader may have found the selector, or switched, in the meantime.
       if (root.classList.contains('is-open')) return;
+      // Out of the bar: its backdrop blur would anchor this fixed card to the
+      // bar instead of the viewport.
+      if (hint.parentElement !== document.body) document.body.append(hint);
       shown = true;
       hint.hidden = false;
+      pointArrow();
+      window.addEventListener('resize', pointArrow);
       trigger.classList.add('is-hinting');
       try {
         window.localStorage.setItem(HINT_KEY, String(seen + 1));
@@ -357,10 +379,13 @@ const label = 'Framework';
   /* The nudge: a card under the selector with a drawn arrow back up at it, a
      wiggle on the control, and a springy entrance. Every colour is a token. */
   .framework-hint {
-    position: absolute;
-    top: calc(100% + 0.75rem);
-    right: 0;
-    z-index: 40;
+    /* A toast in the top-right corner, below the bar. It is moved to the body
+       before it shows, because the bar's backdrop blur would otherwise become
+       the containing block for this fixed position. */
+    position: fixed;
+    top: calc(var(--nav-height, 56px) + 0.9rem);
+    right: 1rem;
+    z-index: 60;
     display: flex;
     flex-direction: column;
     gap: 0.15rem;
@@ -429,12 +454,22 @@ const label = 'Framework';
 
   .framework-hint__arrow {
     position: absolute;
-    top: -1.85rem;
-    right: 1.5rem;
+    top: -1.9rem;
+    left: var(--framework-hint-arrow-x, 55%);
     width: 3.4rem;
     height: 2.1rem;
+    /* Centred on the selector, and mirrored when it sits to the left, since
+       the drawing ends at its top-right. */
+    translate: -50% 0;
+    scale: var(--framework-hint-arrow-flip, 1) 1;
     color: var(--brand);
     animation: framework-hint-nudge 1.15s ease-in-out 2;
+  }
+
+  /* On a wide screen the bar is centred, so the selector is a long way from
+     the screen's corner and an arrow would point at nothing. */
+  .framework-hint[data-arrow-hidden] .framework-hint__arrow {
+    display: none;
   }
 
   .framework-select__trigger.is-hinting {
