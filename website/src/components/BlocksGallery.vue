@@ -477,8 +477,16 @@ function reload(block: Block) {
 .blocks {
   display: flex;
   flex-direction: column;
-  gap: 4rem;
+  gap: 2rem;
   margin-block: 2rem;
+}
+
+/* One hairline per boundary, drawn by the block below it: two neighbours must
+   not both draw the same line. The spacing is split across it, so the rule sits
+   in the middle of the gap rather than against either block's first row. */
+.block + .block {
+  padding-top: 2rem;
+  border-top: 1px solid var(--border);
 }
 
 /* The bar the component pages use, with the four columns read as
@@ -585,25 +593,45 @@ function reload(block: Block) {
   display: inline-flex;
   flex: none;
   align-items: center;
-  gap: 0.3rem;
-  height: 1.75rem;
-  padding: 0 0.6rem;
-  border: 1px solid var(--border);
+  gap: 0.4rem;
+  height: 2rem;
+  padding: 0 0.85rem;
+  border: 1px solid color-mix(in srgb, var(--brand) 55%, var(--border));
   border-radius: var(--radius-control);
-  background: var(--background);
-  color: var(--muted-foreground);
-  font: 500 0.75rem/1 var(--font-sans);
+  background: color-mix(in srgb, var(--brand) 8%, var(--background));
+  color: var(--foreground);
+  font: 600 0.78rem/1 var(--font-sans);
   letter-spacing: -0.011em;
   cursor: pointer;
   transition:
     background 140ms ease,
+    border-color 140ms ease,
     color 140ms ease;
 }
 
-.block__prompt:hover,
+/* The sparkle is the one accent. It is the brand mixed towards the label's ink:
+   the brand alone is a surface colour, and measured against the button's own
+   background it drops to 2.2:1 on the light palettes while the chart set drops to
+   2.0:1 on the dark ones. Mixed with the ink it keeps the palette's hue and stays
+   legible on every theme. */
+.block__prompt svg {
+  color: color-mix(in srgb, var(--brand) 55%, var(--foreground));
+}
+
+.block__prompt:hover {
+  border-color: var(--brand);
+  background: color-mix(in srgb, var(--brand) 16%, var(--background));
+}
+
+/* Copied is a result, so it says so in the accent rather than a wash of it. */
 .block__prompt[data-copied] {
-  background: var(--secondary);
-  color: var(--foreground);
+  border-color: var(--brand);
+  background: var(--brand);
+  color: var(--brand-contrast);
+}
+
+.block__prompt[data-copied] svg {
+  color: var(--brand-contrast);
 }
 
 .block__action {
