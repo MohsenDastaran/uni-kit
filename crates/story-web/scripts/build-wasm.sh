@@ -52,6 +52,18 @@ wasm-bindgen "$WASM_PATH" \
     --target web \
     --no-typescript
 
+# A smaller module compiles faster in the browser. wasm-opt is optional: a
+# machine without Binaryen still builds, just larger.
+if command -v wasm-opt >/dev/null 2>&1; then
+    wasm-opt -O3 --strip-debug \
+        -o "$PROJECT_ROOT/www/src/wasm/gpui_component_story_web_bg.wasm.tmp" \
+        "$PROJECT_ROOT/www/src/wasm/gpui_component_story_web_bg.wasm" \
+        && mv "$PROJECT_ROOT/www/src/wasm/gpui_component_story_web_bg.wasm.tmp" \
+              "$PROJECT_ROOT/www/src/wasm/gpui_component_story_web_bg.wasm"
+else
+    echo "wasm-opt not found (apt install binaryen): leaving the module unoptimized" >&2
+fi
+
 echo -e "${GREEN}✓ Build completed successfully!${NC}"
 echo -e "${YELLOW}Next steps:${NC}"
 echo -e "  cd www"

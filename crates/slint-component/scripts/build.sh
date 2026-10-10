@@ -50,6 +50,14 @@ mkdir -p "$out_dir"
 rm -f "$out_dir/slint_component.js" "$out_dir/slint_component_bg.wasm" "$out_dir/index.html"
 wasm-bindgen "$target_dir/wasm32-unknown-unknown/$profile/slint_component.wasm" \
   --out-dir "$out_dir" --target web --no-typescript
+# A smaller module compiles faster in the browser and ships fewer bytes. wasm-opt
+# is optional: a machine without Binaryen still builds, just larger.
+if command -v wasm-opt >/dev/null 2>&1; then
+  wasm-opt -O3 --strip-debug -o "$out_dir/slint_component_bg.wasm.tmp" "$out_dir/slint_component_bg.wasm" \
+    && mv "$out_dir/slint_component_bg.wasm.tmp" "$out_dir/slint_component_bg.wasm"
+else
+  echo "build.sh: wasm-opt not found (apt install binaryen) — leaving the module unoptimized" >&2
+fi
 cp "$crate_dir/www/index.html" "$out_dir/index.html"
 
 # Record what this page was built from, so the next `make dev` can tell whether

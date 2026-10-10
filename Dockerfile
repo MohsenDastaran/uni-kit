@@ -20,7 +20,7 @@ FROM rust:1-bookworm AS build
 # into the wasm build.
 RUN apt-get update \
  && apt-get install -y --no-install-recommends \
-      build-essential pkg-config libssl-dev ca-certificates curl git unzip gnupg \
+      build-essential pkg-config libssl-dev ca-certificates curl git unzip gnupg binaryen \
  && curl -fsSL https://deb.nodesource.com/setup_22.x | bash - \
  && apt-get install -y --no-install-recommends nodejs \
  && node --version \
@@ -113,9 +113,15 @@ RUN --mount=type=secret,id=github_token \
  && cp -r ../crates/slint-component/www/dist/. dist/slint-gallery/
 
 # ---- server ----------------------------------------------------------------
-FROM nginx:alpine AS runtime
+# Alpine's nginx, plus its brotli module: the official nginx image does not ship
+# brotli, and serving the pre-compressed `.wasm.br` needs it. gzip_static stays
+# as the fallback for any client without brotli.
+FROM alpine AS runtime
 
-COPY deploy/nginx.conf /etc/nginx/conf.d/default.conf
+RUN apk add --no-cache nginx nginx-mod-http-brotli
+
+COPY deploy/nginx.conf /etc/nginx/http.d/default.conf
 COPY --from=build /src/website/dist /usr/share/nginx/html
 
 EXPOSE 80
+CMD ["nginx", "-g", "daemon off;"]

@@ -41,7 +41,13 @@ web-sys = { version = "0.3", features = [
 slint-build = "1.17"
 
 [profile.release]
+# The browser has to compile this module before it shows anything, so the
+# profile prefers small, single-unit code over build convenience.
 opt-level = "s"
+lto = "thin"
+codegen-units = 1
+panic = "abort"
+strip = "symbols"
 
 # The gallery is one generated Rust file holding every example, and full debug
 # info for it is the single largest thing rustc builds. Dropping it is what lets

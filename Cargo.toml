@@ -185,3 +185,21 @@ consts = "consts"
 
 [workspace.metadata.cargo-machete]
 ignored = ["log", "anyhow", "serde"]
+
+# The two WebAssembly galleries build in release for the site; the browser
+# compiles them before showing anything, so their profile prefers small,
+# single-unit code. Scoped to these packages so the desktop crates' release
+# profile is untouched.
+[profile.release.package.gpui-component-story-web]
+opt-level = "s"
+lto = "thin"
+codegen-units = 1
+panic = "abort"
+strip = "symbols"
+
+[profile.release.package.gpui-base-examples-wasm]
+opt-level = "s"
+lto = "thin"
+codegen-units = 1
+panic = "abort"
+strip = "symbols"

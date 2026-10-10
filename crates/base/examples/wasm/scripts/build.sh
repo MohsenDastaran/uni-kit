@@ -11,3 +11,13 @@ cargo_args=(+nightly-2026-10-10 build --manifest-path "$crate_dir/Cargo.toml" --
 if [[ "${1:-}" == "--release" ]]; then profile="release"; cargo_args+=(--release); fi
 cargo "${cargo_args[@]}"
 wasm-bindgen "$workspace_dir/target/wasm32-unknown-unknown/$profile/gpui_base_examples_wasm.wasm" --out-dir "$crate_dir/www/src/wasm" --target web --no-typescript
+# A smaller module compiles faster in the browser. wasm-opt is optional.
+if command -v wasm-opt >/dev/null 2>&1; then
+  wasm-opt -O3 --strip-debug \
+    -o "$crate_dir/www/src/wasm/gpui_base_examples_wasm_bg.wasm.tmp" \
+    "$crate_dir/www/src/wasm/gpui_base_examples_wasm_bg.wasm" \
+    && mv "$crate_dir/www/src/wasm/gpui_base_examples_wasm_bg.wasm.tmp" \
+          "$crate_dir/www/src/wasm/gpui_base_examples_wasm_bg.wasm"
+else
+  echo "wasm-opt not found (apt install binaryen): leaving the module unoptimized" >&2
+fi

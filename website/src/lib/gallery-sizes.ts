@@ -34,7 +34,9 @@ export type Gallery = { total: number; files: string[]; decoded: number };
 const MODULE = /\.wasm$/;
 
 const sizeOnWire = (file: string): number => {
-  for (const variant of [file + '.gz', file + '.br']) {
+  // Brotli is the smallest representation the server hands out; gzip is the
+  // fallback for a client that cannot take brotli.
+  for (const variant of [file + '.br', file + '.gz']) {
     try {
       return statSync(variant).size;
     } catch {
