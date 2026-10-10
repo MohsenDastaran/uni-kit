@@ -1,11 +1,7 @@
 <script setup lang="ts">
 import {
-    ArrowRight,
-    Blocks,
     Braces,
-    Check,
     Gauge,
-    Layers3,
     LayoutDashboard,
     List,
     Palette,
@@ -124,31 +120,9 @@ const copy = {
             apis: ["Theme", "ThemeColor", "ActiveTheme"],
         },
     ],
-    chooseKicker: "Two layers. One ecosystem.",
-    chooseTitle: "Choose who owns the visual system.",
-    chooseDescription:
-        "Use gpui-component for a coherent product, or build and own your design system on gpui-base.",
-    shipTitle: "Keep the product coherent",
-    shipDescription:
-        "gpui-component provides a complete, polished visual and interaction system ready to ship.",
-    shipPoints: [
-        "60+ finished components",
-        "Light and dark themes included",
-        "Interaction details already handled",
-    ],
     // The hero's two actions, so the path section below keeps its own wording.
     ctaPrimary: "Start building",
     ctaSecondary: "View the components",
-    startComponent: "Get started",
-    ownTitle: "Own the design system",
-    ownDescription:
-        "Reuse focus, selection, overlay and virtualization behavior while owning every pixel.",
-    ownPoints: [
-        "Zero-style primitives",
-        "Full accessibility behavior",
-        "100% visual ownership",
-    ],
-    startBase: "Browse the components",
     scriptTitle: "Extend it in JavaScript",
     scriptDescription:
         "The host stays Rust and grants what a script may reach, one capability at a time; the script draws real interface in the same process.",
@@ -258,58 +232,6 @@ const copy = {
                                 <em v-for="t in 6" :key="t" />
                             </template>
                         </div>
-                    </article>
-                </div>
-            </div>
-        </section>
-
-        <section class="band">
-            <div class="band__inner">
-                <header class="section-head">
-                    <span class="section-kicker">{{ copy.chooseKicker }}</span>
-                    <h2>{{ copy.chooseTitle }}</h2>
-                    <p>{{ copy.chooseDescription }}</p>
-                </header>
-                <div class="paths__grid">
-                    <article class="path path--primary">
-                        <div class="path__meta">
-                            <Blocks :size="16" />
-                            <span>gpui-component</span>
-                        </div>
-                        <h3>{{ copy.shipTitle }}</h3>
-                        <p>{{ copy.shipDescription }}</p>
-                        <pre><code><span class="c-type">Button</span>::<span class="c-fn">new</span>(<span class="c-str">"save"</span>)
-    .<span class="c-fn">primary</span>()
-    .<span class="c-fn">label</span>(<span class="c-str">"Save changes"</span>)
-    .<span class="c-fn">on_click</span>(cx.<span class="c-fn">listener</span>(Self::save))</code></pre>
-                        <ul>
-                            <li v-for="item in copy.shipPoints" :key="item">
-                                <Check :size="13" />{{ item }}
-                            </li>
-                        </ul>
-                        <a :href="gettingStartedHref" class="path__link"
-                            >{{ copy.startComponent }} <ArrowRight :size="15"
-                        /></a>
-                    </article>
-
-                    <article class="path">
-                        <div class="path__meta">
-                            <Layers3 :size="16" /><span>gpui-base</span>
-                        </div>
-                        <h3>{{ copy.ownTitle }}</h3>
-                        <p>{{ copy.ownDescription }}</p>
-                        <pre><code><span class="c-type">Button</span>::<span class="c-fn">new</span>(<span class="c-str">"save"</span>)
-    .<span class="c-fn">on_click</span>(cx.<span class="c-fn">listener</span>(Self::save))
-    .<span class="c-fn">rounded_md</span>()
-    .<span class="c-fn">child</span>(<span class="c-str">"Save changes"</span>)</code></pre>
-                        <ul>
-                            <li v-for="item in copy.ownPoints" :key="item">
-                                <Check :size="13" />{{ item }}
-                            </li>
-                        </ul>
-                        <a :href="componentsHref" class="path__link"
-                            >{{ copy.startBase }} <ArrowRight :size="15"
-                        /></a>
                     </article>
                 </div>
             </div>
@@ -824,110 +746,6 @@ html[lang^="zh"] .section-kicker {
     background: var(--data-2);
 }
 
-.paths__grid {
-    display: grid;
-    grid-template-columns: repeat(3, minmax(0, 1fr));
-    gap: 1.25rem;
-}
-
-.path {
-    display: flex;
-    flex-direction: column;
-    padding: clamp(1.75rem, 3vw, 2.5rem);
-    border: 1px solid var(--border);
-    border-radius: var(--radius-surface);
-    background: var(--background);
-    transition:
-        border-color 180ms ease,
-        box-shadow 180ms ease;
-}
-
-/* These are three large cards side by side, so hovering one is read against
-   the two beside it. The shadow carries the lift; the border only needs to
-   acknowledge the pointer, hence `--border-hover` rather than the stronger
-   `--brand-line` the smaller App Stories cards use. */
-.path:hover {
-    border-color: var(--border-hover);
-    box-shadow: var(--shadow-panel);
-}
-
-.path h3 {
-    margin: 1rem 0 0;
-    font-size: 1.35rem;
-    font-weight: 640;
-    letter-spacing: -0.03em;
-}
-.path p {
-    min-height: 3.05rem;
-    margin: 0.65rem 0 0;
-    color: var(--muted-foreground);
-    font-size: 0.92rem;
-    line-height: 1.65;
-}
-
-.path pre {
-    margin: 1.5rem 0 0;
-    padding: 1rem 1.1rem;
-    overflow-x: auto;
-    border: 1px solid var(--border);
-    border-radius: var(--radius-card);
-    background: var(--code-bg);
-    color: var(--code-fg);
-    font: 0.78rem/1.75 var(--font-mono);
-}
-
-.path ul {
-    margin: 1.25rem 0 0;
-    padding: 0;
-    list-style: none;
-}
-
-.path li {
-    display: flex;
-    align-items: center;
-    gap: 0.5rem;
-    padding: 0.3rem 0;
-    color: var(--muted-foreground);
-    font-size: 0.84rem;
-}
-
-.path__meta {
-    display: flex;
-    align-items: center;
-    gap: 0.5rem;
-    color: var(--muted-foreground);
-    font: 0.72rem/1 var(--font-mono);
-}
-
-.path__link {
-    display: inline-flex;
-    align-items: center;
-    gap: 0.4rem;
-    margin-top: auto;
-    padding-top: 1.5rem;
-    color: var(--brand) !important;
-    font-size: 0.84rem;
-    font-weight: 620;
-    text-decoration: none !important;
-    transition: color 140ms ease;
-}
-
-.c-type {
-    color: var(--code-type);
-}
-.c-fn {
-    color: var(--code-fn);
-}
-.c-str {
-    color: var(--code-string);
-}
-.c-kw {
-    color: var(--code-keyword);
-}
-.c-mod {
-    color: var(--code-fg);
-}
-
 .principle {
     display: grid;
     grid-template-columns: minmax(0, 1.05fr) minmax(0, 0.95fr);
@@ -990,16 +808,7 @@ html[lang^="zh"] .section-kicker {
     }
 }
 
-@media (max-width: 1180px) {
-    .paths__grid {
-        grid-template-columns: repeat(2, minmax(0, 1fr));
-    }
-}
-
 @media (max-width: 860px) {
-    .paths__grid {
-        grid-template-columns: minmax(0, 1fr);
-    }
     .principle {
         grid-template-columns: 1fr;
         align-items: start;
