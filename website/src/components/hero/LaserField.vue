@@ -100,6 +100,11 @@ void main() {
     mouseUV.x *= u_resolution.x / u_resolution.y;
 
     vec2 center = vec2(-0.8, -0.2);
+    // The junction's centre sits left of middle, so the composition is nudged
+    // right by 4% of the surface's width — in this height-normalised space,
+    // where x spans the aspect. Doing it here rather than with a CSS transform
+    // lets the canvas cover the surface edge to edge.
+    center.x += 0.08 * u_resolution.x / u_resolution.y;
     center.x += sin(u_time * 0.4) * 0.03;
     center.y += cos(u_time * 0.3) * 0.03;
 

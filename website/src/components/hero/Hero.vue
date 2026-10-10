@@ -124,11 +124,10 @@ html[data-framework="slint"] .hero {
     width: 100%;
     height: 100%;
     display: block;
-    /* The junction's centre sits left of middle; nudge the whole field right.
-     The strip this leaves on the left is the surface behind it. */
-    transform: translateX(4%);
     /* The beams are additive, so over a light surface they are multiplied into
-       ink instead of disappearing into it. */
+       ink instead of disappearing into it. The field covers the hero edge to
+       edge; the composition's own nudge lives in the shader, where shifting it
+       cannot leave a strip of bare surface behind. */
     mix-blend-mode: multiply;
 }
 
