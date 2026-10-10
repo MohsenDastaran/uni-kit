@@ -4,6 +4,7 @@ import DocsLayout from '../../layouts/DocsLayout.astro';
 import { enComponentSidebar } from '../../lib/sidebar';
 import ComponentExample from '../../components/ComponentExample.vue';
 import { hasSlintExample } from '../../lib/remark-slint-source.js';
+import { gallerySizes } from '../../lib/gallery-sizes';
 
 export async function getStaticPaths() {
   const entries = await getCollection('component');
@@ -24,6 +25,16 @@ const pathname = Astro.url.pathname;
 // The current main checkout owns the single WASM deployment at the site root.
 const examplesBase = '/';
 const devVersion = import.meta.env.DEV ? 'dev' : undefined;
+
+// The sizes this page's loader prints: the shared GPUI gallery and, when the
+// component has one, its Slint page.
+const sizes = (() => {
+  const all = gallerySizes();
+  return {
+    gallery: all.gallery,
+    ...(slug === 'index' ? {} : { [`slint-gallery/pages/${slug}`]: all[`slint-gallery/pages/${slug}`] }),
+  };
+})();
 const seoTitle = entry.id.replace(/\.md$/, '') === 'index' ? entry.data.title : `${entry.data.title} — GPUI Component`;
 ---
 
@@ -42,6 +53,7 @@ const seoTitle = entry.id.replace(/\.md$/, '') === 'index' ? entry.data.title : 
       baseUrl={examplesBase}
       devVersion={devVersion}
       frameworks={frameworks}
+      sizes={sizes}
     />
   )}
 </DocsLayout>

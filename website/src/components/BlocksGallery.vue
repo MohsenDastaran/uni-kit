@@ -1,8 +1,9 @@
 <script setup lang="ts">
-import { computed, nextTick, onBeforeUnmount, onMounted, ref } from "vue";
+import { computed, onBeforeUnmount, onMounted, ref } from "vue";
 import { Download, Monitor, RotateCw, Smartphone, Sparkles, Tablet } from "lucide-vue-next";
 import InstallCommand from "./InstallCommand.vue";
 import PreviewLoader from "./PreviewLoader.vue";
+import type { Gallery } from "../lib/gallery-sizes";
 
 // One block: a composed screen shown as the live example. `story` is the GPUI
 // gallery's story name, `slug` the Slint gallery's page folder, `doc` the
@@ -45,6 +46,8 @@ export interface Block {
 const props = defineProps<{
   blocks: Block[];
   baseUrl: string;
+  /** The galleries' sizes and file names, measured at build time. */
+  sizes?: Record<string, Gallery>;
 }>();
 
 const base = props.baseUrl.replace(/\/$/, "");
@@ -62,21 +65,22 @@ function onFrameworkChange() {
   const next = readFramework();
   if (next === framework.value) return;
   framework.value = next;
-  // Every frame reloads with the other framework. What was asked for by hand
-  // stays asked for; the new first block loads on its own.
+  // Every frame reloads with the other framework, and the new one must be
+  // measured rather than fetched unseen: what was asked for by hand stays asked
+  // for, and the new first block loads on its own.
+  primed.value = {};
   loaded.value = {};
 }
 
-onMounted(async () => {
+onMounted(() => {
   // Registered before anything else can throw: a failure here would otherwise
   // leave the page deaf to the framework switch in the header, and the examples
   // would silently keep showing the framework the page was built with.
   document.addEventListener("framework-change", onFrameworkChange);
   framework.value = readFramework();
-  // After the framework is known and its frames have rendered, because which
-  // frames exist is what the framework decides.
-  await nextTick();
-  reconcileFrames();
+  // No frame is in the server's HTML anymore: every preview, the first included,
+  // goes through the loader's measured download, so there is nothing to
+  // reconcile and no `load` that could have finished before this island woke up.
 });
 onBeforeUnmount(() => {
   clearTimeout(promptTimer);
@@ -127,75 +131,23 @@ function onFrameLoad(block: Block) {
   loaded.value = { ...loaded.value, [block.id]: true };
 }
 
-// How big the module is, where the build could measure it, and which files it
-// comes in — enough to fetch it here with a real percentage and let the frame
-// read the same bytes from the cache. The button says the cost before the
-// reader pays it, which is the whole point of asking first.
-type Gallery = { total: number; files: string[] };
-const galleries = ref<Record<string, Gallery>>({});
-onMounted(async () => {
-  try {
-    const response = await fetch(`${base}/gallery-sizes.json`);
-    if (response.ok) galleries.value = await response.json();
-  } catch {
-    // A missing manifest only means the sizes go unsaid.
-  }
-});
-
-/** The manifest is keyed by the gallery path, without its query. */
+// The galleries' sizes and file names arrive from the page that rendered this
+// island, so the server's HTML already says how big each download is. With the
+// names, the loader fetches the bytes itself and counts them, and the frame that
+// follows reads the same bytes from the cache.
 const keyFor = (block: Block) =>
   srcFor(block).split("?")[0].replace(new RegExp(`^${base}/`), "");
-const sizeFor = (block: Block) => galleries.value[keyFor(block)]?.total;
+const sizeFor = (block: Block) => props.sizes?.[keyFor(block)]?.total;
 const filesFor = (block: Block) =>
-  galleries.value[keyFor(block)]?.files.map((file) => `${base}/${keyFor(block)}/${file}`);
+  props.sizes?.[keyFor(block)]?.files.map((file) => `${base}/${keyFor(block)}/${file}`);
 
-// A preview asked for by hand is fetched first, so the wait can be counted, and
-// the frame mounts once the bytes are here.
+// Every preview is fetched first, so the wait can be counted, and the frame
+// mounts once the bytes are here.
 const primed = ref<Record<string, boolean>>({});
 function prime(block: Block) {
   primed.value = { ...primed.value, [block.id]: true };
 }
-const frameIsUp = (block: Block, index: number) =>
-  isRequested(block, index) && (index === 0 || primed.value[block.id]);
-
-/**
- * The frames the server sent, reconciled once the island is alive.
- *
- * Astro renders this component on the server, so the first frame is in the HTML
- * and the browser starts loading it while the page is still being parsed. That
- * makes it faster — the wasm boots beside the page rather than after it — and it
- * also means the `load` event can be over before the listener in the template
- * exists: the frame sits there loaded, under a loading overlay that never
- * clears, and no frame after it ever mounts.
- *
- * A frame that already finished says so through its document, so ask it. The
- * ones still in flight are covered by the listener; a frame reporting
- * `about:blank` has not committed yet and is one of them.
- */
-function reconcileFrames() {
-  document.querySelectorAll<HTMLIFrameElement>(".block__iframe").forEach((frame) => {
-    const index = Number(frame.dataset.blockIndex);
-    if (!Number.isInteger(index)) return;
-    const block = visible.value[index];
-    if (!block) return;
-    // The frame is identified by its block, not by its position: the loader is
-    // keyed by block id, and passing the index here left the first preview
-    // loading for good. It is the only frame the server rendered, so its `load`
-    // can finish before this island is alive — which is the whole reason this
-    // function exists.
-    const settled = () => onFrameLoad(block);
-    try {
-      const frameDocument = frame.contentDocument;
-      const committed = frameDocument?.location?.href !== "about:blank";
-      if (frameDocument?.readyState === "complete" && committed) settled();
-      else frame.addEventListener("load", settled, { once: true });
-    } catch {
-      // A cross-origin frame cannot be inspected, so its `load` event is the
-      // only signal there is, and it is still coming.
-      frame.addEventListener("load", settled, { once: true });
-    }
-  });
-}
+const frameIsUp = (block: Block) => Boolean(primed.value[block.id]);
 
 const hasSlint = (block: Block) => Boolean(block.slug);
 
@@ -379,7 +331,7 @@ function reload(block: Block) {
             class="block__action"
             :class="{ 'is-active': deviceFor(block) === entry.id }"
             :aria-pressed="deviceFor(block) === entry.id"
-            :disabled="!isRequested(block, index)"
+            :disabled="!primed[block.id]"
             :title="entry.label"
             :aria-label="entry.label"
             @click="selectDevice(block, entry.id)"
@@ -389,7 +341,7 @@ function reload(block: Block) {
           <button
             type="button"
             class="block__action"
-            :disabled="!isRequested(block, index)"
+            :disabled="!primed[block.id]"
             title="Reload example"
             aria-label="Reload example"
             @click="reload(block)"
@@ -433,11 +385,10 @@ function reload(block: Block) {
       <div class="block__frame">
         <div class="block__sizer" :style="{ maxWidth: widthFor(block) }">
           <iframe
-            v-if="frameIsUp(block, index) && !frameUnavailable(block)"
+            v-if="frameIsUp(block) && !frameUnavailable(block)"
             :key="`${srcFor(block)}:${reloads[block.id] ?? 0}`"
             :src="srcFor(block)"
             :title="`${block.title} example`"
-            :data-block-index="index"
             class="block__iframe"
             allow="cross-origin-isolated"
             @load="onFrameLoad(block)"
@@ -454,8 +405,9 @@ function reload(block: Block) {
               This preview is a running WebAssembly build<template
                 v-if="sizeFor(block)"
               >
-                , {{ (sizeFor(block)! / 1024 / 1024).toFixed(1) }} MB of it</template
-              >. It downloads only when you ask for it.
+                — a {{ (sizeFor(block)! / 1024 / 1024).toFixed(1) }} MB
+                download</template
+              >. It fetches only when you ask for it.
             </p>
             <button type="button" class="block__offer" @click="request(block)">
               <Download :size="14" aria-hidden="true" />
@@ -465,12 +417,14 @@ function reload(block: Block) {
 
           <div
             v-if="isRequested(block, index) && !loaded[block.id] && !frameUnavailable(block)"
+            :key="`loader:${block.id}:${framework}`"
             class="block__status block__status--loading"
           >
             <PreviewLoader
               :label="`Loading ${block.title}…`"
+              :start-label="`Starting ${block.title}…`"
               :size="sizeFor(block)"
-              :files="index === 0 ? undefined : filesFor(block)"
+              :files="primed[block.id] ? undefined : filesFor(block)"
               @downloaded="prime(block)"
             />
           </div>

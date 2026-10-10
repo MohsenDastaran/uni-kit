@@ -5,12 +5,12 @@ import {
   onBeforeUnmount,
   onMounted,
   reactive,
-  ref,
   shallowRef,
   watch,
 } from "vue";
 import { Check, RotateCw, Sparkles } from "lucide-vue-next";
 import PreviewLoader from "./PreviewLoader.vue";
+import type { Gallery } from "../lib/gallery-sizes";
 import WindowZoomButton from "./WindowZoomButton.vue";
 import { findExampleHeading } from "../lib/example-target.js";
 
@@ -23,6 +23,8 @@ const props = defineProps<{
   devVersion?: string;
   /** Frameworks besides GPUI with a live example of this component. */
   frameworks?: string[];
+  /** The galleries' sizes and file names, measured at build time. */
+  sizes?: Record<string, Gallery>;
 }>();
 
 const isDev = props.devVersion !== undefined;
@@ -188,25 +190,35 @@ const missingLabel = computed(
 const loadingLabel = computed(
   () => `Loading the ${active.value.name} example…`,
 );
+const startingLabel = computed(
+  () => `Starting the ${active.value.name} example…`,
+);
 
-// The site hands the galleries' module sizes to the browser at build time, so
-// the loader can name the download. It stays quiet when it has nothing to say.
-const sizes = ref<Record<string, { total: number; files: string[] }>>({});
-onMounted(async () => {
-  try {
-    const response = await fetch(`${props.baseUrl.replace(/\/$/, "")}/gallery-sizes.json`);
-    if (response.ok) sizes.value = await response.json();
-  } catch {
-    // A missing manifest only means the size goes unsaid.
-  }
-});
+// The galleries' sizes and file names arrive from the page that rendered this
+// island, so the server's HTML already says how big the download is.
+const keyFor = (src: string) =>
+  src.split("?")[0].replace(new RegExp(`^${props.baseUrl.replace(/\/$/, "")}/`), "");
+const activeWhere = computed(
+  () => frames.value.find((frame) => frame.name === framework.value)?.src,
+);
+const activeKey = computed(() =>
+  activeWhere.value ? keyFor(activeWhere.value) : undefined,
+);
+const activeSize = computed(() =>
+  activeKey.value ? props.sizes?.[activeKey.value]?.total : undefined,
+);
+const activeFiles = computed(() =>
+  activeKey.value
+    ? props.sizes?.[activeKey.value]?.files.map(
+        (file) => `${props.baseUrl.replace(/\/$/, "")}/${activeKey.value}/${file}`,
+      )
+    : undefined,
+);
 
-const activeSize = computed(() => {
-  const where = frames.value.find((frame) => frame.name === framework.value)?.src;
-  if (!where) return undefined;
-  const key = where.split("?")[0].replace(new RegExp(`^${props.baseUrl.replace(/\/$/, "")}/`), "");
-  return sizes.value[key]?.total;
-});
+// A frame mounts once its module's bytes are in, the same as on the blocks
+// page. The loader fetches them with a percentage; switching frameworks away
+// and back re-runs the measurement only when the module was never primed.
+const primed = reactive(new Set<string>());
 
 const target = shallowRef<HTMLElement>();
 
@@ -805,21 +817,32 @@ onBeforeUnmount(() => {
           </span>
         </div>
         <div class="component-example__frames">
-          <iframe
+          <template
             v-for="frame in frames"
-            v-show="available && frame.name === framework"
             :key="`${frame.src}:${reloadNonce[frame.name] ?? 0}`"
-            :src="frame.src"
-            :class="`component-example__frame--${frame.name}`"
-            :title="`${component} interactive example (${frameworkList[frame.name].name})`"
-            allow="cross-origin-isolated"
-            @load="loaded.add(frame.name)"
-          />
+          >
+            <iframe
+              v-if="primed.has(frame.name)"
+              v-show="available && frame.name === framework"
+              :src="frame.src"
+              :class="`component-example__frame--${frame.name}`"
+              :title="`${component} interactive example (${frameworkList[frame.name].name})`"
+              allow="cross-origin-isolated"
+              @load="loaded.add(frame.name)"
+            />
+          </template>
           <div
             v-if="available && !loaded.has(framework)"
+            :key="framework"
             class="component-example__status component-example__status--loading"
           >
-            <PreviewLoader :label="loadingLabel" :size="activeSize" />
+            <PreviewLoader
+              :label="loadingLabel"
+              :start-label="startingLabel"
+              :size="activeSize"
+              :files="primed.has(framework) ? undefined : activeFiles"
+              @downloaded="primed.add(framework)"
+            />
           </div>
           <div
             v-if="!available"

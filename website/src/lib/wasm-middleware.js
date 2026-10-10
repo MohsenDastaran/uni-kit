@@ -61,11 +61,33 @@ export function wasmExamplesDevServer(base) {
           return;
         }
 
-        res.setHeader('Cache-Control', 'no-store');
-        res.setHeader(
-          'Content-Type',
-          CONTENT_TYPES[extname(file)] ?? 'application/octet-stream'
-        );
+        const ext = extname(file);
+        const stat = statSync(file);
+        res.setHeader('Content-Type', CONTENT_TYPES[ext] ?? 'application/octet-stream');
+        if (ext === '.wasm') {
+          // The preview loader fetches the module itself and counts the bytes,
+          // then mounts a frame that must read the same bytes back. `no-cache`
+          // lets the browser keep them while revalidating against this ETag on
+          // every use: a rebuilt module is never served stale, and the second
+          // read costs no transfer. `no-store`, which the other files keep,
+          // would turn every preview into a double download.
+          res.setHeader('Cache-Control', 'no-cache');
+          res.setHeader('Content-Length', stat.size);
+          const etag = `"${stat.size}-${Math.floor(stat.mtimeMs)}"`;
+          res.setHeader('ETag', etag);
+          res.setHeader('Vary', 'Accept-Encoding');
+          if (req.method === 'HEAD') {
+            res.end();
+            return;
+          }
+          if (req.headers['if-none-match'] === etag) {
+            res.statusCode = 304;
+            res.end();
+            return;
+          }
+        } else {
+          res.setHeader('Cache-Control', 'no-store');
+        }
         createReadStream(file).pipe(res);
       });
     },

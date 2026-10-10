@@ -3,6 +3,7 @@ import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import BlocksGallery from '../components/BlocksGallery.vue';
 import DocsLayout from '../layouts/DocsLayout.astro';
+import { gallerySizes } from '../lib/gallery-sizes';
 import { highlight } from '../lib/highlight.js';
 
 const website = process.cwd();
@@ -135,6 +136,18 @@ const definitions = [
   },
 ];
 
+// The sizes the island's loaders print, for the galleries these blocks point
+// at. Pruned to the keys the page actually asks for.
+const sizes = (() => {
+  const all = gallerySizes();
+  return {
+    gallery: all.gallery,
+    ...Object.fromEntries(
+      definitions.map((block) => [`slint-gallery/pages/${block.slug}`, all[`slint-gallery/pages/${block.slug}`]]).filter(([, entry]) => entry),
+    ),
+  };
+})();
+
 const blocks = await Promise.all(
   definitions.map(async (block) => {
     const gpui = gpuiBlock(block.id) || gpuiUsage(block.doc);
@@ -202,7 +215,12 @@ const blocks = await Promise.all(
     </li>
   </ul>
 
-  <BlocksGallery client:load blocks={blocks} baseUrl={import.meta.env.BASE_URL} />
+  <BlocksGallery
+    client:load
+    blocks={blocks}
+    baseUrl={import.meta.env.BASE_URL}
+    sizes={sizes}
+  />
 
   <h2>Where a block sits</h2>
   <p>

@@ -2,23 +2,29 @@
 import { computed, onMounted, ref } from "vue";
 
 /**
- * The wait for a WebAssembly preview.
+ * The one loading state for every WebAssembly preview, on every page.
  *
  * The frame fetches its own module, so this side usually has no byte count to
- * report — but the build hands over the module's file names, and the site serves
- * them immutable for a year, so the bytes can be fetched here once and read from
- * the cache by the frame that follows. That is what turns the wait into a real
- * percentage rather than an animation.
+ * report — but the build hands over the module's file names, and the site
+ * serves them in a way the browser will reuse, so the bytes can be fetched here
+ * once, counted, and read from the cache by the frame that follows. That is what
+ * turns the wait into a real percentage: `N% of S`.
  *
- * Where the files are not known, or the server will not let the browser keep
- * them, nothing is fetched twice: the bar stays indeterminate. `Feedback
- * reflects reality` — a number that only reaches 100 when the frame says so
- * would be theatre.
+ * Three phases, one honest rule each:
+ *
+ * - `waiting` — the download is about to be measured, or cannot be (no files
+ *   known, or a server that will not let the browser keep them). An
+ *   indeterminate bar and the size, where it is known. `Feedback reflects
+ *   reality`: a number this side cannot compute is not printed.
+ * - `measured` — the bytes are being fetched and counted.
+ * - `starting` — the download is done and the frame is booting from the cache.
  */
 const props = defineProps<{
   /** What is being loaded, e.g. "Loading Sidebar". */
   label: string;
-  /** Bytes of the module being fetched, when the build measured it. */
+  /** The same wait once the download has finished, e.g. "Starting Sidebar". */
+  startLabel?: string;
+  /** Bytes on the wire, when the build measured them. */
   size?: number;
   /** The module's files, relative to the site root, when the build found them. */
   files?: string[];
@@ -34,9 +40,21 @@ const megabytes = (bytes: number) => {
 const sizeLabel = computed(() =>
   props.size && props.size > 0 ? megabytes(props.size) : null,
 );
+const startingLabel = computed(
+  () => props.startLabel ?? props.label.replace(/^Loading/, "Starting"),
+);
 
-/** 0 to 100 while measuring, null when there is nothing honest to show. */
+/** 0–100 while measuring, null when there is nothing honest to count. */
 const percent = ref<number | null>(null);
+/** The measured download finished (or was never measurable); the frame boots. */
+const started = ref(false);
+
+const barWidth = computed(() => {
+  if (percent.value !== null) return `${percent.value}%`;
+  if (started.value) return "100%";
+  return undefined;
+});
+const barMeasured = computed(() => percent.value !== null || started.value);
 
 /** Resolves to `fallback` if the work has not finished in time. */
 function withTimeout<T>(work: Promise<T>, ms: number, fallback: T) {
@@ -55,19 +73,25 @@ function withTimeout<T>(work: Promise<T>, ms: number, fallback: T) {
   });
 }
 
+/**
+ * Fetches the module once and counts it. A server that does not answer, or will
+ * not let the bytes be kept, must not hold the preview back: the frame can
+ * always fetch the module itself.
+ */
 async function measure(files: string[]) {
-  // Only worth fetching ahead where the frame will reuse the bytes. The metadata
-  // is given a moment: a server that does not answer must not hold the preview
-  // back, since the frame can always fetch the module itself.
   const heads = await withTimeout(
     Promise.all(files.map((file) => fetch(file, { method: "HEAD" }))),
     6000,
     null,
   );
   if (!heads) return;
-  const reusable = heads.every((head) =>
-    /max-age=\d+/.test(head.headers.get("cache-control") ?? ""),
-  );
+
+  // Reuse is what makes a preflight free: the frame's request must read the
+  // same bytes from the cache rather than pay for them a second time.
+  const reusable = heads.every((head) => {
+    const control = head.headers.get("cache-control") ?? "";
+    return control !== "" && !/no-store/.test(control);
+  });
   const total = heads.reduce(
     (sum, head) => sum + Number(head.headers.get("content-length") ?? 0),
     0,
@@ -81,7 +105,7 @@ async function measure(files: string[]) {
     const reader = response.body?.getReader();
     if (!reader) break;
     for (;;) {
-      // A stream that stops moving is worse than one that is slow: give the
+      // A stream that stops moving is worse than one that is slow: hand the
       // preview back to the frame rather than counting forever.
       const chunk = await withTimeout(reader.read(), 8000, null);
       if (!chunk) return;
@@ -103,6 +127,7 @@ onMounted(async () => {
   } finally {
     // Always, and whatever happened above: the frame starts now. Waiting for a
     // manifest that arrives late would leave the preview unmounted for good.
+    started.value = true;
     emit("downloaded");
   }
 });
@@ -112,19 +137,22 @@ onMounted(async () => {
   <div class="loader" role="status" aria-live="polite">
     <span
       class="loader__bar"
-      :class="{ 'loader__bar--measured': percent !== null }"
+      :class="{ 'loader__bar--measured': barMeasured }"
       aria-hidden="true"
     >
-      <i :style="percent !== null ? { width: `${percent}%` } : undefined" />
+      <i :style="barWidth ? { width: barWidth } : undefined" />
     </span>
     <p class="loader__text">
-      {{ label }}
-      <span v-if="percent !== null && percent < 100" class="loader__size">
-        · {{ percent }}%
-      </span>
-      <span v-else-if="sizeLabel" class="loader__size">
-        · {{ sizeLabel }} of WebAssembly
-      </span>
+      <template v-if="started && percent !== null">{{ startingLabel }}</template>
+      <template v-else>
+        {{ label }}
+        <span v-if="percent !== null && percent < 100" class="loader__size">
+          · {{ percent }}% of {{ sizeLabel }}
+        </span>
+        <span v-else-if="sizeLabel" class="loader__size">
+          · {{ sizeLabel }} download
+        </span>
+      </template>
     </p>
   </div>
 </template>
