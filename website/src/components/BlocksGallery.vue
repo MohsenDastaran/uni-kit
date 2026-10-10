@@ -75,6 +75,10 @@ function onFrameworkChange() {
   // be warmed again: what was asked for by hand stays asked for.
   warmth.value = {};
   warming.clear();
+  for (const timer of warmTimers.values()) window.clearTimeout(timer);
+  warmTimers.clear();
+  activeWarm?.controller.abort();
+  activeWarm = null;
   loaded.value = {};
   for (const block of props.blocks) stopWatching(block);
 }
@@ -135,6 +139,20 @@ const isRequested = (block: Block) => Boolean(requested.value[block.id]);
 const posterFor = (block: Block) => block.posters?.[framework.value];
 
 function request(block: Block) {
+  // The frame owns the download from here; a warm-up still in flight would race
+  // it into a second copy. The loader falls back to naming the size.
+  const key = keyFor(block);
+  const timer = warmTimers.get(key);
+  if (timer !== undefined) {
+    window.clearTimeout(timer);
+    warmTimers.delete(key);
+  }
+  if (activeWarm?.key === key) {
+    activeWarm.controller.abort();
+    activeWarm = null;
+  }
+  warming.delete(key);
+  warmth.value = { ...warmth.value, [block.id]: null };
   requested.value = { ...requested.value, [block.id]: true };
 }
 
@@ -234,6 +252,8 @@ const frameIsUp = (block: Block) => isRequested(block);
  */
 const warming = new Set<string>();
 const warmth = ref<Record<string, number | null>>({});
+const warmTimers = new Map<string, number>();
+let activeWarm: { key: string; controller: AbortController } | null = null;
 
 /** True while a warm-up of this block is still counting. */
 const counting = (block: Block) => {
@@ -241,14 +261,57 @@ const counting = (block: Block) => {
   return typeof value === "number" && value < 100;
 };
 
-async function warm(block: Block) {
+/**
+ * Warm-ups are deliberate, not accidental. A pointer has to rest on a picture
+ * for a moment before its module is fetched, so skimming the page costs
+ * nothing; only one module is fetched at a time, and a newer pointer or a
+ * pointer leaving stops the current one. A block that was clicked keeps its
+ * warm-up to the end, because its frame is now sharing those bytes.
+ */
+function warm(block: Block) {
   const files = filesFor(block);
   const key = keyFor(block);
-  if (!files?.length || warming.has(key) || isRequested(block)) return;
+  if (!files?.length || isRequested(block)) return;
+  if (warming.has(key) || warmTimers.has(key)) return;
+  warmTimers.set(
+    key,
+    window.setTimeout(() => {
+      warmTimers.delete(key);
+      startWarm(block);
+    }, 400),
+  );
+}
+
+function cool(block: Block) {
+  // After the click the frame's own request is the download; do not cut it off.
+  if (isRequested(block)) return;
+  const key = keyFor(block);
+  const timer = warmTimers.get(key);
+  if (timer !== undefined) {
+    window.clearTimeout(timer);
+    warmTimers.delete(key);
+  }
+  if (activeWarm?.key === key) {
+    activeWarm.controller.abort();
+    activeWarm = null;
+  }
+  warming.delete(key);
+  warmth.value = { ...warmth.value, [block.id]: null };
+}
+
+async function startWarm(block: Block) {
+  const files = filesFor(block);
+  const key = keyFor(block);
+  if (!files?.length || isRequested(block) || warming.has(key)) return;
+
+  // One at a time: a new pointer's module supersedes the previous one's.
+  if (activeWarm) activeWarm.controller.abort();
+  const controller = new AbortController();
+  activeWarm = { key, controller };
   warming.add(key);
   try {
     const heads = await Promise.all(
-      files.map((file) => fetch(file, { method: "HEAD" })),
+      files.map((file) => fetch(file, { method: "HEAD", signal: controller.signal })),
     );
     const reusable = heads.every((head) => {
       const control = head.headers.get("cache-control") ?? "";
@@ -269,7 +332,7 @@ async function warm(block: Block) {
     warmth.value = { ...warmth.value, [block.id]: 0 };
     let received = 0;
     for (const file of files) {
-      const response = await fetch(file);
+      const response = await fetch(file, { signal: controller.signal });
       const reader = response.body?.getReader();
       if (!reader) break;
       for (;;) {
@@ -284,7 +347,10 @@ async function warm(block: Block) {
     }
     warmth.value = { ...warmth.value, [block.id]: 100 };
   } catch {
-    // A warm-up that fails costs nothing: the frame fetches it itself.
+    // Aborted by a newer pointer, by leaving, or by a failed fetch — no cost.
+  } finally {
+    if (activeWarm?.key === key) activeWarm = null;
+    warming.delete(key);
   }
 }
 
@@ -560,7 +626,9 @@ function reload(block: Block) {
               :aria-label="`Show the live preview of ${block.title}`"
               @pointerenter="warm(block)"
               @pointerdown="warm(block)"
+              @pointerleave="cool(block)"
               @focus="warm(block)"
+              @blur="cool(block)"
               @click="request(block)"
             >
               <img
