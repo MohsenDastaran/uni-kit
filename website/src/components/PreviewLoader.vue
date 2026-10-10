@@ -13,9 +13,9 @@ import { computed, onMounted, ref } from "vue";
  * Three phases, one honest rule each:
  *
  * - `waiting` — the download is about to be measured, or cannot be (no files
- *   known, or a server that will not let the browser keep them). An
- *   indeterminate bar and the size, where it is known. `Feedback reflects
- *   reality`: a number this side cannot compute is not printed.
+ *   known, or a server that will not let the browser keep them). A looping ring
+ *   and the size, where it is known. `Feedback reflects reality`: a number this
+ *   side cannot compute is not printed.
  * - `measured` — the bytes are being fetched and counted.
  * - `starting` — the download is done and the frame is booting from the cache.
  */
@@ -48,13 +48,6 @@ const startingLabel = computed(
 const percent = ref<number | null>(null);
 /** The measured download finished (or was never measurable); the frame boots. */
 const started = ref(false);
-
-const barWidth = computed(() => {
-  if (percent.value !== null) return `${percent.value}%`;
-  if (started.value) return "100%";
-  return undefined;
-});
-const barMeasured = computed(() => percent.value !== null || started.value);
 
 /** Resolves to `fallback` if the work has not finished in time. */
 function withTimeout<T>(work: Promise<T>, ms: number, fallback: T) {
@@ -135,13 +128,7 @@ onMounted(async () => {
 
 <template>
   <div class="loader" role="status" aria-live="polite">
-    <span
-      class="loader__bar"
-      :class="{ 'loader__bar--measured': barMeasured }"
-      aria-hidden="true"
-    >
-      <i :style="barWidth ? { width: barWidth } : undefined" />
-    </span>
+    <span class="loader__spinner" aria-hidden="true" />
     <p class="loader__text">
       <template v-if="started && percent !== null">{{ startingLabel }}</template>
       <template v-else>
@@ -167,38 +154,21 @@ onMounted(async () => {
   text-align: center;
 }
 
-.loader__bar {
-  position: relative;
+/* One looping ring for every wait: the number in the label is the reading, so
+   the indicator only has to say that work is still happening. */
+.loader__spinner {
   display: block;
-  overflow: hidden;
-  width: min(14rem, 60%);
-  height: 3px;
-  border-radius: 999px;
-  background: color-mix(in srgb, var(--foreground) 12%, transparent);
+  width: 1.25rem;
+  height: 1.25rem;
+  border: 2px solid color-mix(in srgb, var(--foreground) 20%, transparent);
+  border-top-color: var(--brand);
+  border-radius: 50%;
+  animation: loader-spin 700ms linear infinite;
 }
 
-.loader__bar i {
-  position: absolute;
-  inset: 0;
-  width: 40%;
-  border-radius: 999px;
-  background: var(--brand);
-  animation: loader-sweep 1.15s ease-in-out infinite;
-}
-
-/* Measured: the bar is the reading, so it holds still. */
-.loader__bar--measured i {
-  left: 0;
-  animation: none;
-  transition: width 220ms ease-out;
-}
-
-@keyframes loader-sweep {
-  0% {
-    transform: translateX(-100%);
-  }
-  100% {
-    transform: translateX(250%);
+@keyframes loader-spin {
+  to {
+    transform: rotate(1turn);
   }
 }
 
@@ -214,15 +184,8 @@ onMounted(async () => {
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .loader__bar i {
+  .loader__spinner {
     animation: none;
-    width: 100%;
-    opacity: 0.5;
-  }
-
-  .loader__bar--measured i {
-    opacity: 1;
-    transition: none;
   }
 }
 </style>
