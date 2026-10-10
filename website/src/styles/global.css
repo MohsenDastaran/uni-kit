@@ -601,11 +601,10 @@ html[lang^="ja"] .example-prompt {
   font-size: 0.8125rem;
 }
 
-/* The frame is mounted only once its bytes are measured, so the waiting state
-   has to hold the box the frame will take. Left absolute inside a container
-   with no frame in it, the overlay collapses to the top of `frames` and its
-   contents float over the window's title bar. */
-.component-example__status--loading,
+/* An example with no frame at all has to hold the box one would take, or the
+   window collapses to its title bar. The waiting state is not that case: its
+   frame is mounted and booting underneath, so the overlay covers it — and being
+   opaque, it is what keeps the gallery's own "Loading…" out of sight. */
 .component-example__status--missing {
   position: static;
   height: 680px;
@@ -616,7 +615,6 @@ html[lang^="ja"] .example-prompt {
     display: none;
   }
   .component-example iframe,
-  .component-example__status--loading,
   .component-example__status--missing {
     height: 560px;
   }
