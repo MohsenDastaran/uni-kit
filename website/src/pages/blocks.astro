@@ -1,5 +1,5 @@
 ---
-import { readFileSync } from 'node:fs';
+import { existsSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import BlocksGallery from '../components/BlocksGallery.vue';
 import DocsLayout from '../layouts/DocsLayout.astro';
@@ -32,6 +32,18 @@ function slintExample(slug: string) {
   } catch {
     return '';
   }
+}
+
+// The picture the page opens each block with, so nothing is downloaded until the
+// reader asks for it. One per framework, where one exists.
+function posters(id: string) {
+  const found: { gpui?: string; slint?: string } = {};
+  for (const name of ['gpui', 'slint'] as const) {
+    if (existsSync(join(website, 'public/blocks', name, `blocks-${id}.png`))) {
+      found[name] = `${import.meta.env.BASE_URL}blocks/${name}/blocks-${id}.png`;
+    }
+  }
+  return found;
 }
 
 // The GPUI block is a file you install, so the prompt carries it verbatim
@@ -154,6 +166,7 @@ const blocks = await Promise.all(
     const slint = slintExample(block.slug);
     return {
       ...block,
+      posters: posters(block.id),
       // Highlighted for the page, plain for the usage prompt it copies.
       code: {
         gpui: await highlight(gpui),

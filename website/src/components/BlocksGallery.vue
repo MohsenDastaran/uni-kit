@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { computed, onBeforeUnmount, onMounted, ref } from "vue";
-import { Download, Monitor, RotateCw, Smartphone, Sparkles, Tablet } from "lucide-vue-next";
+import { Download, Monitor, Play, RotateCw, Smartphone, Sparkles, Tablet } from "lucide-vue-next";
 import InstallCommand from "./InstallCommand.vue";
 import PreviewLoader from "./PreviewLoader.vue";
 import type { Gallery } from "../lib/gallery-sizes";
@@ -37,6 +37,12 @@ export interface Block {
    * last. Empty shows them all, which is what the component page wants.
    */
   slintExample?: string;
+  /**
+   * A picture of the finished screen, per framework, shown before anything is
+   * downloaded. The reader sees what the block looks like, and the module is
+   * fetched only when they ask to run it.
+   */
+  posters?: { gpui?: string; slint?: string };
   /** Highlighted HTML, for display. */
   code?: { gpui?: string; slint?: string };
   /** The same source as plain text, for the prompt. */
@@ -113,17 +119,20 @@ function srcFor(block: Block) {
   return `${base}/gallery?story=${encodeURIComponent(block.story)}&source=0`;
 }
 
-// Every example is a multi-megabyte WebAssembly build with its own renderer, so
-// the page loads one — the first, which is what makes this a gallery rather than
-// a list — and offers the rest as a download the reader asks for. Loading them
-// all in sequence, which is what this did before, spent the whole page's time
-// and memory on previews nobody had reached yet.
+// Every example is a multi-megabyte WebAssembly build with its own renderer. The
+// page opens with a picture of each block and downloads nothing; a block's
+// module is fetched when the reader asks to run it. Loading them all in
+// sequence, which this did two revisions ago, spent the page's whole time and
+// memory on previews nobody had reached yet, and loading just the first still
+// spent it before the reader had chosen anything.
 const requested = ref<Record<string, boolean>>({});
 const loaded = ref<Record<string, boolean>>({});
 
-/** The first block loads with the page; the rest when asked for. */
-const isRequested = (block: Block, index: number) =>
-  index === 0 || Boolean(requested.value[block.id]);
+/** A block is fetched when the reader asks for it, and not before. */
+const isRequested = (block: Block) => Boolean(requested.value[block.id]);
+
+/** The picture to show for the framework in force, where one exists. */
+const posterFor = (block: Block) => block.posters?.[framework.value];
 
 function request(block: Block) {
   requested.value = { ...requested.value, [block.id]: true };
@@ -375,7 +384,7 @@ function reload(block: Block) {
 <template>
   <div class="blocks">
     <section
-      v-for="(block, index) in visible"
+      v-for="block in visible"
       :id="block.id"
       :key="block.id"
       class="block"
@@ -448,39 +457,75 @@ function reload(block: Block) {
 
       <div class="block__frame">
         <div class="block__sizer" :style="{ maxWidth: widthFor(block) }">
+          <!-- The frame boots behind the picture, out of sight, so the
+               gallery's own plain "Loading…" is never what the reader sees. -->
           <iframe
             v-if="frameIsUp(block) && !frameUnavailable(block)"
             :key="`${srcFor(block)}:${reloads[block.id] ?? 0}`"
             :src="srcFor(block)"
             :title="`${block.title} example`"
             class="block__iframe"
+            :class="{ 'block__iframe--live': loaded[block.id] }"
             allow="cross-origin-isolated"
             @load="onFrameLoad($event, block)"
           />
+
           <div
-            v-else-if="frameUnavailable(block)"
+            v-if="frameUnavailable(block)"
             class="block__status block__status--note"
             role="status"
           >
             This example runs in the GPUI gallery only.
           </div>
-          <div v-else class="block__status block__status--offer">
-            <p class="block__offer-text">
-              This preview is a running WebAssembly build<template
-                v-if="sizeFor(block)"
-              >
-                — a {{ (sizeFor(block)! / 1024 / 1024).toFixed(1) }} MB
-                download</template
-              >. It fetches only when you ask for it.
-            </p>
-            <button type="button" class="block__offer" @click="request(block)">
-              <Download :size="14" aria-hidden="true" />
-              Download &amp; show preview
+
+          <!-- What the block looks like, until the reader chooses to run it.
+               The whole picture is the button; the call to action appears when
+               the pointer or the keyboard is on it. -->
+          <div
+            v-else-if="!loaded[block.id]"
+            class="block__status block__status--offer"
+          >
+            <button
+              v-if="posterFor(block)"
+              type="button"
+              class="block__poster"
+              :disabled="isRequested(block)"
+              :aria-label="`Show the live preview of ${block.title}`"
+              @click="request(block)"
+            >
+              <img
+                class="block__poster-image"
+                :src="posterFor(block)"
+                alt=""
+                loading="lazy"
+                decoding="async"
+              />
+              <span class="block__poster-cta">
+                <Play :size="14" aria-hidden="true" />
+                Show live preview
+                <span v-if="sizeFor(block)" class="block__poster-size">
+                  · {{ (sizeFor(block)! / 1024 / 1024).toFixed(1) }} MB
+                </span>
+              </span>
             </button>
+            <template v-else>
+              <p class="block__offer-text">
+                This preview is a running WebAssembly build<template
+                  v-if="sizeFor(block)"
+                >
+                  — a {{ (sizeFor(block)! / 1024 / 1024).toFixed(1) }} MB
+                  download</template
+                >. It fetches only when you ask for it.
+              </p>
+              <button type="button" class="block__offer" @click="request(block)">
+                <Download :size="14" aria-hidden="true" />
+                Download &amp; show preview
+              </button>
+            </template>
           </div>
 
           <div
-            v-if="isRequested(block, index) && !loaded[block.id] && !frameUnavailable(block)"
+            v-if="isRequested(block) && !loaded[block.id] && !frameUnavailable(block)"
             :key="`loader:${block.id}:${framework}`"
             class="block__status block__status--loading"
           >
@@ -701,6 +746,13 @@ function reload(block: Block) {
   border: 0;
 }
 
+/* The frame boots out of sight behind the picture: it is loaded and running, but
+   the reader keeps looking at the block until the gallery reports its first
+   frame, which is what the loader is waiting for. */
+.block__iframe:not(.block__iframe--live) {
+  visibility: hidden;
+}
+
 .block__status {
   position: absolute;
   inset: 0;
@@ -733,12 +785,98 @@ function reload(block: Block) {
 }
 
 /* The offer in place of a preview nobody asked for. It is the same box as every
-   other frame state, so asking for the preview moves nothing. */
+   other frame state, so asking for the preview moves nothing. With a picture it
+   carries no padding: the picture is the box. */
 .block__status--offer {
   flex-direction: column;
   gap: 1rem;
   padding: 1.5rem;
   text-align: center;
+}
+
+.block__status--offer:has(.block__poster) {
+  padding: 0;
+}
+
+/* The whole picture is the control. It shows what the block is; the pointer or
+   the keyboard brings up the call to action over it. */
+.block__poster {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  height: 100%;
+  padding: 0;
+  border: 0;
+  background: var(--card);
+  color: inherit;
+  cursor: pointer;
+}
+
+.block__poster-image {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  transition: filter 180ms ease;
+}
+
+.block__poster:hover .block__poster-image,
+.block__poster:focus-visible .block__poster-image {
+  filter: brightness(0.5);
+}
+
+.block__poster:focus-visible {
+  outline: 2px solid var(--brand);
+  outline-offset: -2px;
+}
+
+/* The call to action, over the picture, only while the pointer or the keyboard
+   is on it. `:disabled` is the moment after the click, when the loader owns the
+   box. */
+.block__poster-cta {
+  position: absolute;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  min-height: 2.5rem;
+  padding: 0 1.1rem;
+  border: 1px solid color-mix(in srgb, var(--foreground) 30%, transparent);
+  border-radius: var(--radius-control);
+  background: color-mix(in srgb, var(--background) 88%, transparent);
+  color: var(--foreground);
+  font-size: 0.875rem;
+  font-weight: 560;
+  opacity: 0;
+  transform: translateY(0.25rem);
+  transition:
+    opacity 160ms ease,
+    transform 160ms ease;
+  backdrop-filter: blur(3px);
+}
+
+.block__poster:hover .block__poster-cta,
+.block__poster:focus-visible .block__poster-cta {
+  opacity: 1;
+  transform: none;
+}
+
+.block__poster-size {
+  color: var(--muted-foreground);
+  font-weight: 460;
+}
+
+.block__poster:disabled {
+  cursor: default;
+}
+
+/* The wait sits over the picture rather than replacing it, so the reader keeps
+   seeing what they asked for while it arrives. The scrim is opaque enough to
+   hide the frame booting behind it — that is what keeps the gallery's own
+   "Loading…" out of sight. */
+.block__status--loading {
+  background: color-mix(in srgb, var(--card) 94%, transparent);
 }
 
 .block__offer-text {
