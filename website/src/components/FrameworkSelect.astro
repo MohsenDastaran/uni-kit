@@ -135,25 +135,43 @@ const label = 'Framework';
   });
 
   // A nudge towards the framework selector: nobody looks for a switch they have
-  // no reason to expect. It waits for the page to settle, points at the control
-  // for a few seconds, and is remembered so it never asks twice.
+  // no reason to expect. It waits for the page to settle, then points at the
+  // control for about as long as a glance takes.
+  //
+  // Asking exactly once is too easy to miss, so it is allowed a few sightings
+  // and retires for good the moment the reader switches, which is the thing it
+  // was asking for. The count lives in `framework-hint-seen`; a `1` left by the
+  // once-only version counts as one sighting.
   const HINT_KEY = 'framework-hint-seen';
+  const HINT_LIMIT = 3;
   const HINT_DELAY = 2200;
-  const HINT_LIFE = 9000;
+  const HINT_LIFE = 12000;
 
   document.querySelectorAll<HTMLElement>('[data-framework-select]').forEach((root) => {
     const hint = root.querySelector<HTMLElement>('[data-framework-hint]');
     const trigger = root.querySelector<HTMLButtonElement>('.framework-select__trigger');
     if (!hint || !trigger) return;
 
-    let seen = false;
+    let seen = 0;
     try {
-      seen = window.localStorage.getItem(HINT_KEY) !== null;
+      seen = Number(window.localStorage.getItem(HINT_KEY)) || 0;
     } catch {}
-    if (seen) return;
+    if (seen >= HINT_LIMIT) return;
 
     let hideTimer: number | undefined;
     let shown = false;
+
+    const stopForGood = () => {
+      try {
+        window.localStorage.setItem(HINT_KEY, String(HINT_LIMIT));
+      } catch {}
+    };
+
+    // The reader switched: the nudge has done its job, so it retires.
+    const switched = () => {
+      stopForGood();
+      dismiss();
+    };
 
     const dismiss = () => {
       if (!shown) return;
@@ -162,7 +180,7 @@ const label = 'Framework';
       hint.hidden = true;
       trigger.classList.remove('is-hinting');
       window.removeEventListener('keydown', onKey);
-      document.removeEventListener('framework-change', dismiss);
+      document.removeEventListener('framework-change', switched);
       trigger.removeEventListener('keydown', onTriggerKey);
     };
 
@@ -181,10 +199,10 @@ const label = 'Framework';
       hint.hidden = false;
       trigger.classList.add('is-hinting');
       try {
-        window.localStorage.setItem(HINT_KEY, '1');
+        window.localStorage.setItem(HINT_KEY, String(seen + 1));
       } catch {}
       window.addEventListener('keydown', onKey);
-      document.addEventListener('framework-change', dismiss);
+      document.addEventListener('framework-change', switched);
       hint.querySelector('.framework-hint__close')?.addEventListener('click', dismiss);
       // Reaching the selector — by pointer or by keyboard — is the nudge
       // working; it should get out of the way either way.
