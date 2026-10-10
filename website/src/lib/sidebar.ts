@@ -12,6 +12,8 @@ export interface SidebarItem {
    */
   textByFramework?: FrameworkText;
   link?: string;
+  /** The section's own landing page: the row the filter control sits on. */
+  rootLink?: boolean;
   items?: SidebarItem[];
   collapsed?: boolean;
   /** Examples in the gallery window, per framework. Omitted when that window has none. */
@@ -219,7 +221,7 @@ export function generateSidebar(config: SidebarGeneratorConfig): SidebarItem[] {
 
   if (config.rootLinkText) {
     rootGroup.items = [
-      { text: config.rootLinkText, link: config.baseUrl },
+      { text: config.rootLinkText, link: config.baseUrl, rootLink: true },
       ...(rootGroup.items ?? []),
     ];
   }

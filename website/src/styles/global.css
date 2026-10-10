@@ -1443,36 +1443,32 @@ html[lang^="ja"] .example-prompt {
   margin-top: 1.35rem;
 }
 
-/* The filter over the links below it: an icon at the trailing edge of a sticky
-   row, which opens the field in its place. Sticky, so it stays reachable when
-   the list is longer than the column. */
-.sidebar-search {
-  position: sticky;
-  top: 0;
-  z-index: 2;
+/* The filter lives on the section's own row: an icon beside the landing link,
+   which the row swaps for a field while it is open. Nothing above the list
+   competes with it, and the row that filters is the row that says what is
+   being filtered. */
+.sidebar-row {
   display: flex;
   align-items: center;
-  gap: 0.4rem;
-  margin: -0.55rem -0.15rem 0.4rem -0.15rem;
-  padding: 0.55rem 0.15rem 0.4rem 0.15rem;
-  background: var(--background);
+  gap: 0.2rem;
+}
+
+.sidebar-row > .sidebar-item {
+  flex: 1;
+  min-width: 0;
 }
 
 .sidebar-search__field {
   display: none;
   flex: 1;
   min-width: 0;
-  height: 1.75rem;
-  padding: 0 0.5rem;
+  height: 1.85rem;
+  padding: 0 0.55rem;
   border: 1px solid var(--border);
-  border-radius: var(--radius-control);
+  border-radius: 0.4375rem;
   background: var(--background);
   color: var(--foreground);
   font: 400 0.8125rem/1 var(--font-sans);
-}
-
-.sidebar-search[data-open] .sidebar-search__field {
-  display: block;
 }
 
 .sidebar-search__toggle {
@@ -1480,11 +1476,10 @@ html[lang^="ja"] .example-prompt {
   align-items: center;
   justify-content: center;
   flex: none;
-  width: 1.75rem;
-  height: 1.75rem;
-  margin-left: auto;
+  width: 1.6rem;
+  height: 1.6rem;
   border: 0;
-  border-radius: var(--radius-control);
+  border-radius: 0.4375rem;
   background: transparent;
   color: var(--muted-foreground);
   cursor: pointer;
@@ -1493,10 +1488,19 @@ html[lang^="ja"] .example-prompt {
     color 140ms ease;
 }
 
-.sidebar-search__toggle:hover,
-.sidebar-search__toggle[aria-expanded='true'] {
+.sidebar-search__toggle:hover {
   background: var(--secondary);
   color: var(--foreground);
+}
+
+/* Open: the row is the field. */
+.sidebar-row[data-search-open] > .sidebar-item,
+.sidebar-row[data-search-open] > .sidebar-search__toggle {
+  display: none;
+}
+
+.sidebar-row[data-search-open] > .sidebar-search__field {
+  display: block;
 }
 
 .sidebar-search__empty {

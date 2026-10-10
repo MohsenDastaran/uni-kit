@@ -20,36 +20,13 @@ function renderItems(items: SidebarItem[], depth = 0): any[] {
 <aside class="docs-sidebar" aria-label="Documentation navigation">
   <noscript>
     <style>
-      /* Without scripting the field cannot open, so the control is not shown. */
-      .sidebar-search {
+      /* Without scripting the row could never become a field, so the control
+         that would open it is not shown. */
+      .sidebar-search__toggle {
         display: none;
       }
     </style>
   </noscript>
-
-  <div class="sidebar-search" data-sidebar-search>
-    <input
-      id="sidebar-search-field"
-      class="sidebar-search__field"
-      type="search"
-      placeholder="Filter components"
-      aria-label="Filter components"
-      autocomplete="off"
-      spellcheck="false"
-    />
-    <button
-      class="sidebar-search__toggle"
-      type="button"
-      aria-expanded="false"
-      aria-controls="sidebar-search-field"
-      aria-label="Filter components"
-    >
-      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-        <circle cx="11" cy="11" r="8" />
-        <path d="m21 21-4.35-4.35" />
-      </svg>
-    </button>
-  </div>
 
   <nav>
     {items.map(group => (
@@ -96,6 +73,36 @@ function renderItems(items: SidebarItem[], depth = 0): any[] {
                     ))}
                   </ul>
                 </li>
+              ) : item.rootLink ? (
+                <li class="sidebar-row" data-sidebar-row>
+                  <a
+                    href={item.link}
+                    class={`sidebar-item${item.link && isActive(item.link) ? ' active' : ''}`}
+                  >
+                    <span class="sidebar-item__label">{item.text}</span>
+                  </a>
+                  <input
+                    id="sidebar-search-field"
+                    class="sidebar-search__field"
+                    type="search"
+                    placeholder="Filter"
+                    aria-label="Filter components"
+                    autocomplete="off"
+                    spellcheck="false"
+                  />
+                  <button
+                    class="sidebar-search__toggle"
+                    type="button"
+                    aria-expanded="false"
+                    aria-controls="sidebar-search-field"
+                    aria-label="Filter components"
+                  >
+                    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                      <circle cx="11" cy="11" r="8" />
+                      <path d="m21 21-4.35-4.35" />
+                    </svg>
+                  </button>
+                </li>
               ) : (
                 <li>
                   <a
@@ -134,11 +141,11 @@ function renderItems(items: SidebarItem[], depth = 0): any[] {
   // visible link of its own. Nothing here talks to the framework selector.
   (function () {
     const sidebar = document.querySelector('.docs-sidebar');
-    const search = sidebar && sidebar.querySelector('[data-sidebar-search]');
-    if (!sidebar || !search) return;
+    const row = sidebar && sidebar.querySelector('[data-sidebar-row]');
+    if (!sidebar || !row) return;
 
-    const toggle = search.querySelector('.sidebar-search__toggle');
-    const field = search.querySelector('.sidebar-search__field');
+    const toggle = row.querySelector('.sidebar-search__toggle');
+    const field = row.querySelector('.sidebar-search__field');
     const empty = sidebar.querySelector('[data-sidebar-empty]');
     const links = () => Array.from(sidebar.querySelectorAll('.sidebar-item'));
     // The label and the address it leads to. The example counts sit inside the
@@ -154,22 +161,27 @@ function renderItems(items: SidebarItem[], depth = 0): any[] {
       let hits = 0;
 
       for (const link of links()) {
+        // The row carrying the field is never filtered out from under the
+        // reader: they are typing into it.
+        if (link.closest('[data-sidebar-row]')) continue;
         const hit = query === '' || haystack(link).includes(query);
         holder(link).style.display = hit ? '' : 'none';
         if (hit) hits += 1;
       }
 
       // Innermost lists first: a wrapper goes once nothing inside it is left,
-      // and the group goes with it.
+      // and the group goes with it — unless it holds the field.
       for (const list of Array.from(sidebar.querySelectorAll('ul')).reverse()) {
         for (const item of Array.from(list.children)) {
+          if (item.hasAttribute('data-sidebar-row')) continue;
           const any = Array.from(item.querySelectorAll('.sidebar-item')).some(shown);
           item.style.display = any ? '' : 'none';
         }
       }
       for (const group of sidebar.querySelectorAll('.sidebar-group')) {
+        const holdsTheField = group.querySelector('[data-sidebar-row]') !== null;
         const any = Array.from(group.querySelectorAll('.sidebar-item')).some(shown);
-        group.style.display = any ? '' : 'none';
+        group.style.display = holdsTheField || any ? '' : 'none';
       }
 
       if (empty) empty.hidden = !(query !== '' && hits === 0);
@@ -177,7 +189,7 @@ function renderItems(items: SidebarItem[], depth = 0): any[] {
 
     function setOpen(next) {
       open = next;
-      search.toggleAttribute('data-open', open);
+      row.toggleAttribute('data-search-open', open);
       toggle.setAttribute('aria-expanded', String(open));
       if (open) {
         field.focus();
@@ -194,15 +206,23 @@ function renderItems(items: SidebarItem[], depth = 0): any[] {
 
     field.addEventListener('input', apply);
 
+    // Clicking away gives the row back, as long as there is nothing to keep.
+    field.addEventListener('blur', function () {
+      if (open && field.value.trim() === '') setOpen(false);
+    });
+
     field.addEventListener('keydown', function (event) {
       if (event.key === 'Escape') {
         event.preventDefault();
         setOpen(false);
         return;
       }
-      // One link left: the filter has done its job, so Enter takes it.
+      // One link left: the filter has done its job, so Enter takes it. The
+      // row's own link is not a match, it is where the query is typed.
       if (event.key === 'Enter') {
-        const matches = links().filter(shown);
+        const matches = links().filter(
+          (link) => !link.closest('[data-sidebar-row]') && shown(link),
+        );
         if (matches.length === 1) {
           event.preventDefault();
           window.location.assign(matches[0].href);
