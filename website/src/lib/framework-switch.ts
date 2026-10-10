@@ -2,6 +2,11 @@ const STORAGE_KEY = 'selected-framework';
 const FRAMEWORKS = ['gpui', 'slint'] as const;
 type Framework = (typeof FRAMEWORKS)[number];
 
+// The framework a first visit gets, and the one the address bar does not need
+// to name. A parameter is written for anything else.
+const DEFAULT_FRAMEWORK: Framework = 'slint';
+const FRAMEWORK_PARAM = 'framework';
+
 // The loading beat is long enough to read as a reload of the page's code, and
 // short enough that switching back and forth never feels like waiting.
 const LOADING_MS = 420;
@@ -14,7 +19,7 @@ const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)');
 const isFramework = (value: unknown): value is Framework =>
   FRAMEWORKS.includes(value as Framework);
 
-let target: Framework = isFramework(root.dataset.framework) ? root.dataset.framework : 'slint';
+let target: Framework = isFramework(root.dataset.framework) ? root.dataset.framework : DEFAULT_FRAMEWORK;
 let loadingTimer: number | undefined;
 let enterTimer: number | undefined;
 
@@ -87,6 +92,35 @@ const progress = (() => {
   };
 })();
 
+/**
+ * Put the view in the address bar, and keep it in the links the reader is about
+ * to follow. The site is one page per view with both frameworks inside it, so
+ * the URL is the only part of the page a search engine or an assistant can cite
+ * — and the only way a reader can hand the same view to someone else.
+ *
+ * The default is left out: `?framework=slint` says nothing that a clean URL
+ * does not, and every page's canonical points at the clean one.
+ */
+function syncUrl(framework: Framework) {
+  const url = new URL(location.href);
+  if (framework === DEFAULT_FRAMEWORK) url.searchParams.delete(FRAMEWORK_PARAM);
+  else url.searchParams.set(FRAMEWORK_PARAM, framework);
+  const here = url.pathname + url.search + url.hash;
+  if (here !== location.pathname + location.search + location.hash) {
+    history.replaceState(history.state, '', here);
+  }
+
+  document.querySelectorAll<HTMLAnchorElement>('a[href^="/"]').forEach((link) => {
+    const href = link.getAttribute('href');
+    if (!href) return;
+    const to = new URL(href, location.origin);
+    if (framework === DEFAULT_FRAMEWORK) to.searchParams.delete(FRAMEWORK_PARAM);
+    else to.searchParams.set(FRAMEWORK_PARAM, framework);
+    const next = to.pathname + to.search + to.hash;
+    if (next !== href) link.setAttribute('href', next);
+  });
+}
+
 function show(framework: Framework) {
   root.dataset.framework = framework;
   announce(framework);
@@ -97,6 +131,7 @@ function select(framework: Framework, persist = true) {
   if (framework === target) return;
   target = framework;
   syncSwitches(framework);
+  syncUrl(framework);
   if (persist) localStorage.setItem(STORAGE_KEY, framework);
 
   const groups = [...document.querySelectorAll<HTMLElement>('[data-framework-code]')];
@@ -173,3 +208,6 @@ window.addEventListener('storage', (event) => {
 });
 
 syncSwitches(target);
+// A page loaded with the parameter, or with a stored choice, says so in the
+// address bar and carries it into its links.
+syncUrl(target);

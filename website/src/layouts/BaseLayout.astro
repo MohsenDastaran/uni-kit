@@ -47,7 +47,7 @@ const jsonLd = JSON.stringify(structuredData ?? defaultStructuredData).replace(/
 ---
 
 <!DOCTYPE html>
-<html lang={lang}>
+<html lang={lang} data-framework="slint">
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
@@ -97,11 +97,27 @@ const jsonLd = JSON.stringify(structuredData ?? defaultStructuredData).replace(/
       })();
     </script>
 
-    <!-- Framework: pick the code blocks before paint so they never flash -->
+    <!-- Framework: pick the code blocks before paint so they never flash.
+         A `?framework=` in the address bar is the view being asked for, which
+         is what makes one shareable and citable; the stored choice is what the
+         reader last asked for; Slint is what a first visit gets. -->
     <script is:inline>
       (function () {
-        const stored = localStorage.getItem('selected-framework');
-        document.documentElement.dataset.framework = stored === 'gpui' ? 'gpui' : 'slint';
+        const asked = new URLSearchParams(location.search).get('framework');
+        let stored = null;
+        try {
+          stored = localStorage.getItem('selected-framework');
+        } catch {}
+        const chosen = asked === 'gpui' || asked === 'slint' ? asked : stored;
+        const framework = chosen === 'gpui' ? 'gpui' : 'slint';
+        document.documentElement.dataset.framework = framework;
+        // A pinned view becomes the choice for the pages that follow it, so a
+        // link shared with the parameter keeps its meaning after a click.
+        if (asked === 'gpui' || asked === 'slint') {
+          try {
+            localStorage.setItem('selected-framework', framework);
+          } catch {}
+        }
       })();
     </script>
 

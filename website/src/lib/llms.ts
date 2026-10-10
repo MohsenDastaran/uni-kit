@@ -195,6 +195,18 @@ const SECTIONS = (root: string) => [
  * markdown behind it. A model reads this to decide what to fetch, where
  * `llms-full.txt` is everything at once.
  */
+/**
+ * What an assistant needs to cite a specific view: the site documents one
+ * component per page for two frameworks, and the address bar names which one is
+ * on screen. Written for machines, since a reader sees the switch itself.
+ */
+const FRAMEWORK_NOTICE = [
+  '## Frameworks',
+  '',
+  'Every component page documents the same control for both frameworks: GPUI, as a Rust crate, and Slint, as the same controls written in `.slint`. Slint is the default view; `?framework=gpui` pins the GPUI view of any page, and every page carries a canonical link to the URL without the parameter. The Markdown of a page holds both, so nothing is hidden by the choice.',
+  '',
+].join('\n');
+
 export function buildLlmsIndex(websiteRoot: string): string {
   const recipePaths = recipeDestinations(websiteRoot);
   const entries = SECTIONS(websiteRoot).flatMap(({ dir, prefix }) => scanDir(dir, dir, prefix, recipePaths));
@@ -206,7 +218,7 @@ export function buildLlmsIndex(websiteRoot: string): string {
       }`,
     );
 
-  return `# ${SITE_TITLE}\n\n> ${SITE_DESCRIPTION}\n\n${documentationLicenseNotice('en', 'https://gpui-kit.com')}\n\n## Table of Contents\n\n${lines.join('\n')}\n`;
+  return `# ${SITE_TITLE}\n\n> ${SITE_DESCRIPTION}\n\n${documentationLicenseNotice('en', 'https://gpui-kit.com')}\n\n${FRAMEWORK_NOTICE}\n## Table of Contents\n\n${lines.join('\n')}\n`;
 }
 
 export function buildLlmsContent(websiteRoot: string): string {
@@ -216,7 +228,7 @@ export function buildLlmsContent(websiteRoot: string): string {
     { dir: join(websiteRoot, 'component'), prefix: 'component' },
   ];
 
-  const header = `# ${SITE_TITLE}\n\n> ${SITE_DESCRIPTION}\n\n${documentationLicenseNotice('en', 'https://gpui-kit.com')}\n\n---\n`;
+  const header = `# ${SITE_TITLE}\n\n> ${SITE_DESCRIPTION}\n\n${documentationLicenseNotice('en', 'https://gpui-kit.com')}\n\n${FRAMEWORK_NOTICE}\n---\n`;
 
   const pages: string[] = [];
   for (const { dir, prefix } of sections) {
