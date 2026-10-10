@@ -502,7 +502,7 @@ html[lang^="zh"] .section-kicker {
 }
 
 .hero__signals {
-    display: flex;
+    display: grid;
     flex-wrap: wrap;
     gap: 0.5rem 1.5rem;
     margin: 1.5rem 0 0;
