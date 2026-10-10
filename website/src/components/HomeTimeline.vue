@@ -156,16 +156,26 @@ function measure() {
             ?.getBoundingClientRect();
         if (!dot) return driven ? item.offsetLeft : item.offsetTop;
         return driven
-            ? dot.left + dot.width / 2 - (itemsEl?.getBoundingClientRect().left ?? 0)
-            : dot.top + dot.height / 2 - (itemsEl?.getBoundingClientRect().top ?? 0);
+            ? dot.left +
+                  dot.width / 2 -
+                  (itemsEl?.getBoundingClientRect().left ?? 0)
+            : dot.top +
+                  dot.height / 2 -
+                  (itemsEl?.getBoundingClientRect().top ?? 0);
     });
     railStart = railPositions[0] ?? 0;
     railLength = Math.max(
         1,
         (railPositions[railPositions.length - 1] ?? 0) - railStart,
     );
-    journeyEl.style.setProperty("--journey-rail-start", `${railStart.toFixed(2)}px`);
-    journeyEl.style.setProperty("--journey-rail-length", `${railLength.toFixed(2)}px`);
+    journeyEl.style.setProperty(
+        "--journey-rail-start",
+        `${railStart.toFixed(2)}px`,
+    );
+    journeyEl.style.setProperty(
+        "--journey-rail-length",
+        `${railLength.toFixed(2)}px`,
+    );
 
     if (driven) {
         dotStops = railPositions.map((position) =>
@@ -183,7 +193,9 @@ function measure() {
         const itemsRect = itemsEl?.getBoundingClientRect();
         railHeight = itemsEl?.offsetHeight ?? 0;
         railTop = (itemsRect?.top ?? 0) + window.scrollY;
-        dotStops = railPositions.map((position) => clamp(position / railLength));
+        dotStops = railPositions.map((position) =>
+            clamp(position / railLength),
+        );
         cardStops = items.map((item) =>
             clamp(
                 (item.offsetTop + item.offsetHeight - viewportHeight * 0.9) /
@@ -216,8 +228,7 @@ function paint() {
 
     let progress: number;
     if (driven) {
-        const top =
-            journeyEl.getBoundingClientRect().top + window.scrollY;
+        const top = journeyEl.getBoundingClientRect().top + window.scrollY;
         const range = Math.max(1, journeyEl.offsetHeight - window.innerHeight);
         progress = clamp((window.scrollY - top) / range);
         trackEl.style.transform = `translate3d(${Math.round(-progress * travel)}px, 0, 0)`;
@@ -282,8 +293,8 @@ onBeforeUnmount(() => {
         class="band band--journey"
         aria-labelledby="journey-title"
     >
-        <div class="band__inner">
-            <header class="section-head journey__head">
+        <div class="band__inner pb-0!">
+            <header class="section-head journey__head pb-0! mb-0!">
                 <span class="section-kicker">Trajectory</span>
                 <h2 id="journey-title">From one library to every GUI</h2>
                 <p>
@@ -534,8 +545,7 @@ onBeforeUnmount(() => {
 }
 
 .journey__item.is-origin.is-lit .journey__dot {
-    box-shadow: 0 0 0 0.375rem
-        color-mix(in srgb, var(--brand) 18%, transparent);
+    box-shadow: 0 0 0 0.375rem color-mix(in srgb, var(--brand) 18%, transparent);
     animation: journey-origin 560ms cubic-bezier(0.22, 1, 0.36, 1) both;
 }
 
