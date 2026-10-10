@@ -176,15 +176,23 @@ function reconcileFrames() {
   document.querySelectorAll<HTMLIFrameElement>(".block__iframe").forEach((frame) => {
     const index = Number(frame.dataset.blockIndex);
     if (!Number.isInteger(index)) return;
+    const block = visible.value[index];
+    if (!block) return;
+    // The frame is identified by its block, not by its position: the loader is
+    // keyed by block id, and passing the index here left the first preview
+    // loading for good. It is the only frame the server rendered, so its `load`
+    // can finish before this island is alive — which is the whole reason this
+    // function exists.
+    const settled = () => onFrameLoad(block);
     try {
       const frameDocument = frame.contentDocument;
       const committed = frameDocument?.location?.href !== "about:blank";
-      if (frameDocument?.readyState === "complete" && committed) onFrameLoad(index);
-      else frame.addEventListener("load", () => onFrameLoad(index), { once: true });
+      if (frameDocument?.readyState === "complete" && committed) settled();
+      else frame.addEventListener("load", settled, { once: true });
     } catch {
       // A cross-origin frame cannot be inspected, so its `load` event is the
       // only signal there is, and it is still coming.
-      frame.addEventListener("load", () => onFrameLoad(index), { once: true });
+      frame.addEventListener("load", settled, { once: true });
     }
   });
 }
