@@ -55,6 +55,35 @@ const label = 'Framework';
       </svg>
     </button>
   </div>
+
+  <div class="framework-hint" data-framework-hint hidden role="status">
+    <p class="framework-hint__kicker">Same components, other framework</p>
+    <span class="framework-hint__value" data-framework-value="gpui">
+      <svg class="framework-select__logo" viewBox="0 0 32 32" aria-hidden="true">
+        <path d="M4 4h24v5H10v14h18v5H4V4Z" fill="currentColor"></path>
+        <path class="framework-switch__logo-accent" d="M16 13h12v10h-5v-5h-7v-5Z" fill="#3B82F6"></path>
+      </svg>
+      Try GPUI
+    </span>
+    <span class="framework-hint__value" data-framework-value="slint">
+      <svg class="framework-select__logo" viewBox="0 0 24 24" aria-hidden="true">
+        <path
+          fill="currentColor"
+          d="m6.503 23.914 13.61-9.399s.614-.351.614-.906c0-.739-.776-.979-.776-.979l-7.488-2.953c-.267-.104-.634.189-.29.56l2.479 2.471s.688.675.688 1.117-.423.836-.423.836l-9.02 8.684c-.32.31.113.87.606.569zM17.497.087 3.887 9.484s-.614.351-.614.906c0 .739.776.98.776.98l7.488 2.953c.267.103.636-.19.29-.559l-2.479-2.48s-.688-.673-.688-1.116c0-.444.423-.837.423-.837L18.097.654c.326-.31-.106-.87-.6-.567z"
+        ></path>
+      </svg>
+      Try Slint
+    </span>
+    <button class="framework-hint__close" type="button" aria-label="Dismiss">
+      <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" aria-hidden="true">
+        <path d="M5 5l14 14M19 5 5 19"></path>
+      </svg>
+    </button>
+    <svg class="framework-hint__arrow" viewBox="0 0 64 44" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+      <path d="M7 40C11 24 25 11 48 7"></path>
+      <path d="M38 5l11 2-3 11"></path>
+    </svg>
+  </div>
 </div>
 
 <script>
@@ -103,6 +132,66 @@ const label = 'Framework';
     document.addEventListener('pointerdown', (event) => {
       if (!root.contains(event.target as Node)) setOpen(false);
     });
+  });
+
+  // A nudge towards the framework selector: nobody looks for a switch they have
+  // no reason to expect. It waits for the page to settle, points at the control
+  // for a few seconds, and is remembered so it never asks twice.
+  const HINT_KEY = 'framework-hint-seen';
+  const HINT_DELAY = 2200;
+  const HINT_LIFE = 9000;
+
+  document.querySelectorAll<HTMLElement>('[data-framework-select]').forEach((root) => {
+    const hint = root.querySelector<HTMLElement>('[data-framework-hint]');
+    const trigger = root.querySelector<HTMLButtonElement>('.framework-select__trigger');
+    if (!hint || !trigger) return;
+
+    let seen = false;
+    try {
+      seen = window.localStorage.getItem(HINT_KEY) !== null;
+    } catch {}
+    if (seen) return;
+
+    let hideTimer: number | undefined;
+    let shown = false;
+
+    const dismiss = () => {
+      if (!shown) return;
+      shown = false;
+      window.clearTimeout(hideTimer);
+      hint.hidden = true;
+      trigger.classList.remove('is-hinting');
+      window.removeEventListener('keydown', onKey);
+      document.removeEventListener('framework-change', dismiss);
+      trigger.removeEventListener('keydown', onTriggerKey);
+    };
+
+    const onKey = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') dismiss();
+    };
+
+    const onTriggerKey = (event: KeyboardEvent) => {
+      if (['ArrowDown', 'ArrowUp', 'Enter', ' '].includes(event.key)) dismiss();
+    };
+
+    window.setTimeout(() => {
+      // The reader may have found the selector, or switched, in the meantime.
+      if (root.classList.contains('is-open')) return;
+      shown = true;
+      hint.hidden = false;
+      trigger.classList.add('is-hinting');
+      try {
+        window.localStorage.setItem(HINT_KEY, '1');
+      } catch {}
+      window.addEventListener('keydown', onKey);
+      document.addEventListener('framework-change', dismiss);
+      hint.querySelector('.framework-hint__close')?.addEventListener('click', dismiss);
+      // Reaching the selector — by pointer or by keyboard — is the nudge
+      // working; it should get out of the way either way.
+      trigger.addEventListener('click', dismiss, { once: true });
+      trigger.addEventListener('keydown', onTriggerKey);
+      hideTimer = window.setTimeout(dismiss, HINT_LIFE);
+    }, HINT_DELAY);
   });
 </script>
 
@@ -247,6 +336,130 @@ const label = 'Framework';
     opacity: 1;
   }
 
+  /* The nudge: a card under the selector with a drawn arrow back up at it, a
+     wiggle on the control, and a springy entrance. Every colour is a token. */
+  .framework-hint {
+    position: absolute;
+    top: calc(100% + 0.75rem);
+    right: 0;
+    z-index: 40;
+    display: flex;
+    flex-direction: column;
+    gap: 0.15rem;
+    min-width: 11.5rem;
+    padding: 0.55rem 1.7rem 0.6rem 0.7rem;
+    border: 1px solid color-mix(in srgb, var(--brand) 32%, var(--border));
+    border-radius: var(--radius-card);
+    background: var(--popover);
+    color: var(--foreground);
+    box-shadow: var(--shadow-hairline), var(--shadow-panel);
+    animation: framework-hint-in 340ms cubic-bezier(0.2, 1.35, 0.4, 1) both;
+  }
+
+  .framework-hint[hidden] {
+    display: none;
+  }
+
+  .framework-hint__kicker {
+    margin: 0;
+    color: var(--muted-foreground);
+    font-size: 0.6875rem;
+    font-weight: 560;
+    letter-spacing: 0.02em;
+  }
+
+  .framework-hint__value {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
+    font-size: 0.9375rem;
+    font-weight: 640;
+    letter-spacing: -0.014em;
+  }
+
+  .framework-hint__value .framework-select__logo {
+    width: 0.9rem;
+    height: 0.9rem;
+  }
+
+  /* It names the framework the reader is not on, the inverse of the trigger. */
+  :global(html[data-framework='slint']) .framework-hint__value[data-framework-value='slint'],
+  :global(html:not([data-framework='slint'])) .framework-hint__value[data-framework-value='gpui'] {
+    display: none;
+  }
+
+  .framework-hint__close {
+    position: absolute;
+    top: 0.25rem;
+    right: 0.3rem;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 1.15rem;
+    height: 1.15rem;
+    border: 0;
+    border-radius: 0.25rem;
+    background: transparent;
+    color: var(--muted-foreground);
+    cursor: pointer;
+  }
+
+  .framework-hint__close:hover {
+    background: var(--secondary);
+    color: var(--foreground);
+  }
+
+  .framework-hint__arrow {
+    position: absolute;
+    top: -1.85rem;
+    right: 1.5rem;
+    width: 3.4rem;
+    height: 2.1rem;
+    color: var(--brand);
+    animation: framework-hint-nudge 1.15s ease-in-out 2;
+  }
+
+  .framework-select__trigger.is-hinting {
+    animation: framework-hint-wiggle 1s ease-in-out 1;
+  }
+
+  @keyframes framework-hint-in {
+    from {
+      opacity: 0;
+      transform: translateY(-0.3rem) scale(0.94);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0) scale(1);
+    }
+  }
+
+  @keyframes framework-hint-nudge {
+    0%,
+    100% {
+      transform: translateY(0);
+    }
+    50% {
+      transform: translateY(-0.28rem);
+    }
+  }
+
+  @keyframes framework-hint-wiggle {
+    0%,
+    100% {
+      transform: rotate(0) scale(1);
+    }
+    20% {
+      transform: rotate(-3.5deg) scale(1.05);
+    }
+    45% {
+      transform: rotate(2.5deg) scale(1.02);
+    }
+    70% {
+      transform: rotate(-1.5deg) scale(1.01);
+    }
+  }
+
   @media (max-width: 900px) {
     .framework-select__trigger {
       width: 2rem;
@@ -284,6 +497,13 @@ const label = 'Framework';
     .framework-select__chevron,
     .framework-select__menu {
       transition: none;
+    }
+
+    /* The hint still arrives, it just does not perform. */
+    .framework-hint,
+    .framework-hint__arrow,
+    .framework-select__trigger.is-hinting {
+      animation: none;
     }
   }
 </style>
