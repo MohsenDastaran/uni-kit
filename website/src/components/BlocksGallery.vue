@@ -339,10 +339,12 @@ async function startWarm(block: Block) {
         const { done, value } = await reader.read();
         if (done) break;
         received += value.byteLength;
-        warmth.value = {
-          ...warmth.value,
-          [block.id]: Math.min(99, Math.round((received / total) * 100)),
-        };
+        // Reported in tens: a number that changes on every chunk of a
+        // multi-megabyte stream is a flickering label, not progress.
+        const step = Math.min(90, Math.floor(((received / total) * 100) / 10) * 10);
+        if (warmth.value[block.id] !== step) {
+          warmth.value = { ...warmth.value, [block.id]: step };
+        }
       }
     }
     warmth.value = { ...warmth.value, [block.id]: 100 };
@@ -959,12 +961,27 @@ function reload(block: Block) {
   width: 100%;
   height: 100%;
   object-fit: contain;
-  transition: filter 180ms ease;
 }
 
-.block__poster:hover .block__poster-image,
-.block__poster:focus-visible .block__poster-image {
-  filter: brightness(0.5);
+/* The picture dims under a scrim rather than through a filter on the image.
+   Animating `filter` on a 1278px-wide bitmap makes the browser re-rasterise it
+   every frame, which flickers; an opacity transition composites instead. The
+   scrim is black because its job is to dim whatever picture is under it, in
+   either theme — the one raw value here, for the same reason the frame's own
+   background is raw. */
+.block__poster::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: rgb(0 0 0 / 0.5);
+  opacity: 0;
+  transition: opacity 180ms ease;
+  pointer-events: none;
+}
+
+.block__poster:hover::after,
+.block__poster:focus-visible::after {
+  opacity: 1;
 }
 
 .block__poster:focus-visible {
@@ -984,7 +1001,9 @@ function reload(block: Block) {
   padding: 0 1.1rem;
   border: 1px solid color-mix(in srgb, var(--foreground) 30%, transparent);
   border-radius: var(--radius-control);
-  background: color-mix(in srgb, var(--background) 88%, transparent);
+  /* Opaque, and no `backdrop-filter`: blurring a backdrop that is itself being
+     dimmed underneath re-samples it every frame and flashes. */
+  background: var(--background);
   color: var(--foreground);
   font-size: 0.875rem;
   font-weight: 560;
@@ -993,7 +1012,7 @@ function reload(block: Block) {
   transition:
     opacity 160ms ease,
     transform 160ms ease;
-  backdrop-filter: blur(3px);
+  z-index: 1;
 }
 
 .block__poster:hover .block__poster-cta,
