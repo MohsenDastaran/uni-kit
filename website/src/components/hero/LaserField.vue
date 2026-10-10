@@ -153,7 +153,11 @@ void main() {
     float n = fract(sin(dot(gl_FragCoord.xy, vec2(12.9898, 78.233))) * 43758.5453);
     finalColor += n * 0.02;
 
-    gl_FragColor = vec4(finalColor, 1.0);
+    // Premultiplied, so only the beams are opaque: everywhere else the canvas
+    // is a window onto the surface behind it, which is what lets the hero wear
+    // the page's own theme instead of a black sheet.
+    float alpha = clamp(max(max(finalColor.r, finalColor.g), finalColor.b), 0.0, 1.0);
+    gl_FragColor = vec4(finalColor, alpha);
 }
 `;
 

@@ -96,9 +96,10 @@ onBeforeUnmount(() => clearTimeout(copyTimer));
 </template>
 
 <style>
-/* The hero is the one dark section on a themed page: the matrix junction draws
-   on black, so the copy and the data card switch to light ink over it. The
-   `.hero` prefix outranks the theme's `.hero__*` rules. */
+/* The hero follows the page's theme like every other band: the junction draws
+   its beams over whatever surface the theme hands it, inking the page in light
+   and glowing on it in dark. The `.hero` prefix outranks the theme's
+   `.hero__*` rules. */
 .hero {
     isolation: isolate;
     /* GPUI's mark in the picker carries blue; the Slint mark is monochrome, so
@@ -107,14 +108,14 @@ onBeforeUnmount(() => clearTimeout(copyTimer));
 }
 
 html[data-framework="slint"] .hero {
-    --feed-accent: #cbd5e1;
+    --feed-accent: var(--muted-foreground);
 }
 
 .hero__laser {
     position: absolute;
     inset: 0;
     z-index: 0;
-    background: #020307;
+    background: var(--background);
 }
 
 .hero__laser .laser-field {
@@ -124,8 +125,15 @@ html[data-framework="slint"] .hero {
     height: 100%;
     display: block;
     /* The junction's centre sits left of middle; nudge the whole field right.
-     The strip this leaves on the left is the same near-black behind it. */
+     The strip this leaves on the left is the surface behind it. */
     transform: translateX(4%);
+    /* The beams are additive, so over a light surface they are multiplied into
+       ink instead of disappearing into it. */
+    mix-blend-mode: multiply;
+}
+
+html.dark .hero__laser .laser-field {
+    mix-blend-mode: screen;
 }
 
 .hero__inner {
@@ -133,22 +141,22 @@ html[data-framework="slint"] .hero {
 }
 
 .hero .hero__copy {
-    color: #f5f6f8;
+    color: var(--foreground);
 }
 
 .hero .eyebrow {
-    background: rgb(255 255 255 / 0.06);
-    border-color: rgb(255 255 255 / 0.14);
-    color: #e6e9ef !important;
+    background: var(--secondary);
+    border-color: var(--border);
+    color: var(--secondary-foreground) !important;
 }
 
 .hero .hero h1,
 .hero .hero__lead {
-    color: #f5f6f8;
+    color: var(--foreground);
 }
 
 .hero .hero__lead {
-    color: #b9c0cc;
+    color: var(--muted-foreground);
 }
 
 .hero .hero__actions {
@@ -160,9 +168,9 @@ html[data-framework="slint"] .hero {
     padding: 0 2rem;
     gap: 0.5rem;
     border-radius: var(--radius-control);
-    border-color: rgb(255 255 255 / 0.14);
-    background: rgb(255 255 255 / 0.04);
-    color: #e6e9ef !important;
+    border-color: var(--border);
+    background: var(--card);
+    color: var(--foreground) !important;
     font-size: 0.875rem;
     font-weight: 500;
     transition:
@@ -206,29 +214,29 @@ html[data-framework="slint"] .hero {
 }
 
 .hero .hero__signals li {
-    color: #98a1af;
+    color: var(--muted-foreground);
 }
 
 .hero .hero__signals strong {
-    color: #e6e9ef;
+    color: var(--foreground);
 }
 
 .hero .hero__install {
-    background: rgb(255 255 255 / 0.04);
-    border-color: rgb(255 255 255 / 0.14);
+    background: var(--card);
+    border-color: var(--border);
 }
 
 .hero .hero__install code {
-    color: #e6e9ef;
+    color: var(--foreground);
 }
 
 .hero .hero__install button {
-    color: #98a1af;
+    color: var(--muted-foreground);
 }
 
 .hero .hero__install button:hover {
-    background: rgb(255 255 255 / 0.1);
-    color: #e6e9ef;
+    background: var(--secondary);
+    color: var(--foreground);
 }
 
 /* Right column: the data card sits against the right edge of the hero. */
@@ -275,7 +283,7 @@ html[data-framework="slint"] .hero {
                 color-mix(in srgb, var(--feed-accent) 12%, transparent),
                 transparent 58%
             ),
-            #020307;
+            var(--background);
     }
 }
 
