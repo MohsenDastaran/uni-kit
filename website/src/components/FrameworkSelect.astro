@@ -173,19 +173,18 @@ const label = 'Framework';
       dismiss();
     };
 
-    // Aim the arrow at the selector, or put it away when the selector is too
-    // far from this corner for the arrow to mean anything.
+    // Aim the arrow at the selector. On a wide screen the bar is centred and
+    // the selector is far outside this corner, so the arrow is held at the
+    // card's edge instead and leans the way the selector lies.
     const pointArrow = () => {
       const card = hint.getBoundingClientRect();
       const target = trigger.getBoundingClientRect();
-      const x = target.left + target.width / 2 - card.left;
-      const near = x > 12 && x < card.width - 12;
-      hint.toggleAttribute('data-arrow-hidden', !near);
-      if (!near) return;
+      const wanted = target.left + target.width / 2 - card.left;
+      const x = Math.min(Math.max(wanted, 30), card.width - 32);
       hint.style.setProperty('--framework-hint-arrow-x', x.toFixed(1) + 'px');
       hint.style.setProperty(
         '--framework-hint-arrow-flip',
-        x < card.width / 2 ? '-1' : '1',
+        wanted < card.width / 2 ? '-1' : '1',
       );
     };
 
@@ -464,12 +463,6 @@ const label = 'Framework';
     scale: var(--framework-hint-arrow-flip, 1) 1;
     color: var(--brand);
     animation: framework-hint-nudge 1.15s ease-in-out 2;
-  }
-
-  /* On a wide screen the bar is centred, so the selector is a long way from
-     the screen's corner and an arrow would point at nothing. */
-  .framework-hint[data-arrow-hidden] .framework-hint__arrow {
-    display: none;
   }
 
   .framework-select__trigger.is-hinting {
