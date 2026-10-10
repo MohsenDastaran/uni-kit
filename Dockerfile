@@ -85,6 +85,17 @@ RUN --mount=type=cache,target=/usr/local/cargo/registry \
       SLINT_GALLERY_ONLY="$slug" ./scripts/build.sh --release --out "www/dist/pages/$slug" || exit 1; \
     done
 
+# The galleries are tens of megabytes each, and nginx deliberately does not
+# compress wasm on the fly. Compress it once here instead: `gzip_static on`
+# serves the `.wasm.gz` beside each module as-is, so the transfer shrinks ~2.5x
+# with no per-request cost, and the module itself is untouched. This runs before
+# the site build, which embeds the compressed sizes in the pages that explain
+# each download.
+RUN node website/scripts/precompress-wasm.mjs \
+      crates/story-web/www/dist \
+      crates/base/examples/wasm/www/dist \
+      crates/slint-component/www/dist
+
 # The site reads the Story and Slint sources from the repository root to count
 # examples and to render the Slint samples, so it has to build from here rather
 # than from `website/` alone. The copies mirror release-docs.yml.
