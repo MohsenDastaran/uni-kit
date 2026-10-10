@@ -7,7 +7,7 @@ import {
     Monitor,
     Scale,
     Zap,
-    Star,
+    Blocks,
 } from "lucide-vue-next";
 import LaserField from "./LaserField.vue";
 import DataFeed from "./DataFeed.vue";
@@ -24,12 +24,10 @@ const props = defineProps<{
     gettingStartedHref: string;
     componentsHref: string;
     starterHref: string;
-    starCount: number;
+    componentCount: number;
+    frameworkCount: number;
     installCommand: string;
 }>();
-
-const stars = props.starCount;
-const starLabel = stars >= 1000 ? `${(stars / 1000).toFixed(1)}k` : `${stars}`;
 
 const installSnippet = ["[dependencies]", props.installCommand].join("\n");
 
@@ -75,9 +73,15 @@ onBeforeUnmount(() => clearTimeout(copyTimer));
                     </a>
                 </div>
                 <ul class="hero__signals">
-                    <li>
-                        <Star :size="14" /><strong>{{ starLabel }}</strong>
-                        {{ copy.signalStars }}
+                    <li v-if="componentCount > 0">
+                        <Blocks :size="14" /><strong>{{
+                            componentCount
+                        }}</strong>
+                        {{ copy.signalComponents }}
+                        <strong v-if="frameworkCount > 1">{{
+                            frameworkCount
+                        }}</strong>
+                        {{ copy.signalFrameworks }}
                     </li>
 
                     <li><Monitor :size="14" /> {{ copy.signalPlatforms }}</li>

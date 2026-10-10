@@ -5,11 +5,14 @@ import SiteFooter from '../components/SiteFooter.astro';
 import HomeApp from '../components/HomeApp.vue';
 import HomeFaq from '../components/HomeFaq.astro';
 import { fetchStarCount } from '../lib/github';
+import { registryTotals } from '../lib/registry-totals';
 
 let starCount = 0;
 try { starCount = await fetchStarCount(); } catch {}
 
 const base = import.meta.env.BASE_URL;
+// What the registry ships, counted from the manifest rather than written down.
+const totals = registryTotals();
 ---
 
 <HomeLayout
@@ -18,7 +21,12 @@ const base = import.meta.env.BASE_URL;
 >
   <Nav currentPath={Astro.url.pathname} starCount={starCount} />
 
-  <HomeApp client:load starCount={starCount} base={base} />
+  <HomeApp
+    client:load
+    componentCount={totals.components}
+    frameworkCount={totals.frameworks}
+    base={base}
+  />
 
   <HomeFaq />
 

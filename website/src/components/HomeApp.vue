@@ -13,7 +13,8 @@ import Hero from "./hero/Hero.vue";
 import HomeTimeline from "./HomeTimeline.vue";
 
 const props = defineProps<{
-    starCount: number;
+    componentCount: number;
+    frameworkCount: number;
     base: string;
 }>();
 
@@ -21,8 +22,6 @@ function url(path: string) {
     const b = props.base.replace(/\/$/, "");
     return `${b}/${path}`.replace(/\/+/g, "/");
 }
-
-const stars = props.starCount;
 
 const gettingStartedHref = url("component");
 const componentsHref = url("component");
@@ -68,7 +67,8 @@ const copy = {
 
     componentsAction: "Browse components",
     baseAction: "Browse components",
-    signalStars: "stars on GitHub",
+    signalComponents: "components across",
+    signalFrameworks: "frameworks",
     signalLicense: "Apache-2.0",
     signalPlatforms: "macOS, Windows, Linux",
     capsKicker: "Capabilities",
@@ -158,7 +158,8 @@ const copy = {
             :getting-started-href="gettingStartedHref"
             :components-href="componentsHref"
             :starter-href="starterHref"
-            :star-count="stars"
+            :component-count="componentCount"
+            :framework-count="frameworkCount"
             :install-command="installCommand"
         />
 
