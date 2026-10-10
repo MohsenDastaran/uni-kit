@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="https://raw.githubusercontent.com/longbridge/gpui-kit/main/website/public/logo.svg" width="112" alt="GPUI Kit logo" />
+  <img src="https://raw.githubusercontent.com/MohsenDastaran/uni-kit/main/website/public/uni-kit.svg" width="112" alt="uni-kit logo" />
   <br>
   <strong>GPUI Kit</strong>
 </p>

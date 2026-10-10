@@ -1278,6 +1278,22 @@ html[lang^="ja"] .example-prompt {
   height: 1.4rem;
 }
 
+/* The mark is navy, so the dark theme needs a file of its own: the SVG is a
+   fixed-colour illustration and cannot follow `currentColor`. Both sit in the
+   DOM and the theme's own class picks one, so nothing flashes and no script is
+   involved. Both are sized by the rule above. */
+.site-nav__logo--dark {
+  display: none;
+}
+
+html.dark .site-nav__logo--light {
+  display: none;
+}
+
+html.dark .site-nav__logo--dark {
+  display: block;
+}
+
 .site-nav__links {
   display: flex;
   align-items: center;
