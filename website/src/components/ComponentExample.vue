@@ -5,10 +5,12 @@ import {
   onBeforeUnmount,
   onMounted,
   reactive,
+  ref,
   shallowRef,
   watch,
 } from "vue";
 import { Check, RotateCw, Sparkles } from "lucide-vue-next";
+import PreviewLoader from "./PreviewLoader.vue";
 import WindowZoomButton from "./WindowZoomButton.vue";
 import { findExampleHeading } from "../lib/example-target.js";
 
@@ -186,6 +188,25 @@ const missingLabel = computed(
 const loadingLabel = computed(
   () => `Loading the ${active.value.name} example…`,
 );
+
+// The site hands the galleries' module sizes to the browser at build time, so
+// the loader can name the download. It stays quiet when it has nothing to say.
+const sizes = ref<Record<string, { total: number; files: string[] }>>({});
+onMounted(async () => {
+  try {
+    const response = await fetch(`${props.baseUrl.replace(/\/$/, "")}/gallery-sizes.json`);
+    if (response.ok) sizes.value = await response.json();
+  } catch {
+    // A missing manifest only means the size goes unsaid.
+  }
+});
+
+const activeSize = computed(() => {
+  const where = frames.value.find((frame) => frame.name === framework.value)?.src;
+  if (!where) return undefined;
+  const key = where.split("?")[0].replace(new RegExp(`^${props.baseUrl.replace(/\/$/, "")}/`), "");
+  return sizes.value[key]?.total;
+});
 
 const target = shallowRef<HTMLElement>();
 
@@ -796,11 +817,9 @@ onBeforeUnmount(() => {
           />
           <div
             v-if="available && !loaded.has(framework)"
-            class="component-example__status"
-            role="status"
+            class="component-example__status component-example__status--loading"
           >
-            <span class="component-example__spinner" aria-hidden="true" />
-            {{ loadingLabel }}
+            <PreviewLoader :label="loadingLabel" :size="activeSize" />
           </div>
           <div
             v-if="!available"

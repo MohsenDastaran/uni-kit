@@ -1,7 +1,8 @@
 <script setup lang="ts">
 import { computed, nextTick, onBeforeUnmount, onMounted, ref } from "vue";
-import { Monitor, RotateCw, Smartphone, Sparkles, Tablet } from "lucide-vue-next";
+import { Download, Monitor, RotateCw, Smartphone, Sparkles, Tablet } from "lucide-vue-next";
 import InstallCommand from "./InstallCommand.vue";
+import PreviewLoader from "./PreviewLoader.vue";
 
 // One block: a composed screen shown as the live example. `story` is the GPUI
 // gallery's story name, `slug` the Slint gallery's page folder, `doc` the
@@ -61,10 +62,8 @@ function onFrameworkChange() {
   const next = readFramework();
   if (next === framework.value) return;
   framework.value = next;
-  // Every frame reloads with the other framework, so the chain starts again.
-  // Without this the whole set would mount at once on the first switch and the
-  // ordering below would only ever hold for the initial load.
-  mounted.value = 1;
+  // Every frame reloads with the other framework. What was asked for by hand
+  // stays asked for; the new first block loads on its own.
   loaded.value = {};
 }
 
@@ -108,29 +107,56 @@ function srcFor(block: Block) {
   return `${base}/gallery?story=${encodeURIComponent(block.story)}&source=0`;
 }
 
-// Each example is a multi-megabyte wasm. Mounting them together makes the page
-// pull every one at once, so only the first is mounted until it has loaded, and
-// each loaded frame releases the next. The idle callback keeps a frame from
-// starting while the previous one is still settling.
-const mounted = ref(1);
+// Every example is a multi-megabyte WebAssembly build with its own renderer, so
+// the page loads one — the first, which is what makes this a gallery rather than
+// a list — and offers the rest as a download the reader asks for. Loading them
+// all in sequence, which is what this did before, spent the whole page's time
+// and memory on previews nobody had reached yet.
+const requested = ref<Record<string, boolean>>({});
 const loaded = ref<Record<string, boolean>>({});
 
-type IdleWindow = Window & {
-  requestIdleCallback?: (cb: () => void, options?: { timeout: number }) => number;
-};
+/** The first block loads with the page; the rest when asked for. */
+const isRequested = (block: Block, index: number) =>
+  index === 0 || Boolean(requested.value[block.id]);
 
-function onFrameLoad(index: number) {
-  const block = visible.value[index];
-  if (block) loaded.value[block.id] = true;
-  const next = index + 1;
-  if (mounted.value !== next) return;
-  const advance = () => {
-    if (mounted.value === next) mounted.value = next + 1;
-  };
-  const idle = (window as IdleWindow).requestIdleCallback;
-  if (idle) idle(advance, { timeout: 2000 });
-  else window.setTimeout(advance, 300);
+function request(block: Block) {
+  requested.value = { ...requested.value, [block.id]: true };
 }
+
+function onFrameLoad(block: Block) {
+  loaded.value = { ...loaded.value, [block.id]: true };
+}
+
+// How big the module is, where the build could measure it, and which files it
+// comes in — enough to fetch it here with a real percentage and let the frame
+// read the same bytes from the cache. The button says the cost before the
+// reader pays it, which is the whole point of asking first.
+type Gallery = { total: number; files: string[] };
+const galleries = ref<Record<string, Gallery>>({});
+onMounted(async () => {
+  try {
+    const response = await fetch(`${base}/gallery-sizes.json`);
+    if (response.ok) galleries.value = await response.json();
+  } catch {
+    // A missing manifest only means the sizes go unsaid.
+  }
+});
+
+/** The manifest is keyed by the gallery path, without its query. */
+const keyFor = (block: Block) =>
+  srcFor(block).split("?")[0].replace(new RegExp(`^${base}/`), "");
+const sizeFor = (block: Block) => galleries.value[keyFor(block)]?.total;
+const filesFor = (block: Block) =>
+  galleries.value[keyFor(block)]?.files.map((file) => `${base}/${keyFor(block)}/${file}`);
+
+// A preview asked for by hand is fetched first, so the wait can be counted, and
+// the frame mounts once the bytes are here.
+const primed = ref<Record<string, boolean>>({});
+function prime(block: Block) {
+  primed.value = { ...primed.value, [block.id]: true };
+}
+const frameIsUp = (block: Block, index: number) =>
+  isRequested(block, index) && (index === 0 || primed.value[block.id]);
 
 /**
  * The frames the server sent, reconciled once the island is alive.
@@ -345,6 +371,7 @@ function reload(block: Block) {
             class="block__action"
             :class="{ 'is-active': deviceFor(block) === entry.id }"
             :aria-pressed="deviceFor(block) === entry.id"
+            :disabled="!isRequested(block, index)"
             :title="entry.label"
             :aria-label="entry.label"
             @click="selectDevice(block, entry.id)"
@@ -354,6 +381,7 @@ function reload(block: Block) {
           <button
             type="button"
             class="block__action"
+            :disabled="!isRequested(block, index)"
             title="Reload example"
             aria-label="Reload example"
             @click="reload(block)"
@@ -397,14 +425,14 @@ function reload(block: Block) {
       <div class="block__frame">
         <div class="block__sizer" :style="{ maxWidth: widthFor(block) }">
           <iframe
-            v-if="index < mounted && !frameUnavailable(block)"
+            v-if="frameIsUp(block, index) && !frameUnavailable(block)"
             :key="`${srcFor(block)}:${reloads[block.id] ?? 0}`"
             :src="srcFor(block)"
             :title="`${block.title} example`"
             :data-block-index="index"
             class="block__iframe"
             allow="cross-origin-isolated"
-            @load="onFrameLoad(index)"
+            @load="onFrameLoad(block)"
           />
           <div
             v-else-if="frameUnavailable(block)"
@@ -413,18 +441,30 @@ function reload(block: Block) {
           >
             This example runs in the GPUI gallery only.
           </div>
-          <div v-else class="block__status" role="status">
-            <span class="block__spinner" aria-hidden="true" />
-            Waiting for the example above
+          <div v-else class="block__status block__status--offer">
+            <p class="block__offer-text">
+              This preview is a running WebAssembly build<template
+                v-if="sizeFor(block)"
+              >
+                , {{ (sizeFor(block)! / 1024 / 1024).toFixed(1) }} MB of it</template
+              >. It downloads only when you ask for it.
+            </p>
+            <button type="button" class="block__offer" @click="request(block)">
+              <Download :size="14" aria-hidden="true" />
+              Download &amp; show preview
+            </button>
           </div>
 
           <div
-            v-if="index < mounted && !loaded[block.id] && !frameUnavailable(block)"
-            class="block__status"
-            role="status"
+            v-if="isRequested(block, index) && !loaded[block.id] && !frameUnavailable(block)"
+            class="block__status block__status--loading"
           >
-            <span class="block__spinner" aria-hidden="true" />
-            Loading {{ block.title }}
+            <PreviewLoader
+              :label="`Loading ${block.title}…`"
+              :size="sizeFor(block)"
+              :files="index === 0 ? undefined : filesFor(block)"
+              @downloaded="prime(block)"
+            />
           </div>
         </div>
       </div>
@@ -627,24 +667,58 @@ function reload(block: Block) {
   text-align: center;
 }
 
-.block__spinner {
-  width: 0.95rem;
-  height: 0.95rem;
-  border: 2px solid color-mix(in srgb, var(--foreground) 22%, transparent);
-  border-top-color: transparent;
-  border-radius: 999px;
-  animation: block-spin 700ms linear infinite;
+/* Disabled means the frame is not there yet, so the control has nothing to act
+   on and must not pretend otherwise. */
+.block__action:disabled {
+  opacity: 0.4;
+  cursor: default;
 }
 
-@keyframes block-spin {
-  to {
-    transform: rotate(1turn);
-  }
+.block__action:disabled:hover {
+  background: transparent;
+  color: var(--muted-foreground);
 }
 
-@media (prefers-reduced-motion: reduce) {
-  .block__spinner {
-    animation: none;
-  }
+/* The offer in place of a preview nobody asked for. It is the same box as every
+   other frame state, so asking for the preview moves nothing. */
+.block__status--offer {
+  flex-direction: column;
+  gap: 1rem;
+  padding: 1.5rem;
+  text-align: center;
+}
+
+.block__offer-text {
+  max-width: 36ch;
+  margin: 0;
+  line-height: 1.6;
+}
+
+.block__offer {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  min-height: 2.25rem;
+  padding: 0 1rem;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-control);
+  background: var(--background);
+  color: var(--foreground);
+  font-size: 0.875rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition:
+    background 150ms ease,
+    border-color 150ms ease;
+}
+
+.block__offer:hover {
+  border-color: var(--brand);
+  background: var(--secondary);
+}
+
+.block__offer:focus-visible {
+  outline: 2px solid var(--brand);
+  outline-offset: 2px;
 }
 </style>

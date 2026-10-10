@@ -606,27 +606,6 @@ html[lang^="ja"] .example-prompt {
   height: 680px;
 }
 
-.component-example__spinner {
-  width: 0.875rem;
-  height: 0.875rem;
-  border: 1.5px solid color-mix(in srgb, currentColor 25%, transparent);
-  border-top-color: currentColor;
-  border-radius: 50%;
-  animation: component-example-spin 0.8s linear infinite;
-}
-
-@keyframes component-example-spin {
-  to {
-    transform: rotate(360deg);
-  }
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .component-example__spinner {
-    animation-duration: 2.4s;
-  }
-}
-
 @media (max-width: 640px) {
   .mac-window__title {
     display: none;
