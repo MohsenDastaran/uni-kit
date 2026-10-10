@@ -204,18 +204,13 @@ const activeKey = computed(() =>
 const activeSize = computed(() =>
   activeKey.value ? props.sizes?.[activeKey.value]?.total : undefined,
 );
-const activeFiles = computed(() =>
-  activeKey.value
-    ? props.sizes?.[activeKey.value]?.files.map(
-        (file) => `${props.baseUrl.replace(/\/$/, "")}/${activeKey.value}/${file}`,
-      )
-    : undefined,
-);
 
-// A frame mounts once its module's bytes are in, the same as on the blocks
-// page. The loader fetches them with a percentage; switching frameworks away
-// and back re-runs the measurement only when the module was never primed.
-const primed = reactive(new Set<string>());
+// A frame mounts as soon as its framework is the one on show: its module
+// downloads and compiles in one streaming pass inside it. A framework that has
+// already booted stays mounted when the other is chosen, so switching back is
+// instant; one that has not is never fetched before it is wanted.
+const mounted = (name: string) =>
+  available.value && (loaded.has(name) || name === framework.value);
 
 /**
  * The gallery inside the frame says when the preview is ready: it removes its
@@ -879,7 +874,7 @@ onBeforeUnmount(() => {
             :key="`${frame.src}:${reloadNonce[frame.name] ?? 0}`"
           >
             <iframe
-              v-if="primed.has(frame.name)"
+              v-if="mounted(frame.name)"
               v-show="available && frame.name === framework"
               :src="frame.src"
               :class="`component-example__frame--${frame.name}`"
@@ -893,12 +888,7 @@ onBeforeUnmount(() => {
             :key="framework"
             class="component-example__status component-example__status--loading"
           >
-            <PreviewLoader
-              :label="loadingLabel"
-              :size="activeSize"
-              :files="primed.has(framework) ? undefined : activeFiles"
-              @downloaded="primed.add(framework)"
-            />
+            <PreviewLoader :label="loadingLabel" :size="activeSize" />
           </div>
           <div
             v-if="!available"

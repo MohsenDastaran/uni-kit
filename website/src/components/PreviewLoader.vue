@@ -1,38 +1,24 @@
 <script setup lang="ts">
-import { computed, onMounted, ref } from "vue";
+import { computed } from "vue";
 
 /**
  * The one loading state for every WebAssembly preview, on every page.
  *
- * The frame fetches its own module, so this side usually has no byte count to
- * report — but the build hands over the module's file names, and the site
- * serves them in a way the browser will reuse, so the bytes can be fetched here
- * once, counted, and read from the cache by the frame that follows. That is what
- * turns the wait into a real percentage: `N% of S`.
- *
- * Three phases, one honest rule each:
- *
- * - `waiting` — the download is about to be measured, or cannot be (no files
- *   known, or a server that will not let the browser keep them). A looping ring
- *   and the size, where it is known. `Feedback reflects reality`: a number this
- *   side cannot compute is not printed.
- * - `measured` — the bytes are being fetched and counted.
- *
- * One state, not two: the preview's own gallery removes a `#loading` element
- * when it has rendered its first frame, and the page keeps this loader up until
- * then. So the download and the boot read as one wait, and the gallery's plain
- * "Loading…" is never what the reader sees.
+ * It owns no download of its own. The bytes are already on their way — the
+ * block's own picture starts fetching them when the pointer arrives, and the
+ * frame shares that request — so this only reports what is happening: a ring,
+ * the block's name, and either the live percentage of a download under way or
+ * the size of the one about to start. It stays up until the preview's gallery
+ * removes its `#loading` element, so the download and the boot read as one wait.
  */
 const props = defineProps<{
   /** What is being loaded, e.g. "Loading Sidebar". */
   label: string;
-  /** Bytes on the wire, when the build measured them. */
+  /** Bytes on the wire, when the build measured them — what the reader waits for. */
   size?: number;
-  /** The module's files, relative to the site root, when the build found them. */
-  files?: string[];
+  /** Progress of a download already under way, 0–100, when there is one. */
+  percent?: number | null;
 }>();
-
-const emit = defineEmits<{ downloaded: [] }>();
 
 const megabytes = (bytes: number) => {
   const mb = bytes / 1024 / 1024;
@@ -42,84 +28,9 @@ const megabytes = (bytes: number) => {
 const sizeLabel = computed(() =>
   props.size && props.size > 0 ? megabytes(props.size) : null,
 );
-
-/** 0–100 while measuring, null when there is nothing honest to count. */
-const percent = ref<number | null>(null);
-
-/** Resolves to `fallback` if the work has not finished in time. */
-function withTimeout<T>(work: Promise<T>, ms: number, fallback: T) {
-  return new Promise<T>((resolve) => {
-    const timer = window.setTimeout(() => resolve(fallback), ms);
-    work.then(
-      (value) => {
-        window.clearTimeout(timer);
-        resolve(value);
-      },
-      () => {
-        window.clearTimeout(timer);
-        resolve(fallback);
-      },
-    );
-  });
-}
-
-/**
- * Fetches the module once and counts it. A server that does not answer, or will
- * not let the bytes be kept, must not hold the preview back: the frame can
- * always fetch the module itself.
- */
-async function measure(files: string[]) {
-  const heads = await withTimeout(
-    Promise.all(files.map((file) => fetch(file, { method: "HEAD" }))),
-    6000,
-    null,
-  );
-  if (!heads) return;
-
-  // Reuse is what makes a preflight free: the frame's request must read the
-  // same bytes from the cache rather than pay for them a second time.
-  const reusable = heads.every((head) => {
-    const control = head.headers.get("cache-control") ?? "";
-    return control !== "" && !/no-store/.test(control);
-  });
-  const total = heads.reduce(
-    (sum, head) => sum + Number(head.headers.get("content-length") ?? 0),
-    0,
-  );
-  if (!reusable || total <= 0) return;
-
-  percent.value = 0;
-  let received = 0;
-  for (const file of files) {
-    const response = await fetch(file);
-    const reader = response.body?.getReader();
-    if (!reader) break;
-    for (;;) {
-      // A stream that stops moving is worse than one that is slow: hand the
-      // preview back to the frame rather than counting forever.
-      const chunk = await withTimeout(reader.read(), 8000, null);
-      if (!chunk) return;
-      if (chunk.done) break;
-      received += chunk.value.byteLength;
-      // Held below 100: the frame still has to boot.
-      percent.value = Math.min(99, Math.round((received / total) * 100));
-    }
-  }
-  percent.value = 100;
-}
-
-onMounted(async () => {
-  const files = props.files ?? [];
-  try {
-    if (files.length > 0) await measure(files);
-  } catch {
-    // A failed read is not a failed preview: the frame fetches it itself.
-  } finally {
-    // Always, and whatever happened above: the frame starts now. Waiting for a
-    // manifest that arrives late would leave the preview unmounted for good.
-    emit("downloaded");
-  }
-});
+const counting = computed(
+  () => typeof props.percent === "number" && props.percent < 100,
+);
 </script>
 
 <template>
@@ -127,7 +38,7 @@ onMounted(async () => {
     <span class="loader__spinner" aria-hidden="true" />
     <p class="loader__text">
       {{ label }}
-      <span v-if="percent !== null && percent < 100" class="loader__size">
+      <span v-if="counting" class="loader__size">
         · {{ percent }}% of {{ sizeLabel }}
       </span>
       <span v-else-if="sizeLabel" class="loader__size"> · {{ sizeLabel }} </span>

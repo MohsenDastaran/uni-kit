@@ -71,10 +71,10 @@ function onFrameworkChange() {
   const next = readFramework();
   if (next === framework.value) return;
   framework.value = next;
-  // Every frame reloads with the other framework, and the new one must be
-  // measured rather than fetched unseen: what was asked for by hand stays asked
-  // for, and the new first block loads on its own.
-  primed.value = {};
+  // Every frame reloads with the other framework, so the new one's module has to
+  // be warmed again: what was asked for by hand stays asked for.
+  warmth.value = {};
+  warming.clear();
   loaded.value = {};
   for (const block of props.blocks) stopWatching(block);
 }
@@ -210,16 +210,83 @@ function onFrameLoad(event: Event, block: Block) {
 const keyFor = (block: Block) =>
   srcFor(block).split("?")[0].replace(new RegExp(`^${base}/`), "");
 const sizeFor = (block: Block) => props.sizes?.[keyFor(block)]?.total;
+const decodedFor = (block: Block) => props.sizes?.[keyFor(block)]?.decoded;
 const filesFor = (block: Block) =>
   props.sizes?.[keyFor(block)]?.files.map((file) => `${base}/${keyFor(block)}/${file}`);
 
-// Every preview is fetched first, so the wait can be counted, and the frame
-// mounts once the bytes are here.
-const primed = ref<Record<string, boolean>>({});
-function prime(block: Block) {
-  primed.value = { ...primed.value, [block.id]: true };
+// The frame mounts the moment it is asked for: the module downloads and compiles
+// in one streaming pass inside it, which is the fastest a cold preview can start,
+// and it pays for the module once. Nothing waits on a measurement first.
+const frameIsUp = (block: Block) => isRequested(block);
+
+/**
+ * Fetches the block's module while the pointer is on its picture.
+ *
+ * The click then waits for bytes that are already on their way: the frame's own
+ * request shares this one rather than paying for a second copy — measured in
+ * Chrome, one transfer with the frame's read answered from the cache. The
+ * percentage counted here is the download the frame is waiting for, so the
+ * loader can report it without starting anything of its own.
+ *
+ * Nothing is fetched unless the reader points at the block, and nothing is
+ * fetched at all from a server that will not let the browser keep it: that
+ * module is left to the frame, which needs it once.
+ */
+const warming = new Set<string>();
+const warmth = ref<Record<string, number | null>>({});
+
+/** True while a warm-up of this block is still counting. */
+const counting = (block: Block) => {
+  const value = warmth.value[block.id];
+  return typeof value === "number" && value < 100;
+};
+
+async function warm(block: Block) {
+  const files = filesFor(block);
+  const key = keyFor(block);
+  if (!files?.length || warming.has(key) || isRequested(block)) return;
+  warming.add(key);
+  try {
+    const heads = await Promise.all(
+      files.map((file) => fetch(file, { method: "HEAD" })),
+    );
+    const reusable = heads.every((head) => {
+      const control = head.headers.get("cache-control") ?? "";
+      return control !== "" && !/no-store/.test(control);
+    });
+    if (!reusable) return;
+
+    // The count below is of decoded chunks, so it is measured against the
+    // module's own size; the compressed `Content-Length` would run out early.
+    const transferred = heads.reduce(
+      (sum, head) => sum + Number(head.headers.get("content-length") ?? 0),
+      0,
+    );
+    const decoded = decodedFor(block);
+    const total = decoded && decoded > 0 ? decoded : transferred;
+    if (total <= 0) return;
+
+    warmth.value = { ...warmth.value, [block.id]: 0 };
+    let received = 0;
+    for (const file of files) {
+      const response = await fetch(file);
+      const reader = response.body?.getReader();
+      if (!reader) break;
+      for (;;) {
+        const { done, value } = await reader.read();
+        if (done) break;
+        received += value.byteLength;
+        warmth.value = {
+          ...warmth.value,
+          [block.id]: Math.min(99, Math.round((received / total) * 100)),
+        };
+      }
+    }
+    warmth.value = { ...warmth.value, [block.id]: 100 };
+  } catch {
+    // A warm-up that fails costs nothing: the frame fetches it itself.
+  }
 }
-const frameIsUp = (block: Block) => Boolean(primed.value[block.id]);
 
 const hasSlint = (block: Block) => Boolean(block.slug);
 
@@ -404,7 +471,7 @@ function reload(block: Block) {
             class="block__action"
             :class="{ 'is-active': deviceFor(block) === entry.id }"
             :aria-pressed="deviceFor(block) === entry.id"
-            :disabled="!primed[block.id]"
+            :disabled="!isRequested(block)"
             :title="entry.label"
             :aria-label="entry.label"
             @click="selectDevice(block, entry.id)"
@@ -414,7 +481,7 @@ function reload(block: Block) {
           <button
             type="button"
             class="block__action"
-            :disabled="!primed[block.id]"
+            :disabled="!isRequested(block)"
             title="Reload example"
             aria-label="Reload example"
             @click="reload(block)"
@@ -491,6 +558,9 @@ function reload(block: Block) {
               class="block__poster"
               :disabled="isRequested(block)"
               :aria-label="`Show the live preview of ${block.title}`"
+              @pointerenter="warm(block)"
+              @pointerdown="warm(block)"
+              @focus="warm(block)"
               @click="request(block)"
             >
               <img
@@ -503,7 +573,10 @@ function reload(block: Block) {
               <span class="block__poster-cta">
                 <Play :size="14" aria-hidden="true" />
                 Show live preview
-                <span v-if="sizeFor(block)" class="block__poster-size">
+                <span v-if="counting(block)" class="block__poster-size">
+                  · {{ warmth[block.id] }}%
+                </span>
+                <span v-else-if="sizeFor(block)" class="block__poster-size">
                   · {{ (sizeFor(block)! / 1024 / 1024).toFixed(1) }} MB
                 </span>
               </span>
@@ -532,8 +605,7 @@ function reload(block: Block) {
             <PreviewLoader
               :label="`Loading ${block.title}…`"
               :size="sizeFor(block)"
-              :files="primed[block.id] ? undefined : filesFor(block)"
-              @downloaded="prime(block)"
+              :percent="warmth[block.id] ?? null"
             />
           </div>
         </div>

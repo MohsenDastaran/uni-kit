@@ -18,11 +18,18 @@ import { join, resolve } from 'node:path';
  * `.wasm` URL. `total` is therefore the compressed size when one exists —
  * the bytes a reader actually downloads — and the raw size otherwise.
  *
+ * `decoded` is the module's own size, and it is what a download's progress is
+ * measured against. The two differ whenever the server compresses: a fetch
+ * reports `Content-Length` for the compressed transfer, but hands the reader
+ * decompressed chunks, so a count of those chunks against that length runs to
+ * the end of its range about a third of the way through the transfer — the bar
+ * that sat at 99% and never moved.
+ *
  * Keys are the frame's path without its query: `gallery`,
  * `slint-gallery/pages/dock`, `examples/base`. A checkout without built
  * galleries answers `{}` and the interface leaves the size unsaid.
  */
-export type Gallery = { total: number; files: string[] };
+export type Gallery = { total: number; files: string[]; decoded: number };
 
 const MODULE = /\.wasm$/;
 
@@ -43,9 +50,13 @@ function modulesIn(directory: string): Gallery {
     return {
       files,
       total: files.reduce((total, name) => total + sizeOnWire(join(directory, name)), 0),
+      decoded: files.reduce(
+        (total, name) => total + statSync(join(directory, name)).size,
+        0,
+      ),
     };
   } catch {
-    return { files: [], total: 0 };
+    return { files: [], total: 0, decoded: 0 };
   }
 }
 
