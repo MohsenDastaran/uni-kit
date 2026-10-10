@@ -2,16 +2,20 @@
 import FolderAnimation from '../components/FolderAnimation.astro';
 import DocsLayout from '../layouts/DocsLayout.astro';
 
-// Two projects to fork rather than clone. Each is a complete Slint application,
-// so the first commit is the reader's own rather than a deletion; the second
-// carries the same base with a sidebar shell around it. `repo` is shown as
-// written, `fork` is GitHub's fork route for it.
-const templates = [
+// Starters, one set per framework: the two Slint templates to fork, and the
+// GPUI Kit guide, which is where GPUI Kit itself says to begin. Both sets are
+// rendered and the framework selector's own CSS shows one — the same mechanism
+// the rest of the site uses, so the right set is there before any script runs.
+//
+// `repo` is shown as written, `href` is where the card leads.
+const slintTemplates = [
   {
     id: 'blank',
     title: 'Blank template',
     repo: 'MohsenDastaran/slint-rust-template',
-    fork: 'https://github.com/MohsenDastaran/slint-rust-template/fork',
+    href: 'https://github.com/MohsenDastaran/slint-rust-template/fork',
+    label: 'Fork this repo',
+    external: true,
     description:
       'One window, a build script, and the wiring between the .slint markup and Rust. The smallest thing that runs, with nothing to delete first.',
   },
@@ -19,42 +23,86 @@ const templates = [
     id: 'sidebar',
     title: 'Sidebar example',
     repo: 'MohsenDastaran/slint-rust-template-sidebar',
-    fork: 'https://github.com/MohsenDastaran/slint-rust-template-sidebar/fork',
+    href: 'https://github.com/MohsenDastaran/slint-rust-template-sidebar/fork',
+    label: 'Fork this repo',
+    external: true,
     description:
       'The same template with a sidebar shell around it: grouped navigation beside the content it controls, and a components directory to grow into.',
   },
 ];
+
+const gpuiStart = {
+  repo: 'gpui-kit.com',
+  title: 'GPUI Kit quick start',
+  href: 'https://gpui-kit.com/docs/getting-started/',
+  label: 'Read the guide',
+  description:
+    'The getting-started guide for the toolkit: the dependency, the init call, and a first window in Rust.',
+};
 ---
 
 <DocsLayout
   title="Starter — uni-kit"
-  description="Two Slint applications to fork: a blank template, and the same template with a sidebar shell."
+  description="Starters for the framework you are reading: Slint templates to fork, and the GPUI Kit getting-started guide."
 >
   <h1>Starter</h1>
-  <p>
+  <p data-framework-only="slint">
     Two Slint applications to fork. Each is already wired — a window, a build
     script, and the link between the <code>.slint</code> markup and Rust — so the
     first change you make is your own rather than a deletion.
   </p>
+  <p data-framework-only="gpui">
+    GPUI Kit starts from its own guide rather than a fork: the crate is
+    published, so a project adds it and follows along.
+  </p>
 
   <section class="starter">
-    <h2>Start from a template</h2>
-    <p>
+    <h2 data-framework-only="slint">Start from a template</h2>
+    <h2 data-framework-only="gpui">Start from the guide</h2>
+    <p data-framework-only="slint">
       Fork one and you have a Slint application already wired: <code>cargo run</code>
       opens a window, so the first change you make is your own rather than a
       deletion.
     </p>
+    <p data-framework-only="gpui">
+      Add <code>gpui-kit</code> and follow the guide: there is nothing to fork,
+      and nothing to delete first.
+    </p>
 
     <div class="starter__grid">
+      <article class="starter-card" data-framework-only="gpui">
+        <FolderAnimation label="Getting started guide illustration" />
+        <p class="starter-card__meta">{gpuiStart.repo}</p>
+        <h3 class="starter-card__title">{gpuiStart.title}</h3>
+        <p class="starter-card__body">{gpuiStart.description}</p>
+        <a
+          class="starter-card__link"
+          href={gpuiStart.href}
+          target="_blank"
+          rel="noopener noreferrer"
+        >
+          {gpuiStart.label}
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <path d="M5 12h14" />
+            <path d="m12 5 7 7-7 7" />
+          </svg>
+        </a>
+      </article>
+
       {
-        templates.map((template) => (
-          <article class="starter-card">
+        slintTemplates.map((template) => (
+          <article class="starter-card" data-framework-only="slint">
             <FolderAnimation />
             <p class="starter-card__meta">{template.repo}</p>
             <h3 class="starter-card__title">{template.title}</h3>
             <p class="starter-card__body">{template.description}</p>
-            <a class="starter-card__link" href={template.fork}>
-              Fork this repo
+            <a
+              class="starter-card__link"
+              href={template.href}
+              target="_blank"
+              rel="noopener noreferrer"
+            >
+              {template.label}
               <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
                 <path d="M5 12h14" />
                 <path d="m12 5 7 7-7 7" />
@@ -65,5 +113,4 @@ const templates = [
       }
     </div>
   </section>
-
 </DocsLayout>
