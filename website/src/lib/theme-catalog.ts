@@ -11,6 +11,13 @@ type ThemeFile = { name: string; themes: Variant[] };
 const files = import.meta.glob<ThemeFile>('../../../themes/*.json', { eager: true, import: 'default' });
 const slug = (value: string) => value.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
 
+/**
+ * The palette a first visit gets. It is deliberately explicit rather than "the
+ * first theme": a reader chooses "Follow System" from the picker if that is
+ * what they want, and that choice is stored.
+ */
+export const DEFAULT_THEME_ID = 'asciinema-asciinema';
+
 export const themeSources = Object.entries(files).map(([path, data]) => ({
   source: path.split('/').pop()!.replace(/\.json$/, ''),
   data,
@@ -87,6 +94,12 @@ export function themeSurface(colors: Record<string, string> | undefined, mode: s
 export type ThemeSurface = ReturnType<typeof themeSurface>;
 
 export const themeInfo = Object.fromEntries(themes.map(({ id, mode, name, source }) => [id, { mode, name, source }]));
+
+// A catalog edit that renames or removes the default palette should fail the
+// build rather than quietly leave the site on a different one.
+if (!themeInfo[DEFAULT_THEME_ID]) {
+  throw new Error(`The default theme "${DEFAULT_THEME_ID}" is not in themes/`);
+}
 
 // A list names fallbacks in order, matching the component theme's fallbacks.
 const tokens: Record<string, string | string[]> = {

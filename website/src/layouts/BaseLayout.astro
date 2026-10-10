@@ -1,6 +1,6 @@
 ---
 import { SITE_URL } from "../lib/site";
-import { themeInfo } from "../lib/theme-catalog";
+import { DEFAULT_THEME_ID, themeInfo } from "../lib/theme-catalog";
 
 export interface Props {
     title?: string;
@@ -91,26 +91,36 @@ const jsonLd = JSON.stringify(structuredData ?? defaultStructuredData).replace(
         )}
         <script type="application/ld+json" set:html={jsonLd} />
         <!-- Theme: apply before paint to avoid FOUC -->
-        <script is:inline define:vars={{ themeInfo, base }}>
+        <script is:inline define:vars={{ themeInfo, base, defaultThemeId: DEFAULT_THEME_ID }}>
             (function () {
                 const stored = localStorage.getItem("theme");
                 const systemTheme = window.matchMedia(
                     "(prefers-color-scheme: dark)",
                 );
-                const selected = themeInfo[stored];
+                // A palette from the catalog, one of the picker's own three
+                // options, or — for a first visit — the default palette.
+                const chosen =
+                    themeInfo[stored] ||
+                    stored === "system" ||
+                    stored === "light" ||
+                    stored === "dark"
+                        ? stored
+                        : defaultThemeId;
+                const selected = themeInfo[chosen];
                 if (selected) {
-                    document.documentElement.dataset.theme = stored;
+                    document.documentElement.dataset.theme = chosen;
                     document.documentElement.dataset.themeName = selected.name;
                     document.documentElement.dataset.themeSource = `${base}theme-data/${selected.source}.json`;
                 }
+                // Only "Follow System" tracks the system, and only when it has
+                // been asked for: the default is a palette, not a preference.
+                const mode = selected ? selected.mode : chosen;
                 document.documentElement.classList.toggle(
                     "dark",
-                    selected?.mode === "dark" ||
-                        stored === "dark" ||
-                        (!stored && systemTheme.matches),
+                    mode === "system" ? systemTheme.matches : mode === "dark",
                 );
                 systemTheme.addEventListener("change", (event) => {
-                    if (!localStorage.getItem("theme"))
+                    if (localStorage.getItem("theme") === "system")
                         document.documentElement.classList.toggle(
                             "dark",
                             event.matches,

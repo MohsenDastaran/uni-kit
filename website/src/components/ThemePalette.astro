@@ -92,8 +92,13 @@ const builtIns: Record<string, { stage: string; ink: string; border: string; swa
 
   function storedId() {
     const stored = localStorage.getItem('theme');
-    return options.some((option) => option.dataset.themeId === stored)
-      ? stored! : 'system';
+    if (options.some((option) => option.dataset.themeId === stored)) return stored!;
+    // Nothing stored: the pre-paint script has already applied the default
+    // palette, so ask the document which one it is rather than naming it here —
+    // this script runs in the browser and cannot see the build's imports.
+    const applied = document.documentElement.dataset.theme;
+    return applied && options.some((option) => option.dataset.themeId === applied)
+      ? applied : 'system';
   }
 
   function apply(option: HTMLButtonElement) {
@@ -164,8 +169,7 @@ const builtIns: Record<string, { stage: string; ink: string; border: string; swa
     option.addEventListener('click', () => {
       committedId = option.dataset.themeId!;
       apply(option);
-      if (committedId === 'system') localStorage.removeItem('theme');
-      else localStorage.setItem('theme', committedId);
+      localStorage.setItem('theme', committedId);
       dialog?.close();
     });
   });
