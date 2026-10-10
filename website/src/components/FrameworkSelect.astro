@@ -193,9 +193,11 @@ const label = 'Framework';
       const startY = from.top + 7;
       const endX = to.left + to.width / 2;
       const endY = to.bottom + 8;
-      // The curve arcs above the gap between them, more when they are far apart.
+      // The curve dips below the gap and comes back up, so the arrow arrives at
+      // the selector from underneath and points up at it. The dip grows with
+      // the distance, and shrinks to a flick when the two are close.
       const bendX = (startX + endX) / 2;
-      const bendY = Math.min(startY, endY) - Math.min(52, 16 + Math.abs(startX - endX) * 0.22);
+      const bendY = Math.max(startY, endY) + Math.min(72, 26 + Math.abs(startX - endX) * 0.28);
 
       line.setAttribute('d', `M${startX} ${startY} Q${bendX} ${bendY} ${endX} ${endY}`);
 
