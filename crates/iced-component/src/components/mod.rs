@@ -9,10 +9,14 @@
 
 pub mod theme;
 
+pub mod accordion;
 pub mod alert;
 pub mod badge;
 pub mod button;
+pub mod calendar;
 pub mod card;
+pub mod checkbox;
+pub mod collapsible;
 pub mod description_list;
 pub mod empty;
 pub mod group_box;
@@ -23,4 +27,6 @@ pub mod progress;
 pub mod shimmer;
 pub mod skeleton;
 pub mod spinner;
+pub mod tabs;
 pub mod tag;
+pub mod tree;

@@ -173,8 +173,8 @@ scripts/check.sh               # theme parity, feature agreement, manifest, chec
 | `accordion` | `accordion.rs` | yes | yes | yes | 366 | yes | yes |
 | `alert` | `alert.rs` | yes | yes | yes | 319 | yes | yes |
 | `alert-dialog` | `alert_dialog.rs` | yes | yes | — | — | — | — |
-| `attachment` | `attachment.rs` | yes | yes | — | 5 | — | yes |
-| `avatar` | `avatar.rs` | yes | yes | — | 5 | — | yes |
+| `attachment` | `attachment.rs` | yes | yes | — | — | — | yes |
+| `avatar` | `avatar.rs` | yes | yes | — | — | — | yes |
 | `badge` | `badge.rs` | yes | yes | yes | 237 | yes | yes |
 | `bubble` | `bubble.rs` | yes | yes | — | — | — | — |
 | `button` | `button.rs` | yes | yes | yes | 497 | yes | yes |
@@ -194,14 +194,14 @@ scripts/check.sh               # theme parity, feature agreement, manifest, chec
 | `dialog` | `dialog.rs` | yes | yes | — | — | — | — |
 | `dock` | `dock.rs` | yes | yes | — | — | — | — |
 | `dropdown_button` | `dropdown_button.rs` | yes | yes | — | — | — | — |
-| `editor` | `editor.rs` | yes | yes | — | 5 | — | yes |
+| `editor` | `editor.rs` | yes | yes | — | — | — | yes |
 | `empty` | `empty.rs` | yes | yes | yes | 330 | yes | yes |
 | `focus-trap` | `focus_trap.rs` | yes | yes | — | — | — | — |
 | `form` | `form.rs` | yes | yes | — | — | — | — |
 | `group-box` | `group_box.rs` | yes | yes | yes | 227 | yes | yes |
 | `hover-card` | `hover_card.rs` | yes | yes | — | — | — | — |
-| `icon` | `icon.rs` | yes | yes | — | 5 | — | yes |
-| `image` | `image.rs` | yes | yes | — | 5 | — | yes |
+| `icon` | `icon.rs` | yes | yes | — | — | — | yes |
+| `image` | `image.rs` | yes | yes | — | — | — | yes |
 | `input` | `input.rs` | yes | yes | — | — | — | — |
 | `input-group` | `input_group.rs` | yes | yes | — | — | — | — |
 | `kbd` | `kbd.rs` | yes | yes | yes | 141 | yes | yes |
@@ -210,8 +210,8 @@ scripts/check.sh               # theme parity, feature agreement, manifest, chec
 | `marker` | `marker.rs` | yes | yes | yes | 123 | yes | yes |
 | `menu` | `menu.rs` | yes | yes | — | — | — | — |
 | `message` | `message.rs` | yes | yes | — | — | — | — |
-| `message-role` | `message_role.rs` | — | yes | — | 5 | — | yes |
-| `message-scroller` | `message_scroller.rs` | yes | yes | — | 5 | — | yes |
+| `message-role` | `message_role.rs` | — | yes | — | — | — | yes |
+| `message-scroller` | `message_scroller.rs` | yes | yes | — | — | — | yes |
 | `notification` | `notification.rs` | yes | yes | — | — | — | — |
 | `number-input` | `number_input.rs` | yes | yes | — | — | — | — |
 | `otp-input` | `otp_input.rs` | yes | yes | — | — | — | — |
@@ -239,7 +239,7 @@ scripts/check.sh               # theme parity, feature agreement, manifest, chec
 | `table` | `table.rs` | yes | yes | — | — | — | — |
 | `tabs` | `tabs.rs` | yes | yes | yes | 300 | — | yes |
 | `tag` | `tag.rs` | yes | yes | yes | 257 | yes | yes |
-| `text-view` | `text_view.rs` | yes | yes | — | 5 | — | yes |
+| `text-view` | `text_view.rs` | yes | yes | — | — | — | yes |
 | `textarea` | `textarea.rs` | yes | yes | — | — | — | — |
 | `theme` | `theme.rs` | yes | yes | yes | 406 | — | — |
 | `time-field` | `time_field.rs` | yes | yes | — | — | — | — |
@@ -252,6 +252,5 @@ scripts/check.sh               # theme parity, feature agreement, manifest, chec
 
 **19 / 79** components have an iced source, an example and a registry entry.
 
-**Stubs, which do not count:** `attachment`, `avatar`, `editor`, `icon`, `image`, `message-role`, `message-scroller`, `text-view`.
 Still to do: `alert-dialog`, `attachment`, `avatar`, `bubble`, `carousel`, `chart`, `clipboard`, `collapsible`, `color-picker`, `combobox`, `command`, `data-table`, `date-picker`, `dialog`, `dock`, `dropdown_button`, `editor`, `focus-trap`, `form`, `hover-card`, `icon`, `image`, `input`, `input-group`, `list`, `menu`, `message`, `message-role`, `message-scroller`, `notification`, `number-input`, `otp-input`, `pagination`, `popover`, `questionnaire`, `radio`, `rating`, `resizable`, `root`, `scrollable`, `select`, `settings`, `sheet`, `sidebar`, `slider`, `speech`, `status-bar`, `stepper`, `switch`, `table`, `tabs`, `text-view`, `textarea`, `theme`, `time-field`, `title-bar`, `toggle`, `toolbar`, `tooltip`, `virtual-list`.
 <!-- iced-checklist:end -->
