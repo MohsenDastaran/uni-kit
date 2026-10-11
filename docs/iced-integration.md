@@ -132,6 +132,39 @@ Then, by hand, because no script sees it:
 - anything that could not be reproduced says so in the component's module docs;
 - the checklist count went up by exactly the number of components in the batch.
 
+## Verification log
+
+Kept because the final report has to say what was actually run, and because a
+claim that is not written down next to its output tends to grow.
+
+**The chain from manifest to a compiling application.** A clean project with iced
+and the features, then:
+
+```bash
+UNI_KIT_ROOT=<repo> node registry/index.js add iced button badge card alert
+#   src/components/button.rs, badge.rs, card.rs, alert.rs, theme.rs
+#   src/components/mod.rs += pub mod button; theme; badge; card; alert;
+#   theme.rs written once, not four times
+
+CARGO_TARGET_DIR=<crate>/target cargo build
+#   Finished `dev` profile [unoptimized + debuginfo] target(s) in 27.91s
+```
+
+No errors and no warnings, with `src/main.rs` written against the components' real
+public APIs. This is the strongest check available of the registry, the CLI, the
+shared theme and the component source together, because it is exactly what a
+reader does.
+
+**The crate's own gates**, run in `crates/iced-component`:
+
+```bash
+node scripts/mod-rs.mjs        # mod.rs declares every component in the directory
+cargo build                    # every component compiles
+cargo build --examples         # every usage example compiles
+scripts/check-one.sh <name>    # one component, isolated from the others
+scripts/check.sh               # theme parity, feature agreement, manifest, checklist
+```
+
 ## Status
 
 <!-- iced-checklist:start -->
