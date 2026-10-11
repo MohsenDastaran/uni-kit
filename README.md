@@ -1,8 +1,5 @@
-<p align="center">
-  <img src="https://raw.githubusercontent.com/MohsenDastaran/uni-kit/main/website/public/uni-kit.svg" width="64" alt="uni-kit logo" />
-  <br>
-  <strong>uni-kit</strong>
-</p>
+![uni-kit logo](https://raw.githubusercontent.com/MohsenDastaran/uni-kit/main/website/public/uni-kit.svg)  
+**uni-kit**
 
 ![Publish Website Image](https://github.com/MohsenDastaran/uni-kit/actions/workflows/publish-image.yml/badge.svg)
 
@@ -24,16 +21,6 @@ are written. The [roadmap](docs/roadmap.md) tracks it.
 | [GPUI](https://github.com/zed-industries/zed) | Depend on the `gpui-kit` crate for the controls; `npx uni-kit add gpui <block>` copies a composed screen into `src/components/`. |
 | [Slint](https://slint.dev)                    | `npx uni-kit add slint <component>` copies the `.slint` files into `ui/components/`.                                             |
 | egui, QuickGUI, others                        | The same pages, once the source exists. [Roadmap](docs/roadmap.md).                                                              |
-
-```bash
-npx uni-kit add slint alert-dialog
-npx uni-kit add gpui sidebar dock settings
-```
-
-The CLI does not generate components; it copies the files listed in
-[`registry/components.json`](registry/components.json). Slint writes one file per
-control, GPUI one file per block, because GPUI controls ship in the crate rather
-than as source. `--dir` overrides the destination.
 
 ## What is in this repository
 
@@ -74,23 +61,24 @@ pages whose sources changed.
 This project stands on other people's work, and most of what is good here is
 theirs.
 
-- **[GPUI](https://github.com/zed-industries/zed)** — the framework from
-  [Zed Industries](https://zed.dev) that everything on the GPUI side renders
-  with. Fast, native, and a pleasure to build on. The `gpui-pre-*` crates are
-  snapshots of it, published with Zed's license and notices intact.
-- **[GPUI Kit](https://github.com/longbridge/gpui-kit)** and
-  **[gpui-component](https://longbridge.com/desktop)** — from
-  [Longbridge](https://longbridge.com). This repository is a fork of GPUI Kit: the
-  component library, the three blocks and the catalog all start there, and the
-  copyright notice in [NOTICE](./NOTICE) is theirs.
-- **[Slint](https://slint.dev)** and its community — the language, the runtime and
-  the tooling behind the second target. A Rust UI toolkit that compiles to native
-  and to the browser is a rare thing, and the catalog here is written in their
-  language.
-- **[shadcn/ui](https://ui.shadcn.com)** and **[Reui](https://reui.io)** — the
-  design language the components follow, including the idea that the source is
-  yours once it is copied.
-- **[Lucide](https://lucide.dev)** — the icons.
+- Thanks to **[Zed Industries](https://zed.dev)**, for
+  **[GPUI](https://github.com/zed-industries/zed)** — fast, native, and a pleasure
+  to build on.
+- Thanks to **[Longbridge](https://longbridge.com)**, whose
+  **[GPUI Kit](https://github.com/longbridge/gpui-kit)** and
+  **[gpui-component](https://longbridge.com/desktop)** this repository forks: the
+  component library, the three blocks and the catalog all start there.
+- Thanks to the **[Slint](https://slint.dev)** project and its community, for the
+  language, the runtime and the tooling behind the second target. A Rust UI toolkit
+  that compiles to native and to the browser is a rare thing, and the catalog here
+  is written in their language.
+- Thanks to **[shadcn/ui](https://ui.shadcn.com)** and
+  **[Reui](https://reui.io)**, whose design language the components follow — and
+  whose idea it is that the source is yours once it is copied.
+- And to **[Lucide](https://lucide.dev)**, for the icons.
+
+What each of those means for licensing and attribution is under
+[License](#license) and in [NOTICE](./NOTICE); it is stated once, there.
 
 ## License
 
