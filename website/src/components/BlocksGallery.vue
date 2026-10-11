@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { computed, onBeforeUnmount, onMounted, ref } from "vue";
-import { Download, Monitor, Play, RotateCw, Smartphone, Sparkles, Tablet } from "lucide-vue-next";
+import { Download, Monitor, RotateCw, Smartphone, Sparkles, Tablet } from "lucide-vue-next";
 import InstallCommand from "./InstallCommand.vue";
 import PreviewLoader from "./PreviewLoader.vue";
 import type { Gallery } from "../lib/gallery-sizes";
@@ -137,25 +137,15 @@ function srcFor(block: Block) {
 // before it has finished, which keeps a slow connection working on the preview
 // the reader is most likely to reach. A reader who wants a particular block
 // sooner asks for it, and a reader who wants the fetching to stop says so.
-const requested = ref<Record<string, boolean>>({});
 const loaded = ref<Record<string, boolean>>({});
 
-/** A block's frame is shown when the reader asks for it. */
-const isRequested = (block: Block) => Boolean(requested.value[block.id]);
+/**
+ * A block's frame is shown as soon as its module is here: the page fetches them
+ * in the background, and a preview that is already paid for should be running
+ * rather than waiting behind a button.
+ */
 
 /** The picture to show for the framework in force, where one exists. */
-/**
- * Shows a block's live preview. The bytes are fetched once, here, and the frame
- * is mounted only when they are in the cache, so the frame never pays for a
- * second copy: a block that is already fetched opens at once, and one that is
- * not gets its download moved to the front of the queue while the loader reports
- * how far along it is.
- */
-function request(block: Block) {
-  requested.value = { ...requested.value, [block.id]: true };
-  if (downloadOf(block) !== "ready") enqueue(block, true);
-}
-
 /**
  * The frame's own gallery is the one that knows when the preview is ready: each
  * gallery removes its `#loading` element once the app has drawn its first frame.
@@ -235,7 +225,7 @@ const filesFor = (block: Block) =>
 // The frame mounts once its bytes are in the cache. Mounting it sooner would
 // start a second request for the same module, and this page has already paid for
 // those once.
-const frameIsUp = (block: Block) => isRequested(block) && downloadOf(block) === "ready";
+const frameIsUp = (block: Block) => downloadOf(block) === "ready";
 
 /**
  * Where a block's module is: waiting its turn, arriving, or in the cache.
@@ -298,7 +288,6 @@ function enqueue(block: Block, first = false) {
     // Nothing to fetch — a page the server does not describe, or a frame that
     // must fetch for itself. Let the frame mount and do its own work.
     setDownload(block, "ready");
-    if (isRequested(block)) return;
     return;
   }
   setDownload(block, "queued");
@@ -589,7 +578,7 @@ function reload(block: Block) {
             class="block__action"
             :class="{ 'is-active': deviceFor(block) === entry.id }"
             :aria-pressed="deviceFor(block) === entry.id"
-            :disabled="!isRequested(block)"
+            :disabled="!frameIsUp(block)"
             :title="entry.label"
             :aria-label="entry.label"
             @click="selectDevice(block, entry.id)"
@@ -599,7 +588,7 @@ function reload(block: Block) {
           <button
             type="button"
             class="block__action"
-            :disabled="!isRequested(block)"
+            :disabled="!frameIsUp(block)"
             title="Reload example"
             aria-label="Reload example"
             @click="reload(block)"
@@ -665,22 +654,14 @@ function reload(block: Block) {
 
           <!-- What this block is, until its preview is asked for. -->
           <div
-            v-else-if="!loaded[block.id] && !isRequested(block)"
+            v-else-if="!loaded[block.id] && !frameIsUp(block)"
             class="block__status block__status--offer"
           >
             <p class="block__offer-text">
-              This preview is a running WebAssembly build<template
-                v-if="sizeFor(block)"
+              WebAssembly preview<template v-if="sizeFor(block)">
+                · {{ (sizeFor(block)! / 1024 / 1024).toFixed(1) }} MB</template
               >
-                — a {{ (sizeFor(block)! / 1024 / 1024).toFixed(1) }} MB
-                download</template
-              >. The page fetches them in the background, one block at a time,
-              starting with the first.
             </p>
-            <button type="button" class="block__offer" @click="request(block)">
-              <Play :size="14" aria-hidden="true" />
-              Show live preview
-            </button>
 
             <!-- What the queue is doing with this block, and the one action
                  available on it: the fetching starts by itself, so a reader who
@@ -713,7 +694,7 @@ function reload(block: Block) {
           </div>
 
           <div
-            v-if="isRequested(block) && !loaded[block.id] && !frameUnavailable(block)"
+            v-if="frameIsUp(block) && !loaded[block.id]"
             :key="`loader:${block.id}:${framework}`"
             class="block__status block__status--loading"
           >
