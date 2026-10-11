@@ -113,15 +113,9 @@ RUN --mount=type=secret,id=github_token \
  && cp -r ../crates/slint-component/www/dist/. dist/slint-gallery/
 
 # ---- server ----------------------------------------------------------------
-# Alpine's nginx, plus its brotli module: the official nginx image does not ship
-# brotli, and serving the pre-compressed `.wasm.br` needs it. gzip_static stays
-# as the fallback for any client without brotli.
-FROM alpine AS runtime
+FROM nginx:alpine AS runtime
 
-RUN apk add --no-cache nginx nginx-mod-http-brotli
-
-COPY deploy/nginx.conf /etc/nginx/http.d/default.conf
+COPY deploy/nginx.conf /etc/nginx/conf.d/default.conf
 COPY --from=build /src/website/dist /usr/share/nginx/html
 
 EXPOSE 80
-CMD ["nginx", "-g", "daemon off;"]
