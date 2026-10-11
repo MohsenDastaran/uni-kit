@@ -101,10 +101,43 @@ for (const name of GPUI_BLOCKS) {
   gpui.components[name] = [{ src, target: `${name}.rs`, module: name }];
 }
 
+// iced components are Rust source a project copies in, like Slint's, so every
+// entry names real files: the component and the theme it reads. The theme is
+// shared, so the CLI writes it once however many components are installed.
+//
+// A component reaches the theme as `super::theme`, which is why the installed
+// directory can be moved or renamed without editing anything: the two files are
+// siblings wherever they land.
+const icedUi = path.join(root, 'crates/iced-component/ui');
+const iced = rust('src/components');
+if (fs.existsSync(icedUi)) {
+  const theme = 'crates/iced-component/ui/theme.rs';
+  if (!fs.existsSync(path.join(root, theme))) {
+    throw new Error(`iced components are installed with their theme, and ${theme} does not exist.`);
+  }
+  const files = fs
+    .readdirSync(icedUi)
+    .filter((name) => name.endsWith('.rs') && name !== 'theme.rs' && name !== 'mod.rs')
+    .sort();
+  for (const file of files) {
+    const name = file.replace(/\.rs$/, '');
+    if (!/^[a-z][a-z0-9_]*$/.test(name)) {
+      // `uni-kit add` refuses a module name it cannot write as `pub mod <name>;`.
+      throw new Error(`iced component "${name}" is not a valid Rust module name.`);
+    }
+    const src = `crates/iced-component/ui/${file}`;
+    iced.components[name] = [
+      { src, target: file, module: name },
+      { src: theme, target: 'theme.rs', module: 'theme' },
+    ];
+  }
+}
+
 const registry = {
   slint,
   egui: rust('src/components'),
   gpui,
+  iced,
   quickgui: rust('src/components'),
 };
 
@@ -124,5 +157,5 @@ fs.writeFileSync(
 );
 console.log(
   `slint components: ${Object.keys(slint.components).length}, icons: ${icons.length}, ` +
-    `gpui blocks: ${GPUI_BLOCKS.length}`,
+    `gpui blocks: ${GPUI_BLOCKS.length}, iced components: ${Object.keys(iced.components).length}`,
 );

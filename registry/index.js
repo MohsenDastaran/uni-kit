@@ -161,6 +161,7 @@ function usage() {
   console.log('Usage: uni-kit add <framework> <component...> [--dir <path>]');
   console.log('Examples:');
   console.log('  npx uni-kit add slint alert-dialog');
+  console.log('  npx uni-kit add iced button');
   console.log('  npx uni-kit add gpui sidebar');
   console.log('  npx uni-kit add egui alert-dialog');
   console.log('  npx uni-kit add quickgui button');
@@ -169,8 +170,18 @@ function usage() {
   console.log('share are written once:');
   console.log('  npx uni-kit add slint sidebar card button table');
   console.log('');
-  console.log('GPUI blocks compose the controls that ship in the gpui-kit crate:');
+  console.log('iced and Slint components are source the app owns; the GPUI blocks');
+  console.log('compose controls that ship in the gpui-kit crate:');
   console.log('  npx uni-kit add gpui sidebar dock settings');
+}
+
+// An iced component compiles against iced itself and nothing else. Slint needs
+// its include path, GPUI needs its crate; iced needs one dependency line, and
+// saying so is the whole of its framework-specific step.
+function ensureIcedDependency() {
+  const cargo = path.join(process.cwd(), 'Cargo.toml');
+  if (fs.existsSync(cargo) && /^\s*iced\s*=/m.test(fs.readFileSync(cargo, 'utf8'))) return;
+  console.log('  Add the framework the components are written against: cargo add iced');
 }
 
 async function main() {
@@ -282,6 +293,7 @@ async function main() {
   }
 
   if (framework === 'slint') ensureSlintIncludePath(baseTargetDir);
+  if (framework === 'iced') ensureIcedDependency();
 
   // The `pub mod` line only makes the file reachable from the directory's own
   // module; the crate still has to declare that module, and nothing else will

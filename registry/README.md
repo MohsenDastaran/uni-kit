@@ -26,6 +26,17 @@ A screen is several components, so name them all: the files they share are writt
 npx uni-kit add slint sidebar card button data-table
 ```
 
+## iced
+
+iced components are Rust source, and they land in `src/components/` with the theme they read. Each one is self-contained: it reaches the theme as `super::theme`, so the directory can be moved or renamed without editing a component. The install adds a `pub mod` line per component to `src/components/mod.rs`.
+
+The components compile against iced and nothing else:
+
+```bash
+cargo add iced
+npx uni-kit add iced button
+```
+
 ## GPUI
 
 GPUI components ship in the `gpui-kit` crate, so what is worth copying for this framework is a composed screen. Each block is one file under [`crates/blocks`](../crates/blocks):

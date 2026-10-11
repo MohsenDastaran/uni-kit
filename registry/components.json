@@ -22266,6 +22266,11 @@
       ]
     }
   },
+  "iced": {
+    "default_target_dir": "src/components",
+    "mod_file": "src/components/mod.rs",
+    "components": {}
+  },
   "quickgui": {
     "default_target_dir": "src/components",
     "mod_file": "src/components/mod.rs",
