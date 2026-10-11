@@ -29,6 +29,16 @@ export function hasSlintExample(slug, root = process.cwd()) {
   return existsSync(join(ui, `${slug}.slint`)) && existsSync(join(ui, 'examples', `${slug}.slint`));
 }
 
+/**
+ * The site has a Slint view of this page at all: a Slint example to show, on a
+ * page that shows one. `example: false` is a page with no example window — a
+ * guide, and in practice a GPUI one — so the Slint sidebar has nothing to put
+ * beside it and the framework switch has nothing to switch to.
+ */
+export function hasSlintPage(slug, example, root = process.cwd()) {
+  return example !== false && hasSlintExample(slug, root);
+}
+
 /** True when this slug has one Slint sample per usage GroupBox. */
 export function hasSlintUsage(slug, root = process.cwd()) {
   const ui = slintRoot(root);

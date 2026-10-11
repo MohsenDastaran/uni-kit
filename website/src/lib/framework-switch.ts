@@ -121,6 +121,25 @@ function syncUrl(framework: Framework) {
   });
 }
 
+/**
+ * A page can declare which frameworks it has a view for. Choosing one it does
+ * not have leaves the reader looking at the other one's content under the wrong
+ * name, so they are sent to the page that lists what this framework does have.
+ * The choice is kept: they asked for Slint, and the list will be in Slint.
+ */
+function redirectToAvailable(framework: Framework, persist: boolean): boolean {
+  const holder = document.querySelector<HTMLElement>('[data-framework-available]');
+  const available = holder?.dataset.frameworkAvailable?.split(/\s+/) ?? null;
+  const fallback = holder?.dataset.frameworkFallback;
+  if (!available || !fallback || available.includes(framework)) return false;
+
+  if (persist) localStorage.setItem(STORAGE_KEY, framework);
+  const url = new URL(fallback, location.origin);
+  if (framework !== DEFAULT_FRAMEWORK) url.searchParams.set(FRAMEWORK_PARAM, framework);
+  location.assign(url.pathname + url.search);
+  return true;
+}
+
 function show(framework: Framework) {
   root.dataset.framework = framework;
   announce(framework);
@@ -129,6 +148,7 @@ function show(framework: Framework) {
 
 function select(framework: Framework, persist = true) {
   if (framework === target) return;
+  if (redirectToAvailable(framework, persist)) return;
   target = framework;
   syncSwitches(framework);
   syncUrl(framework);

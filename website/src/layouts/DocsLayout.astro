@@ -19,6 +19,8 @@ export interface Props {
   frontmatter?: Record<string, any>;
   /** Extra class for the article, for a page whose content needs its own rules. */
   contentClass?: string;
+  /** Extra attributes for the article, for the same reason. */
+  contentData?: Record<string, string | undefined>;
 }
 
 const {
@@ -28,6 +30,7 @@ const {
   headings = [],
   frontmatter = {},
   contentClass,
+  contentData = {},
 } = Astro.props;
 const hasSidebar = sidebar.length > 0;
 const pathname = Astro.url.pathname;
@@ -74,7 +77,11 @@ const structuredData = [
     {hasSidebar && <Sidebar items={sidebar} currentPath={pathname} />}
 
     <main class:list={['docs-main', { 'docs-main--full': !hasSidebar }]}>
-      <article class:list={['doc-content', contentClass]} data-pagefind-body>
+      <article
+        class:list={['doc-content', contentClass]}
+        data-pagefind-body
+        {...contentData}
+      >
         <slot />
       </article>
       <CodeBlock

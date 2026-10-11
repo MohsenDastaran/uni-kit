@@ -1,7 +1,7 @@
 import { readdirSync, readFileSync, statSync } from 'node:fs';
 import { extname, join, relative } from 'node:path';
 import { exampleSourcesAvailable, galleryCounts, type GalleryCounts } from './example-counts';
-import { hasSlintExample } from './remark-slint-source.js';
+import { hasSlintPage } from './remark-slint-source.js';
 
 export type FrameworkText = Partial<Record<'gpui' | 'slint', string>>;
 
@@ -152,7 +152,7 @@ function scanDir(dir: string, baseDir: string, countExamples: boolean): FileEntr
         // source tree cannot answer it at all and hides nothing, or a trimmed
         // context would drop the whole Slint navigation.
         slintGap: exampleSourcesAvailable
-          ? frontmatter.example === false || !hasSlintExample(name.replace(/\.md$/, ''))
+          ? !hasSlintPage(name.replace(/\.md$/, ''), frontmatter.example)
           : false,
       };
     }).filter(Boolean) as FileEntry[];
