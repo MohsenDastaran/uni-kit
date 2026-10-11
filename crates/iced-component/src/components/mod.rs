@@ -21,6 +21,7 @@ pub mod collapsible;
 pub mod description_list;
 pub mod empty;
 pub mod group_box;
+pub mod icon;
 pub mod kbd;
 pub mod label;
 pub mod marker;

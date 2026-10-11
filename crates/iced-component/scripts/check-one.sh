@@ -34,7 +34,17 @@ mkdir -p "$scratch/src/components" "$scratch/examples"
 
 # The manifest, the lockfile and the crate root, so the scratch resolves to the
 # same dependency versions with nothing to download.
+#
+# The scratch keeps the library NAME `iced_component` — the examples import it —
+# but takes a different PACKAGE name, because it shares this crate's target
+# directory. Two packages called `iced-component` 0.1.0 building into one target
+# directory collide in cargo's fingerprint cache, and the scratch's library, which
+# holds only the components it was given, then answers for the real crate: a
+# full-crate build starts reporting "could not find `button` in `components`" for
+# modules that are plainly declared. A distinct package name keeps the units
+# distinct while the library name stays importable.
 cp "$crate_dir/Cargo.toml" "$crate_dir/Cargo.lock" "$scratch/"
+sed -i.bak 's/^name = "iced-component"$/name = "iced-component-scratch"/' "$scratch/Cargo.toml" && rm -f "$scratch/Cargo.toml.bak"
 printf 'pub mod components;\n' > "$scratch/src/lib.rs"
 printf 'fn main() {}\n' > "$scratch/src/main.rs"
 cp "$crate_dir/src/components/theme.rs" "$scratch/src/components/"

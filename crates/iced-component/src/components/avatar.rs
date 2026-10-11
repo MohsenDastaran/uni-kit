@@ -21,9 +21,9 @@
 //!   fill, border and shadow, so a partly transparent image still reads over the
 //!   fill rather than over the page.
 //!
-//! A group of overlapping avatars is `AvatarGroup` in Slint; iced lays it out
-//! with a `row` and a negative spacing is not available, so this file is the one
-//! avatar and the example shows a plain row of them.
+//! Slint pairs this with an `AvatarGroup` that overlaps several avatars and
+//! prints an overflow chip. iced has no negative spacing, so an overlapping
+//! group is a `stack` the application builds; this file is one avatar.
 
 // An application installs the components it uses, so the parts of this file it
 // does not call are not dead code in the way the compiler means — the file is a
@@ -220,7 +220,6 @@ impl<'a, Message> Default for Avatar<'a, Message> {
 /// How an avatar's box is drawn, resolved against the tokens at render time.
 struct Shape {
     fill: Color,
-    initials_color: Color,
     border_color: Color,
     border_width: f32,
     radius: f32,
@@ -275,7 +274,9 @@ where
                         ..iced::Font::DEFAULT
                     })
                     .style(move |theme: &Theme| text::Style {
-                        color: Some(initials_color.unwrap_or(Tokens::of(theme).secondary_foreground)),
+                        color: Some(
+                            initials_color.unwrap_or(Tokens::of(theme).secondary_foreground),
+                        ),
                     }),
             )
             .width(Length::Fixed(edge))
@@ -303,7 +304,6 @@ where
                 let tokens = Tokens::of(theme);
                 Shape {
                     fill: fill.unwrap_or(tokens.secondary),
-                    initials_color: initials_color.unwrap_or(tokens.secondary_foreground),
                     border_color: border_color.unwrap_or(tokens.border),
                     border_width,
                     radius,
