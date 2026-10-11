@@ -23,6 +23,15 @@ if cargo build --quiet --manifest-path "$crate_dir/Cargo.toml"; then ok "compone
 step "cargo build --examples"
 if cargo build --quiet --examples --manifest-path "$crate_dir/Cargo.toml"; then ok "usage examples"; else bad "cargo build --examples"; fi
 
+step "features agree between the crate and the install hint"
+crate_features="$(grep -oE '^iced = \{[^}]*\}' "$crate_dir/Cargo.toml" | grep -oE '"[a-z_]+"' | tr -d '"' | sort | tr '\n' ' ')"
+hint_features="$(grep -oE 'const ICED_FEATURES = \[[^]]*\]' "$root/registry/index.js" | grep -oE "'[a-z_]+'" | tr -d "'" | sort | tr '\n' ' ')"
+if [[ -n "$crate_features" && "$crate_features" == "$hint_features" ]]; then
+  ok "both name: $crate_features"
+else
+  bad "crate has [$crate_features] and the install hint says [$hint_features]"
+fi
+
 step "registry manifest"
 if node "$root/registry/build-manifest.mjs"; then ok "manifest rebuilt from the sources"; else bad "manifest builder"; fi
 

@@ -70,6 +70,21 @@ Mirroring Slint, with the adaptations Rust and iced require:
 - Every component has a usage example in `examples/<name>.rs` that the component
   page shows. Cargo compiles them all: `cargo build --examples` is the gate.
 
+## The dependency the components assume
+
+iced's `svg`, `canvas`, `image`, `qr_code` and `markdown` features are **not** in
+its defaults, so `cargo add iced` on its own produces a project the components do
+not compile in. The install therefore names the line instead, and
+`scripts/check.sh` compares that list with `crates/iced-component/Cargo.toml` so
+the two cannot drift.
+
+`image` is the heavy one: it enables the full codec set, which pulls AVIF encoding
+(`rav1e`) into the graph. That is a known trouble spot for a `wasm32` build, and
+the browser gallery will meet it first. If it does, the fix is to take
+`image-without-codecs` and add an explicit `image` dependency with only the
+formats the examples use — the widget still decodes `Handle::from_bytes` and
+`from_rgba` either way.
+
 ## Status
 
 <!-- iced-checklist:start -->

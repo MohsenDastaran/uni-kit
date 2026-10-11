@@ -7,7 +7,9 @@ verified say so.
 
 ---
 
-# iced 0.14.0 — Verified API Reference (for writing ~79 components)
+Reference for writing the components. Every claim below is verified
+against `docs.rs/iced/0.14.0`, `docs.rs/iced_widget/0.14.0`, or the iced
+repository at tag 0.14.0.
 
 All claims below are verified against `docs.rs/iced/0.14.0`, `docs.rs/iced_widget/0.14.0`, or `raw.githubusercontent.com/iced-rs/iced/0.14.0/{core,runtime,src,widget,futures}/src/*.rs`. Anything I could not verify is marked **UNVERIFIED**. Note: `docs.rs/iced/0.14.0` has several **broken intra-doc links** (`widget::MouseArea`, `Responsive`, `Stack`, `Column`, `Row` 404 on docs.rs); for those I read the 0.14.0 source directly, which is the same authority.
 

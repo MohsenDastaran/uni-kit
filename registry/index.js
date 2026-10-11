@@ -178,10 +178,26 @@ function usage() {
 // An iced component compiles against iced itself and nothing else. Slint needs
 // its include path, GPUI needs its crate; iced needs one dependency line, and
 // saying so is the whole of its framework-specific step.
+//
+// The features are the ones the components draw with, and none of them are in
+// iced's defaults: a plain `cargo add iced` would install a component that does
+// not compile. They are kept in step with `crates/iced-component/Cargo.toml`,
+// which `crates/iced-component/scripts/check.sh` verifies.
+const ICED_FEATURES = ['svg', 'canvas', 'image', 'qr_code', 'markdown'];
+
 function ensureIcedDependency() {
   const cargo = path.join(process.cwd(), 'Cargo.toml');
-  if (fs.existsSync(cargo) && /^\s*iced\s*=/m.test(fs.readFileSync(cargo, 'utf8'))) return;
-  console.log('  Add the framework the components are written against: cargo add iced');
+  const wanted = `iced = { version = "0.14", features = [${ICED_FEATURES.map((f) => `"${f}"`).join(', ')}] }`;
+  if (fs.existsSync(cargo)) {
+    const text = fs.readFileSync(cargo, 'utf8');
+    const line = text.match(/^\s*iced\s*=.*$/m)?.[0];
+    if (line && ICED_FEATURES.every((feature) => line.includes(`"${feature}"`))) return;
+    if (line) {
+      console.log(`  Add the features the components draw with: ${wanted}`);
+      return;
+    }
+  }
+  console.log(`  Add the framework the components are written against: ${wanted}`);
 }
 
 async function main() {
