@@ -43,8 +43,14 @@ function implemented(file, kind) {
   if (!text) return false;
   if (/Implementation pending|not implemented|todo!\(|unimplemented!\(/i.test(text)) return false;
   if (kind === 'example') {
-    // An example is an application: it has a `main` and runs one.
-    return /fn main\s*\(/.test(text) && /iced::(application|run)\s*\(/.test(text);
+    // An example is an application: it either builds one itself or runs the demo
+    // the library holds for it. The demo moved into `src/demos/` so the browser
+    // gallery can show the very same code, which leaves the example a thin
+    // `main` that calls it — still an application, just not one written here.
+    return (
+      /fn main\s*\(/.test(text) &&
+      (/iced::(application|run)\s*\(/.test(text) || /demos::[a-z_]+::run\s*\(/.test(text))
+    );
   }
   // A component builds an element. `theme.rs` is the shared token file: it is
   // the iced counterpart of the Slint theme component and builds no widget, so

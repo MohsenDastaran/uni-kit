@@ -1,0 +1,101 @@
+//! The demos the gallery shows: one module each, named after the registry key
+//! with hyphens as underscores, and this list is generated from the directory by
+//! `scripts/mod-rs.mjs` — never edited by hand.
+//!
+//! A demo is the whole application, not a view: each one calls
+//! `iced::application` itself, so the native binary in `examples/` and the
+//! browser gallery run the same code rather than two copies that drift apart.
+
+pub mod accordion;
+pub mod alert;
+pub mod attachment;
+pub mod avatar;
+pub mod badge;
+pub mod button;
+pub mod calendar;
+pub mod card;
+pub mod checkbox;
+pub mod description_list;
+pub mod empty;
+pub mod group_box;
+pub mod icon;
+pub mod kbd;
+pub mod label;
+pub mod marker;
+pub mod message_role;
+pub mod message_scroller;
+pub mod progress;
+pub mod shimmer;
+pub mod skeleton;
+pub mod spinner;
+pub mod tag;
+pub mod text_view;
+pub mod tree;
+
+mod index;
+
+/// Every story the gallery can show, named the way the website names it: the
+/// registry key, hyphenated.
+pub const STORIES: &[&str] = &[
+    "accordion",
+    "alert",
+    "attachment",
+    "avatar",
+    "badge",
+    "button",
+    "calendar",
+    "card",
+    "checkbox",
+    "description-list",
+    "empty",
+    "group-box",
+    "icon",
+    "kbd",
+    "label",
+    "marker",
+    "message-role",
+    "message-scroller",
+    "progress",
+    "shimmer",
+    "skeleton",
+    "spinner",
+    "tag",
+    "text-view",
+    "tree",
+];
+
+/// Run the demo a story names, with the theme the page asked for.
+///
+/// An unknown story is not an error. The gallery is also how somebody finds out
+/// what exists, so a name that matches nothing shows the list rather than a blank
+/// window or a panic.
+pub fn run(story: &str, theme: iced::Theme) -> iced::Result {
+    match story {
+        "accordion" => accordion::run(theme),
+        "alert" => alert::run(theme),
+        "attachment" => attachment::run(theme),
+        "avatar" => avatar::run(theme),
+        "badge" => badge::run(theme),
+        "button" => button::run(theme),
+        "calendar" => calendar::run(theme),
+        "card" => card::run(theme),
+        "checkbox" => checkbox::run(theme),
+        "description-list" => description_list::run(theme),
+        "empty" => empty::run(theme),
+        "group-box" => group_box::run(theme),
+        "icon" => icon::run(theme),
+        "kbd" => kbd::run(theme),
+        "label" => label::run(theme),
+        "marker" => marker::run(theme),
+        "message-role" => message_role::run(theme),
+        "message-scroller" => message_scroller::run(theme),
+        "progress" => progress::run(theme),
+        "shimmer" => shimmer::run(theme),
+        "skeleton" => skeleton::run(theme),
+        "spinner" => spinner::run(theme),
+        "tag" => tag::run(theme),
+        "text-view" => text_view::run(theme),
+        "tree" => tree::run(theme),
+        other => index::run(theme, other.to_string()),
+    }
+}

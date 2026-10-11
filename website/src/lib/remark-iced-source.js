@@ -41,9 +41,16 @@ function implemented(path, kind) {
   if (/Implementation pending|not implemented|todo!\(|unimplemented!\(/i.test(source)) return false;
   const code = stripComments(source).trim();
   if (code.length === 0) return false;
-  return kind === 'example'
-    ? /fn main\s*\(/.test(code) && /iced::(application|run)\s*\(/.test(code)
-    : /pub fn/.test(code) && (/Element/.test(code) || path.endsWith('theme.rs'));
+  if (kind === 'example') {
+    // Either an application written here, or a thin `main` running the demo the
+    // library holds — the demos moved there so the browser gallery can show the
+    // same code the example runs.
+    return (
+      /fn main\s*\(/.test(code) &&
+      (/iced::(application|run)\s*\(/.test(code) || /demos::[a-z_]+::run\s*\(/.test(code))
+    );
+  }
+  return /pub fn/.test(code) && (/Element/.test(code) || path.endsWith('theme.rs'));
 }
 
 /**
