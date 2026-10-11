@@ -283,7 +283,7 @@ scripts/check.sh               # theme parity, feature agreement, manifest, chec
 | `menu` | `menu.rs` | yes | yes | — | — | — | — |
 | `message` | `message.rs` | yes | yes | — | — | — | — |
 | `message-role` | `message_role.rs` | — | yes | yes | 235 | yes | yes |
-| `message-scroller` | `message_scroller.rs` | yes | yes | — | — | — | — |
+| `message-scroller` | `message_scroller.rs` | yes | yes | yes | 676 | yes | yes |
 | `notification` | `notification.rs` | yes | yes | — | — | — | — |
 | `number-input` | `number_input.rs` | yes | yes | — | — | — | — |
 | `otp-input` | `otp_input.rs` | yes | yes | — | — | — | — |
@@ -311,7 +311,7 @@ scripts/check.sh               # theme parity, feature agreement, manifest, chec
 | `table` | `table.rs` | yes | yes | — | — | — | — |
 | `tabs` | `tabs.rs` | yes | yes | yes | 300 | — | yes |
 | `tag` | `tag.rs` | yes | yes | yes | 257 | yes | yes |
-| `text-view` | `text_view.rs` | yes | yes | — | — | — | — |
+| `text-view` | `text_view.rs` | yes | yes | yes | 919 | yes | yes |
 | `textarea` | `textarea.rs` | yes | yes | — | — | — | — |
 | `theme` | `theme.rs` | yes | yes | yes | 406 | — | — |
 | `time-field` | `time_field.rs` | yes | yes | — | — | — | — |
@@ -322,7 +322,7 @@ scripts/check.sh               # theme parity, feature agreement, manifest, chec
 | `tree` | `tree.rs` | yes | yes | yes | 352 | yes | yes |
 | `virtual-list` | `virtual_list.rs` | yes | yes | — | — | — | — |
 
-**23 / 79** components have an iced source, an example and a registry entry.
+**25 / 79** components have an iced source, an example and a registry entry.
 
-Still to do: `alert-dialog`, `bubble`, `carousel`, `chart`, `clipboard`, `collapsible`, `color-picker`, `combobox`, `command`, `data-table`, `date-picker`, `dialog`, `dock`, `dropdown_button`, `editor`, `focus-trap`, `form`, `hover-card`, `image`, `input`, `input-group`, `list`, `menu`, `message`, `message-scroller`, `notification`, `number-input`, `otp-input`, `pagination`, `popover`, `questionnaire`, `radio`, `rating`, `resizable`, `root`, `scrollable`, `select`, `settings`, `sheet`, `sidebar`, `slider`, `speech`, `status-bar`, `stepper`, `switch`, `table`, `tabs`, `text-view`, `textarea`, `theme`, `time-field`, `title-bar`, `toggle`, `toolbar`, `tooltip`, `virtual-list`.
+Still to do: `alert-dialog`, `bubble`, `carousel`, `chart`, `clipboard`, `collapsible`, `color-picker`, `combobox`, `command`, `data-table`, `date-picker`, `dialog`, `dock`, `dropdown_button`, `editor`, `focus-trap`, `form`, `hover-card`, `image`, `input`, `input-group`, `list`, `menu`, `message`, `notification`, `number-input`, `otp-input`, `pagination`, `popover`, `questionnaire`, `radio`, `rating`, `resizable`, `root`, `scrollable`, `select`, `settings`, `sheet`, `sidebar`, `slider`, `speech`, `status-bar`, `stepper`, `switch`, `table`, `tabs`, `textarea`, `theme`, `time-field`, `title-bar`, `toggle`, `toolbar`, `tooltip`, `virtual-list`.
 <!-- iced-checklist:end -->

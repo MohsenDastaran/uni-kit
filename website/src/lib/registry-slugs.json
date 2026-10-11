@@ -105,12 +105,14 @@
     "label",
     "marker",
     "message-role",
+    "message-scroller",
     "progress",
     "shimmer",
     "skeleton",
     "spinner",
     "tabs",
     "tag",
+    "text-view",
     "tree"
   ],
   "quickgui": []

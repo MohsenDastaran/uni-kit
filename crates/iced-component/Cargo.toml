@@ -22,7 +22,12 @@ path = "src/main.rs"
 # The version the components are written against, pinned to the minor release.
 # Every component compiles against this and nothing else, so an application that
 # installs one has exactly one dependency to add.
-iced = { version = "0.14", features = ["svg", "canvas", "image", "qr_code", "markdown"] }
+iced = { version = "0.14", features = ["svg", "canvas", "image", "qr_code", "markdown", "advanced"] }
+# `text_view` implements `Widget` directly, and iced keeps that trait behind its
+# `advanced` feature; the CLI installs this line too.
+iced_core = "0.14"
+# The custom `Widget` this crate writes for the document viewer needs the core
+# traits directly; iced keeps them behind its `advanced` feature.
 
 [profile.release]
 # The browser has to compile this module before it shows anything, so the profile

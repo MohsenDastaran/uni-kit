@@ -183,7 +183,7 @@ function usage() {
 // iced's defaults: a plain `cargo add iced` would install a component that does
 // not compile. They are kept in step with `crates/iced-component/Cargo.toml`,
 // which `crates/iced-component/scripts/check.sh` verifies.
-const ICED_FEATURES = ['svg', 'canvas', 'image', 'qr_code', 'markdown'];
+const ICED_FEATURES = ['svg', 'canvas', 'image', 'qr_code', 'markdown', 'advanced'];
 
 function ensureIcedDependency() {
   const cargo = path.join(process.cwd(), 'Cargo.toml');

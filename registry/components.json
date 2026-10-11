@@ -22486,6 +22486,18 @@
           "module": "theme"
         }
       ],
+      "message-scroller": [
+        {
+          "src": "crates/iced-component/src/components/message_scroller.rs",
+          "target": "message_scroller.rs",
+          "module": "message_scroller"
+        },
+        {
+          "src": "crates/iced-component/src/components/theme.rs",
+          "target": "theme.rs",
+          "module": "theme"
+        }
+      ],
       "progress": [
         {
           "src": "crates/iced-component/src/components/progress.rs",
@@ -22551,6 +22563,18 @@
           "src": "crates/iced-component/src/components/tag.rs",
           "target": "tag.rs",
           "module": "tag"
+        },
+        {
+          "src": "crates/iced-component/src/components/theme.rs",
+          "target": "theme.rs",
+          "module": "theme"
+        }
+      ],
+      "text-view": [
+        {
+          "src": "crates/iced-component/src/components/text_view.rs",
+          "target": "text_view.rs",
+          "module": "text_view"
         },
         {
           "src": "crates/iced-component/src/components/theme.rs",
