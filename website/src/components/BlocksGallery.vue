@@ -1,7 +1,6 @@
 <script setup lang="ts">
 import { computed, onBeforeUnmount, onMounted, ref } from "vue";
-import { cancelQuiet, whenQuiet } from "../lib/quiet-moment";
-import { Download, Monitor, Play, RotateCw, Smartphone, Sparkles, Tablet } from "lucide-vue-next";
+import { Download, Monitor, RotateCw, Smartphone, Sparkles, Tablet } from "lucide-vue-next";
 import InstallCommand from "./InstallCommand.vue";
 import PreviewLoader from "./PreviewLoader.vue";
 import type { Gallery } from "../lib/gallery-sizes";
@@ -67,7 +66,6 @@ const readFramework = () =>
 
 
 
-/** A preview that is not running cannot be asked to reload. */
 function onFrameworkChange() {
   const next = readFramework();
   if (next === framework.value) return;
@@ -81,7 +79,6 @@ function onFrameworkChange() {
   download.value = {};
   progress.value = {};
   loaded.value = {};
-  stopsRunning();
   for (const block of props.blocks) stopWatching(block);
   chainRuns.value = true;
   startQueue();
@@ -106,7 +103,6 @@ onMounted(() => {
 });
 onBeforeUnmount(() => {
   clearTimeout(promptTimer);
-  stopsRunning();
   document.removeEventListener("framework-change", onFrameworkChange);
   for (const block of props.blocks) stopWatching(block);
 });
@@ -226,41 +222,10 @@ const decodedFor = (block: Block) => props.sizes?.[keyFor(block)]?.decoded;
 const filesFor = (block: Block) =>
   props.sizes?.[keyFor(block)]?.files.map((file) => `${base}/${keyFor(block)}/${file}`);
 
-/**
- * Whether a block's frame is running.
- *
- * A frame is not just a download. A same-origin gallery shares this page's main
- * thread, so starting one — instantiating the module and drawing its first frame
- * — holds that thread long enough to swallow the reader's next click. On a
- * component page that click is the sidebar link to the next component, and the
- * page felt frozen until the preview finished starting.
- *
- * So a preview starts when the reader has stopped: a module that has arrived
- * waits for a quiet moment, and any click, key or scroll postpones it. The
- * actions that must stay immediate — moving between components — win, and the
- * preview is there by the time they look for it.
- */
-const running = ref<Record<string, boolean>>({});
-const isRunning = (block: Block) => Boolean(running.value[block.id]);
-
-/** Queues a preview to start at the next quiet moment. */
-function requestRun(block: Block) {
-  if (isRunning(block)) return;
-  whenQuiet(() => {
-    if (!isRunning(block)) run(block);
-  });
-}
-
-/** Starts a preview now, because the reader asked for it. */
-function run(block: Block) {
-  running.value = { ...running.value, [block.id]: true };
-}
-
-/** No preview is running, and none is waiting to. */
-function stopsRunning() {
-  cancelQuiet();
-  running.value = {};
-}
+// The frame mounts once its bytes are in the cache: the page fetched them in the
+// background, one block at a time, so a preview that has arrived shows itself
+// with nothing asked of the reader.
+const frameIsUp = (block: Block) => downloadOf(block) === "ready";
 
 /**
  * Where a block's module is: waiting its turn, arriving, or in the cache.
@@ -323,7 +288,6 @@ function enqueue(block: Block, first = false) {
     // Nothing to fetch — a page the server does not describe, or a frame that
     // must fetch for itself. Let the frame mount and do its own work.
     setDownload(block, "ready");
-    requestRun(block);
     return;
   }
   setDownload(block, "queued");
@@ -421,7 +385,6 @@ async function fetchModule(block: Block) {
     controllers.delete(block.id);
     if (arriving === block.id) arriving = null;
     if (downloadOf(block) !== "stopped") setDownload(block, outcome);
-    if (outcome === "ready") requestRun(block);
     // The chain: one more block, now that this one is done with, unless the
     // reader has stopped the fetching.
     if (chainRuns.value) {
@@ -615,7 +578,7 @@ function reload(block: Block) {
             class="block__action"
             :class="{ 'is-active': deviceFor(block) === entry.id }"
             :aria-pressed="deviceFor(block) === entry.id"
-            :disabled="!isRunning(block)"
+            :disabled="!frameIsUp(block)"
             :title="entry.label"
             :aria-label="entry.label"
             @click="selectDevice(block, entry.id)"
@@ -625,7 +588,7 @@ function reload(block: Block) {
           <button
             type="button"
             class="block__action"
-            :disabled="!isRunning(block)"
+            :disabled="!frameIsUp(block)"
             title="Reload example"
             aria-label="Reload example"
             @click="reload(block)"
@@ -671,7 +634,7 @@ function reload(block: Block) {
           <!-- The frame boots behind the picture, out of sight, so the
                gallery's own plain "Loading…" is never what the reader sees. -->
           <iframe
-            v-if="isRunning(block) && !frameUnavailable(block)"
+            v-if="frameIsUp(block) && !frameUnavailable(block)"
             :key="`${srcFor(block)}:${reloads[block.id] ?? 0}`"
             :src="srcFor(block)"
             :title="`${block.title} example`"
@@ -691,7 +654,7 @@ function reload(block: Block) {
 
           <!-- What this block is, until its preview is asked for. -->
           <div
-            v-else-if="!loaded[block.id] && !isRunning(block)"
+            v-else-if="!loaded[block.id] && !frameIsUp(block)"
             class="block__status block__status--offer"
           >
             <p class="block__offer-text">
@@ -729,21 +692,10 @@ function reload(block: Block) {
               </button>
             </div>
 
-            <!-- The preview starts on its own once the reader is still; this is
-                 for the one who does not want to wait for that. -->
-            <button
-              v-if="downloadOf(block) === 'ready' && !isRunning(block)"
-              type="button"
-              class="block__offer"
-              @click="run(block)"
-            >
-              <Play :size="14" aria-hidden="true" />
-              Show preview
-            </button>
           </div>
 
           <div
-            v-if="isRunning(block) && !loaded[block.id]"
+            v-if="frameIsUp(block) && !loaded[block.id]"
             :key="`loader:${block.id}:${framework}`"
             class="block__status block__status--loading"
           >
