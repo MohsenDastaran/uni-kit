@@ -43,6 +43,7 @@ const seoTitle = entry.id.replace(/\.md$/, '') === 'index' ? entry.data.title : 
   description={entry.data.description}
   headings={headings}
   sidebar={enComponentSidebar}
+  contentClass={slug === 'index' ? 'doc-content--component-index' : undefined}
 >
   <Content />
   {entry.data.example !== false && (

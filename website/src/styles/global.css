@@ -1220,6 +1220,25 @@ html[lang^="ja"] .example-prompt {
   }
 }
 
+/* The component index is a list of links and nothing else, so its links carry the
+   colour and the underline that make them read as links. In prose the underline
+   alone is a hint — enough when a link sits inside a sentence and the sentence is
+   what you are reading — but here the links are the content, and a wall of
+   same-coloured, barely-underlined words is a wall. The colour mixes the theme's
+   accent toward the text so it stays part of the palette and keeps its contrast. */
+.doc-content.doc-content--component-index a {
+  color: color-mix(in srgb, var(--brand) 55%, var(--foreground));
+  text-decoration-line: underline;
+  text-decoration-color: currentColor;
+  text-decoration-thickness: 1px;
+  text-underline-offset: 0.18em;
+}
+
+.doc-content.doc-content--component-index a:hover {
+  text-decoration-thickness: 2px;
+}
+
+
 /* ====================================================================
    Nav bar (docs layout)
    ==================================================================== */

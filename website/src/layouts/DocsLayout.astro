@@ -17,9 +17,18 @@ export interface Props {
   sidebar?: SidebarItem[];
   headings?: Heading[];
   frontmatter?: Record<string, any>;
+  /** Extra class for the article, for a page whose content needs its own rules. */
+  contentClass?: string;
 }
 
-const { title, description, sidebar = [], headings = [], frontmatter = {} } = Astro.props;
+const {
+  title,
+  description,
+  sidebar = [],
+  headings = [],
+  frontmatter = {},
+  contentClass,
+} = Astro.props;
 const hasSidebar = sidebar.length > 0;
 const pathname = Astro.url.pathname;
 const base = import.meta.env.BASE_URL;
@@ -65,7 +74,7 @@ const structuredData = [
     {hasSidebar && <Sidebar items={sidebar} currentPath={pathname} />}
 
     <main class:list={['docs-main', { 'docs-main--full': !hasSidebar }]}>
-      <article class="doc-content" data-pagefind-body>
+      <article class:list={['doc-content', contentClass]} data-pagefind-body>
         <slot />
       </article>
       <CodeBlock
