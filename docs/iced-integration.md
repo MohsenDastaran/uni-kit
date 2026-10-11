@@ -96,20 +96,84 @@ Mirroring Slint, with the adaptations Rust and iced require:
 - Every component has a usage example in `examples/<name>.rs` that the component
   page shows. Cargo compiles them all: `cargo build --examples` is the gate.
 
-## The dependency the components assume
+## The dependencies the components assume
 
-iced's `svg`, `canvas`, `image`, `qr_code` and `markdown` features are **not** in
-its defaults, so `cargo add iced` on its own produces a project the components do
-not compile in. The install therefore names the line instead, and
-`scripts/check.sh` compares that list with `crates/iced-component/Cargo.toml` so
-the two cannot drift.
+iced's `svg`, `canvas`, `image-without-codecs`, `qr_code`, `markdown`, `advanced`
+and `webgl` features are **not** in its defaults, so `cargo add iced` on its own
+produces a project the components do not compile in. The install therefore names
+the line instead, and `scripts/check.sh` compares that list — hyphens included,
+so `image-without-codecs` is not quietly dropped from both sides — with
+`crates/iced-component/Cargo.toml`.
 
-`image` is the heavy one: it enables the full codec set, which pulls AVIF encoding
-(`rav1e`) into the graph. That is a known trouble spot for a `wasm32` build, and
-the browser gallery will meet it first. If it does, the fix is to take
-`image-without-codecs` and add an explicit `image` dependency with only the
-formats the examples use — the widget still decodes `Handle::from_bytes` and
-`from_rgba` either way.
+Each of them is there for a reason, and two were learned the hard way:
+
+- **`image-without-codecs`, not `image`.** `image` enables the image crate's
+  default codecs, AVIF and `rav1e` among them, and those are what fail a `wasm32`
+  build. Nothing in this crate decodes an image file: components display handles
+  the application hands them — raw RGBA via `Handle::from_rgba`, or an SVG — so
+  the codec-free widget is enough. An application that loads image files adds
+  `iced/image` itself.
+- **`webgl`.** wgpu on the web asks for WebGPU unless this feature is on, and
+  Safari, Firefox and any software-rendered browser have no WebGPU. Without it the
+  gallery is an empty frame for those readers.
+- **`advanced`** opens the core traits `text_view` implements.
+
+**One component needs a second crate.** `text_view` implements `Widget` itself,
+and iced exposes that trait only through `iced_core`, so installing it needs
+`iced_core = "0.14"` as well. Which components those are is not a list kept by
+hand: `registry/build-manifest.mjs` reads it from the sources into
+`needs_extra`, together with the version from this crate's own manifest, and
+fails if a source uses a crate the manifest does not declare. The CLI prints the
+line for the components that need it and nothing for the ones that do not.
+
+**The wasm-bindgen CLI has to match the module.** The iced crate keeps its own
+lockfile, and its `wasm-bindgen` (0.2.129) is a different version from the
+workspace's (0.2.121). A CLI and a module that disagree are refused at the
+bindings step, and two versions cannot share one binary, so the release workflow
+installs a second CLI into its own prefix for the iced build. `build-wasm.sh`
+prints the version it wants when the bindings are refused, because the fix is a
+`cargo install` rather than anything in the repository.
+
+## The gallery
+
+The website's component pages embed the galleries; for iced that is
+`/iced-gallery?story=<registry key>`, one module answering for every component the
+way the GPUI gallery does, rather than a build per page the way Slint does.
+
+```
+crates/iced-component/
+  src/demos/<module>.rs   the demo: the whole application, `pub fn run(theme)`
+  src/demos/mod.rs        generated: the module list, STORIES, the dispatcher
+  src/demos/index.rs      what an unknown story shows: the list of stories
+  src/wasm.rs             the browser entry, `#[wasm_bindgen] pub fn run(story, dark)`
+  src/main.rs             the native binary, same dispatcher, name from argv
+  www/index.html          the page: reads `?story=`, imports the glue, calls run
+  www/dist/               the build output the site serves
+  scripts/build-wasm.sh   cargo (wasm32, release) -> wasm-bindgen -> www/dist
+```
+
+The demos live in the library so that the example binary and the browser gallery
+run the same code; two copies would drift. `scripts/mod-rs.mjs` generates the
+module list and the dispatcher from the directory, so a demo that exists is a demo
+`?story=` can name.
+
+`make dev:website-iced` builds the module and starts the site; the dev middleware
+serves `www/dist` at `/iced-gallery`, and the release workflow copies it into the
+built site. The page resolves the glue from the directory it is mounted at rather
+than from `./`, because `/iced-gallery` is a path with no trailing slash and a
+relative import would resolve against the site root — which is exactly how the
+first version of this page failed, in the browser, while the module it was
+importing was being served correctly.
+
+The build runs inside `script/guard.sh`, the cgroup cap Slint's gallery uses,
+moved out of that crate so there is one copy rather than two. It builds
+**release**: a debug iced module is 90 MB against 5.7 MB, and a preview nobody
+will wait for is not a preview.
+
+**What it cannot do.** Rendering needs WebGPU or WebGL2 from the browser; a
+browser with neither shows the page's message rather than a blank frame. A theme
+change on the host page reloads the frame, because an iced application takes its
+theme when it starts.
 
 ## How a batch of components is finished
 
@@ -226,6 +290,41 @@ is. This is a smoke test, not a substitute for reading a port beside its Slint
 original — but it is cheap, it runs over every component at once, and it would
 have caught the failure this task cares about, a component that compiles while
 drawing almost nothing.
+
+**The whole browser chain, as far as this machine allows.** `make
+dev:website-iced` builds the module and serves the site; then, through the dev
+server:
+
+```
+/iced-gallery?story=button              200  text/html            3,820 B
+/iced-gallery/iced_component.js         200  text/javascript    106,057 B
+/iced-gallery/iced_component_bg.wasm    200  application/wasm  5.74 MB
+```
+
+The module loads and instantiates in Chrome, and the page's failure path renders
+its message instead of a blank rectangle. The component page's iframe asks for
+`/iced-gallery?story=button`, and availability is gated on a real component *and*
+a real example: `chart` has neither and `tabs` has no example, and neither page
+offers iced — which is the check that keeps the site from claiming a component
+that is not there.
+
+**What could not be verified here: painted pixels.** Headless Chrome on this
+machine reports `webgl2=true webgl1=true webgpu=true`, but wgpu finds no usable
+adapter: `No available adapters`, then a trap inside the module. Chrome's flags
+change which failure appears — `--use-webgpu-adapter=swiftshader` gets an adapter
+and then fails at the device — never to success. So "the gallery renders a
+component in a browser" is unproven on this machine, and it is recorded as
+unproven rather than assumed from the HTTP responses being correct.
+
+**Installing the components an application actually builds.** A clean project
+with only what the CLI names, then `cargo build`:
+
+```
+iced = { version = "0.14", features = ["svg", "canvas", "image-without-codecs",
+          "qr_code", "markdown", "advanced", "webgl"] }
+iced_core = "0.14"                        # text-view only, as the CLI says
+  Finished `dev` profile [unoptimized + debuginfo] target(s) in 22.53s
+```
 
 **The crate's own gates**, run in `crates/iced-component`:
 
