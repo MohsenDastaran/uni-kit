@@ -56,8 +56,15 @@ wasm-bindgen "$WASM_PATH" \
 
 # A smaller module compiles faster in the browser. wasm-opt is optional: a
 # machine without Binaryen still builds, just larger.
+#
+# The feature flags are the ones Rust's wasm32-unknown-unknown target enables by
+# default. wasm-opt has them off unless asked, and a module using bulk memory —
+# `memory.copy`, which rustc does emit — fails its validator without
+# `--enable-bulk-memory`.
 if command -v wasm-opt >/dev/null 2>&1; then
     wasm-opt -O3 --strip-debug \
+        --enable-bulk-memory --enable-mutable-globals \
+        --enable-nontrapping-float-to-int --enable-sign-ext \
         -o "$PROJECT_ROOT/www/src/wasm/gpui_component_story_web_bg.wasm.tmp" \
         "$PROJECT_ROOT/www/src/wasm/gpui_component_story_web_bg.wasm" \
         && mv "$PROJECT_ROOT/www/src/wasm/gpui_component_story_web_bg.wasm.tmp" \

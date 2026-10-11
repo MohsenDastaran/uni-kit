@@ -52,8 +52,16 @@ wasm-bindgen "$target_dir/wasm32-unknown-unknown/$profile/slint_component.wasm" 
   --out-dir "$out_dir" --target web --no-typescript
 # A smaller module compiles faster in the browser and ships fewer bytes. wasm-opt
 # is optional: a machine without Binaryen still builds, just larger.
+#
+# The feature flags are the ones Rust's wasm32-unknown-unknown target enables by
+# default. wasm-opt has them off unless asked, and a module using bulk memory —
+# `memory.copy`, which rustc does emit — fails its validator without
+# `--enable-bulk-memory`.
 if command -v wasm-opt >/dev/null 2>&1; then
-  wasm-opt -O3 --strip-debug -o "$out_dir/slint_component_bg.wasm.tmp" "$out_dir/slint_component_bg.wasm" \
+  wasm-opt -O3 --strip-debug \
+    --enable-bulk-memory --enable-mutable-globals \
+    --enable-nontrapping-float-to-int --enable-sign-ext \
+    -o "$out_dir/slint_component_bg.wasm.tmp" "$out_dir/slint_component_bg.wasm" \
     && mv "$out_dir/slint_component_bg.wasm.tmp" "$out_dir/slint_component_bg.wasm"
 else
   echo "build.sh: wasm-opt not found (apt install binaryen) — leaving the module unoptimized" >&2

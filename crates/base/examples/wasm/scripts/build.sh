@@ -14,8 +14,14 @@ if [[ "${1:-}" == "--release" ]]; then profile="wasm-release"; cargo_args+=(--pr
 cargo "${cargo_args[@]}"
 wasm-bindgen "$workspace_dir/target/wasm32-unknown-unknown/$profile/gpui_base_examples_wasm.wasm" --out-dir "$crate_dir/www/src/wasm" --target web --no-typescript
 # A smaller module compiles faster in the browser. wasm-opt is optional.
+#
+# The feature flags are the ones Rust's wasm32-unknown-unknown target enables by
+# default; without `--enable-bulk-memory` wasm-opt rejects a module that uses
+# `memory.copy`, which rustc emits.
 if command -v wasm-opt >/dev/null 2>&1; then
   wasm-opt -O3 --strip-debug \
+    --enable-bulk-memory --enable-mutable-globals \
+    --enable-nontrapping-float-to-int --enable-sign-ext \
     -o "$crate_dir/www/src/wasm/gpui_base_examples_wasm_bg.wasm.tmp" \
     "$crate_dir/www/src/wasm/gpui_base_examples_wasm_bg.wasm" \
     && mv "$crate_dir/www/src/wasm/gpui_base_examples_wasm_bg.wasm.tmp" \
