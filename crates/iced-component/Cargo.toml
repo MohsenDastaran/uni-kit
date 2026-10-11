@@ -19,15 +19,19 @@ name = "iced-gallery"
 path = "src/main.rs"
 
 [dependencies]
-# The version the components are written against, pinned to the minor release.
-# Every component compiles against this and nothing else, so an application that
-# installs one has exactly one dependency to add.
+# The version every component is written against, pinned to the minor release.
+#
+# The features are the ones the components draw with and none are in iced's
+# defaults; `advanced` is what opens the core traits `text_view` implements. A
+# plain `cargo add iced` installs a component that does not compile, so the CLI
+# prints this exact line — `registry/index.js` and this file are kept in step by
+# `crates/iced-component/scripts/check.sh`.
 iced = { version = "0.14", features = ["svg", "canvas", "image", "qr_code", "markdown", "advanced"] }
-# `text_view` implements `Widget` directly, and iced keeps that trait behind its
-# `advanced` feature; the CLI installs this line too.
+# `text_view` is the one component that needs a second crate: it implements
+# `Widget` itself, and iced exposes that trait only through `iced_core`. The CLI
+# learns which components these are from `registry/build-manifest.mjs`, which
+# reads the sources rather than trusting a list kept by hand.
 iced_core = "0.14"
-# The custom `Widget` this crate writes for the document viewer needs the core
-# traits directly; iced keeps them behind its `advanced` feature.
 
 [profile.release]
 # The browser has to compile this module before it shows anything, so the profile

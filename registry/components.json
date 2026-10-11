@@ -22594,6 +22594,14 @@
           "module": "theme"
         }
       ]
+    },
+    "needs_extra": {
+      "text-view": [
+        "iced_core"
+      ]
+    },
+    "extra_versions": {
+      "iced_core": "0.14"
     }
   },
   "quickgui": {

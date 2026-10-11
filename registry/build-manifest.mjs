@@ -119,6 +119,11 @@ if (fs.existsSync(icedUi)) {
     .readdirSync(icedUi)
     .filter((name) => name.endsWith('.rs') && name !== 'theme.rs' && name !== 'mod.rs')
     .sort();
+  // A component that reaches past iced to a crate iced merely re-exports needs
+  // that crate named in the application's manifest too. Which components those
+  // are is read from the sources rather than listed by hand, so installing one is
+  // enough to know what it needs.
+  const needsExtra = {};
   for (const file of files) {
     const module = file.replace(/\.rs$/, '');
     if (!/^[a-z][a-z0-9_]*$/.test(module)) {
@@ -140,6 +145,27 @@ if (fs.existsSync(icedUi)) {
       { src, target: file, module },
       { src: theme, target: 'theme.rs', module: 'theme' },
     ];
+    const source = fs.readFileSync(path.join(root, src), 'utf8');
+    const extra = ['iced_core'].filter((crate) => new RegExp(`\\b${crate}::`).test(source));
+    if (extra.length > 0) needsExtra[name] = extra;
+  }
+
+  // The versions come from the crate's own manifest, so the hint the CLI prints
+  // and the crate that compiles are the same statement.
+  const crateManifest = fs.readFileSync(path.join(root, 'crates/iced-component/Cargo.toml'), 'utf8');
+  const extraVersions = {};
+  for (const crate of new Set(Object.values(needsExtra).flat())) {
+    const declared = crateManifest.match(new RegExp(`^\\s*${crate}\\s*=\\s*"([^"]+)"`, 'm'))?.[1];
+    if (!declared) {
+      throw new Error(
+        `iced component source uses \`${crate}\` but crates/iced-component/Cargo.toml does not declare it.`,
+      );
+    }
+    extraVersions[crate] = declared;
+  }
+  if (Object.keys(needsExtra).length > 0) {
+    iced.needs_extra = needsExtra;
+    iced.extra_versions = extraVersions;
   }
 }
 
