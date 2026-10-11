@@ -1,4 +1,8 @@
-![uni-kit logo](https://raw.githubusercontent.com/MohsenDastaran/uni-kit/main/website/public/uni-kit.svg)  
+<p align="center">
+  <img src="https://raw.githubusercontent.com/MohsenDastaran/uni-kit/main/website/public/uni-kit.svg" width="64" alt="uni-kit logo" />
+  <br>
+  <strong>uni-kit</strong>
+</p>
 **uni-kit**
 
 ![Publish Website Image](https://github.com/MohsenDastaran/uni-kit/actions/workflows/publish-image.yml/badge.svg)
