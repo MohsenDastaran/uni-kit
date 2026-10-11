@@ -132,6 +132,56 @@ Then, by hand, because no script sees it:
 - anything that could not be reproduced says so in the component's module docs;
 - the checklist count went up by exactly the number of components in the batch.
 
+## Continuing this work
+
+The integration is finished; what remains is the components themselves. This is
+the shape that has actually produced them, after several that did not.
+
+**One agent per component, writing both files, in this order.** An agent that
+reads everything first stalls: the API reference is 1,356 lines and every Slint
+source is a few hundred more. The order that lands components is
+
+1. read `crates/slint-component/ui/<key>.slint` **only** — it is the authority for
+   the design, and it is short;
+2. write `src/components/<module>.rs` from it, rough and not yet compiling;
+3. iterate on the compiler, grepping `API-0.14.md` for the one symbol each error
+   names rather than reading it;
+4. write `examples/<module>.rs`, and iterate the same way.
+
+**The gate for one component:**
+
+```bash
+cd crates/iced-component
+node scripts/mod-rs.mjs && scripts/check-one.sh <module>
+```
+
+`mod.rs` is generated from the directory — never edit it by hand. `check-one.sh`
+builds your component in a scratch crate, so another agent's half-written file
+cannot affect the answer. It must print `clean`: no errors and no warnings, in
+the component and in its example.
+
+**Then the crate-wide gate**, which is what decides whether the work is real:
+
+```bash
+cargo build && cargo build --examples
+crates/iced-component/scripts/check.sh
+node crates/iced-component/scripts/status.mjs --check
+```
+
+**Leave the agent alone while it works.** The two components that landed on the
+first try (`avatar`, `icon`) are the two agents that were never sent a follow-up
+message; the ones that were nudged, corrected or interrupted either stalled or had
+to be stopped. That is two data points and not a law — but messaging an agent that
+is mid-flight has cost more than it has bought here.
+
+**Do not leave a stub.** A five-line file that says it is pending compiles and is
+declared, so it satisfies every check that asks whether a file exists; the
+checklist now refuses to count one, and names it instead. An absent component is
+an honest gap; a stub is a lie the gates cannot see.
+
+**What is left** is in the generated checklist below, and `status.mjs` prints the
+same list. At the time of writing it is 21 of 79 complete, with 58 to go.
+
 ## Verification log
 
 Kept because the final report has to say what was actually run, and because a
