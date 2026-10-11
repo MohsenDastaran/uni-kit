@@ -46,9 +46,32 @@ Following the Slint integration, which is the reference for all of it:
 | `docs/` and `README.md` | The framework table, the roadmap, and this file. |
 
 Not in scope unless asked: composed iced *blocks* for the Blocks page (the six
-screens the Slint view shows), and a wasm gallery for the browser. The components
-themselves are the deliverable; the Blocks page has no iced view until a screen
+screens the Slint view shows). The Blocks page has no iced view until a screen
 exists to put in it.
+
+### The gallery, and why the examples are laid out for it
+
+The component pages show a live example, and for GPUI that is one wasm gallery
+serving every component rather than a build per page. iced follows that: one
+gallery, `src/main.rs`, which the website embeds and which shows the component
+named on the command line.
+
+That needs each component's demo to be reachable from the library, and a usage
+example is written as a standalone application, so the two are separated at the
+end of the work rather than during it:
+
+- `src/examples/<name>.rs` holds the demo's state, message, update and view, as a
+  `pub` app the gallery can call;
+- `examples/<name>.rs` keeps its `main` and its `fn main` commentary, and does
+  nothing but run the one in the library.
+
+Cargo still compiles every example, so the gate does not change, and the gallery
+gains every component without a second implementation of it. This is deliberately
+*after* the component batches: doing it now would rewrite files five batches are
+writing.
+
+Until the gallery exists, a component page shows the iced usage example as source
+and the selector does not offer a live iced view for it.
 
 ## Conventions
 
