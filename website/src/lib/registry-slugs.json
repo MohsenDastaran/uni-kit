@@ -87,14 +87,35 @@
     "sidebar"
   ],
   "iced": [
+    "accordion",
     "alert",
+    "attachment",
+    "avatar",
     "badge",
     "button",
+    "calendar",
     "card",
+    "checkbox",
+    "collapsible",
     "description-list",
+    "editor",
     "empty",
     "group-box",
-    "kbd"
+    "icon",
+    "image",
+    "kbd",
+    "label",
+    "marker",
+    "message-role",
+    "message-scroller",
+    "progress",
+    "shimmer",
+    "skeleton",
+    "spinner",
+    "tabs",
+    "tag",
+    "text-view",
+    "tree"
   ],
   "quickgui": []
 }
