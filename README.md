@@ -6,119 +6,67 @@
 
 [![Publish Website Image](https://github.com/MohsenDastaran/uni-kit/actions/workflows/publish-image.yml/badge.svg)](https://github.com/MohsenDastaran/uni-kit/actions/workflows/publish-image.yml) [![Docs](https://docs.rs/gpui-kit/badge.svg)](https://docs.rs/gpui-kit/) [![Crates.io](https://img.shields.io/crates/v/gpui-kit.svg)](https://crates.io/crates/gpui-kit)
 
-Copy-paste native UI for Rust desktop toolkits. The same component catalog is hand-written for each framework and published on <https://gpui-kit.com>. You copy the source into your own app, or install it with [`uni-kit`](registry). The CLI does not generate components. It copies the files listed in [`registry/components.json`](registry/components.json).
+Copy-paste native UI for Rust desktop toolkits. One catalog of components, written
+by hand for each framework, shown as a live WebAssembly example on
+<https://gpui-kit.com>, and copied into your project as source you own — so the
+first thing you change is the thing you wanted to change.
 
-GPUI and Slint are in the catalog now. egui, QuickGUI, and other toolkits join the same pages after their components are written. The work is tracked in the [roadmap](docs/roadmap.md).
+GPUI and Slint are in the catalog. egui, QuickGUI and other toolkits join the same
+pages as their components are written; the [roadmap](docs/roadmap.md) tracks it.
 
 ## Frameworks
 
-| Framework | How an app uses it | Status |
-| --- | --- | --- |
-| [GPUI](https://github.com/zed-industries/zed) | Depend on the `gpui-kit` crate for the controls; `npx uni-kit add gpui <block>` copies a composed screen into `src/components/`. | On the site, three [blocks](crates/blocks) |
-| [Slint](https://slint.dev) | `npx uni-kit add slint <component>` copies the `.slint` files into `ui/components/`. | On the site |
-| egui, QuickGUI, and others | The same pages, once the source exists. | [Roadmap](docs/roadmap.md) |
-
-The site docs stay one site, in English. A framework selector on each component page switches the live example and the copyable source. GPUI samples assume an app that depends on `gpui-kit` (that crate already brings `gpui-component` and `gpui-base`). Slint samples are the files under `crates/slint-component/ui/`.
+| Framework | How an application uses it |
+| --- | --- |
+| [GPUI](https://github.com/zed-industries/zed) | Depend on the `gpui-kit` crate for the controls; `npx uni-kit add gpui <block>` copies a composed screen into `src/components/`. |
+| [Slint](https://slint.dev) | `npx uni-kit add slint <component>` copies the `.slint` files into `ui/components/`. |
+| egui, QuickGUI, others | The same pages, once the source exists. [Roadmap](docs/roadmap.md). |
 
 ```bash
 npx uni-kit add slint alert-dialog
-
-npx uni-kit add gpui sidebar
 npx uni-kit add gpui sidebar dock settings
 ```
 
-The same command takes `egui` or `quickgui` once that toolkit's files are in the manifest. Slint writes `ui/components/`, one file per control. GPUI writes `src/components/`, one file per block, because the controls for that framework ship in the crate rather than as source. Both can add a `pub mod` line, and `--dir` overrides the directory.
+The CLI does not generate components; it copies the files listed in
+[`registry/components.json`](registry/components.json). Slint writes one file per
+control, GPUI one file per block, because GPUI controls ship in the crate rather
+than as source. `--dir` overrides the destination.
 
-Login, Dashboard, and the remaining GPUI blocks are next. See the [roadmap](docs/roadmap.md).
-
-## GPUI
-
-`gpui-kit` is the crate a GPUI application depends on. It pins the matching GPUI release and re-exports GPUI, `gpui-base`, `gpui-component`, and the default assets.
+## What is in this repository
 
 ```text
-gpui-kit             The one crate applications depend on
-├── gpui-base        Unstyled behavior, state, and infrastructure
-└── gpui-component   The styled component library
+crates/kit              gpui-kit — the one crate an application depends on
+crates/base             gpui-base — behavior, state and infrastructure, no styling
+crates/component        gpui-component — the styled component library
+crates/shell            gpui-shell — JavaScript extensions for a Rust host
+crates/component-shell  The styled catalog for that host
+crates/blocks           Composed GPUI screens the CLI installs
+crates/slint-component  The same catalog, written for Slint 1.17
+crates/story            The component gallery, as a native application
+crates/story-web        The same gallery, built for the browser
+registry/               The uni-kit CLI and the manifest it installs from
+website/                The documentation site and its live examples
 ```
 
-```toml
-[dependencies]
-gpui-kit = "0.6"
-```
+`gpui_kit::init` runs before any component is used, and the first view in a window
+is a `Root`. Architecture of the GPUI crates is in
+[docs/ARCHITECTURE.md](docs/ARCHITECTURE.md). Slint components are source you
+copy, not a crate from this repository: take `theme.slint`, the component, the
+files it imports, and the `icons/` folder beside `icon.slint`.
 
-`gpui_kit::init` runs before any component is used, and the first view in a window is a `Root`. The component pages on the site are the samples to copy. Architecture of the GPUI crates is in [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md).
-
-The default `assets` feature bundles the [Lucide](https://lucide.dev) icon set. Pass it in with `gpui_kit::application().with_assets(gpui_kit::assets::Assets)`.
-
-JavaScript extension hosts add `gpui-shell` separately. `gpui-component-shell` supplies the styled catalog for that host.
-
-## Slint
-
-Slint components are source you copy, not a crate from this repository. `crates/slint-component` is the gallery used by the website. An application does not depend on it.
-
-From `crates/slint-component/ui/`, copy `theme.slint`, the component, the files it imports, and the `icons/` folder beside `icon.slint`. These files are written for Slint 1.17.
+## Development
 
 ```bash
-cargo add slint@1.17
-cargo add --build slint-build@1.17
+cargo run              # the GPUI component gallery
+make dev:website       # the site, served from a production build
+make dev               # the site, rebuilding the Slint gallery first
 ```
 
-`build.rs` compiles the app window:
+`make dev` is the one for Slint work: it rebuilds the gallery wasm and then starts
+the site, so a refresh shows the change. With no `SLUGS` it rebuilds only the
+pages whose sources changed.
 
-```rust
-fn main() {
-    slint_build::compile("ui/app.slint").unwrap();
-}
-```
-
-`AlertDialog` fills its parent, so place it on the window. `destructive: true` uses the danger confirm button. The dialog sets `open` to false when either button is pressed.
-
-```slint
-import { Theme } from "theme.slint";
-import { Button } from "button.slint";
-import { AlertDialog } from "alert-dialog.slint";
-
-export component App inherits Window {
-    in-out property <bool> ask-delete;
-
-    background: Theme.background;
-
-    VerticalLayout {
-        width: 100%;
-        height: 100%;
-        alignment: center;
-        Button {
-            text: "Delete project";
-            clicked => { root.ask-delete = true; }
-        }
-    }
-
-    AlertDialog {
-        open <=> root.ask-delete;
-        title: "Delete project?";
-        description: "This cannot be undone.";
-        confirm-text: "Delete";
-        destructive: true;
-    }
-}
-```
-
-## Roadmap
-
-The [roadmap](docs/roadmap.md) is the plan for this catalog. Current progress:
-
-1. Folder layout
-2. GPUI catalog you can copy from the site
-3. Design tokens
-4. Framework selector
-5. Slint components, one per GPUI component
-6. Blocks — Login, Dashboard, Settings
-7. Starter templates
-8. Deploy and launch
-
-egui, QuickGUI, and other toolkits are added after that, one at a time, once the API is stable: the full catalog and the three blocks, hand-written, then a value in the same selector.
-
-## Skills for AI coding agents
+Two skills ship with the repository for AI coding agents:
 
 ```bash
 npx skills add longbridge/gpui-kit
@@ -129,76 +77,28 @@ npx skills add longbridge/gpui-kit
 | `gpui-kit` | Setup, the component catalog, usage patterns, GPUI mechanics, and the Coding Guides. |
 | `gpui-kit-design-guides` | Layout, spacing, hierarchy, interaction states, overlays, and interface copy. |
 
-## Development
+## Credits
 
-```bash
-# GPUI component gallery
-cargo run
+This project stands on other people's work, and most of what is good here is
+theirs.
 
-# Website
-make dev:website
-
-# Website, rebuilding the Slint gallery first
-make dev:website-slint
-```
-
-`make dev` is the recommended one for Slint work: it rebuilds the gallery wasm
-and then starts the site, so a refresh shows the change. It is the same as
-`make dev:website-slint`.
-
-```bash
-make dev
-```
-
-With no `SLUGS`, `make dev` rebuilds only the pages whose sources changed since
-they were last built, and skips the wasm build entirely when nothing did. Name
-pages to force a rebuild:
-
-```bash
-make dev SLUGS=dock
-make dev SLUGS=dock,dropdown_button
-```
-
-Each page is a separate component type, so the whole catalog is one generated
-Rust file that holds every example. A single `rustc` compiling all of it needs
-more than 9 GiB and does not fit on a 14 GiB laptop alongside a desktop session.
-The build is therefore split per page: each page is its own wasm in
-`crates/slint-component/www/dist/pages/<slug>/`, and the site loads the folder
-for the page it is showing. One page is a few MB and finishes in seconds.
-
-Build every page this way — bounded, one at a time — with:
-
-```bash
-make build:wasm-slint-pages
-```
-
-The first `make dev` on a fresh clone has no stamps yet, so it builds every page
-once; that takes a few minutes and is the price of never needing the single
-oversized compile. After that only the pages you touch are rebuilt.
-
-`make build:wasm-slint` still produces the combined module. It needs more memory
-than a laptop can spare, so it expects a bigger machine.
-
-Every build runs in a memory cgroup sized from the machine: total RAM minus a
-5 GiB reserve for the desktop. The build is the first thing to die rather than
-the session. Override the cap with `GUARD_MEMORY_MAX` (a systemd size):
-
-```bash
-GUARD_MEMORY_MAX=6G make dev SLUGS=dock
-```
-
-When the cap fires, the build stops with a message naming the limit and the
-machine's memory, instead of the bare exit code it used to leave behind.
-
-A soft `GUARD_MEMORY_HIGH` ceiling defaults to that same value on purpose. Set
-below it, the kernel reclaims continuously and the build stalls at a fraction of
-one CPU: a 6G high / 9G max pair made one wasm build take 36 minutes at 37% CPU,
-without ever reaching the hard cap.
-
-`crates/slint-component/scripts/guard.sh` is that wrapper; run any heavy command
-through it. It falls back to `ulimit -v` where `systemd-run` is unavailable.
-
-Larger GPUI examples run as their own packages: `cargo run -p example-dock`, `example-editor`, `example-markdown`, `system_monitor`. See [CONTRIBUTING.md](CONTRIBUTING.md).
+- **[GPUI](https://github.com/zed-industries/zed)** — the framework from
+  [Zed Industries](https://zed.dev) that everything on the GPUI side renders
+  with. Fast, native, and a pleasure to build on. The `gpui-pre-*` crates are
+  snapshots of it, published with Zed's license and notices intact.
+- **[GPUI Kit](https://github.com/longbridge/gpui-kit)** and
+  **[gpui-component](https://longbridge.com/desktop)** — from
+  [Longbridge](https://longbridge.com). This repository is a fork of GPUI Kit: the
+  component library, the three blocks and the catalog all start there, and the
+  copyright notice in [NOTICE](./NOTICE) is theirs.
+- **[Slint](https://slint.dev)** and its community — the language, the runtime and
+  the tooling behind the second target. A Rust UI toolkit that compiles to native
+  and to the browser is a rare thing, and the catalog here is written in their
+  language.
+- **[shadcn/ui](https://ui.shadcn.com)** and **[Reui](https://reui.io)** — the
+  design language the components follow, including the idea that the source is
+  yours once it is copied.
+- **[Lucide](https://lucide.dev)** — the icons.
 
 ## License
 
