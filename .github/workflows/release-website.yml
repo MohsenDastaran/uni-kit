@@ -73,6 +73,22 @@ jobs:
         run: |
           make build
 
+      # The iced crate keeps its own lockfile, and its `wasm-bindgen` is a
+      # different version from the workspace's, so it gets its own CLI rather
+      # than replacing the one the GPUI gallery needs. Two versions cannot share
+      # one binary, and a mismatch is refused at the bindings step.
+      - name: Install wasm-bindgen-cli for the iced gallery
+        run: |
+          version=$(grep -A 1 '^name = "wasm-bindgen"$' crates/iced-component/Cargo.lock | grep '^version' | cut -d '"' -f 2)
+          cargo install -f wasm-bindgen-cli --version "$version" --root "$HOME/.wasm-bindgen-iced"
+
+      - name: Build iced gallery (WASM)
+        working-directory: crates/iced-component
+        env:
+          PATH: ${{ env.HOME }}/.wasm-bindgen-iced/bin:${{ env.PATH }}
+        run: |
+          PATH="$HOME/.wasm-bindgen-iced/bin:$PATH" make build-wasm
+
       - name: Build Website
         working-directory: website
         env:
@@ -89,6 +105,8 @@ jobs:
           cp -r crates/base/examples/wasm/www/dist/* website/dist/examples/base/
           mkdir -p website/dist/slint-gallery
           cp -r crates/slint-component/www/dist/* website/dist/slint-gallery/
+          mkdir -p website/dist/iced-gallery
+          cp -r crates/iced-component/www/dist/* website/dist/iced-gallery/
 
       - name: Setup Pages
         uses: actions/configure-pages@v5

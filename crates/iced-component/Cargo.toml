@@ -13,6 +13,9 @@ edition = "2024"
 [lib]
 name = "iced_component"
 path = "src/lib.rs"
+# `rlib` is what the examples and the native gallery link against; `cdylib` is what
+# the browser gallery is: the same dispatcher, compiled to a wasm module.
+crate-type = ["cdylib", "rlib"]
 
 [[bin]]
 name = "iced-gallery"
@@ -26,12 +29,17 @@ path = "src/main.rs"
 # plain `cargo add iced` installs a component that does not compile, so the CLI
 # prints this exact line — `registry/index.js` and this file are kept in step by
 # `crates/iced-component/scripts/check.sh`.
-iced = { version = "0.14", features = ["svg", "canvas", "image", "qr_code", "markdown", "advanced"] }
+iced = { version = "0.14", features = ["svg", "canvas", "image-without-codecs", "qr_code", "markdown", "advanced", "webgl"] }
 # `text_view` is the one component that needs a second crate: it implements
 # `Widget` itself, and iced exposes that trait only through `iced_core`. The CLI
 # learns which components these are from `registry/build-manifest.mjs`, which
 # reads the sources rather than trusting a list kept by hand.
 iced_core = "0.14"
+
+[target.'cfg(target_arch = "wasm32")'.dependencies]
+# The browser entry point in `src/wasm.rs`. iced brings its own web backend, but
+# the page has to be able to call into the module, and that is wasm-bindgen's job.
+wasm-bindgen = "0.2"
 
 [profile.release]
 # The browser has to compile this module before it shows anything, so the profile

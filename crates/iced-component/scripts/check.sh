@@ -39,8 +39,11 @@ else
 fi
 
 step "features agree between the crate and the install hint"
-crate_features="$(grep -oE '^iced = \{[^}]*\}' "$crate_dir/Cargo.toml" | grep -oE '"[a-z_]+"' | tr -d '"' | sort | tr '\n' ' ')"
-hint_features="$(grep -oE 'const ICED_FEATURES = \[[^]]*\]' "$root/registry/index.js" | grep -oE "'[a-z_]+'" | tr -d "'" | sort | tr '\n' ' ')"
+# Hyphens are part of a feature name — `image-without-codecs` — and a pattern
+# without them drops it from both sides, which would hide the very drift this
+# step exists to catch.
+crate_features="$(grep -oE '^iced = \{[^}]*\}' "$crate_dir/Cargo.toml" | grep -oE '"[a-z_-]+"' | tr -d '"' | sort | tr '\n' ' ')"
+hint_features="$(grep -oE 'const ICED_FEATURES = \[[^]]*\]' "$root/registry/index.js" | grep -oE "'[a-z_-]+'" | tr -d "'" | sort | tr '\n' ' ')"
 if [[ -n "$crate_features" && "$crate_features" == "$hint_features" ]]; then
   ok "both name: $crate_features"
 else

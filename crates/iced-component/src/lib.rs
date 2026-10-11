@@ -12,3 +12,8 @@
 
 pub mod components;
 pub mod demos;
+
+// The browser entry point. Native builds use the binary instead, so this is only
+// compiled when the module is meant for a page.
+#[cfg(target_arch = "wasm32")]
+pub mod wasm;

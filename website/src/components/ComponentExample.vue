@@ -124,17 +124,17 @@ const frameworkList: Record<string, Framework> = {
     },
   },
   iced: {
-    // There is no iced gallery yet: the crate has no components to put in one.
-    // The route is the shape a gallery will be served at, and `available` keeps
-    // the frame from ever being mounted until a page declares an iced example,
-    // so nothing here is shown as a live preview in the meantime.
     name: "Iced",
     live: "Rust & iced",
     library: "iced-component",
     src: () => {
       if (!component.value) return undefined;
       const base = props.baseUrl.replace(/\/$/, "");
-      return `${base}/iced-gallery?story=${encodeURIComponent(storyName.value ?? "")}`;
+      // One module answers for every component, like the GPUI gallery, and it
+      // dispatches on the registry key — the same name the manifest lists and
+      // the CLI installs under. So `message-role` is asked for as
+      // `message-role`, where GPUI has a gallery story name of its own.
+      return `${base}/iced-gallery?story=${encodeURIComponent(component.value)}`;
     },
   },
 };

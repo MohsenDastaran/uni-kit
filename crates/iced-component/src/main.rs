@@ -1,23 +1,29 @@
-//! The gallery the website embeds, and the fastest way to look at a component
-//! while working on it. It is one iced application that shows the component
-//! named on the command line — the same shape as the GPUI gallery, which serves
-//! every component from one wasm module rather than one build per page.
+//! The gallery, natively.
+//!
+//! One iced application that shows the component named on the command line, the
+//! same shape as the GPUI gallery: one module answering for every component
+//! rather than a build per page. The browser build in `src/wasm.rs` calls the
+//! same dispatcher, so what is on screen here is what a component page shows.
+//!
+//!   cargo run --bin iced-gallery -- message-role
+//!   cargo run --bin iced-gallery -- button --dark
+//!
+//! With no name, or a name that matches nothing, it lists the components that
+//! have a demo.
 
-use iced::widget::text;
-use iced::{Element, Task};
+use iced_component::demos;
 
 fn main() -> iced::Result {
-    iced::application(boot, update, view)
-        .title("uni-kit — iced")
-        .run()
-}
+    let arguments: Vec<String> = std::env::args().skip(1).collect();
+    // The name is the first thing that is not a flag, so the flags can go
+    // wherever they read best.
+    let story = arguments
+        .iter()
+        .find(|argument| !argument.starts_with("--"))
+        .cloned()
+        .unwrap_or_default();
+    let dark = arguments.iter().any(|argument| argument == "--dark");
 
-fn boot() -> () {}
-
-fn update(_: &mut (), _: ()) -> Task<()> {
-    Task::none()
-}
-
-fn view(_: &()) -> Element<'_, ()> {
-    text("uni-kit iced gallery").into()
+    let theme = if dark { iced::Theme::Dark } else { iced::Theme::Light };
+    demos::run(&story, theme)
 }
