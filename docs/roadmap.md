@@ -282,6 +282,18 @@ The repository is already public and Apache-2.0. The site is already at [https:/
 
 ---
 
+## iced
+
+The first toolkit after Slint, in progress. The plan, the conventions and the
+checklist are in [iced-integration.md](iced-integration.md), and the components
+are written against **iced 0.14** in `crates/iced-component`.
+
+An iced component is Rust source: it arrives in `src/components/` with the theme
+it reads, and the install says `cargo add iced` instead of touching a build
+script.
+
 ## Later
 
-egui, Iced, or another toolkit can join after phase 9, one at a time, once its API is stable: hand-write the full catalog and the 3 blocks, add a value to the selector, and add the snippets on the English pages.
+egui, QuickGUI, or another toolkit can join after iced, one at a time, once its
+API is stable: hand-write the full catalog and the 3 blocks, add a value to the
+selector, and add the snippets on the English pages.

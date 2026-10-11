@@ -23,6 +23,7 @@ are written. The [roadmap](docs/roadmap.md) tracks it.
 | --------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------- |
 | [GPUI](https://github.com/zed-industries/zed) | Depend on the `gpui-kit` crate for the controls; `npx uni-kit add gpui <block>` copies a composed screen into `src/components/`. |
 | [Slint](https://slint.dev)                    | `npx uni-kit add slint <component>` copies the `.slint` files into `ui/components/`.                                             |
+| [iced](https://iced.rs)                      | `npx uni-kit add iced <component>` copies the `.rs` files into `src/components/`.                     |
 | egui, QuickGUI, others                        | The same pages, once the source exists. [Roadmap](docs/roadmap.md).                                                              |
 
 ## What is in this repository
@@ -81,6 +82,8 @@ theirs.
   design language the components follow, including the idea that the source is
   yours once it is copied.
 - **[Lucide](https://lucide.dev)** — the icons.
+- **[iced](https://iced.rs)** — the framework the iced components are written
+  against, and the widgets and styling model they are built from.
 
 ## License
 
