@@ -22,7 +22,7 @@ path = "src/main.rs"
 # The version the components are written against, pinned to the minor release.
 # Every component compiles against this and nothing else, so an application that
 # installs one has exactly one dependency to add.
-iced = { version = "0.14", features = ["svg"] }
+iced = { version = "0.14", features = ["svg", "canvas", "image", "qr_code", "markdown"] }
 
 [profile.release]
 # The browser has to compile this module before it shows anything, so the profile
