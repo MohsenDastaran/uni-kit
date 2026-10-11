@@ -23,6 +23,14 @@ if cargo build --quiet --manifest-path "$crate_dir/Cargo.toml"; then ok "compone
 step "cargo build --examples"
 if cargo build --quiet --examples --manifest-path "$crate_dir/Cargo.toml"; then ok "usage examples"; else bad "cargo build --examples"; fi
 
+step "theme parity with the Slint tokens"
+if node "$crate_dir/scripts/theme-parity.mjs" | tail -1 | grep -q "agree, colour for colour"; then
+  ok "every token matches crates/slint-component/ui/theme.slint"
+else
+  bad "theme.rs and theme.slint disagree"
+  node "$crate_dir/scripts/theme-parity.mjs" | grep -A 40 "MISMATCHED" | head -20
+fi
+
 step "features agree between the crate and the install hint"
 crate_features="$(grep -oE '^iced = \{[^}]*\}' "$crate_dir/Cargo.toml" | grep -oE '"[a-z_]+"' | tr -d '"' | sort | tr '\n' ' ')"
 hint_features="$(grep -oE 'const ICED_FEATURES = \[[^]]*\]' "$root/registry/index.js" | grep -oE "'[a-z_]+'" | tr -d "'" | sort | tr '\n' ' ')"
