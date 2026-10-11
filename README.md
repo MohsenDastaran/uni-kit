@@ -3,7 +3,6 @@
   <br>
   <strong>uni-kit</strong>
 </p>
-**uni-kit**
 
 ![Publish Website Image](https://github.com/MohsenDastaran/uni-kit/actions/workflows/publish-image.yml/badge.svg)
 
