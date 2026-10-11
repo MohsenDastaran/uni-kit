@@ -52,7 +52,7 @@ function renderItems(items: SidebarItem[], depth = 0): any[] {
                   <div class="sidebar-subgroup-title">{item.text}</div>
                   <ul class="sidebar-subgroup__items">
                     {item.items.map(sub => (
-                      <li>
+                      <li data-framework-only={sub.slintGap ? 'gpui' : undefined}>
                         <a
                           href={sub.link}
                           class={`sidebar-item${sub.link && isActive(sub.link) ? ' active' : ''}`}
@@ -104,7 +104,7 @@ function renderItems(items: SidebarItem[], depth = 0): any[] {
                   </button>
                 </li>
               ) : (
-                <li>
+                <li data-framework-only={item.slintGap ? 'gpui' : undefined}>
                   <a
                     href={item.link}
                     class={`sidebar-item${item.link && isActive(item.link) ? ' active' : ''}`}

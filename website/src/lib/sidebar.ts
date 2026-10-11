@@ -1,6 +1,7 @@
 import { readdirSync, readFileSync, statSync } from 'node:fs';
 import { extname, join, relative } from 'node:path';
 import { exampleSourcesAvailable, galleryCounts, type GalleryCounts } from './example-counts';
+import { hasSlintExample } from './remark-slint-source.js';
 
 export type FrameworkText = Partial<Record<'gpui' | 'slint', string>>;
 
@@ -18,6 +19,12 @@ export interface SidebarItem {
   collapsed?: boolean;
   /** Examples in the gallery window, per framework. Omitted when that window has none. */
   examples?: GalleryCounts;
+  /**
+   * The page has no Slint example window, so the Slint sidebar has nothing to
+   * show beside its neighbours and hides it. It is a GPUI page, and the GPUI
+   * sidebar keeps it.
+   */
+  slintGap?: boolean;
 }
 
 export interface SidebarGeneratorConfig {
@@ -107,6 +114,8 @@ interface FileEntry {
   examples?: GalleryCounts;
   /** The page has an example window and it paints nothing. */
   empty?: boolean;
+  /** The page has no Slint example window. */
+  slintGap?: boolean;
   items?: FileEntry[];
 }
 
@@ -138,6 +147,13 @@ function scanDir(dir: string, baseDir: string, countExamples: boolean): FileEntr
         examples,
         // An opted-out page has no window to be empty.
         empty: countExamples && frontmatter.example !== false && !examples,
+        // Asked of the sources rather than of the counts, so the answer is the
+        // same in a dev server, where nothing is counted. A build without the
+        // source tree cannot answer it at all and hides nothing, or a trimmed
+        // context would drop the whole Slint navigation.
+        slintGap: exampleSourcesAvailable
+          ? frontmatter.example === false || !hasSlintExample(name.replace(/\.md$/, ''))
+          : false,
       };
     }).filter(Boolean) as FileEntry[];
   } catch {
@@ -152,6 +168,7 @@ function itemFromFile(entry: FileEntry, baseUrl: string): SidebarItem {
     link: `${baseUrl}/${entry.path.replace(/\.md$/, '')}`,
     collapsed: false,
     examples: entry.examples,
+    slintGap: entry.slintGap,
   };
 }
 
