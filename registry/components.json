@@ -22294,18 +22294,6 @@
           "module": "theme"
         }
       ],
-      "attachment": [
-        {
-          "src": "crates/iced-component/src/components/attachment.rs",
-          "target": "attachment.rs",
-          "module": "attachment"
-        },
-        {
-          "src": "crates/iced-component/src/components/theme.rs",
-          "target": "theme.rs",
-          "module": "theme"
-        }
-      ],
       "avatar": [
         {
           "src": "crates/iced-component/src/components/avatar.rs",
@@ -22402,18 +22390,6 @@
           "module": "theme"
         }
       ],
-      "editor": [
-        {
-          "src": "crates/iced-component/src/components/editor.rs",
-          "target": "editor.rs",
-          "module": "editor"
-        },
-        {
-          "src": "crates/iced-component/src/components/theme.rs",
-          "target": "theme.rs",
-          "module": "theme"
-        }
-      ],
       "empty": [
         {
           "src": "crates/iced-component/src/components/empty.rs",
@@ -22450,18 +22426,6 @@
           "module": "theme"
         }
       ],
-      "image": [
-        {
-          "src": "crates/iced-component/src/components/image.rs",
-          "target": "image.rs",
-          "module": "image"
-        },
-        {
-          "src": "crates/iced-component/src/components/theme.rs",
-          "target": "theme.rs",
-          "module": "theme"
-        }
-      ],
       "kbd": [
         {
           "src": "crates/iced-component/src/components/kbd.rs",
@@ -22491,30 +22455,6 @@
           "src": "crates/iced-component/src/components/marker.rs",
           "target": "marker.rs",
           "module": "marker"
-        },
-        {
-          "src": "crates/iced-component/src/components/theme.rs",
-          "target": "theme.rs",
-          "module": "theme"
-        }
-      ],
-      "message-role": [
-        {
-          "src": "crates/iced-component/src/components/message_role.rs",
-          "target": "message_role.rs",
-          "module": "message_role"
-        },
-        {
-          "src": "crates/iced-component/src/components/theme.rs",
-          "target": "theme.rs",
-          "module": "theme"
-        }
-      ],
-      "message-scroller": [
-        {
-          "src": "crates/iced-component/src/components/message_scroller.rs",
-          "target": "message_scroller.rs",
-          "module": "message_scroller"
         },
         {
           "src": "crates/iced-component/src/components/theme.rs",
@@ -22587,18 +22527,6 @@
           "src": "crates/iced-component/src/components/tag.rs",
           "target": "tag.rs",
           "module": "tag"
-        },
-        {
-          "src": "crates/iced-component/src/components/theme.rs",
-          "target": "theme.rs",
-          "module": "theme"
-        }
-      ],
-      "text-view": [
-        {
-          "src": "crates/iced-component/src/components/text_view.rs",
-          "target": "text_view.rs",
-          "module": "text_view"
         },
         {
           "src": "crates/iced-component/src/components/theme.rs",
