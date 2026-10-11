@@ -22294,6 +22294,18 @@
           "module": "theme"
         }
       ],
+      "attachment": [
+        {
+          "src": "crates/iced-component/src/components/attachment.rs",
+          "target": "attachment.rs",
+          "module": "attachment"
+        },
+        {
+          "src": "crates/iced-component/src/components/theme.rs",
+          "target": "theme.rs",
+          "module": "theme"
+        }
+      ],
       "avatar": [
         {
           "src": "crates/iced-component/src/components/avatar.rs",
@@ -22455,6 +22467,18 @@
           "src": "crates/iced-component/src/components/marker.rs",
           "target": "marker.rs",
           "module": "marker"
+        },
+        {
+          "src": "crates/iced-component/src/components/theme.rs",
+          "target": "theme.rs",
+          "module": "theme"
+        }
+      ],
+      "message-role": [
+        {
+          "src": "crates/iced-component/src/components/message_role.rs",
+          "target": "message_role.rs",
+          "module": "message_role"
         },
         {
           "src": "crates/iced-component/src/components/theme.rs",

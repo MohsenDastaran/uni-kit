@@ -11,6 +11,7 @@ pub mod theme;
 
 pub mod accordion;
 pub mod alert;
+pub mod attachment;
 pub mod avatar;
 pub mod badge;
 pub mod button;
@@ -25,6 +26,7 @@ pub mod icon;
 pub mod kbd;
 pub mod label;
 pub mod marker;
+pub mod message_role;
 pub mod progress;
 pub mod shimmer;
 pub mod skeleton;
