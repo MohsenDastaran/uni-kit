@@ -123,6 +123,20 @@ const frameworkList: Record<string, Framework> = {
       return `${base}/slint-gallery/pages/${slug}?component=${slug}`;
     },
   },
+  iced: {
+    // There is no iced gallery yet: the crate has no components to put in one.
+    // The route is the shape a gallery will be served at, and `available` keeps
+    // the frame from ever being mounted until a page declares an iced example,
+    // so nothing here is shown as a live preview in the meantime.
+    name: "Iced",
+    live: "Rust & iced",
+    library: "iced-component",
+    src: () => {
+      if (!component.value) return undefined;
+      const base = props.baseUrl.replace(/\/$/, "");
+      return `${base}/iced-gallery?story=${encodeURIComponent(storyName.value ?? "")}`;
+    },
+  },
 };
 
 const readFramework = () => {

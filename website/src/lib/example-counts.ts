@@ -1,13 +1,16 @@
 import { existsSync, readFileSync, readdirSync, statSync } from 'node:fs';
 import { join } from 'node:path';
+import { hasIcedExample } from './remark-iced-source.js';
 
 // Counts the examples the gallery window actually paints, one per framework.
 // GPUI stories mark each example with `section(...)`. Slint examples mark each
-// one with a GroupBox. A window that is a single example has neither.
+// one with a GroupBox. A window that is a single example has neither. Iced
+// examples are one file per component, so the file itself is the example.
 
 const ROOT = process.cwd();
 const STORIES = join(ROOT, '../crates/story/src/stories');
 const SLINT_EXAMPLES = join(ROOT, '../crates/slint-component/ui/examples');
+const ICED_EXAMPLES = join(ROOT, '../crates/iced-component/examples');
 const GALLERY = join(ROOT, '../crates/story/src/gallery.rs');
 const SANKEY = join(ROOT, '../crates/story/src/fixtures/tsla-income-statement.json');
 
@@ -54,9 +57,22 @@ if (!exampleSourcesAvailable) {
   );
 }
 
+/**
+ * Whether the iced example sources are on disk.
+ *
+ * The iced crate is being built beside GPUI and Slint, and its `ui/examples/`
+ * directory arrives with its first components. Until it does, no iced count can
+ * be measured, and every count reading as zero would be indistinguishable from
+ * "this component has no iced example" — which a production build hides. A
+ * checkout without the directory is "unknown", never "empty"; the same reading
+ * guards the Slint tree above.
+ */
+export const icedExampleSourcesAvailable = existsSync(ICED_EXAMPLES);
+
 export interface GalleryCounts {
   gpui?: number;
   slint?: number;
+  iced?: number;
 }
 
 function titleCase(value: string): string {
@@ -150,6 +166,12 @@ function countSlint(slug: string): number {
   return /\bexport\s+component\b/.test(source) ? 1 : 0;
 }
 
+function countIced(slug: string): number {
+  if (!icedExampleSourcesAvailable) return 0;
+  // One example per component, and the file either holds one or does not.
+  return hasIcedExample(slug) ? 1 : 0;
+}
+
 function countGpui(component: string): number {
   const title = STORY_TITLES[component] ?? titleCase(component);
   const stem = title === 'Introduction' ? 'welcome' : stemFromTitle(title);
@@ -171,9 +193,11 @@ export function galleryCounts(
   if (example === false) return undefined;
   const gpui = countGpui(example ?? slug);
   const slint = countSlint(slug);
-  if (!gpui && !slint) return undefined;
+  const iced = countIced(slug);
+  if (!gpui && !slint && !iced) return undefined;
   return {
     ...(gpui > 0 ? { gpui } : {}),
     ...(slint > 0 ? { slint } : {}),
+    ...(iced > 0 ? { iced } : {}),
   };
 }

@@ -134,6 +134,7 @@ const jsonLd = JSON.stringify(structuredData ?? defaultStructuredData).replace(
          reader last asked for; Slint is what a first visit gets. -->
         <script is:inline>
             (function () {
+                const FRAMEWORKS = ["gpui", "slint", "iced"];
                 const asked = new URLSearchParams(location.search).get(
                     "framework",
                 );
@@ -141,13 +142,14 @@ const jsonLd = JSON.stringify(structuredData ?? defaultStructuredData).replace(
                 try {
                     stored = localStorage.getItem("selected-framework");
                 } catch {}
-                const chosen =
-                    asked === "gpui" || asked === "slint" ? asked : stored;
-                const framework = chosen === "gpui" ? "gpui" : "slint";
+                const chosen = FRAMEWORKS.includes(asked) ? asked : stored;
+                const framework = FRAMEWORKS.includes(chosen)
+                    ? chosen
+                    : "slint";
                 document.documentElement.dataset.framework = framework;
                 // A pinned view becomes the choice for the pages that follow it, so a
                 // link shared with the parameter keeps its meaning after a click.
-                if (asked === "gpui" || asked === "slint") {
+                if (FRAMEWORKS.includes(asked)) {
                     try {
                         localStorage.setItem("selected-framework", framework);
                     } catch {}

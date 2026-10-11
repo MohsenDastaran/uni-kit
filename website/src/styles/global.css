@@ -1599,14 +1599,34 @@ html.dark .site-nav__logo--dark {
 }
 
 html:not([data-framework="gpui"]) .sidebar-item__count[data-framework-count='gpui'],
-html[data-framework="gpui"] .sidebar-item__count[data-framework-count='slint'] {
+html:not([data-framework="slint"]) .sidebar-item__count[data-framework-count='slint'],
+html:not([data-framework="iced"]) .sidebar-item__count[data-framework-count='iced'] {
+  display: none;
+}
+
+/* A sidebar row names the frameworks its page has a view in, space separated.
+   A page with no iced view is not in the iced sidebar, the way a page with no
+   Slint view was not in the Slint one — and the framework switch sends the
+   reader to the catalog instead of a page with nothing to show. The row goes
+   only when the framework in force is the one missing from its list, so the
+   test is on the active framework and `~=` matches one name in the list. */
+html[data-framework="gpui"]
+  .docs-sidebar
+  [data-framework-available]:not([data-framework-available~="gpui"]),
+html[data-framework="slint"]
+  .docs-sidebar
+  [data-framework-available]:not([data-framework-available~="slint"]),
+html[data-framework="iced"]
+  .docs-sidebar
+  [data-framework-available]:not([data-framework-available~="iced"]) {
   display: none;
 }
 
 /* The navbar hides a framework-scoped link the same way the sidebar hides a
    framework-scoped count. */
 html:not([data-framework="gpui"]) .site-nav__link[data-framework-link='gpui'],
-html[data-framework="gpui"] .site-nav__link[data-framework-link='slint'] {
+html:not([data-framework="slint"]) .site-nav__link[data-framework-link='slint'],
+html:not([data-framework="iced"]) .site-nav__link[data-framework-link='iced'] {
   display: none;
 }
 
@@ -2299,30 +2319,40 @@ html:not([data-framework="gpui"])
   position: relative;
 }
 
-.framework-code__panel[data-framework-panel="slint"],
-html:not([data-framework="gpui"])
-  .framework-code__panel[data-framework-panel="gpui"] {
+/* A code block shows the panel of the framework in force, and only that one.
+   Everything is hidden first and the active panel is shown, so a third
+   framework is one line per block rather than a pair with each of the others. */
+.framework-code__panel[data-framework-panel] {
   display: none;
 }
 
-html:not([data-framework="gpui"])
-  .framework-code__panel[data-framework-panel="slint"] {
+html[data-framework="gpui"]
+  .framework-code__panel[data-framework-panel="gpui"],
+html[data-framework="slint"]
+  .framework-code__panel[data-framework-panel="slint"],
+html[data-framework="iced"]
+  .framework-code__panel[data-framework-panel="iced"] {
   display: block;
 }
 
+/* A section, or a block, that only one framework has is hidden from the
+   others. Keyed on the framework that owns it, so it stays a single value. */
 html:not([data-framework="gpui"]) [data-framework-only="gpui"],
-html[data-framework="gpui"] [data-framework-only="slint"] {
+html:not([data-framework="slint"]) [data-framework-only="slint"],
+html:not([data-framework="iced"]) [data-framework-only="iced"] {
   display: none;
 }
 
-.framework-api__panel[data-framework-panel="slint"],
-html:not([data-framework="gpui"])
-  .framework-api__panel[data-framework-panel="gpui"] {
+.framework-api__panel[data-framework-panel] {
   display: none;
 }
 
-html:not([data-framework="gpui"])
-  .framework-api__panel[data-framework-panel="slint"] {
+html[data-framework="gpui"]
+  .framework-api__panel[data-framework-panel="gpui"],
+html[data-framework="slint"]
+  .framework-api__panel[data-framework-panel="slint"],
+html[data-framework="iced"]
+  .framework-api__panel[data-framework-panel="iced"] {
   display: block;
 }
 

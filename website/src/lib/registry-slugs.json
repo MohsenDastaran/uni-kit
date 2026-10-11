@@ -91,7 +91,10 @@
     "badge",
     "button",
     "card",
-    "description-list"
+    "description-list",
+    "empty",
+    "group-box",
+    "kbd"
   ],
   "quickgui": []
 }

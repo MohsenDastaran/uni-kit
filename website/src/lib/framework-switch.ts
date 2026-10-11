@@ -1,5 +1,5 @@
 const STORAGE_KEY = 'selected-framework';
-const FRAMEWORKS = ['gpui', 'slint'] as const;
+const FRAMEWORKS = ['gpui', 'slint', 'iced'] as const;
 type Framework = (typeof FRAMEWORKS)[number];
 
 // The framework a first visit gets, and the one the address bar does not need
@@ -128,7 +128,9 @@ function syncUrl(framework: Framework) {
  * The choice is kept: they asked for Slint, and the list will be in Slint.
  */
 function redirectToAvailable(framework: Framework, persist: boolean): boolean {
-  const holder = document.querySelector<HTMLElement>('[data-framework-available]');
+  // The page's own declaration, not the sidebar's: every row there names the
+  // frameworks its page has, so the first match in the document would be a row.
+  const holder = document.querySelector<HTMLElement>('.doc-content[data-framework-available]');
   const available = holder?.dataset.frameworkAvailable?.split(/\s+/) ?? null;
   const fallback = holder?.dataset.frameworkFallback;
   if (!available || !fallback || available.includes(framework)) return false;
