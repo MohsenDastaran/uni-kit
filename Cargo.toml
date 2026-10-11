@@ -186,18 +186,16 @@ consts = "consts"
 [workspace.metadata.cargo-machete]
 ignored = ["log", "anyhow", "serde"]
 
-# The two WebAssembly galleries build in release for the site; the browser
-# compiles them before showing anything, so their profile prefers small,
-# single-unit code. Scoped to these packages so the desktop crates' release
-# profile is untouched.
-[profile.release.package.gpui-component-story-web]
-opt-level = "s"
-lto = "thin"
-codegen-units = 1
-panic = "abort"
-strip = "symbols"
-
-[profile.release.package.gpui-base-examples-wasm]
+# The two WebAssembly galleries build for the site with a profile of their own:
+# the browser compiles a module before showing anything, so it prefers small,
+# single-unit code. A profile rather than `[profile.release.package.*]` because
+# package overrides may not set `lto` or `panic` — Cargo rejects the manifest —
+# and the desktop crates keep the standard release profile either way.
+#
+# `lto = "thin"` rather than fat keeps peak memory down for these crates' large
+# generated catalogs.
+[profile.wasm-release]
+inherits = "release"
 opt-level = "s"
 lto = "thin"
 codegen-units = 1

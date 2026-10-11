@@ -15,8 +15,10 @@ PROJECT_ROOT="$SCRIPT_DIR/.."
 
 # Parse arguments
 RELEASE_FLAG=""
+# The workspace's `wasm-release` profile: release, tuned for a module the browser
+# has to compile. Its artifacts land under `target/.../wasm-release`.
 if [[ "$1" == "--release" ]]; then
-    RELEASE_FLAG="--release"
+    RELEASE_FLAG="--profile wasm-release"
     echo -e "${YELLOW}Building in release mode${NC}"
 fi
 
@@ -29,8 +31,8 @@ cargo rustc -p gpui-component-story-web --target wasm32-unknown-unknown $RELEASE
     -C link-arg=-zstack-size=8388608
 
 # Determine the build directory
-if [[ "$RELEASE_FLAG" == "--release" ]]; then
-    BUILD_MODE="release"
+if [[ "$RELEASE_FLAG" == "--profile wasm-release" ]]; then
+    BUILD_MODE="wasm-release"
 else
     BUILD_MODE="debug"
 fi
