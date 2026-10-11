@@ -1,15 +1,21 @@
-![uni-kit logo](https://raw.githubusercontent.com/MohsenDastaran/uni-kit/main/website/public/uni-kit.svg)  
-**GPUI Kit**
+<p align="center">
+  <img src="https://raw.githubusercontent.com/MohsenDastaran/uni-kit/main/website/public/uni-kit.svg" width="64" alt="uni-kit logo" />
+  <br>
+  <strong>uni-kit</strong>
+</p>
 
-![Publish Website Image](https://github.com/MohsenDastaran/uni-kit/actions/workflows/publish-image.yml/badge.svg) ![Docs](https://docs.rs/gpui-kit/badge.svg) ![Crates.io](https://img.shields.io/crates/v/gpui-kit.svg)
+![Publish Website Image](https://github.com/MohsenDastaran/uni-kit/actions/workflows/publish-image.yml/badge.svg)
 
 Copy-paste native UI for Rust desktop toolkits. One catalog of components, written
 by hand for each framework, shown as a live WebAssembly example on
-[https://gpui-kit.com](https://gpui-kit.com), and copied into your project as source you own — so the
-first thing you change is the thing you wanted to change.
+[https://uni-kit.dastaran.com](https://uni-kit.dastaran.com), and copied into your
+project as source you own — so the first thing you change is the thing you wanted
+to change.
 
-GPUI and Slint are in the catalog. egui, QuickGUI and other toolkits join the same
-pages as their components are written; the [roadmap](docs/roadmap.md) tracks it.
+uni-kit carries the [GPUI Kit](https://github.com/longbridge/gpui-kit) catalog
+past a single framework. GPUI and Slint are both in it today, with the same pages
+and the same components; egui, QuickGUI and others join them as their components
+are written. The [roadmap](docs/roadmap.md) tracks it.
 
 ## Frameworks
 
@@ -25,7 +31,7 @@ npx uni-kit add gpui sidebar dock settings
 ```
 
 The CLI does not generate components; it copies the files listed in
-`[registry/components.json](registry/components.json)`. Slint writes one file per
+[`registry/components.json`](registry/components.json). Slint writes one file per
 control, GPUI one file per block, because GPUI controls ship in the crate rather
 than as source. `--dir` overrides the destination.
 
