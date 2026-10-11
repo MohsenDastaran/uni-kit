@@ -15,8 +15,10 @@ import { fileURLToPath } from 'node:url';
 
 const here = path.dirname(fileURLToPath(import.meta.url));
 const root = path.resolve(here, '..', '..', '..');
-const ui = path.join(root, 'crates/iced-component/ui');
-const examples = path.join(ui, 'examples');
+// The component sources sit where the CLI installs them, `src/components/`, so
+// the directory an application ends up with is the one this crate is written in.
+const ui = path.join(root, 'crates/iced-component/src/components');
+const examples = path.join(root, 'crates/iced-component/examples');
 const slintUi = path.join(root, 'crates/slint-component/ui');
 const pages = path.join(root, 'website/component');
 const doc = path.join(root, 'docs/iced-integration.md');

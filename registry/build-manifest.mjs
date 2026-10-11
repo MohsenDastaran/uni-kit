@@ -108,10 +108,10 @@ for (const name of GPUI_BLOCKS) {
 // A component reaches the theme as `super::theme`, which is why the installed
 // directory can be moved or renamed without editing anything: the two files are
 // siblings wherever they land.
-const icedUi = path.join(root, 'crates/iced-component/ui');
+const icedUi = path.join(root, 'crates/iced-component/src/components');
 const iced = rust('src/components');
 if (fs.existsSync(icedUi)) {
-  const theme = 'crates/iced-component/ui/theme.rs';
+  const theme = 'crates/iced-component/src/components/theme.rs';
   if (!fs.existsSync(path.join(root, theme))) {
     throw new Error(`iced components are installed with their theme, and ${theme} does not exist.`);
   }
@@ -125,7 +125,7 @@ if (fs.existsSync(icedUi)) {
       // `uni-kit add` refuses a module name it cannot write as `pub mod <name>;`.
       throw new Error(`iced component "${name}" is not a valid Rust module name.`);
     }
-    const src = `crates/iced-component/ui/${file}`;
+    const src = `crates/iced-component/src/components/${file}`;
     iced.components[name] = [
       { src, target: file, module: name },
       { src: theme, target: 'theme.rs', module: 'theme' },

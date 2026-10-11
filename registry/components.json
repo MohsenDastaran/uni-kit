@@ -22269,7 +22269,20 @@
   "iced": {
     "default_target_dir": "src/components",
     "mod_file": "src/components/mod.rs",
-    "components": {}
+    "components": {
+      "button": [
+        {
+          "src": "crates/iced-component/src/components/button.rs",
+          "target": "button.rs",
+          "module": "button"
+        },
+        {
+          "src": "crates/iced-component/src/components/theme.rs",
+          "target": "theme.rs",
+          "module": "theme"
+        }
+      ]
+    }
   },
   "quickgui": {
     "default_target_dir": "src/components",

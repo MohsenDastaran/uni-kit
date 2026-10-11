@@ -86,6 +86,8 @@
     "settings",
     "sidebar"
   ],
-  "iced": [],
+  "iced": [
+    "button"
+  ],
   "quickgui": []
 }

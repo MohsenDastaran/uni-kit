@@ -1,0 +1,40 @@
+[package]
+name = "iced-component"
+description = "Hand-written iced versions of the uni-kit component catalog, and the gallery the website embeds."
+version = "0.1.0"
+license = "Apache-2.0"
+publish = false
+edition = "2024"
+
+# Not a member of the GPUI Kit workspace: iced keeps its own lockfile, and the
+# components are source an application copies rather than a crate it depends on.
+[workspace]
+
+[lib]
+name = "iced_component"
+path = "src/lib.rs"
+
+[[bin]]
+name = "iced-gallery"
+path = "src/main.rs"
+
+[dependencies]
+# The version the components are written against, pinned to the minor release.
+# Every component compiles against this and nothing else, so an application that
+# installs one has exactly one dependency to add.
+iced = { version = "0.14", features = ["svg"] }
+
+[profile.release]
+# The browser has to compile this module before it shows anything, so the profile
+# prefers small, single-unit code over build convenience.
+opt-level = "s"
+lto = "thin"
+codegen-units = 1
+panic = "abort"
+strip = "symbols"
+
+[profile.dev]
+# Debug info for the gallery's generated component tree is the largest thing rustc
+# builds, and the default needs more memory than the CI container has.
+debug = false
+incremental = false
