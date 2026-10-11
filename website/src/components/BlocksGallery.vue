@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { computed, onBeforeUnmount, onMounted, ref } from "vue";
-import { Download, Monitor, RotateCw, Smartphone, Sparkles, Tablet } from "lucide-vue-next";
+import { Monitor, RotateCw, Smartphone, Sparkles, Tablet } from "lucide-vue-next";
 import InstallCommand from "./InstallCommand.vue";
 import PreviewLoader from "./PreviewLoader.vue";
 import type { Gallery } from "../lib/gallery-sizes";
@@ -80,7 +80,6 @@ function onFrameworkChange() {
   progress.value = {};
   loaded.value = {};
   for (const block of props.blocks) stopWatching(block);
-  chainRuns.value = true;
   startQueue();
 }
 
@@ -242,13 +241,6 @@ const downloadOf = (block: Block) => download.value[block.id] ?? "idle";
 
 /** The block whose module is arriving, if any. */
 let arriving: string | null = null;
-/**
- * Whether the automatic chain is running. It starts with the page and the reader
- * ends it by stopping a download: someone who stops one module has said they do
- * not want the page spending their connection, so the rest wait to be asked for
- * rather than starting on their own.
- */
-const chainRuns = ref(true);
 /** Blocks waiting their turn, in the order they joined. */
 const waiting = ref<string[]>([]);
 const controllers = new Map<string, AbortController>();
@@ -308,18 +300,6 @@ function pump() {
     return;
   }
   void fetchModule(block);
-}
-
-/** Stops a block's download, at the reader's request. */
-function stopDownload(block: Block) {
-  chainRuns.value = false;
-  waiting.value = [];
-  controllers.get(block.id)?.abort();
-  controllers.delete(block.id);
-  if (arriving === block.id) arriving = null;
-  progress.value = { ...progress.value, [block.id]: null };
-  setDownload(block, "stopped");
-  pump();
 }
 
 /** Fetches one module, counting it, and hands the queue the next block after. */
@@ -385,12 +365,9 @@ async function fetchModule(block: Block) {
     controllers.delete(block.id);
     if (arriving === block.id) arriving = null;
     if (downloadOf(block) !== "stopped") setDownload(block, outcome);
-    // The chain: one more block, now that this one is done with, unless the
-    // reader has stopped the fetching.
-    if (chainRuns.value) {
-      const next = nextInLine();
-      if (next) enqueue(next);
-    }
+    // The chain: one more block, now that this one is done with.
+    const next = nextInLine();
+    if (next) enqueue(next);
     pump();
   }
 }
@@ -657,39 +634,17 @@ function reload(block: Block) {
             v-else-if="!loaded[block.id] && !frameIsUp(block)"
             class="block__status block__status--offer"
           >
-            <p class="block__offer-text">
-              WebAssembly preview<template v-if="sizeFor(block)">
-                · {{ (sizeFor(block)! / 1024 / 1024).toFixed(1) }} MB</template
-              >
-            </p>
 
-            <!-- What the queue is doing with this block, and the one action
-                 available on it: the fetching starts by itself, so a reader who
-                 wants it stopped has to be able to see that it is running. -->
+            <!-- The same waiting state the preview itself uses, so the
+                 download and the boot read as one wait: a ring, what is
+                 arriving, and how far along it is. The queue fetches on its own;
+                 this only reports. -->
             <div v-if="fetchRowVisible(block)" class="block__fetch">
-              <span v-if="queued(block)" class="block__fetch-state">
-                Waiting to download
-              </span>
-              <span v-else-if="downloading(block)" class="block__fetch-state">
-                Downloading {{ progress[block.id] ?? 0 }}%
-              </span>
-              <button
-                v-if="downloadOf(block) === 'idle' || downloadOf(block) === 'stopped'"
-                type="button"
-                class="block__fetch-action"
-                @click="enqueue(block, true)"
-              >
-                <Download :size="13" aria-hidden="true" />
-                Download now
-              </button>
-              <button
-                v-else
-                type="button"
-                class="block__fetch-action"
-                @click="stopDownload(block)"
-              >
-                Stop
-              </button>
+              <PreviewLoader
+                label="WebAssembly preview"
+                :size="sizeFor(block)"
+                :percent="progress[block.id] ?? null"
+              />
             </div>
 
           </div>
@@ -971,10 +926,12 @@ function reload(block: Block) {
   background: color-mix(in srgb, var(--card) 94%, transparent);
 }
 
-.block__offer-text {
-  max-width: 36ch;
-  margin: 0;
-  line-height: 1.6;
+/* The waiting state sits where the sentence did, and the queue fetches on its
+   own: this is a report, not a control. */
+.block__fetch {
+  display: flex;
+  justify-content: center;
+  min-height: 3rem;
 }
 
 .block__offer {

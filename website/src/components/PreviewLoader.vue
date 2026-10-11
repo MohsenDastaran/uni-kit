@@ -5,11 +5,12 @@ import { computed } from "vue";
  * The one loading state for every WebAssembly preview, on every page.
  *
  * It owns no download of its own. The bytes are already on their way — the
- * block's own picture starts fetching them when the pointer arrives, and the
- * frame shares that request — so this only reports what is happening: a ring,
- * the block's name, and either the live percentage of a download under way or
- * the size of the one about to start. It stays up until the preview's gallery
- * removes its `#loading` element, so the download and the boot read as one wait.
+ * blocks page fetches them in the background the moment it loads, and a frame
+ * shares that request rather than making its own — so this only reports what is
+ * happening: a ring, what is arriving, and either the live percentage of a
+ * download under way or the size of the one about to start. It stays up until
+ * the preview's gallery removes its `#loading` element, so the download and the
+ * boot read as one wait.
  */
 const props = defineProps<{
   /** What is being loaded, e.g. "Loading Sidebar". */
