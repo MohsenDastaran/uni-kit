@@ -30,9 +30,9 @@ type Milestone = {
 const milestones: Milestone[] = [
     {
         id: "gpui-component",
-        period: "2024 · June",
-        title: "GPUI Component",
-        body: "The library starts on GPUI: one window, one button, and a component model meant to carry a whole application.",
+        period: "2024 · January",
+        title: "GPUI",
+        body: "A fast, hybrid immediate and retained mode, GPU-accelerated UI framework for Rust. From the creators of Zed & Delta.",
     },
     {
         id: "gpui-kit",
