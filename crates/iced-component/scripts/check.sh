@@ -17,6 +17,13 @@ step() { printf '\n== %s\n' "$1"; }
 ok()   { printf '   ok: %s\n' "$1"; }
 bad()  { printf '   FAIL: %s\n' "$1"; failed=1; }
 
+step "module list matches the directory"
+if node "$crate_dir/scripts/mod-rs.mjs" --check >/dev/null 2>&1; then
+  ok "$(node "$crate_dir/scripts/mod-rs.mjs" 2>/dev/null)"
+else
+  bad "src/components/mod.rs is stale — a component would not be compiled: run node crates/iced-component/scripts/mod-rs.mjs"
+fi
+
 step "cargo build"
 if cargo build --quiet --manifest-path "$crate_dir/Cargo.toml"; then ok "components and gallery"; else bad "cargo build"; fi
 

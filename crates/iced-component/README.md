@@ -39,7 +39,9 @@ component.
 
 The shape, with `button.rs` as the worked example:
 
-- **One file per registry key**, `pub` items only. A key may hold a hyphen
+- **One file per registry key**, `pub` items only. `src/components/mod.rs` is
+  generated from the directory — run `node scripts/mod-rs.mjs` after adding a
+  component rather than editing it, and `scripts/check.sh` fails if it is stale. A key may hold a hyphen
   (`description-list`), a module may not: the file and the module are the key with
   hyphens as underscores (`description_list.rs`, `pub mod description_list;`), and
   the component's module docs name the key it installs as.
