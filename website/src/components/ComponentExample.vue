@@ -13,6 +13,7 @@ import PreviewLoader from "./PreviewLoader.vue";
 import type { Gallery } from "../lib/gallery-sizes";
 import WindowZoomButton from "./WindowZoomButton.vue";
 import { findExampleHeading } from "../lib/example-target.js";
+import { cancelQuiet, whenQuiet } from "../lib/quiet-moment";
 
 const props = defineProps<{
   frontmatter: {
@@ -159,10 +160,28 @@ if (!isDev && typeof window !== "undefined") {
 // A frame stays mounted once opened, so switching back is instant.
 const opened = reactive(new Set<string>());
 const loaded = reactive(new Set<string>());
+// Starting a preview is real work on this page's thread — it instantiates a
+// multi-megabyte module and draws its first frame — and a same-origin frame
+// shares that thread, so it swallows the reader's next click. On this page the
+// click is the sidebar link to the next component. The first frame therefore
+// waits for a quiet moment (see lib/quiet-moment): a reader arriving from the
+// sidebar is often already moving on, and moving on has to stay immediate. A
+// framework the reader switched to by hand is a request to see it, so that one
+// starts at once.
+let openedOnce = false;
 watch(
   [framework, available],
   ([name, ready]) => {
-    if (ready) opened.add(name);
+    if (!ready) return;
+    if (openedOnce) {
+      opened.add(name);
+      return;
+    }
+    whenQuiet(() => {
+      if (!available.value) return;
+      openedOnce = true;
+      opened.add(framework.value);
+    });
   },
   { immediate: true },
 );
@@ -806,6 +825,7 @@ watch(framework, () => {
   syncPrompts();
 });
 onBeforeUnmount(() => {
+  cancelQuiet();
   for (const name of [...readyObservers.keys()]) stopWatching(name);
   window.removeEventListener("message", onExampleMessage);
   observer?.disconnect();

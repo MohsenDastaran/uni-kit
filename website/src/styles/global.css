@@ -587,6 +587,12 @@ html[lang^="ja"] .example-prompt {
 
 .component-example__frames {
   position: relative;
+  /* The box holds the height a frame will take, so the waiting overlay has
+     something to fill. A frame is not mounted the moment the page loads — it
+     waits for the reader to be still, so that starting it cannot swallow the
+     click that was about to leave for another component — and without this the
+     window collapsed to its title bar while that wait ran. */
+  min-height: 680px;
 }
 
 .component-example__status {
@@ -601,13 +607,13 @@ html[lang^="ja"] .example-prompt {
   font-size: 0.8125rem;
 }
 
-/* An example with no frame at all has to hold the box one would take, or the
-   window collapses to its title bar. The waiting state is not that case: its
-   frame is mounted and booting underneath, so the overlay covers it — and being
-   opaque, it is what keeps the gallery's own "Loading…" out of sight. */
+/* The overlays are opaque, which is what keeps the gallery's own "Loading…" out
+   of sight while a frame boots behind one. The box they cover is sized by
+   `.component-example__frames` now, so this only has to take its place in the
+   flow when there is no frame at all. */
 .component-example__status--missing {
   position: static;
-  height: 680px;
+  min-height: 680px;
 }
 
 @media (max-width: 640px) {
@@ -617,6 +623,9 @@ html[lang^="ja"] .example-prompt {
   .component-example iframe,
   .component-example__status--missing {
     height: 560px;
+  }
+  .component-example__frames {
+    min-height: 560px;
   }
 }
 
@@ -650,6 +659,8 @@ html[lang^="ja"] .example-prompt {
   display: flex;
   flex: 1;
   flex-direction: column;
+  /* Filling the viewport beats holding a frame's height. */
+  min-height: 0;
 }
 
 /* ====================================================================
