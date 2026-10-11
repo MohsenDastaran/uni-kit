@@ -28,7 +28,30 @@ const inventory = Object.keys(registry.slint.components).sort();
 const wired = new Set(Object.keys(registry.iced?.components ?? {}));
 
 const exists = (file) => fs.existsSync(file);
-const lines = (file) => (exists(file) ? fs.readFileSync(file, 'utf8').trim().split('\n').length : 0);
+const read = (file) => (exists(file) ? fs.readFileSync(file, 'utf8') : '');
+const lines = (file) => (exists(file) ? read(file).trim().split('\n').length : 0);
+
+/**
+ * Whether a file is a component rather than the shape of one.
+ *
+ * A stub compiles, is declared, and passes every check that only asks whether a
+ * file exists — which is how eight five-line files once counted as done work. A
+ * component has to build an `Element` and expose something to call.
+ */
+function implemented(file, kind) {
+  const text = read(file);
+  if (!text) return false;
+  if (/Implementation pending|not implemented|todo!\(|unimplemented!\(/i.test(text)) return false;
+  if (kind === 'example') {
+    // An example is an application: it has a `main` and runs one.
+    return /fn main\s*\(/.test(text) && /iced::(application|run)\s*\(/.test(text);
+  }
+  // A component builds an element. `theme.rs` is the shared token file: it is
+  // the iced counterpart of the Slint theme component and builds no widget, so
+  // the element test does not apply to it.
+  const buildsElement = /Element/.test(text) || file.endsWith('theme.rs');
+  return /pub fn/.test(text) && buildsElement;
+}
 
 // The registry key is the site's slug and may hold a hyphen; the file and the
 // module cannot, so the key is the module with underscores back to hyphens.
@@ -45,9 +68,9 @@ const rows = inventory.map((name) => {
     module: moduleOf(name),
     slint: exists(slint),
     gpui: exists(page),
-    source: size > 0,
+    source: implemented(source, 'component'),
     lines: size,
-    example: exists(example),
+    example: implemented(example, 'example'),
     wired: wired.has(name),
   };
 });
@@ -56,6 +79,7 @@ const done = rows.filter((r) => r.source && r.example && r.wired).length;
 const missing = rows.filter((r) => !(r.source && r.example && r.wired)).map((r) => r.name);
 
 const tick = (value) => (value ? 'yes' : '—');
+const stubbed = rows.filter((r) => !r.source && r.lines > 0).map((r) => r.name);
 const table = [
   '| Component | iced file | GPUI ref | Slint ref | iced source | lines | example | registry |',
   '| --- | --- | --- | --- | --- | --- | --- | --- |',
@@ -66,6 +90,9 @@ const table = [
   '',
   `**${done} / ${rows.length}** components have an iced source, an example and a registry entry.`,
   '',
+  ...(stubbed.length
+    ? [`**Stubs, which do not count:** ${stubbed.map((n) => `\`${n}\``).join(', ')}.`]
+    : []),
   ...(missing.length
     ? [`Still to do: ${missing.map((n) => `\`${n}\``).join(', ')}.`]
     : ['Every component in the Slint registry has an iced implementation.']),

@@ -137,19 +137,19 @@ Then, by hand, because no script sees it:
 <!-- iced-checklist:start -->
 | Component | iced file | GPUI ref | Slint ref | iced source | lines | example | registry |
 | --- | --- | --- | --- | --- | --- | --- | --- |
-| `accordion` | `accordion.rs` | yes | yes | — | — | — | — |
-| `alert` | `alert.rs` | yes | yes | yes | 321 | — | yes |
+| `accordion` | `accordion.rs` | yes | yes | yes | 366 | yes | — |
+| `alert` | `alert.rs` | yes | yes | yes | 319 | yes | yes |
 | `alert-dialog` | `alert_dialog.rs` | yes | yes | — | — | — | — |
-| `attachment` | `attachment.rs` | yes | yes | — | — | — | — |
-| `avatar` | `avatar.rs` | yes | yes | — | — | — | — |
-| `badge` | `badge.rs` | yes | yes | yes | 237 | — | yes |
+| `attachment` | `attachment.rs` | yes | yes | — | 5 | — | — |
+| `avatar` | `avatar.rs` | yes | yes | — | 5 | — | — |
+| `badge` | `badge.rs` | yes | yes | yes | 237 | yes | yes |
 | `bubble` | `bubble.rs` | yes | yes | — | — | — | — |
 | `button` | `button.rs` | yes | yes | yes | 497 | yes | yes |
 | `calendar` | `calendar.rs` | yes | yes | — | — | — | — |
-| `card` | `card.rs` | yes | yes | yes | 198 | — | yes |
+| `card` | `card.rs` | yes | yes | yes | 198 | yes | yes |
 | `carousel` | `carousel.rs` | yes | yes | — | — | — | — |
 | `chart` | `chart.rs` | yes | yes | — | — | — | — |
-| `checkbox` | `checkbox.rs` | yes | yes | — | — | — | — |
+| `checkbox` | `checkbox.rs` | yes | yes | yes | 246 | — | — |
 | `clipboard` | `clipboard.rs` | yes | yes | — | — | — | — |
 | `collapsible` | `collapsible.rs` | yes | yes | — | — | — | — |
 | `color-picker` | `color_picker.rs` | yes | yes | — | — | — | — |
@@ -157,34 +157,34 @@ Then, by hand, because no script sees it:
 | `command` | `command.rs` | yes | yes | — | — | — | — |
 | `data-table` | `data_table.rs` | yes | yes | — | — | — | — |
 | `date-picker` | `date_picker.rs` | yes | yes | — | — | — | — |
-| `description-list` | `description_list.rs` | yes | yes | yes | 454 | — | yes |
+| `description-list` | `description_list.rs` | yes | yes | yes | 441 | yes | yes |
 | `dialog` | `dialog.rs` | yes | yes | — | — | — | — |
 | `dock` | `dock.rs` | yes | yes | — | — | — | — |
 | `dropdown_button` | `dropdown_button.rs` | yes | yes | — | — | — | — |
-| `editor` | `editor.rs` | yes | yes | — | — | — | — |
-| `empty` | `empty.rs` | yes | yes | — | — | — | — |
+| `editor` | `editor.rs` | yes | yes | — | 5 | — | — |
+| `empty` | `empty.rs` | yes | yes | yes | 330 | yes | yes |
 | `focus-trap` | `focus_trap.rs` | yes | yes | — | — | — | — |
 | `form` | `form.rs` | yes | yes | — | — | — | — |
-| `group-box` | `group_box.rs` | yes | yes | — | — | — | — |
+| `group-box` | `group_box.rs` | yes | yes | yes | 227 | yes | yes |
 | `hover-card` | `hover_card.rs` | yes | yes | — | — | — | — |
-| `icon` | `icon.rs` | yes | yes | — | — | — | — |
-| `image` | `image.rs` | yes | yes | — | — | — | — |
+| `icon` | `icon.rs` | yes | yes | — | 5 | — | — |
+| `image` | `image.rs` | yes | yes | — | 5 | — | — |
 | `input` | `input.rs` | yes | yes | — | — | — | — |
 | `input-group` | `input_group.rs` | yes | yes | — | — | — | — |
-| `kbd` | `kbd.rs` | yes | yes | — | — | — | — |
-| `label` | `label.rs` | yes | yes | — | — | — | — |
+| `kbd` | `kbd.rs` | yes | yes | yes | 141 | yes | yes |
+| `label` | `label.rs` | yes | yes | yes | 122 | yes | — |
 | `list` | `list.rs` | yes | yes | — | — | — | — |
-| `marker` | `marker.rs` | yes | yes | — | — | — | — |
+| `marker` | `marker.rs` | yes | yes | yes | 123 | yes | — |
 | `menu` | `menu.rs` | yes | yes | — | — | — | — |
 | `message` | `message.rs` | yes | yes | — | — | — | — |
-| `message-role` | `message_role.rs` | — | yes | — | — | — | — |
-| `message-scroller` | `message_scroller.rs` | yes | yes | — | — | — | — |
+| `message-role` | `message_role.rs` | — | yes | — | 5 | — | — |
+| `message-scroller` | `message_scroller.rs` | yes | yes | — | 5 | — | — |
 | `notification` | `notification.rs` | yes | yes | — | — | — | — |
 | `number-input` | `number_input.rs` | yes | yes | — | — | — | — |
 | `otp-input` | `otp_input.rs` | yes | yes | — | — | — | — |
 | `pagination` | `pagination.rs` | yes | yes | — | — | — | — |
 | `popover` | `popover.rs` | yes | yes | — | — | — | — |
-| `progress` | `progress.rs` | yes | yes | — | — | — | — |
+| `progress` | `progress.rs` | yes | yes | yes | 413 | yes | — |
 | `questionnaire` | `questionnaire.rs` | yes | yes | — | — | — | — |
 | `radio` | `radio.rs` | yes | yes | — | — | — | — |
 | `rating` | `rating.rs` | yes | yes | — | — | — | — |
@@ -194,19 +194,19 @@ Then, by hand, because no script sees it:
 | `select` | `select.rs` | yes | yes | — | — | — | — |
 | `settings` | `settings.rs` | yes | yes | — | — | — | — |
 | `sheet` | `sheet.rs` | yes | yes | — | — | — | — |
-| `shimmer` | `shimmer.rs` | yes | yes | — | — | — | — |
+| `shimmer` | `shimmer.rs` | yes | yes | yes | 249 | yes | — |
 | `sidebar` | `sidebar.rs` | yes | yes | — | — | — | — |
-| `skeleton` | `skeleton.rs` | yes | yes | — | — | — | — |
+| `skeleton` | `skeleton.rs` | yes | yes | yes | 152 | yes | — |
 | `slider` | `slider.rs` | yes | yes | — | — | — | — |
 | `speech` | `speech.rs` | yes | yes | — | — | — | — |
-| `spinner` | `spinner.rs` | yes | yes | — | — | — | — |
+| `spinner` | `spinner.rs` | yes | yes | yes | 202 | yes | — |
 | `status-bar` | `status_bar.rs` | yes | yes | — | — | — | — |
 | `stepper` | `stepper.rs` | yes | yes | — | — | — | — |
 | `switch` | `switch.rs` | yes | yes | — | — | — | — |
 | `table` | `table.rs` | yes | yes | — | — | — | — |
 | `tabs` | `tabs.rs` | yes | yes | — | — | — | — |
-| `tag` | `tag.rs` | yes | yes | — | — | — | — |
-| `text-view` | `text_view.rs` | yes | yes | — | — | — | — |
+| `tag` | `tag.rs` | yes | yes | yes | 257 | yes | — |
+| `text-view` | `text_view.rs` | yes | yes | — | 5 | — | — |
 | `textarea` | `textarea.rs` | yes | yes | — | — | — | — |
 | `theme` | `theme.rs` | yes | yes | yes | 406 | — | — |
 | `time-field` | `time_field.rs` | yes | yes | — | — | — | — |
@@ -217,7 +217,8 @@ Then, by hand, because no script sees it:
 | `tree` | `tree.rs` | yes | yes | — | — | — | — |
 | `virtual-list` | `virtual_list.rs` | yes | yes | — | — | — | — |
 
-**1 / 79** components have an iced source, an example and a registry entry.
+**8 / 79** components have an iced source, an example and a registry entry.
 
-Still to do: `accordion`, `alert`, `alert-dialog`, `attachment`, `avatar`, `badge`, `bubble`, `calendar`, `card`, `carousel`, `chart`, `checkbox`, `clipboard`, `collapsible`, `color-picker`, `combobox`, `command`, `data-table`, `date-picker`, `description-list`, `dialog`, `dock`, `dropdown_button`, `editor`, `empty`, `focus-trap`, `form`, `group-box`, `hover-card`, `icon`, `image`, `input`, `input-group`, `kbd`, `label`, `list`, `marker`, `menu`, `message`, `message-role`, `message-scroller`, `notification`, `number-input`, `otp-input`, `pagination`, `popover`, `progress`, `questionnaire`, `radio`, `rating`, `resizable`, `root`, `scrollable`, `select`, `settings`, `sheet`, `shimmer`, `sidebar`, `skeleton`, `slider`, `speech`, `spinner`, `status-bar`, `stepper`, `switch`, `table`, `tabs`, `tag`, `text-view`, `textarea`, `theme`, `time-field`, `title-bar`, `toggle`, `toolbar`, `tooltip`, `tree`, `virtual-list`.
+**Stubs, which do not count:** `attachment`, `avatar`, `editor`, `icon`, `image`, `message-role`, `message-scroller`, `text-view`.
+Still to do: `accordion`, `alert-dialog`, `attachment`, `avatar`, `bubble`, `calendar`, `carousel`, `chart`, `checkbox`, `clipboard`, `collapsible`, `color-picker`, `combobox`, `command`, `data-table`, `date-picker`, `dialog`, `dock`, `dropdown_button`, `editor`, `focus-trap`, `form`, `hover-card`, `icon`, `image`, `input`, `input-group`, `label`, `list`, `marker`, `menu`, `message`, `message-role`, `message-scroller`, `notification`, `number-input`, `otp-input`, `pagination`, `popover`, `progress`, `questionnaire`, `radio`, `rating`, `resizable`, `root`, `scrollable`, `select`, `settings`, `sheet`, `shimmer`, `sidebar`, `skeleton`, `slider`, `speech`, `spinner`, `status-bar`, `stepper`, `switch`, `table`, `tabs`, `tag`, `text-view`, `textarea`, `theme`, `time-field`, `title-bar`, `toggle`, `toolbar`, `tooltip`, `tree`, `virtual-list`.
 <!-- iced-checklist:end -->
