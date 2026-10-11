@@ -26,6 +26,12 @@ RUN apt-get update \
  && node --version \
  && rm -rf /var/lib/apt/lists/*
 
+# `OPTIMIZE_WASM=0` ships the gallery modules exactly as rustc builds them,
+# without wasm-opt. They are the only artifact that switch affects, so a preview
+# that misbehaves after an optimization has a one-variable way back.
+ARG OPTIMIZE_WASM=1
+ENV OPTIMIZE_WASM=${OPTIMIZE_WASM}
+
 # The base examples build with `cargo +nightly`; story-web and the Slint gallery
 # use the default stable toolchain. CI installs both, so both get the target.
 #

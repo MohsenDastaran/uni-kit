@@ -32,6 +32,13 @@ optimize_wasm() {
     echo "optimize_wasm: no such file: $file" >&2
     return 1
   fi
+  # The shipped module is the only thing this changes, so it is the one thing
+  # worth a switch: `OPTIMIZE_WASM=0` (a Docker build ARG here) ships the
+  # modules exactly as rustc built them.
+  if [[ "${OPTIMIZE_WASM:-1}" == "0" ]]; then
+    echo "optimize_wasm: skipped $(basename "$file") (OPTIMIZE_WASM=0)" >&2
+    return 0
+  fi
   if ! command -v wasm-opt >/dev/null 2>&1; then
     echo "wasm-opt not found (apt install binaryen): leaving $(basename "$file") as built" >&2
     return 0
