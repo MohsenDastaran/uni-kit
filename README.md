@@ -1,14 +1,11 @@
-<p align="center">
-  <img src="https://raw.githubusercontent.com/MohsenDastaran/uni-kit/main/website/public/uni-kit.svg" width="112" alt="uni-kit logo" />
-  <br>
-  <strong>GPUI Kit</strong>
-</p>
+![uni-kit logo](https://raw.githubusercontent.com/MohsenDastaran/uni-kit/main/website/public/uni-kit.svg)  
+**GPUI Kit**
 
-[![Publish Website Image](https://github.com/MohsenDastaran/uni-kit/actions/workflows/publish-image.yml/badge.svg)](https://github.com/MohsenDastaran/uni-kit/actions/workflows/publish-image.yml) [![Docs](https://docs.rs/gpui-kit/badge.svg)](https://docs.rs/gpui-kit/) [![Crates.io](https://img.shields.io/crates/v/gpui-kit.svg)](https://crates.io/crates/gpui-kit)
+![Publish Website Image](https://github.com/MohsenDastaran/uni-kit/actions/workflows/publish-image.yml/badge.svg) ![Docs](https://docs.rs/gpui-kit/badge.svg) ![Crates.io](https://img.shields.io/crates/v/gpui-kit.svg)
 
 Copy-paste native UI for Rust desktop toolkits. One catalog of components, written
 by hand for each framework, shown as a live WebAssembly example on
-<https://gpui-kit.com>, and copied into your project as source you own — so the
+[https://gpui-kit.com](https://gpui-kit.com), and copied into your project as source you own — so the
 first thing you change is the thing you wanted to change.
 
 GPUI and Slint are in the catalog. egui, QuickGUI and other toolkits join the same
@@ -16,11 +13,11 @@ pages as their components are written; the [roadmap](docs/roadmap.md) tracks it.
 
 ## Frameworks
 
-| Framework | How an application uses it |
-| --- | --- |
+| Framework                                     | How an application uses it                                                                                                       |
+| --------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------- |
 | [GPUI](https://github.com/zed-industries/zed) | Depend on the `gpui-kit` crate for the controls; `npx uni-kit add gpui <block>` copies a composed screen into `src/components/`. |
-| [Slint](https://slint.dev) | `npx uni-kit add slint <component>` copies the `.slint` files into `ui/components/`. |
-| egui, QuickGUI, others | The same pages, once the source exists. [Roadmap](docs/roadmap.md). |
+| [Slint](https://slint.dev)                    | `npx uni-kit add slint <component>` copies the `.slint` files into `ui/components/`.                                             |
+| egui, QuickGUI, others                        | The same pages, once the source exists. [Roadmap](docs/roadmap.md).                                                              |
 
 ```bash
 npx uni-kit add slint alert-dialog
@@ -28,7 +25,7 @@ npx uni-kit add gpui sidebar dock settings
 ```
 
 The CLI does not generate components; it copies the files listed in
-[`registry/components.json`](registry/components.json). Slint writes one file per
+`[registry/components.json](registry/components.json)`. Slint writes one file per
 control, GPUI one file per block, because GPUI controls ship in the crate rather
 than as source. `--dir` overrides the destination.
 
@@ -62,20 +59,9 @@ make dev:website       # the site, served from a production build
 make dev               # the site, rebuilding the Slint gallery first
 ```
 
-`make dev` is the one for Slint work: it rebuilds the gallery wasm and then starts
-the site, so a refresh shows the change. With no `SLUGS` it rebuilds only the
+`make dev` is the one for Slint work: it rebuilds the gallery wasm and then starts  
+the site, so a refresh shows the change. With no `SLUGS` it rebuilds only the  
 pages whose sources changed.
-
-Two skills ship with the repository for AI coding agents:
-
-```bash
-npx skills add longbridge/gpui-kit
-```
-
-| Skill | Description |
-| --- | --- |
-| `gpui-kit` | Setup, the component catalog, usage patterns, GPUI mechanics, and the Coding Guides. |
-| `gpui-kit-design-guides` | Layout, spacing, hierarchy, interaction states, overlays, and interface copy. |
 
 ## Credits
 
