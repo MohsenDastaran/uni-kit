@@ -42,7 +42,6 @@ export interface Block {
    * downloaded. The reader sees what the block looks like, and the module is
    * fetched only when they ask to run it.
    */
-  posters?: { gpui?: string; slint?: string };
   /** Highlighted HTML, for display. */
   code?: { gpui?: string; slint?: string };
   /** The same source as plain text, for the prompt. */
@@ -71,16 +70,24 @@ function onFrameworkChange() {
   const next = readFramework();
   if (next === framework.value) return;
   framework.value = next;
-  // Every frame reloads with the other framework, so the new one's module has to
-  // be warmed again: what was asked for by hand stays asked for.
-  warmth.value = {};
-  warming.clear();
-  for (const timer of warmTimers.values()) window.clearTimeout(timer);
-  warmTimers.clear();
-  activeWarm?.controller.abort();
-  activeWarm = null;
+  // The other framework's modules are different files, so the queue starts over
+  // for them; a preview the reader opened stays open.
+  for (const controller of controllers.values()) controller.abort();
+  controllers.clear();
+  arriving = null;
+  waiting.value = [];
+  download.value = {};
+  progress.value = {};
   loaded.value = {};
   for (const block of props.blocks) stopWatching(block);
+  chainRuns.value = true;
+  startQueue();
+}
+
+/** Puts the first unfetched block in line, which begins the chain. */
+function startQueue() {
+  const first = nextInLine();
+  if (first) enqueue(first);
 }
 
 onMounted(() => {
@@ -89,9 +96,10 @@ onMounted(() => {
   // would silently keep showing the framework the page was built with.
   document.addEventListener("framework-change", onFrameworkChange);
   framework.value = readFramework();
-  // No frame is in the server's HTML anymore: every preview, the first included,
-  // goes through the loader's measured download, so there is nothing to
-  // reconcile and no `load` that could have finished before this island woke up.
+  // No frame is in the server's HTML anymore: the first block's module is
+  // fetched here, in the background, so the preview the reader is most likely to
+  // open is already in the cache by the time they reach for it.
+  startQueue();
 });
 onBeforeUnmount(() => {
   clearTimeout(promptTimer);
@@ -123,37 +131,29 @@ function srcFor(block: Block) {
   return `${base}/gallery?story=${encodeURIComponent(block.story)}&source=0`;
 }
 
-// Every example is a multi-megabyte WebAssembly build with its own renderer. The
-// page opens with a picture of each block and downloads nothing; a block's
-// module is fetched when the reader asks to run it. Loading them all in
-// sequence, which this did two revisions ago, spent the page's whole time and
-// memory on previews nobody had reached yet, and loading just the first still
-// spent it before the reader had chosen anything.
+// Every example is a multi-megabyte WebAssembly build with its own renderer, so
+// the page fetches them one at a time, in the order they are read. The first
+// block starts as soon as the page loads; each following one starts when the one
+// before it has finished, which keeps a slow connection working on the preview
+// the reader is most likely to reach. A reader who wants a particular block
+// sooner asks for it, and a reader who wants the fetching to stop says so.
 const requested = ref<Record<string, boolean>>({});
 const loaded = ref<Record<string, boolean>>({});
 
-/** A block is fetched when the reader asks for it, and not before. */
+/** A block's frame is shown when the reader asks for it. */
 const isRequested = (block: Block) => Boolean(requested.value[block.id]);
 
 /** The picture to show for the framework in force, where one exists. */
-const posterFor = (block: Block) => block.posters?.[framework.value];
-
+/**
+ * Shows a block's live preview. The bytes are fetched once, here, and the frame
+ * is mounted only when they are in the cache, so the frame never pays for a
+ * second copy: a block that is already fetched opens at once, and one that is
+ * not gets its download moved to the front of the queue while the loader reports
+ * how far along it is.
+ */
 function request(block: Block) {
-  // The frame owns the download from here; a warm-up still in flight would race
-  // it into a second copy. The loader falls back to naming the size.
-  const key = keyFor(block);
-  const timer = warmTimers.get(key);
-  if (timer !== undefined) {
-    window.clearTimeout(timer);
-    warmTimers.delete(key);
-  }
-  if (activeWarm?.key === key) {
-    activeWarm.controller.abort();
-    activeWarm = null;
-  }
-  warming.delete(key);
-  warmth.value = { ...warmth.value, [block.id]: null };
   requested.value = { ...requested.value, [block.id]: true };
+  if (downloadOf(block) !== "ready") enqueue(block, true);
 }
 
 /**
@@ -232,83 +232,120 @@ const decodedFor = (block: Block) => props.sizes?.[keyFor(block)]?.decoded;
 const filesFor = (block: Block) =>
   props.sizes?.[keyFor(block)]?.files.map((file) => `${base}/${keyFor(block)}/${file}`);
 
-// The frame mounts the moment it is asked for: the module downloads and compiles
-// in one streaming pass inside it, which is the fastest a cold preview can start,
-// and it pays for the module once. Nothing waits on a measurement first.
-const frameIsUp = (block: Block) => isRequested(block);
+// The frame mounts once its bytes are in the cache. Mounting it sooner would
+// start a second request for the same module, and this page has already paid for
+// those once.
+const frameIsUp = (block: Block) => isRequested(block) && downloadOf(block) === "ready";
 
 /**
- * Fetches the block's module while the pointer is on its picture.
+ * Where a block's module is: waiting its turn, arriving, or in the cache.
  *
- * The click then waits for bytes that are already on their way: the frame's own
- * request shares this one rather than paying for a second copy — measured in
- * Chrome, one transfer with the frame's read answered from the cache. The
- * percentage counted here is the download the frame is waiting for, so the
- * loader can report it without starting anything of its own.
- *
- * Nothing is fetched unless the reader points at the block, and nothing is
- * fetched at all from a server that will not let the browser keep it: that
- * module is left to the frame, which needs it once.
+ * `stopped` is deliberately not `idle`: the queue works through the blocks it
+ * has not fetched yet, and a block the reader stopped must stay stopped until
+ * they ask for it again rather than coming back around.
  */
-const warming = new Set<string>();
-const warmth = ref<Record<string, number | null>>({});
-const warmTimers = new Map<string, number>();
-let activeWarm: { key: string; controller: AbortController } | null = null;
+type DownloadState = "idle" | "queued" | "downloading" | "ready" | "stopped";
 
-/** True while a warm-up of this block is still counting. */
-const counting = (block: Block) => {
-  const value = warmth.value[block.id];
-  return typeof value === "number" && value < 100;
+const download = ref<Record<string, DownloadState>>({});
+const progress = ref<Record<string, number | null>>({});
+const downloadOf = (block: Block) => download.value[block.id] ?? "idle";
+
+/** The block whose module is arriving, if any. */
+let arriving: string | null = null;
+/**
+ * Whether the automatic chain is running. It starts with the page and the reader
+ * ends it by stopping a download: someone who stops one module has said they do
+ * not want the page spending their connection, so the rest wait to be asked for
+ * rather than starting on their own.
+ */
+const chainRuns = ref(true);
+/** Blocks waiting their turn, in the order they joined. */
+const waiting = ref<string[]>([]);
+const controllers = new Map<string, AbortController>();
+
+const setDownload = (block: Block, state: DownloadState) => {
+  download.value = { ...download.value, [block.id]: state };
 };
 
+/** True while this block's module is arriving. */
+const downloading = (block: Block) => downloadOf(block) === "downloading";
+/** True while this block's module is waiting its turn. */
+const queued = (block: Block) => downloadOf(block) === "queued";
+
 /**
- * Warm-ups are deliberate, not accidental. A pointer has to rest on a picture
- * for a moment before its module is fetched, so skimming the page costs
- * nothing; only one module is fetched at a time, and a newer pointer or a
- * pointer leaving stops the current one. A block that was clicked keeps its
- * warm-up to the end, because its frame is now sharing those bytes.
+ * Whether the block shows the queue's row: while its module is waiting or
+ * arriving, and — since the page fetches in the background — while it has not
+ * been fetched at all, where the reader may want to ask for it.
  */
-function warm(block: Block) {
-  const files = filesFor(block);
-  const key = keyFor(block);
-  if (!files?.length || isRequested(block)) return;
-  if (warming.has(key) || warmTimers.has(key)) return;
-  warmTimers.set(
-    key,
-    window.setTimeout(() => {
-      warmTimers.delete(key);
-      startWarm(block);
-    }, 400),
+const fetchRowVisible = (block: Block) => downloadOf(block) !== "ready";
+
+/** The next block in reading order that has not been fetched or stopped. */
+function nextInLine(): Block | undefined {
+  return visible.value.find(
+    (block) => downloadOf(block) === "idle" && !frameUnavailable(block),
   );
 }
 
-function cool(block: Block) {
-  // After the click the frame's own request is the download; do not cut it off.
-  if (isRequested(block)) return;
-  const key = keyFor(block);
-  const timer = warmTimers.get(key);
-  if (timer !== undefined) {
-    window.clearTimeout(timer);
-    warmTimers.delete(key);
+/**
+ * Adds a block to the fetch queue. `first` puts it next, for a reader who asked
+ * for this one in particular.
+ */
+function enqueue(block: Block, first = false) {
+  const state = downloadOf(block);
+  if (state === "queued" || state === "downloading" || state === "ready") return;
+  const files = filesFor(block);
+  if (!files?.length) {
+    // Nothing to fetch — a page the server does not describe, or a frame that
+    // must fetch for itself. Let the frame mount and do its own work.
+    setDownload(block, "ready");
+    if (isRequested(block)) return;
+    return;
   }
-  if (activeWarm?.key === key) {
-    activeWarm.controller.abort();
-    activeWarm = null;
-  }
-  warming.delete(key);
-  warmth.value = { ...warmth.value, [block.id]: null };
+  setDownload(block, "queued");
+  const rest = waiting.value.filter((id) => id !== block.id);
+  waiting.value = first ? [block.id, ...rest] : [...rest, block.id];
+  pump();
 }
 
-async function startWarm(block: Block) {
-  const files = filesFor(block);
-  const key = keyFor(block);
-  if (!files?.length || isRequested(block) || warming.has(key)) return;
+/** Starts the next queued block, if nothing is arriving. */
+function pump() {
+  if (arriving) return;
+  const id = waiting.value[0];
+  if (!id) return;
+  waiting.value = waiting.value.slice(1);
+  const block = visible.value.find((entry) => entry.id === id);
+  if (!block) {
+    pump();
+    return;
+  }
+  void fetchModule(block);
+}
 
-  // One at a time: a new pointer's module supersedes the previous one's.
-  if (activeWarm) activeWarm.controller.abort();
+/** Stops a block's download, at the reader's request. */
+function stopDownload(block: Block) {
+  chainRuns.value = false;
+  waiting.value = [];
+  controllers.get(block.id)?.abort();
+  controllers.delete(block.id);
+  if (arriving === block.id) arriving = null;
+  progress.value = { ...progress.value, [block.id]: null };
+  setDownload(block, "stopped");
+  pump();
+}
+
+/** Fetches one module, counting it, and hands the queue the next block after. */
+async function fetchModule(block: Block) {
+  const files = filesFor(block);
+  if (!files?.length) {
+    setDownload(block, "ready");
+    return;
+  }
+  arriving = block.id;
+  setDownload(block, "downloading");
   const controller = new AbortController();
-  activeWarm = { key, controller };
-  warming.add(key);
+  controllers.set(block.id, controller);
+
+  let outcome: DownloadState = "ready";
   try {
     const heads = await Promise.all(
       files.map((file) => fetch(file, { method: "HEAD", signal: controller.signal })),
@@ -317,42 +354,55 @@ async function startWarm(block: Block) {
       const control = head.headers.get("cache-control") ?? "";
       return control !== "" && !/no-store/.test(control);
     });
-    if (!reusable) return;
 
-    // The count below is of decoded chunks, so it is measured against the
-    // module's own size; the compressed `Content-Length` would run out early.
-    const transferred = heads.reduce(
-      (sum, head) => sum + Number(head.headers.get("content-length") ?? 0),
-      0,
-    );
-    const decoded = decodedFor(block);
-    const total = decoded && decoded > 0 ? decoded : transferred;
-    if (total <= 0) return;
-
-    warmth.value = { ...warmth.value, [block.id]: 0 };
-    let received = 0;
-    for (const file of files) {
-      const response = await fetch(file, { signal: controller.signal });
-      const reader = response.body?.getReader();
-      if (!reader) break;
-      for (;;) {
-        const { done, value } = await reader.read();
-        if (done) break;
-        received += value.byteLength;
-        // Reported in tens: a number that changes on every chunk of a
-        // multi-megabyte stream is a flickering label, not progress.
-        const step = Math.min(90, Math.floor(((received / total) * 100) / 10) * 10);
-        if (warmth.value[block.id] !== step) {
-          warmth.value = { ...warmth.value, [block.id]: step };
+    // A server that will not let the browser keep the module is left to the
+    // frame, which needs it once anyway. Either way the queue moves on.
+    if (reusable) {
+      // The count is of decoded chunks, so it is measured against the module's
+      // own size; the compressed `Content-Length` would run out early.
+      const transferred = heads.reduce(
+        (sum, head) => sum + Number(head.headers.get("content-length") ?? 0),
+        0,
+      );
+      const decoded = decodedFor(block);
+      const total = decoded && decoded > 0 ? decoded : transferred;
+      if (total > 0) {
+        progress.value = { ...progress.value, [block.id]: 0 };
+        let received = 0;
+        for (const file of files) {
+          const response = await fetch(file, { signal: controller.signal });
+          const reader = response.body?.getReader();
+          if (!reader) break;
+          for (;;) {
+            const { done, value } = await reader.read();
+            if (done) break;
+            received += value.byteLength;
+            // Reported in tens: a number that changes on every chunk of a
+            // multi-megabyte stream is a flickering label, not progress.
+            const step = Math.min(90, Math.floor(((received / total) * 100) / 10) * 10);
+            if (progress.value[block.id] !== step) {
+              progress.value = { ...progress.value, [block.id]: step };
+            }
+          }
         }
+        progress.value = { ...progress.value, [block.id]: 100 };
       }
     }
-    warmth.value = { ...warmth.value, [block.id]: 100 };
   } catch {
-    // Aborted by a newer pointer, by leaving, or by a failed fetch — no cost.
+    // Stopped by the reader, or the request failed. Either way the block is not
+    // fetched: the queue moves on and the reader can ask for it again.
+    if (downloadOf(block) !== "stopped") outcome = "stopped";
   } finally {
-    if (activeWarm?.key === key) activeWarm = null;
-    warming.delete(key);
+    controllers.delete(block.id);
+    if (arriving === block.id) arriving = null;
+    if (downloadOf(block) !== "stopped") setDownload(block, outcome);
+    // The chain: one more block, now that this one is done with, unless the
+    // reader has stopped the fetching.
+    if (chainRuns.value) {
+      const next = nextInLine();
+      if (next) enqueue(next);
+    }
+    pump();
   }
 }
 
@@ -613,58 +663,53 @@ function reload(block: Block) {
             This example runs in the GPUI gallery only.
           </div>
 
-          <!-- What the block looks like, until the reader chooses to run it.
-               The whole picture is the button; the call to action appears when
-               the pointer or the keyboard is on it. -->
+          <!-- What this block is, until its preview is asked for. -->
           <div
-            v-else-if="!loaded[block.id]"
+            v-else-if="!loaded[block.id] && !isRequested(block)"
             class="block__status block__status--offer"
           >
-            <button
-              v-if="posterFor(block)"
-              type="button"
-              class="block__poster"
-              :disabled="isRequested(block)"
-              :aria-label="`Show the live preview of ${block.title}`"
-              @pointerenter="warm(block)"
-              @pointerdown="warm(block)"
-              @pointerleave="cool(block)"
-              @focus="warm(block)"
-              @blur="cool(block)"
-              @click="request(block)"
-            >
-              <img
-                class="block__poster-image"
-                :src="posterFor(block)"
-                alt=""
-                loading="lazy"
-                decoding="async"
-              />
-              <span class="block__poster-cta">
-                <Play :size="14" aria-hidden="true" />
-                Show live preview
-                <span v-if="counting(block)" class="block__poster-size">
-                  · {{ warmth[block.id] }}%
-                </span>
-                <span v-else-if="sizeFor(block)" class="block__poster-size">
-                  · {{ (sizeFor(block)! / 1024 / 1024).toFixed(1) }} MB
-                </span>
-              </span>
+            <p class="block__offer-text">
+              This preview is a running WebAssembly build<template
+                v-if="sizeFor(block)"
+              >
+                — a {{ (sizeFor(block)! / 1024 / 1024).toFixed(1) }} MB
+                download</template
+              >. The page fetches them in the background, one block at a time,
+              starting with the first.
+            </p>
+            <button type="button" class="block__offer" @click="request(block)">
+              <Play :size="14" aria-hidden="true" />
+              Show live preview
             </button>
-            <template v-else>
-              <p class="block__offer-text">
-                This preview is a running WebAssembly build<template
-                  v-if="sizeFor(block)"
-                >
-                  — a {{ (sizeFor(block)! / 1024 / 1024).toFixed(1) }} MB
-                  download</template
-                >. It fetches only when you ask for it.
-              </p>
-              <button type="button" class="block__offer" @click="request(block)">
-                <Download :size="14" aria-hidden="true" />
-                Download &amp; show preview
+
+            <!-- What the queue is doing with this block, and the one action
+                 available on it: the fetching starts by itself, so a reader who
+                 wants it stopped has to be able to see that it is running. -->
+            <div v-if="fetchRowVisible(block)" class="block__fetch">
+              <span v-if="queued(block)" class="block__fetch-state">
+                Waiting to download
+              </span>
+              <span v-else-if="downloading(block)" class="block__fetch-state">
+                Downloading {{ progress[block.id] ?? 0 }}%
+              </span>
+              <button
+                v-if="downloadOf(block) === 'idle' || downloadOf(block) === 'stopped'"
+                type="button"
+                class="block__fetch-action"
+                @click="enqueue(block, true)"
+              >
+                <Download :size="13" aria-hidden="true" />
+                Download now
               </button>
-            </template>
+              <button
+                v-else
+                type="button"
+                class="block__fetch-action"
+                @click="stopDownload(block)"
+              >
+                Stop
+              </button>
+            </div>
           </div>
 
           <div
@@ -675,7 +720,7 @@ function reload(block: Block) {
             <PreviewLoader
               :label="`Loading ${block.title}…`"
               :size="sizeFor(block)"
-              :percent="warmth[block.id] ?? null"
+              :percent="progress[block.id] ?? null"
             />
           </div>
         </div>
@@ -934,100 +979,6 @@ function reload(block: Block) {
   gap: 1rem;
   padding: 1.5rem;
   text-align: center;
-}
-
-.block__status--offer:has(.block__poster) {
-  padding: 0;
-}
-
-/* The whole picture is the control. It shows what the block is; the pointer or
-   the keyboard brings up the call to action over it. */
-.block__poster {
-  position: relative;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 100%;
-  height: 100%;
-  padding: 0;
-  border: 0;
-  background: var(--card);
-  color: inherit;
-  cursor: pointer;
-}
-
-.block__poster-image {
-  display: block;
-  width: 100%;
-  height: 100%;
-  object-fit: contain;
-}
-
-/* The picture dims under a scrim rather than through a filter on the image.
-   Animating `filter` on a 1278px-wide bitmap makes the browser re-rasterise it
-   every frame, which flickers; an opacity transition composites instead. The
-   scrim is black because its job is to dim whatever picture is under it, in
-   either theme — the one raw value here, for the same reason the frame's own
-   background is raw. */
-.block__poster::after {
-  content: "";
-  position: absolute;
-  inset: 0;
-  background: rgb(0 0 0 / 0.5);
-  opacity: 0;
-  transition: opacity 180ms ease;
-  pointer-events: none;
-}
-
-.block__poster:hover::after,
-.block__poster:focus-visible::after {
-  opacity: 1;
-}
-
-.block__poster:focus-visible {
-  outline: 2px solid var(--brand);
-  outline-offset: -2px;
-}
-
-/* The call to action, over the picture, only while the pointer or the keyboard
-   is on it. `:disabled` is the moment after the click, when the loader owns the
-   box. */
-.block__poster-cta {
-  position: absolute;
-  display: inline-flex;
-  align-items: center;
-  gap: 0.45rem;
-  min-height: 2.5rem;
-  padding: 0 1.1rem;
-  border: 1px solid color-mix(in srgb, var(--foreground) 30%, transparent);
-  border-radius: var(--radius-control);
-  /* Opaque, and no `backdrop-filter`: blurring a backdrop that is itself being
-     dimmed underneath re-samples it every frame and flashes. */
-  background: var(--background);
-  color: var(--foreground);
-  font-size: 0.875rem;
-  font-weight: 560;
-  opacity: 0;
-  transform: translateY(0.25rem);
-  transition:
-    opacity 160ms ease,
-    transform 160ms ease;
-  z-index: 1;
-}
-
-.block__poster:hover .block__poster-cta,
-.block__poster:focus-visible .block__poster-cta {
-  opacity: 1;
-  transform: none;
-}
-
-.block__poster-size {
-  color: var(--muted-foreground);
-  font-weight: 460;
-}
-
-.block__poster:disabled {
-  cursor: default;
 }
 
 /* The wait sits over the picture rather than replacing it, so the reader keeps
