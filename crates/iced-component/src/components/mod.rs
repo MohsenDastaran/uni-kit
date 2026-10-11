@@ -11,6 +11,7 @@ pub mod theme;
 
 pub mod accordion;
 pub mod alert;
+pub mod avatar;
 pub mod badge;
 pub mod button;
 pub mod calendar;
