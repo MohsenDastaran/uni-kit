@@ -120,14 +120,24 @@ if (fs.existsSync(icedUi)) {
     .filter((name) => name.endsWith('.rs') && name !== 'theme.rs' && name !== 'mod.rs')
     .sort();
   for (const file of files) {
-    const name = file.replace(/\.rs$/, '');
-    if (!/^[a-z][a-z0-9_]*$/.test(name)) {
-      // `uni-kit add` refuses a module name it cannot write as `pub mod <name>;`.
-      throw new Error(`iced component "${name}" is not a valid Rust module name.`);
+    const module = file.replace(/\.rs$/, '');
+    if (!/^[a-z][a-z0-9_]*$/.test(module)) {
+      // A registry key may hold a hyphen, a module name may not. The key the
+      // site and the CLI use is the module with underscores back to hyphens, so
+      // `description_list.rs` installs as `npx uni-kit add iced description-list`.
+      throw new Error(
+        `iced component "${module}" is not a valid Rust module name. ` +
+          `Name the file after the registry key with hyphens as underscores.`,
+      );
+    }
+    const name = module.replace(/_/g, '-');
+    if (iced.components[name]) {
+      // `dropdown_button` and `dropdown-button` would install over each other.
+      throw new Error(`iced components "${module}" and another file both map to the registry key "${name}".`);
     }
     const src = `crates/iced-component/src/components/${file}`;
     iced.components[name] = [
-      { src, target: file, module: name },
+      { src, target: file, module },
       { src: theme, target: 'theme.rs', module: 'theme' },
     ];
   }

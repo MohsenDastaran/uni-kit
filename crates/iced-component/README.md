@@ -39,7 +39,10 @@ component.
 
 The shape, with `button.rs` as the worked example:
 
-- **One file per registry key**, named exactly after it, `pub` items only.
+- **One file per registry key**, `pub` items only. A key may hold a hyphen
+  (`description-list`), a module may not: the file and the module are the key with
+  hyphens as underscores (`description_list.rs`, `pub mod description_list;`), and
+  the component's module docs name the key it installs as.
 - **`#![allow(dead_code)]`** after the module docs. The file is a library that
   arrived by copy: an application uses part of it and gets warnings for the rest.
 - **The theme is `super::theme`.** Never `crate::`. The installed directory can be

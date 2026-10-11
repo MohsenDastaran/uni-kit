@@ -30,14 +30,19 @@ const wired = new Set(Object.keys(registry.iced?.components ?? {}));
 const exists = (file) => fs.existsSync(file);
 const lines = (file) => (exists(file) ? fs.readFileSync(file, 'utf8').trim().split('\n').length : 0);
 
+// The registry key is the site's slug and may hold a hyphen; the file and the
+// module cannot, so the key is the module with underscores back to hyphens.
+const moduleOf = (name) => name.replace(/-/g, '_');
+
 const rows = inventory.map((name) => {
-  const source = path.join(ui, `${name}.rs`);
-  const example = path.join(examples, `${name}.rs`);
+  const source = path.join(ui, `${moduleOf(name)}.rs`);
+  const example = path.join(examples, `${moduleOf(name)}.rs`);
   const slint = path.join(slintUi, `${name}.slint`);
   const page = path.join(pages, `${name}.md`);
   const size = lines(source);
   return {
     name,
+    module: moduleOf(name),
     slint: exists(slint),
     gpui: exists(page),
     source: size > 0,
@@ -52,11 +57,11 @@ const missing = rows.filter((r) => !(r.source && r.example && r.wired)).map((r) 
 
 const tick = (value) => (value ? 'yes' : '—');
 const table = [
-  '| Component | GPUI ref | Slint ref | iced source | lines | example | registry |',
-  '| --- | --- | --- | --- | --- | --- | --- |',
+  '| Component | iced file | GPUI ref | Slint ref | iced source | lines | example | registry |',
+  '| --- | --- | --- | --- | --- | --- | --- | --- |',
   ...rows.map(
     (r) =>
-      `| \`${r.name}\` | ${tick(r.gpui)} | ${tick(r.slint)} | ${tick(r.source)} | ${r.lines || '—'} | ${tick(r.example)} | ${tick(r.wired)} |`,
+      `| \`${r.name}\` | \`${r.module}.rs\` | ${tick(r.gpui)} | ${tick(r.slint)} | ${tick(r.source)} | ${r.lines || '—'} | ${tick(r.example)} | ${tick(r.wired)} |`,
   ),
   '',
   `**${done} / ${rows.length}** components have an iced source, an example and a registry entry.`,

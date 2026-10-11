@@ -54,9 +54,12 @@ exists to put in it.
 
 Mirroring Slint, with the adaptations Rust and iced require:
 
-- One component per file in `crates/iced-component/src/components/`, named after
-  the registry key (`alert-dialog.rs` for `alert-dialog`), so the file name, the
-  registry key and the module name agree.
+- One component per file in `crates/iced-component/src/components/`. The registry
+  key is the site's slug and keeps its hyphens (`alert-dialog`); the file and the
+  module are that key with hyphens as underscores (`alert_dialog.rs`,
+  `pub mod alert_dialog;`), because Rust does not allow the hyphen. The manifest
+  builder does the mapping, so a hyphenated file fails the build rather than
+  being missed, and each component's module docs name the key it installs as.
 - Every component file is self-contained apart from `theme.rs`, which is shipped
   beside it, exactly as every Slint component ships `theme.slint`. A component
   declares no dependency the caller does not already have.
@@ -88,87 +91,87 @@ formats the examples use — the widget still decodes `Handle::from_bytes` and
 ## Status
 
 <!-- iced-checklist:start -->
-| Component | GPUI ref | Slint ref | iced source | lines | example | registry |
-| --- | --- | --- | --- | --- | --- | --- |
-| `accordion` | yes | yes | — | — | — | — |
-| `alert` | yes | yes | — | — | — | — |
-| `alert-dialog` | yes | yes | — | — | — | — |
-| `attachment` | yes | yes | — | — | — | — |
-| `avatar` | yes | yes | — | — | — | — |
-| `badge` | yes | yes | — | — | — | — |
-| `bubble` | yes | yes | — | — | — | — |
-| `button` | yes | yes | yes | 497 | yes | yes |
-| `calendar` | yes | yes | — | — | — | — |
-| `card` | yes | yes | — | — | — | — |
-| `carousel` | yes | yes | — | — | — | — |
-| `chart` | yes | yes | — | — | — | — |
-| `checkbox` | yes | yes | — | — | — | — |
-| `clipboard` | yes | yes | — | — | — | — |
-| `collapsible` | yes | yes | — | — | — | — |
-| `color-picker` | yes | yes | — | — | — | — |
-| `combobox` | yes | yes | — | — | — | — |
-| `command` | yes | yes | — | — | — | — |
-| `data-table` | yes | yes | — | — | — | — |
-| `date-picker` | yes | yes | — | — | — | — |
-| `description-list` | yes | yes | — | — | — | — |
-| `dialog` | yes | yes | — | — | — | — |
-| `dock` | yes | yes | — | — | — | — |
-| `dropdown_button` | yes | yes | — | — | — | — |
-| `editor` | yes | yes | — | — | — | — |
-| `empty` | yes | yes | — | — | — | — |
-| `focus-trap` | yes | yes | — | — | — | — |
-| `form` | yes | yes | — | — | — | — |
-| `group-box` | yes | yes | — | — | — | — |
-| `hover-card` | yes | yes | — | — | — | — |
-| `icon` | yes | yes | — | — | — | — |
-| `image` | yes | yes | — | — | — | — |
-| `input` | yes | yes | — | — | — | — |
-| `input-group` | yes | yes | — | — | — | — |
-| `kbd` | yes | yes | — | — | — | — |
-| `label` | yes | yes | — | — | — | — |
-| `list` | yes | yes | — | — | — | — |
-| `marker` | yes | yes | — | — | — | — |
-| `menu` | yes | yes | — | — | — | — |
-| `message` | yes | yes | — | — | — | — |
-| `message-role` | — | yes | — | — | — | — |
-| `message-scroller` | yes | yes | — | — | — | — |
-| `notification` | yes | yes | — | — | — | — |
-| `number-input` | yes | yes | — | — | — | — |
-| `otp-input` | yes | yes | — | — | — | — |
-| `pagination` | yes | yes | — | — | — | — |
-| `popover` | yes | yes | — | — | — | — |
-| `progress` | yes | yes | — | — | — | — |
-| `questionnaire` | yes | yes | — | — | — | — |
-| `radio` | yes | yes | — | — | — | — |
-| `rating` | yes | yes | — | — | — | — |
-| `resizable` | yes | yes | — | — | — | — |
-| `root` | yes | yes | — | — | — | — |
-| `scrollable` | yes | yes | — | — | — | — |
-| `select` | yes | yes | — | — | — | — |
-| `settings` | yes | yes | — | — | — | — |
-| `sheet` | yes | yes | — | — | — | — |
-| `shimmer` | yes | yes | — | — | — | — |
-| `sidebar` | yes | yes | — | — | — | — |
-| `skeleton` | yes | yes | — | — | — | — |
-| `slider` | yes | yes | — | — | — | — |
-| `speech` | yes | yes | — | — | — | — |
-| `spinner` | yes | yes | — | — | — | — |
-| `status-bar` | yes | yes | — | — | — | — |
-| `stepper` | yes | yes | — | — | — | — |
-| `switch` | yes | yes | — | — | — | — |
-| `table` | yes | yes | — | — | — | — |
-| `tabs` | yes | yes | — | — | — | — |
-| `tag` | yes | yes | — | — | — | — |
-| `text-view` | yes | yes | — | — | — | — |
-| `textarea` | yes | yes | — | — | — | — |
-| `theme` | yes | yes | yes | 406 | — | — |
-| `time-field` | yes | yes | — | — | — | — |
-| `title-bar` | yes | yes | — | — | — | — |
-| `toggle` | yes | yes | — | — | — | — |
-| `toolbar` | yes | yes | — | — | — | — |
-| `tooltip` | yes | yes | — | — | — | — |
-| `tree` | yes | yes | — | — | — | — |
-| `virtual-list` | yes | yes | — | — | — | — |
+| Component | iced file | GPUI ref | Slint ref | iced source | lines | example | registry |
+| --- | --- | --- | --- | --- | --- | --- | --- |
+| `accordion` | `accordion.rs` | yes | yes | — | — | — | — |
+| `alert` | `alert.rs` | yes | yes | yes | 321 | — | yes |
+| `alert-dialog` | `alert_dialog.rs` | yes | yes | — | — | — | — |
+| `attachment` | `attachment.rs` | yes | yes | — | — | — | — |
+| `avatar` | `avatar.rs` | yes | yes | — | — | — | — |
+| `badge` | `badge.rs` | yes | yes | yes | 237 | — | yes |
+| `bubble` | `bubble.rs` | yes | yes | — | — | — | — |
+| `button` | `button.rs` | yes | yes | yes | 497 | yes | yes |
+| `calendar` | `calendar.rs` | yes | yes | — | — | — | — |
+| `card` | `card.rs` | yes | yes | yes | 198 | — | yes |
+| `carousel` | `carousel.rs` | yes | yes | — | — | — | — |
+| `chart` | `chart.rs` | yes | yes | — | — | — | — |
+| `checkbox` | `checkbox.rs` | yes | yes | — | — | — | — |
+| `clipboard` | `clipboard.rs` | yes | yes | — | — | — | — |
+| `collapsible` | `collapsible.rs` | yes | yes | — | — | — | — |
+| `color-picker` | `color_picker.rs` | yes | yes | — | — | — | — |
+| `combobox` | `combobox.rs` | yes | yes | — | — | — | — |
+| `command` | `command.rs` | yes | yes | — | — | — | — |
+| `data-table` | `data_table.rs` | yes | yes | — | — | — | — |
+| `date-picker` | `date_picker.rs` | yes | yes | — | — | — | — |
+| `description-list` | `description_list.rs` | yes | yes | yes | 454 | — | yes |
+| `dialog` | `dialog.rs` | yes | yes | — | — | — | — |
+| `dock` | `dock.rs` | yes | yes | — | — | — | — |
+| `dropdown_button` | `dropdown_button.rs` | yes | yes | — | — | — | — |
+| `editor` | `editor.rs` | yes | yes | — | — | — | — |
+| `empty` | `empty.rs` | yes | yes | — | — | — | — |
+| `focus-trap` | `focus_trap.rs` | yes | yes | — | — | — | — |
+| `form` | `form.rs` | yes | yes | — | — | — | — |
+| `group-box` | `group_box.rs` | yes | yes | — | — | — | — |
+| `hover-card` | `hover_card.rs` | yes | yes | — | — | — | — |
+| `icon` | `icon.rs` | yes | yes | — | — | — | — |
+| `image` | `image.rs` | yes | yes | — | — | — | — |
+| `input` | `input.rs` | yes | yes | — | — | — | — |
+| `input-group` | `input_group.rs` | yes | yes | — | — | — | — |
+| `kbd` | `kbd.rs` | yes | yes | — | — | — | — |
+| `label` | `label.rs` | yes | yes | — | — | — | — |
+| `list` | `list.rs` | yes | yes | — | — | — | — |
+| `marker` | `marker.rs` | yes | yes | — | — | — | — |
+| `menu` | `menu.rs` | yes | yes | — | — | — | — |
+| `message` | `message.rs` | yes | yes | — | — | — | — |
+| `message-role` | `message_role.rs` | — | yes | — | — | — | — |
+| `message-scroller` | `message_scroller.rs` | yes | yes | — | — | — | — |
+| `notification` | `notification.rs` | yes | yes | — | — | — | — |
+| `number-input` | `number_input.rs` | yes | yes | — | — | — | — |
+| `otp-input` | `otp_input.rs` | yes | yes | — | — | — | — |
+| `pagination` | `pagination.rs` | yes | yes | — | — | — | — |
+| `popover` | `popover.rs` | yes | yes | — | — | — | — |
+| `progress` | `progress.rs` | yes | yes | — | — | — | — |
+| `questionnaire` | `questionnaire.rs` | yes | yes | — | — | — | — |
+| `radio` | `radio.rs` | yes | yes | — | — | — | — |
+| `rating` | `rating.rs` | yes | yes | — | — | — | — |
+| `resizable` | `resizable.rs` | yes | yes | — | — | — | — |
+| `root` | `root.rs` | yes | yes | — | — | — | — |
+| `scrollable` | `scrollable.rs` | yes | yes | — | — | — | — |
+| `select` | `select.rs` | yes | yes | — | — | — | — |
+| `settings` | `settings.rs` | yes | yes | — | — | — | — |
+| `sheet` | `sheet.rs` | yes | yes | — | — | — | — |
+| `shimmer` | `shimmer.rs` | yes | yes | — | — | — | — |
+| `sidebar` | `sidebar.rs` | yes | yes | — | — | — | — |
+| `skeleton` | `skeleton.rs` | yes | yes | — | — | — | — |
+| `slider` | `slider.rs` | yes | yes | — | — | — | — |
+| `speech` | `speech.rs` | yes | yes | — | — | — | — |
+| `spinner` | `spinner.rs` | yes | yes | — | — | — | — |
+| `status-bar` | `status_bar.rs` | yes | yes | — | — | — | — |
+| `stepper` | `stepper.rs` | yes | yes | — | — | — | — |
+| `switch` | `switch.rs` | yes | yes | — | — | — | — |
+| `table` | `table.rs` | yes | yes | — | — | — | — |
+| `tabs` | `tabs.rs` | yes | yes | — | — | — | — |
+| `tag` | `tag.rs` | yes | yes | — | — | — | — |
+| `text-view` | `text_view.rs` | yes | yes | — | — | — | — |
+| `textarea` | `textarea.rs` | yes | yes | — | — | — | — |
+| `theme` | `theme.rs` | yes | yes | yes | 406 | — | — |
+| `time-field` | `time_field.rs` | yes | yes | — | — | — | — |
+| `title-bar` | `title_bar.rs` | yes | yes | — | — | — | — |
+| `toggle` | `toggle.rs` | yes | yes | — | — | — | — |
+| `toolbar` | `toolbar.rs` | yes | yes | — | — | — | — |
+| `tooltip` | `tooltip.rs` | yes | yes | — | — | — | — |
+| `tree` | `tree.rs` | yes | yes | — | — | — | — |
+| `virtual-list` | `virtual_list.rs` | yes | yes | — | — | — | — |
 
 **1 / 79** components have an iced source, an example and a registry entry.
 

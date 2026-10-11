@@ -22270,11 +22270,59 @@
     "default_target_dir": "src/components",
     "mod_file": "src/components/mod.rs",
     "components": {
+      "alert": [
+        {
+          "src": "crates/iced-component/src/components/alert.rs",
+          "target": "alert.rs",
+          "module": "alert"
+        },
+        {
+          "src": "crates/iced-component/src/components/theme.rs",
+          "target": "theme.rs",
+          "module": "theme"
+        }
+      ],
+      "badge": [
+        {
+          "src": "crates/iced-component/src/components/badge.rs",
+          "target": "badge.rs",
+          "module": "badge"
+        },
+        {
+          "src": "crates/iced-component/src/components/theme.rs",
+          "target": "theme.rs",
+          "module": "theme"
+        }
+      ],
       "button": [
         {
           "src": "crates/iced-component/src/components/button.rs",
           "target": "button.rs",
           "module": "button"
+        },
+        {
+          "src": "crates/iced-component/src/components/theme.rs",
+          "target": "theme.rs",
+          "module": "theme"
+        }
+      ],
+      "card": [
+        {
+          "src": "crates/iced-component/src/components/card.rs",
+          "target": "card.rs",
+          "module": "card"
+        },
+        {
+          "src": "crates/iced-component/src/components/theme.rs",
+          "target": "theme.rs",
+          "module": "theme"
+        }
+      ],
+      "description-list": [
+        {
+          "src": "crates/iced-component/src/components/description_list.rs",
+          "target": "description_list.rs",
+          "module": "description_list"
         },
         {
           "src": "crates/iced-component/src/components/theme.rs",
