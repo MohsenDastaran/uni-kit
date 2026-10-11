@@ -155,6 +155,28 @@ public APIs. This is the strongest check available of the registry, the CLI, the
 shared theme and the component source together, because it is exactly what a
 reader does.
 
+**Fidelity, coarsely.** The compiler says a port builds; it does not say the port
+is complete. As a first pass, every ported component was compared against the
+Slint source it came from, by size:
+
+```
+component                iced  slint  ratio
+theme                     406    326   1.25
+description-list          441    336   1.31
+accordion                 366    219   1.67
+...
+skeleton                  152     15  10.13
+22 components ported; median ratio 3.08
+```
+
+No component is thinner than its source, and the median is three times it, which
+is what iced's builder style costs against Slint's declarative syntax. A ratio
+below 0.45 on a source over 40 lines would have been worth reading closely; none
+is. This is a smoke test, not a substitute for reading a port beside its Slint
+original — but it is cheap, it runs over every component at once, and it would
+have caught the failure this task cares about, a component that compiles while
+drawing almost nothing.
+
 **The crate's own gates**, run in `crates/iced-component`:
 
 ```bash
@@ -173,8 +195,8 @@ scripts/check.sh               # theme parity, feature agreement, manifest, chec
 | `accordion` | `accordion.rs` | yes | yes | yes | 366 | yes | yes |
 | `alert` | `alert.rs` | yes | yes | yes | 319 | yes | yes |
 | `alert-dialog` | `alert_dialog.rs` | yes | yes | — | — | — | — |
-| `attachment` | `attachment.rs` | yes | yes | — | — | — | yes |
-| `avatar` | `avatar.rs` | yes | yes | — | — | — | yes |
+| `attachment` | `attachment.rs` | yes | yes | — | — | — | — |
+| `avatar` | `avatar.rs` | yes | yes | — | — | — | — |
 | `badge` | `badge.rs` | yes | yes | yes | 237 | yes | yes |
 | `bubble` | `bubble.rs` | yes | yes | — | — | — | — |
 | `button` | `button.rs` | yes | yes | yes | 497 | yes | yes |
@@ -194,14 +216,14 @@ scripts/check.sh               # theme parity, feature agreement, manifest, chec
 | `dialog` | `dialog.rs` | yes | yes | — | — | — | — |
 | `dock` | `dock.rs` | yes | yes | — | — | — | — |
 | `dropdown_button` | `dropdown_button.rs` | yes | yes | — | — | — | — |
-| `editor` | `editor.rs` | yes | yes | — | — | — | yes |
+| `editor` | `editor.rs` | yes | yes | — | — | — | — |
 | `empty` | `empty.rs` | yes | yes | yes | 330 | yes | yes |
 | `focus-trap` | `focus_trap.rs` | yes | yes | — | — | — | — |
 | `form` | `form.rs` | yes | yes | — | — | — | — |
 | `group-box` | `group_box.rs` | yes | yes | yes | 227 | yes | yes |
 | `hover-card` | `hover_card.rs` | yes | yes | — | — | — | — |
-| `icon` | `icon.rs` | yes | yes | — | — | — | yes |
-| `image` | `image.rs` | yes | yes | — | — | — | yes |
+| `icon` | `icon.rs` | yes | yes | — | — | — | — |
+| `image` | `image.rs` | yes | yes | — | — | — | — |
 | `input` | `input.rs` | yes | yes | — | — | — | — |
 | `input-group` | `input_group.rs` | yes | yes | — | — | — | — |
 | `kbd` | `kbd.rs` | yes | yes | yes | 141 | yes | yes |
@@ -210,8 +232,8 @@ scripts/check.sh               # theme parity, feature agreement, manifest, chec
 | `marker` | `marker.rs` | yes | yes | yes | 123 | yes | yes |
 | `menu` | `menu.rs` | yes | yes | — | — | — | — |
 | `message` | `message.rs` | yes | yes | — | — | — | — |
-| `message-role` | `message_role.rs` | — | yes | — | — | — | yes |
-| `message-scroller` | `message_scroller.rs` | yes | yes | — | — | — | yes |
+| `message-role` | `message_role.rs` | — | yes | — | — | — | — |
+| `message-scroller` | `message_scroller.rs` | yes | yes | — | — | — | — |
 | `notification` | `notification.rs` | yes | yes | — | — | — | — |
 | `number-input` | `number_input.rs` | yes | yes | — | — | — | — |
 | `otp-input` | `otp_input.rs` | yes | yes | — | — | — | — |
@@ -239,7 +261,7 @@ scripts/check.sh               # theme parity, feature agreement, manifest, chec
 | `table` | `table.rs` | yes | yes | — | — | — | — |
 | `tabs` | `tabs.rs` | yes | yes | yes | 300 | — | yes |
 | `tag` | `tag.rs` | yes | yes | yes | 257 | yes | yes |
-| `text-view` | `text_view.rs` | yes | yes | — | — | — | yes |
+| `text-view` | `text_view.rs` | yes | yes | — | — | — | — |
 | `textarea` | `textarea.rs` | yes | yes | — | — | — | — |
 | `theme` | `theme.rs` | yes | yes | yes | 406 | — | — |
 | `time-field` | `time_field.rs` | yes | yes | — | — | — | — |
