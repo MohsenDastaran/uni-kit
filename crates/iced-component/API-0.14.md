@@ -1199,7 +1199,11 @@ pub fn new(impl Into<Pixels>) -> Self   // UNVERIFIED exact name; source shows `
 pub fn x(self) -> f32 ; pub fn y(self) -> f32 ; pub fn fit(self, inner: Size, outer: Size) -> Self
 // padding::all / padding::top / padding::bottom / padding::left / padding::right / padding::horizontal / padding::vertical
 // Because widget `.padding(..)` takes `impl Into<Padding>`, ALL of these work:
-//   .padding(10)  .padding([10, 20])  .padding([10, 20, 30, 40])  .padding(Padding::new(10.0))  .padding(Padding::from([10.0, 20.0]))
+//   .padding(10)  .padding([10, 20])  .padding(Padding::new(10.0))
+//   NOTE (corrected in this repository): `.padding([a, b, c, d])` does NOT
+//   compile — `Padding` converts from a scalar and from `[vertical, horizontal]`
+//   only. For four sides use the struct:
+//   .padding(Padding { top: 8.0, right: 16.0, bottom: 8.0, left: 16.0 })
 
 pub enum Alignment { Start, Center, End }
 pub enum alignment::Horizontal { Left, Center, Right }
