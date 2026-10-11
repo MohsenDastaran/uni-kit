@@ -88,6 +88,27 @@ the browser gallery will meet it first. If it does, the fix is to take
 formats the examples use — the widget still decodes `Handle::from_bytes` and
 `from_rgba` either way.
 
+## How a batch of components is finished
+
+The components are written in batches, and a batch is only done when all of this
+holds — the compiler decides most of it, but not all of it:
+
+```bash
+node crates/iced-component/scripts/mod-rs.mjs   # the module list follows the directory
+cargo build                                     # every component compiles
+cargo build --examples                          # every usage example compiles
+crates/iced-component/scripts/check.sh          # theme parity, feature agreement, manifest, checklist
+node crates/iced-component/scripts/status.mjs --check
+```
+
+Then, by hand, because no script sees it:
+
+- no `todo!()`, `unimplemented!()`, placeholder or stub in any component;
+- each file draws what its Slint counterpart draws — the states, sizes and
+  variants, not a simplified stand-in;
+- anything that could not be reproduced says so in the component's module docs;
+- the checklist count went up by exactly the number of components in the batch.
+
 ## Status
 
 <!-- iced-checklist:start -->
