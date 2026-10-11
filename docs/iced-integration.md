@@ -126,13 +126,19 @@ hand: `registry/build-manifest.mjs` reads it from the sources into
 fails if a source uses a crate the manifest does not declare. The CLI prints the
 line for the components that need it and nothing for the ones that do not.
 
-**The wasm-bindgen CLI has to match the module.** The iced crate keeps its own
-lockfile, and its `wasm-bindgen` (0.2.129) is a different version from the
-workspace's (0.2.121). A CLI and a module that disagree are refused at the
-bindings step, and two versions cannot share one binary, so the release workflow
-installs a second CLI into its own prefix for the iced build. `build-wasm.sh`
-prints the version it wants when the bindings are refused, because the fix is a
-`cargo install` rather than anything in the repository.
+**The wasm-bindgen CLI has to match the module, and there are two of them.** The
+iced crate keeps its own lockfile, and its `wasm-bindgen` (0.2.129) is a different
+version from the workspace's (0.2.121), which the GPUI and Slint galleries use. A
+CLI and a module that disagree are refused at the bindings step, and two versions
+cannot share one binary.
+
+Installing the iced version over the shared one is what broke the Slint gallery
+once — caught by building one of its pages, not by reading anything. So the iced
+CLI lives in a prefix of its own (`make install-iced-bindgen` writes
+`~/.wasm-bindgen-iced`), `scripts/build-wasm.sh` prefers it, then `$WASM_BINDGEN`,
+then whatever is on `PATH`, and the release workflow does the same with a `--root`.
+`build-wasm.sh` prints the version it wants when the bindings are refused, because
+the fix is a `cargo install` rather than anything in the repository.
 
 ## The gallery
 
@@ -167,8 +173,12 @@ importing was being served correctly.
 
 The build runs inside `script/guard.sh`, the cgroup cap Slint's gallery uses,
 moved out of that crate so there is one copy rather than two. It builds
-**release**: a debug iced module is 90 MB against 5.7 MB, and a preview nobody
-will wait for is not a preview.
+**release**: a debug iced module is 90 MB against 7.8 MB, and a preview nobody
+will wait for is not a preview. The 7.8 MB includes wgpu's WebGL backend, which
+cost about 2 MB over the WebGPU-only build and is what makes the gallery work in a
+browser without WebGPU. `wasm-opt` would shrink it further and is optional:
+`script/optimize-wasm.sh` says so and leaves the module alone when the optimizer is
+missing, which is the case on this machine.
 
 **What it cannot do.** Rendering needs WebGPU or WebGL2 from the browser; a
 browser with neither shows the page's message rather than a blank frame. A theme
@@ -296,9 +306,9 @@ dev:website-iced` builds the module and serves the site; then, through the dev
 server:
 
 ```
-/iced-gallery?story=button              200  text/html            3,820 B
-/iced-gallery/iced_component.js         200  text/javascript    106,057 B
-/iced-gallery/iced_component_bg.wasm    200  application/wasm  5.74 MB
+/iced-gallery?story=button              200  text/html            4,594 B
+/iced-gallery/iced_component.js         200  text/javascript    149,994 B
+/iced-gallery/iced_component_bg.wasm    200  application/wasm  8,151,057 B  (7.77 MB)
 ```
 
 The module loads and instantiates in Chrome, and the page's failure path renders
