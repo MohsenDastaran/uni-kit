@@ -325,9 +325,14 @@ impl<'a, Message> Button<'a, Message> {
             return Color::TRANSPARENT;
         }
         let tone = self.tone(tokens);
+        // An edge has to be visible in either theme. The fixed dark greys a solid
+        // control fills with disappear on a near-black page, which is what made an
+        // outlined Primary and Secondary read as plain text in the dark theme; a
+        // proportion of the *foreground* is a light edge there and a dark one in
+        // the light theme, and an outlined primary keeps its own colour.
         match self.variant {
-            Variant::Default => tokens.input,
-            Variant::Secondary => tokens.border,
+            Variant::Primary if self.outline => tokens.primary,
+            Variant::Default | Variant::Secondary => theme::alpha(tokens.foreground, 0.25),
             _ if self.status_variant() => {
                 theme::alpha(tone, if self.outline { 0.45 } else { 0.2 })
             }
