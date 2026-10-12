@@ -361,7 +361,18 @@ pub fn ink(tokens: Tokens, variant: Variant, outline: bool) -> Color {
         Variant::Text => theme::alpha(tokens.foreground, 0.9),
         Variant::Ghost => tokens.secondary_foreground,
         Variant::Default => tokens.foreground,
-        _ if variant.status().is_some() => tone,
+        _ if variant.status().is_some() => {
+            if outline {
+                tone
+            } else {
+                // A solid status button carries its hue in the fill, so its label
+                // is the ordinary foreground: near-white on the dark red, near-black
+                // on the light one. Slint's `Button` falls through to `foreground`
+                // for exactly these four, and the hue-on-hue it replaces is the
+                // unreadable pair in the dark theme.
+                tokens.foreground
+            }
+        }
         Variant::Primary => {
             if outline {
                 tokens.primary
