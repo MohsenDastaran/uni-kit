@@ -476,7 +476,15 @@ where
         let icon_only = control.icon_only();
         let disabled = control.on_press.is_none() || control.loading;
         let on_press = control.on_press.clone();
-        let content = control.content();
+        let mut content = control.content();
+        if icon_only {
+            // The glyph is the whole control, so it centres in the square rather
+            // than sitting against the leading edge with the padding removed.
+            content = container(content)
+                .center_x(Length::Fill)
+                .center_y(Length::Fill)
+                .into();
+        }
 
         let mut control = button(content)
             .height(Length::Fixed(height))
