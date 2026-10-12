@@ -476,15 +476,19 @@ where
         let icon_only = control.icon_only();
         let disabled = control.on_press.is_none() || control.loading;
         let on_press = control.on_press.clone();
-        let mut content = control.content();
-        if icon_only {
-            // The glyph is the whole control, so it centres in the square rather
-            // than sitting against the leading edge with the padding removed.
-            content = container(content)
+        // The content is centred down the control's height, and never across a
+        // width it does not own: a `Length::Fill` here would make the button
+        // measure as its padding alone, with the label spilling over whatever sits
+        // beside it. An icon-only button is the exception, because its width is
+        // fixed from its height rather than measured from the glyph.
+        let content: Element<'a, Message> = if icon_only {
+            container(control.content())
                 .center_x(Length::Fill)
                 .center_y(Length::Fill)
-                .into();
-        }
+                .into()
+        } else {
+            container(control.content()).center_y(Length::Fill).into()
+        };
 
         let mut control = button(content)
             .height(Length::Fixed(height))
