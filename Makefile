@@ -47,17 +47,63 @@ dev\:website-slint:
 # the iced build writes. One module answers for every component — `?story=<key>`
 # picks the demo — so unlike Slint there is nothing to build per page, and the
 # whole gallery is one bounded build.
-# Release, not debug: a debug iced module is about 94 MB against 5.7 MB, which is
+# Release, not debug: a debug iced module is about 90 MB against 7.8 MB, which is
 # not a preview anybody waits for. One build covers every component here, so the
 # release build is affordable — unlike Slint, whose catalogue has to be split by
 # page to fit in memory at all.
+#
+#   make dev:website-iced        after changing a demo or a component
+#   make dev:website-iced-page   after changing only the page or the sources
 dev\:website-iced:
 	$(MAKE) -C crates/iced-component build-wasm
+	bun run --cwd website dev
+
+# The same gallery without the module. The page, its source view and its themes
+# need no Rust at all — `scripts/build-page.sh` only copies files — so this is the
+# loop for working on them, and it is seconds rather than minutes. The module is
+# whatever the last build left in www/dist.
+dev\:website-iced-page:
+	$(MAKE) -C crates/iced-component build-page
 	bun run --cwd website dev
 
 # Release WASM for the iced gallery (`/iced-gallery`).
 build\:wasm-iced:
 	$(MAKE) -C crates/iced-component build-wasm
+
+# The page and the demo sources the gallery serves, without the module. The
+# release build writes them too; this writes them on their own.
+build\:page-iced:
+	$(MAKE) -C crates/iced-component build-page
+
+# The iced crate's own gate: the module lists, the library and every example,
+# theme parity with the Slint tokens, the feature list against the install hint,
+# the generated manifest, and the component checklist. The checklist is the one
+# step that fails while components are missing, which is the point of it.
+check\:iced:
+	$(MAKE) -C crates/iced-component check
+
+# The gallery natively, through the same dispatcher the browser module calls.
+# With no story it lists what there is.
+#
+#   make run:iced                  the list
+#   make run:iced STORY=button     one story
+#   make run:iced STORY=button DARK=1
+run\:iced:
+	$(MAKE) -C crates/iced-component run STORY="$(STORY)" DARK="$(DARK)"
+
+# Every story `?story=` takes, one per line, read from the demos themselves.
+stories\:iced:
+	@$(MAKE) -C crates/iced-component stories
+
+# The wasm-bindgen CLI the iced lockfile resolves, installed into a prefix of its
+# own. The workspace's galleries use a different version, and one binary cannot
+# serve both, so this leaves theirs alone.
+install\:iced-bindgen:
+	$(MAKE) -C crates/iced-component install-iced-bindgen
+
+# Remove the built gallery. Nothing outside crates/iced-component/www/dist.
+clean\:iced:
+	$(MAKE) -C crates/iced-component clean-wasm
 
 # Debug WASM for one page of the Slint gallery, memory-capped.
 #

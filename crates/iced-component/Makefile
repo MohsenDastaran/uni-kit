@@ -1,4 +1,9 @@
-.PHONY: build check run build-wasm build-page clean-wasm install-iced-bindgen
+.PHONY: build check run stories build-wasm build-page clean-wasm install-iced-bindgen
+
+# A story to run or to build, and whether to run it dark. Both are empty by
+# default: `make run` with no story shows the list the gallery falls back to.
+STORY ?=
+DARK ?=
 
 # The components and the gallery, then every usage example. Both must be clean:
 # an application installs this source, so a warning here is a warning there.
@@ -9,14 +14,26 @@ build:
 check:
 	./scripts/check.sh
 
+# The gallery natively — the same dispatcher the browser module calls.
+#
+#   make run                     the list of stories
+#   make run STORY=button        one of them
+#   make run STORY=button DARK=1 that one, dark
 run:
-	cargo run --bin iced-gallery
+	cargo run --bin iced-gallery -- $(STORY) $(if $(DARK),--dark,)
+
+# Every story the gallery can show, one per line: the names `?story=` takes on the
+# website and `make run STORY=<name>` accepts. Read from the demos themselves, so
+# it cannot list something that has no demo.
+stories:
+	@ls src/demos/*.rs | sed -e 's|src/demos/||' -e 's|\.rs$$||' -e 's|_|-|g' \
+	  | grep -vE '^(index|mod)$$' | sort
 
 # The browser gallery the website serves at `/iced-gallery`.
 #
-# Release is the only profile offered. A debug iced module is around 94 MB, which
-# a preview frame cannot ask anybody to download, and the whole gallery is one
-# build that takes a couple of minutes either way.
+# Release is the only profile offered. A debug iced module is around 90 MB against
+# 7.8 MB, which a preview frame cannot ask anybody to download, and the whole
+# gallery is one build that takes a couple of minutes either way.
 build-wasm:
 	./scripts/build-wasm.sh --release
 
