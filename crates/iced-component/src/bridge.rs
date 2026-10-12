@@ -28,8 +28,12 @@ pub fn show(index: usize, title: &str) {
         return;
     };
     // Not embedded: the gallery is in a tab of its own, and there is nothing to
-    // scroll.
-    if parent == window.as_ref() {
+    // scroll. The windows are compared as JavaScript values — annotated, because
+    // a browser window can be viewed as several types — which is exactly how the
+    // Slint and GPUI bridges test the same thing.
+    let parent_value: &JsValue = parent.as_ref();
+    let window_value: &JsValue = window.as_ref();
+    if parent_value == window_value {
         return;
     }
     let Ok(origin) = window.location().origin() else {
