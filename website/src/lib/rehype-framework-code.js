@@ -13,7 +13,7 @@ const NAMES = { gpui: 'GPUI', slint: 'Slint', iced: 'Iced' };
 
 const COPY = {
   en: {
-    label: 'Framework',
+    label: 'Install',
     missing: (name) => `No ${name} version of this example yet.`,
     covered: (name) => `This example is GPUI-specific. The ${name} usage near the top of the page covers this component.`,
     status: (name) => `Showing ${name} code`,
@@ -138,24 +138,7 @@ function selector(copy, slug) {
       ),
     },
     [
-      element('span', { className: ['framework-bar__label'], id: 'framework-bar-label' }, [text(copy.label)]),
-      element('div', { className: ['framework-switch'], role: 'radiogroup', ariaLabelledBy: 'framework-bar-label' }, [
-        element('span', { className: ['framework-switch__thumb'], ariaHidden: 'true' }),
-        ...FRAMEWORKS.map((framework, index) =>
-          element(
-            'button',
-            {
-              type: 'button',
-              className: ['framework-switch__option'],
-              role: 'radio',
-              dataFrameworkOption: framework,
-              ariaChecked: index === 0 ? 'true' : 'false',
-              tabIndex: index === 0 ? 0 : -1,
-            },
-            [logoElement(framework), text(NAMES[framework])].filter(Boolean),
-          ),
-        ),
-      ]),
+      element('span', { className: ['framework-bar__label'] }, [text(copy.label)]),
       element('div', { className: ['install-command-host'], dataInstallSlug: slug }),
       element('span', { className: ['sr-only'], role: 'status', dataFrameworkStatus: '' }),
     ],
