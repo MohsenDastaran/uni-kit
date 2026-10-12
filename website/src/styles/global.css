@@ -2337,6 +2337,19 @@ html[data-framework="iced"]
 
 /* A section, or a block, that only one framework has is hidden from the
    others. Keyed on the framework that owns it, so it stays a single value. */
+/* The other direction: a section with no sample for the framework the reader has
+   chosen is left out rather than shown with a note saying it is missing. */
+html[data-framework="gpui"] [data-framework-missing~="gpui"],
+html[data-framework="slint"] [data-framework-missing~="slint"],
+html[data-framework="iced"] [data-framework-missing~="iced"] {
+  /* `!important`, because the group carries its own `display` a few rules down
+     and a section that is left out has to stay left out. */
+  display: none !important;
+}
+
+html[data-framework="gpui"] [data-framework-missing~="gpui"],
+html[data-framework="slint"] [data-framework-missing~="slint"],
+html[data-framework="iced"] [data-framework-missing~="iced"],
 html:not([data-framework="gpui"]) [data-framework-only="gpui"],
 html:not([data-framework="slint"]) [data-framework-only="slint"],
 html:not([data-framework="iced"]) [data-framework-only="iced"] {

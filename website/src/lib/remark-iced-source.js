@@ -240,6 +240,30 @@ export function remarkIcedSource() {
       if (title) byTitle.set(title, node);
     }
 
+    // The page's import fence is the GPUI one. A reader who has chosen iced needs
+    // the lines they would actually write, and the demo has them: its own `use`
+    // statements, which is what the rest of these samples assume.
+    const importHeading = children.find(
+      (node) => node.type === 'heading' && /^import$/i.test(headingText(node)),
+    );
+    if (importHeading) {
+      const demo = readFileSync(
+        join(icedRoot(), 'src', 'demos', `${icedModule(slug)}.rs`),
+        'utf8',
+      );
+      const uses = [];
+      for (const line of demo.split('\n')) {
+        if (/^use /.test(line)) {
+          uses.push(line);
+          continue;
+        }
+        if (uses.length > 0 && line.trim() === '') break;
+      }
+      if (uses.length > 0) {
+        children.splice(children.indexOf(importHeading) + 1, 0, icedCode(uses.join('\n')));
+      }
+    }
+
     let anchor = null;
     for (const section of sections) {
       const heading = [...byTitle].find(([title]) => sameIcedTitle(title, section.title))?.[1];

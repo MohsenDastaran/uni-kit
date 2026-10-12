@@ -193,6 +193,66 @@ export function remarkFrameworkOnly() {
   };
 }
 
+/**
+ * The heading a group belongs to, and the prose between them, take the group's
+ * `data-framework-missing` — the section goes together, or a heading would be left
+ * standing over nothing.
+ *
+ * The walk stops at anything that is not blank text or a paragraph, so it cannot
+ * reach into the section above and hide that too.
+ */
+function hideAbsentSections(tree) {
+  const visitNode = (node) => {
+    const children = node.children ?? [];
+    for (const child of children) visitNode(child);
+    children.forEach((child, index) => {
+      // A group with no sample for a framework: read from the panels themselves
+      // rather than guessed from the first block, because one framework can
+      // contribute several blocks to the same example.
+      if (classNames(child).includes('framework-code')) {
+        const absent = (child.children ?? [])
+          .filter((panel) => panel.properties?.dataFrameworkPanel)
+          // Blank nodes are layout, not content: a panel that holds whitespace
+          // and the note is still a panel with nothing in it.
+          .filter((panel) =>
+            (panel.children ?? [])
+              .filter((node) => !isBlank(node))
+              .every((node) => classNames(node).includes('framework-code__missing')),
+          )
+          .map((panel) => panel.properties.dataFrameworkPanel);
+        if (absent.length) {
+          child.properties = { ...child.properties, dataFrameworkMissing: absent.join(' ') };
+        }
+      }
+      const missingFrameworks = child.properties?.dataFrameworkMissing;
+      if (!missingFrameworks) return;
+      for (let at = index - 1; at >= 0; at -= 1) {
+        const previous = children[at];
+        if (isBlank(previous) || previous.type === 'element') {
+          if (previous.properties?.dataFrameworkCode) return;
+          if (previous.type === 'element' && previous.tagName !== 'p') {
+            if (isHeading(previous)) {
+              previous.properties = { ...previous.properties, dataFrameworkMissing: missingFrameworks };
+            }
+            return;
+          }
+          if (previous.type === 'element') {
+            previous.properties = { ...previous.properties, dataFrameworkMissing: missingFrameworks };
+            continue;
+          }
+          continue;
+        }
+        return;
+      }
+    });
+  };
+  visitNode(tree);
+}
+
+function isHeading(node) {
+  return /^h[1-6]$/.test(node.tagName ?? '');
+}
+
 export function rehypeFrameworkCode() {
   return (tree, file) => {
     const path = String(file?.path ?? file?.history?.[0] ?? '');
@@ -239,9 +299,15 @@ export function rehypeFrameworkCode() {
       const panels = Object.fromEntries(
         FRAMEWORKS.map((name) => [
           name,
-          element('div', { className: ['framework-code__panel'], dataFrameworkPanel: name }, [
-            name === framework ? node : missing(copy, name, covered[name]),
-          ]),
+          element(
+            'div',
+            { className: ['framework-code__panel'], dataFrameworkPanel: name },
+            // A reader who chose iced gets the sample or an empty panel — no note
+            // saying the sample is missing, and never another framework's code. An
+            // empty panel is also what tells the pass below that this framework is
+            // absent here, so the whole section can be hidden under it.
+            name === framework ? [node] : name === 'iced' ? [] : [missing(copy, name, covered[name])],
+          ),
         ]),
       );
       const group = element(
@@ -254,6 +320,7 @@ export function rehypeFrameworkCode() {
     }
 
     markSingleFramework(tree);
+    hideAbsentSections(tree);
 
     const title = tree.children.findIndex((node) => node.type === 'element' && node.tagName === 'h1');
     if (title === -1) return;
