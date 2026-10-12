@@ -472,6 +472,8 @@ where
         let height = control.height();
         let padding = control.padding();
         let width = control.width;
+        // Read before the name is shadowed by the widget below.
+        let icon_only = control.icon_only();
         let disabled = control.on_press.is_none() || control.loading;
         let on_press = control.on_press.clone();
         let content = control.content();
@@ -485,6 +487,11 @@ where
 
         if width != Length::Shrink {
             control = control.width(width);
+        } else if icon_only {
+            // An icon with no label is a square control, not a narrow one: the
+            // width comes from the height the size already decided. Slint's
+            // `Button` with only an `icon` is the same shape.
+            control = control.width(Length::Fixed(height));
         }
         if !disabled {
             if let Some(message) = on_press {
@@ -492,6 +499,9 @@ where
             }
         }
 
-        container(control).into()
+        // `Length::Shrink`, so a button in a row keeps the height its size gives
+        // it instead of being stretched to the tallest thing beside it — which is
+        // what pushed every label to the top of its control.
+        container(control).height(Length::Shrink).into()
     }
 }
