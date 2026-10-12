@@ -1,145 +1,165 @@
 <!doctype html>
 <html lang="en">
-  <head>
-    <meta charset="utf-8" />
-    <!-- Pins the layout viewport to the card, so a capture at any device pixel
+    <head>
+        <meta charset="utf-8" />
+        <!-- Pins the layout viewport to the card, so a capture at any device pixel
          ratio frames the card exactly. -->
-    <meta name="viewport" content="width=1200" />
-    <title>OG template</title>
-    <style>
-      * { margin: 0; padding: 0; box-sizing: border-box; }
+        <meta name="viewport" content="width=1200" />
+        <title>OG template</title>
+        <style>
+            * {
+                margin: 0;
+                padding: 0;
+                box-sizing: border-box;
+            }
 
-      :root {
-        --bg: #ffffff;
-        --fg: #0a0a0a;
-        --muted: #737373;
-        --border: #e5e5e5;
-        --rule-dim: #d4d4d4;
-        --logo-c: #1f2023;
-        --logo-accent: #3b82f6;
-        --mono: ui-monospace, "SF Mono", Menlo, monospace;
-      }
+            :root {
+                --bg: #ffffff;
+                --fg: #0a0a0a;
+                --muted: #737373;
+                --border: #e5e5e5;
+                --rule-dim: #d4d4d4;
+                --mono: ui-monospace, "SF Mono", Menlo, monospace;
+            }
 
-      /* Screenshot the dark variant by emulating a dark colour scheme; the two
+            /* Screenshot the dark variant by emulating a dark colour scheme; the two
          renders share one template so they can never drift apart. */
-      @media (prefers-color-scheme: dark) {
-        :root {
-          --bg: #0a0a0a;
-          --fg: #fafafa;
-          --muted: #a3a3a3;
-          --border: #262626;
-          --rule-dim: #404040;
-          --logo-c: #ecedef;
-          --logo-accent: #419cff;
-        }
-      }
+            @media (prefers-color-scheme: dark) {
+                :root {
+                    --bg: #0a0a0a;
+                    --fg: #fafafa;
+                    --muted: #a3a3a3;
+                    --border: #262626;
+                    --rule-dim: #404040;
+                }
+            }
 
-      body {
-        width: 1200px;
-        height: 630px;
-        overflow: hidden;
-        position: relative;
-        background: var(--bg);
-        color: var(--fg);
-        font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", sans-serif;
-        letter-spacing: -0.003em;
-        -webkit-font-smoothing: antialiased;
-      }
+            body {
+                width: 1200px;
+                height: 630px;
+                overflow: hidden;
+                position: relative;
+                background: var(--bg);
+                color: var(--fg);
+                font-family:
+                    -apple-system, BlinkMacSystemFont, "SF Pro Text", sans-serif;
+                letter-spacing: -0.003em;
+                -webkit-font-smoothing: antialiased;
+            }
 
-      /* A single hairline anchors the composition without a full grid. */
-      .rule {
-        position: absolute;
-        right: 96px;
-        bottom: 192px;
-        left: 96px;
-        height: 1px;
-        background: var(--border);
-      }
+            /* A single hairline anchors the composition without a full grid. */
+            .rule {
+                position: absolute;
+                right: 96px;
+                bottom: 192px;
+                left: 96px;
+                height: 1px;
+                background: var(--border);
+            }
 
-      /* Identity only: the shared page's own title and description are drawn by
+            /* Identity only: the shared page's own title and description are drawn by
          the platform around the image, so a headline here would collide. */
-      .inner {
-        position: relative;
-        display: flex;
-        height: 100%;
-        flex-direction: column;
-        justify-content: center;
-        padding: 96px;
-        transform: translateY(-60px);
-      }
+            .inner {
+                position: relative;
+                display: flex;
+                height: 100%;
+                flex-direction: column;
+                justify-content: center;
+                padding: 96px;
+                transform: translateY(-60px);
+            }
 
-      .brand {
-        display: flex;
-        align-items: center;
-        gap: 26px;
-      }
+            .brand {
+                display: flex;
+                align-items: center;
+                gap: 26px;
+            }
 
-      .brand svg { width: 82px; height: 82px; }
-      .brand svg path:first-child { fill: var(--logo-c); }
-      .brand svg path:last-child { fill: var(--logo-accent); }
+            .brand img {
+                width: 84px;
+                height: 84px;
+                object-fit: contain;
+            }
+            .brand .logo-dark {
+                display: none;
+            }
 
-      .brand span {
-        font-size: 66px;
-        font-weight: 640;
-        letter-spacing: -0.038em;
-      }
+            /* Swap the mark for its light counterpart on dark backgrounds. Kept
+               after the rule above so it wins the cascade. */
+            @media (prefers-color-scheme: dark) {
+                .brand .logo-light {
+                    display: none;
+                }
+                .brand .logo-dark {
+                    display: block;
+                }
+            }
 
-      .tagline {
-        max-width: 660px;
-        margin-top: 32px;
-        color: var(--muted);
-        font-size: 29px;
-        line-height: 1.45;
-      }
+            .brand span {
+                font-size: 66px;
+                font-weight: 640;
+                letter-spacing: -0.038em;
+            }
 
-      .facts {
-        position: absolute;
-        right: 96px;
-        bottom: 156px;
-        left: 96px;
-        display: flex;
-        align-items: center;
-        justify-content: space-between;
-        color: var(--muted);
-        font: 21px/1 var(--mono);
-        white-space: nowrap;
-      }
+            .tagline {
+                max-width: 660px;
+                margin-top: 32px;
+                color: var(--muted);
+                font-size: 29px;
+                line-height: 1.45;
+            }
 
-      .facts b { color: var(--fg); font-weight: 600; }
-      .facts em { color: var(--rule-dim); font-style: normal; }
+            .facts {
+                position: absolute;
+                right: 96px;
+                bottom: 156px;
+                left: 96px;
+                display: flex;
+                align-items: center;
+                justify-content: space-between;
+                color: var(--muted);
+                font: 21px/1 var(--mono);
+                white-space: nowrap;
+            }
 
-      /* Library facts on the left, platforms on the right. */
-      .facts-group {
-        display: flex;
-        align-items: center;
-        gap: 20px;
-      }
-    </style>
-  </head>
-  <body>
-    <div class="rule"></div>
+            .facts b {
+                color: var(--fg);
+                font-weight: 600;
+            }
+            .facts em {
+                color: var(--rule-dim);
+                font-style: normal;
+            }
 
-    <div class="inner">
-      <div class="brand">
-        <svg viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg">
-          <path fill="#1F2023" d="M4 4h24v5H10v14h18v5H4V4Z" />
-          <path fill="#3B82F6" d="M16 13h12v10h-5v-5h-7v-5Z" />
-        </svg>
-        <span>uni-kit</span>
-      </div>
+            /* Library facts on the left, platforms on the right. */
+            .facts-group {
+                display: flex;
+                align-items: center;
+                gap: 20px;
+            }
+        </style>
+    </head>
+    <body>
+        <div class="rule"></div>
 
-      <p class="tagline">
-        Build fantastic, high-performance desktop apps with Rust and GPUI.
-      </p>
-    </div>
+        <div class="inner">
+            <div class="brand">
+                <img class="logo logo-light" src="uni-kit.svg" alt="" />
+                <img class="logo logo-dark" src="uni-kit-dark.png" alt="" />
+                <span>uni-kit</span>
+            </div>
 
-    <div class="facts">
-      <span class="facts-group">
-        <span><b>60+</b> UI components</span>
-        <em>·</em>
-        <span>Apache-2.0</span>
-      </span>
-      <span class="facts-group">macOS · Windows · Linux</span>
-    </div>
-  </body>
+            <p class="tagline">
+                A universal, framework-agnostic ecosystem of UI components. With
+                more GUI frameworks on the way.
+            </p>
+        </div>
+
+        <div class="facts">
+            <span class="facts-group">
+                <span>Apache-2.0</span>
+            </span>
+            <span class="facts-group">macOS · Windows · Linux</span>
+        </div>
+    </body>
 </html>
