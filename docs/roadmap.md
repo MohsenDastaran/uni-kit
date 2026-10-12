@@ -381,10 +381,16 @@ Four things cost time and are worth knowing before the next component:
   pages came out as error pages. `logoElement` returns nothing for a framework
   without a mark now, and the switch skips it — an official iced mark can be added
   to `toggleLogos` whenever one is sourced.
-- **A wasm build needs a font.** A browser gives a canvas no system fonts, so the
-  gallery drew every label as nothing: shapes and icons appeared, words did not.
-  `fira-sans` is in the feature list, in the crate and in the install hint
-  together, and it costs about 0.4 MB in the module.
+- **A wasm build needs a font, and font fallback.** A browser gives a canvas no
+  system fonts, so `fira-sans` is in the feature list — crate and install hint
+  together, about 0.4 MB in the module. It is not enough on its own: that feature
+  embeds Fira Sans **Regular**, and the components ask for `Weight::Medium` and
+  `Weight::Semibold` in seventeen places, which then match no face and draw
+  nothing at all — shapes and icons appeared, every word was missing. Enabling
+  `advanced-shaping` is what fixes it: it turns on font fallback, so a weight with
+  no face of its own resolves against the one that is embedded. Both features,
+  together, are the difference between a gallery with labels and a gallery
+  without.
 
 ### Source icons scroll to the sample
 

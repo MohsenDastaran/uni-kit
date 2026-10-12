@@ -183,7 +183,7 @@ function usage() {
 // iced's defaults: a plain `cargo add iced` would install a component that does
 // not compile. They are kept in step with `crates/iced-component/Cargo.toml`,
 // which `crates/iced-component/scripts/check.sh` verifies.
-const ICED_FEATURES = ['svg', 'canvas', 'image-without-codecs', 'qr_code', 'markdown', 'advanced', 'webgl', 'fira-sans'];
+const ICED_FEATURES = ['svg', 'canvas', 'image-without-codecs', 'qr_code', 'markdown', 'advanced', 'webgl', 'fira-sans', 'advanced-shaping'];
 
 // iced is not always the whole story. A component that implements `Widget`
 // directly reaches for `iced_core`, which iced re-exports only behind its
