@@ -21,43 +21,6 @@
       code {
         font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
       }
-
-      /* The source view covers the gallery rather than sitting beside it: the
-         frame the component pages embed is small, and a split would leave
-         neither half usable. */
-      #source-button {
-        position: fixed;
-        top: 8px;
-        right: 8px;
-        z-index: 2;
-        padding: 4px 10px;
-        font: inherit;
-        color: inherit;
-        background: color-mix(in srgb, currentColor 8%, transparent);
-        border: 1px solid color-mix(in srgb, currentColor 25%, transparent);
-        border-radius: 6px;
-        cursor: pointer;
-      }
-      #source-button[aria-pressed="true"] {
-        background: color-mix(in srgb, currentColor 18%, transparent);
-      }
-      #source {
-        position: fixed;
-        inset: 0;
-        z-index: 1;
-        margin: 0;
-        padding: 44px 16px 16px;
-        overflow: auto;
-        background: var(--gallery-background, #ffffff);
-        font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
-        font-size: 12px;
-        line-height: 1.6;
-        tab-size: 4;
-        white-space: pre;
-      }
-      #source[hidden] {
-        display: none;
-      }
     </style>
     <script>
       // The gallery is embedded in a component page, so it wears the host page's
@@ -102,8 +65,6 @@
     </script>
   </head>
   <body>
-    <button id="source-button" type="button" aria-pressed="false">View source</button>
-    <pre id="source" hidden><code></code></pre>
     <div id="note">Starting the gallery…</div>
     <script type="module">
       // One module answers for every component, the way the GPUI gallery does:
@@ -118,58 +79,6 @@
       // 404. Asking for the module beside the *directory* the page is mounted at
       // keeps this right under any prefix, including a project-site subpath.
       const mounted = location.pathname.replace(/\/+$/, '') + '/';
-
-      const sourceButton = document.getElementById('source-button');
-      const sourcePanel = document.getElementById('source');
-      const sourceCode = sourcePanel.querySelector('code');
-      const params = new URLSearchParams(location.search);
-      let sourceLoaded = false;
-      let sourcePromise = null;
-
-      /** Show the Rust the gallery is running, fetching it the first time. */
-      async function showSource() {
-        if (!sourceLoaded) {
-          sourcePromise ??= fetch(`${mounted}src/${story || 'index'}.rs`).then(
-            async (response) =>
-              response.ok
-                ? await response.text()
-                : `No source is served for "${story || '(no story)'}".\n\n` +
-                  `Run \`make build-page\` in crates/iced-component to write the\n` +
-                  `demos into www/dist/src, which is where this button reads them.`,
-          );
-          sourceCode.textContent = await sourcePromise;
-          sourceLoaded = true;
-        }
-        sourcePanel.hidden = false;
-        sourceButton.setAttribute('aria-pressed', 'true');
-      }
-
-      function hideSource() {
-        sourcePanel.hidden = true;
-        sourceButton.setAttribute('aria-pressed', 'false');
-      }
-
-      sourceButton.addEventListener('click', () => {
-        if (sourcePanel.hidden) {
-          showSource();
-          // The page that embeds this gallery carries the example in its own
-          // text, and saying which story was asked for lets it scroll there —
-          // the way the GPUI gallery's source button behaves. The panel here is
-          // what makes the button work on its own, in a tab or a frame.
-          if (window.parent !== window) {
-            window.parent.postMessage(
-              { source: 'iced-component', title: story },
-              location.origin,
-            );
-          }
-        } else {
-          hideSource();
-        }
-      });
-
-      // `?source=1` opens it without a click: the view is linkable, and a check
-      // can look at it without driving a pointer.
-      if (params.get('source') === '1') showSource();
 
       try {
         const { default: init, run } = await import(mounted + 'iced_component.js');

@@ -326,6 +326,58 @@ Button is the first; the others are one section each.
 
 - [x] Button — the ten Slint sections
 
+#### The process, to repeat for every component
+
+1. **Read the Slint example**, `crates/slint-component/ui/examples/<name>.slint`.
+   Every `GroupBox` is one section, in order. That list is the target.
+2. **Port each section** into `src/demos/<name>.rs`, in the same order, and mark it:
+
+   ```rust
+   // section: Variants
+   let variants = column![ … ];
+   ```
+
+   The markers are a contract, not comments — the website reads them, which is
+   what keeps the page's code and the running code the same file. Close the last
+   section with `// section: end`, or the lines that assemble the gallery (the
+   status line among them) are shown as part of it.
+3. **Give each section a heading.** `heading(app, index, title)` draws the title
+   and the 28px code box, and posts through `crate::bridge`:
+
+   ```json
+   {"source": "gpui-kit", "index": 0, "title": "Variants"}
+   ```
+
+   the same payload and the same tag the Slint and GPUI galleries post. Indexes
+   count from zero, in the order the sections appear. Both the title and the icon
+   are the button, as in Slint's `SourceHeading`, and the icon is the same box:
+   `primary` at 0.12 with a 0.35 border, 0.22/0.55 on hover, 0.34/0.7 pressed.
+4. **Run it natively first** — `cargo build --examples`, then
+   `cargo run --bin iced-gallery -- <name>` — before building any wasm.
+5. **Build**: `make -C crates/iced-component build-page` for the page alone,
+   `make build:wasm-iced` for the module, `make dev:website-iced` for both and the
+   site.
+
+#### Where button stands
+
+The **gallery side is done**: ten sections, ten headings, the bridge, the markers,
+and the boxes drawn to Slint's measurements. That is the part that runs.
+
+The **page side is not**, and this is the next step:
+
+- `website/src/lib/remark-iced-source.js` carries the plugin that reads the
+  markers and injects one panel per section, and it is written but **not
+  registered** in `astro.config.mjs`.
+- Registering it with `iced` added to `rehype-framework-code`'s `FRAMEWORKS`
+  collapsed the Slint panels — 21 became 1 on the button page — so that change was
+  reverted rather than shipped broken. The grouping in `rehype-framework-code`
+  assumes two frameworks and has to learn three; that is the work left.
+- Two findings to keep: the site's Shiki registers `rust` and a custom `slint`
+  grammar, and a fence in a language it does not know loses the whole block — so
+  the iced samples are `rust` fences carrying `data-gallery-framework="iced"`. And
+  the page's message handler only reacts to a frame it recognises as one of its
+  own example frames, so the payload above is what it will accept.
+
 ### Source icons scroll to the sample
 
 The gallery's **View source** button shows the Rust the story is running. The

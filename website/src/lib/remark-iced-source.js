@@ -86,3 +86,171 @@ export function hasIcedPage(slug, example, root = process.cwd()) {
   // nothing.
   return example !== false && hasIcedComponent(slug, root) && hasIcedExample(slug, root);
 }
+
+// ---------------------------------------------------------------------------
+// The plugin: the iced panel under each usage heading.
+//
+// The Slint page's samples are cut out of the example file, so what a component
+// page shows is the code the gallery runs rather than a second copy of it. A
+// Rust file cannot be parsed the way a `.slint` one can, so the iced demos mark
+// their sections instead:
+//
+//     // section: Variants
+//     let variants = column![…];
+//
+// That one comment is the contract. Everything from it to the next marker is the
+// section's sample — the same lines the browser runs — and the marker itself is
+// not shown.
+
+/** The registry key a page's markdown file belongs to, or nothing. */
+function icedSlugOf(file) {
+  const path = String(file?.path ?? file?.history?.[0] ?? '');
+  const match = /[\\/]component[\\/]([^\\/]+)\.md$/.exec(path);
+  return match?.[1] ?? null;
+}
+
+/** The same reading the Slint plugin uses: case and punctuation do not matter. */
+function sameIcedTitle(a, b) {
+  const clean = (value) =>
+    String(value ?? '')
+      .toLowerCase()
+      .replace(/[^a-z0-9]+/g, ' ')
+      .trim();
+  return clean(a) === clean(b);
+}
+
+/**
+ * The demo's sections, in the order they are written: the title from each marker
+ * and the code under it, de-indented so it reads as a file rather than as the
+ * inside of `view`.
+ */
+export function icedSections(slug, root = process.cwd()) {
+  const path = join(icedRoot(root), 'src', 'demos', `${icedModule(slug)}.rs`);
+  if (!existsSync(path)) return [];
+  const lines = readFileSync(path, 'utf8').split('\n');
+  const sections = [];
+  for (const line of lines) {
+    const marker = /^\s*\/\/\s*section:\s*(.+?)\s*$/.exec(line);
+    if (marker) {
+      // `// section: end` closes the last one, so the lines after it — the status
+      // line, the assembly of the gallery — are not shown as part of it.
+      if (/^end$/i.test(marker[1])) break;
+      sections.push({ title: marker[1], lines: [] });
+      continue;
+    }
+    if (sections.length === 0) continue;
+    sections[sections.length - 1].lines.push(line);
+  }
+  return sections
+    .map((section) => {
+      // De-indent by the block's own smallest indent, and drop the blank lines
+      // the surrounding function adds.
+      const body = [...section.lines];
+      while (body.length && !body[0].trim()) body.shift();
+      while (body.length && !body[body.length - 1].trim()) body.pop();
+      const indents = body
+        .filter((line) => line.trim())
+        .map((line) => line.length - line.trimStart().length);
+      const trim = indents.length ? Math.min(...indents) : 0;
+      return {
+        title: section.title,
+        code: body.map((line) => line.slice(trim)).join('\n'),
+      };
+    })
+    .filter((section) => section.code.trim().length > 0);
+}
+
+// The code is Rust, and stays Rust: the site's Shiki registers `rust` and a
+// custom `slint` grammar, and a fence in a language it does not know loses the
+// whole block rather than falling back. The framework rides on an attribute
+// instead, which `rehype-framework-code` reads first.
+const icedCode = (value) => ({
+  type: 'code',
+  lang: 'rust',
+  meta: null,
+  value,
+  data: { hProperties: { 'data-gallery-framework': 'iced' } },
+});
+
+/** The gallery posts the section title; the heading that received the sample
+ *  keeps it, so a click scrolls to the sample rather than to whichever block
+ *  shares an index. */
+function tagIcedHeading(node, title) {
+  const data = (node.data ??= {});
+  const props = (data.hProperties ??= {});
+  const key = 'data-gallery-title';
+  const current = String(props[key] ?? '')
+    .split('|')
+    .filter(Boolean);
+  if (current.some((item) => sameIcedTitle(item, title))) return;
+  current.push(title);
+  props[key] = current.join('|');
+}
+
+function headingText(node) {
+  if (node.type !== 'heading') return '';
+  const read = (child) =>
+    child.type === 'text' ? child.value : (child.children ?? []).map(read).join('');
+  return node.children.map(read).join('').trim();
+}
+
+function icedHeading(title) {
+  return {
+    type: 'heading',
+    depth: 3,
+    children: [{ type: 'text', value: title }],
+  };
+}
+
+/**
+ * Where a section the page has no heading for goes: inside `## Usage`, at the end
+ * of it, so an added section still reads as part of the examples.
+ */
+function usageEnd(children) {
+  const start = children.findIndex(
+    (node) => node.type === 'heading' && /^usage$/i.test(headingText(node)),
+  );
+  if (start === -1) return children.length;
+  for (let i = start + 1; i < children.length; i += 1) {
+    const node = children[i];
+    if (node.type === 'heading' && node.depth <= 2) return i;
+  }
+  return children.length;
+}
+
+/**
+ * The remark plugin: read the component's demo, and place each section's Rust
+ * under the heading that names it — creating the heading for a section the page
+ * does not have yet, in the demo's order.
+ */
+export function remarkIcedSource() {
+  return (tree, file) => {
+    const slug = icedSlugOf(file);
+    if (!slug || !hasIcedPage(slug, true)) return;
+    const sections = icedSections(slug);
+    if (sections.length === 0) return;
+
+    const children = tree.children;
+    const byTitle = new Map();
+    for (const node of children) {
+      const title = headingText(node);
+      if (title) byTitle.set(title, node);
+    }
+
+    let anchor = null;
+    for (const section of sections) {
+      const heading = [...byTitle].find(([title]) => sameIcedTitle(title, section.title))?.[1];
+      if (heading) {
+        tagIcedHeading(heading, section.title);
+        const at = children.indexOf(heading) + 1;
+        children.splice(at, 0, icedCode(section.code));
+        anchor = children[at];
+        continue;
+      }
+      const at = anchor ? children.indexOf(anchor) + 1 : usageEnd(children);
+      const nodes = [icedHeading(section.title), icedCode(section.code)];
+      children.splice(at, 0, ...nodes);
+      anchor = nodes[1];
+    }
+  };
+}

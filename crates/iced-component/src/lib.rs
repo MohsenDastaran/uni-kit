@@ -10,6 +10,7 @@
 //! website embeds can show one — `?story=<registry key>` — without a second copy
 //! of it. The binaries in `examples/` are the thin mains that call them.
 
+pub mod bridge;
 pub mod components;
 pub mod demos;
 

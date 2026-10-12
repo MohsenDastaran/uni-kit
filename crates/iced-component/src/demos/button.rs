@@ -1,28 +1,39 @@
 //! `button` — the whole gallery the Slint version shows: the variants, the
 //! outline set, the four sizes, icons and states, button groups, progress,
-//! dropdowns, a custom size, a custom colour and icon-only buttons, each in its
-//! own outlined section.
+//! dropdowns, a custom size, a custom colour and icon-only buttons.
 //!
 //! Run it with `cargo run --example button`, or in the browser as
 //! `?story=button` in the gallery the website embeds.
 //!
+//! Each section carries the heading the Slint example gives it — the title, and
+//! the code icon that asks the embedding page to scroll to that sample. Clicking
+//! either one posts the section's index and title through [`crate::bridge`], the
+//! same bridge the Slint and GPUI galleries use.
+//!
+//! The `// section: <title>` comments below are not decoration: the website reads
+//! them to cut this file into the usage panels a component page shows, so the code
+//! on the page is the code that runs here rather than a second copy of it. Keep
+//! them, one per section, in the order the sections appear, and keep the closing
+//! `// section: end` after the last one — without it the lines that assemble the
+//! gallery, the status line among them, would be shown as part of the last
+//! section.
+//!
 //! Two things Slint's `Button` does that this one cannot, both visible below:
-//! `suffix-icon` draws a glyph at the trailing edge, and `ButtonGroup` squares
-//! the corners where two buttons meet. iced's button carries one icon and draws
-//! it before the label, and every button rounds its own corners, so the dropdown
-//! chevrons lead and a group is buttons set against one another rather than
-//! joined into one control. Both are Slint behaviour this port does not have;
-//! neither is faked here.
+//! `suffix-icon` draws a glyph at the trailing edge, and `ButtonGroup` squares the
+//! corners where two buttons meet. iced's button carries one icon and draws it
+//! before the label, and every button rounds its own corners, so the dropdown
+//! chevrons lead and a group is buttons set against one another rather than joined
+//! into one control. Both are Slint behaviour this port does not have; neither is
+//! faked here.
 
-use iced::widget::{column, row, scrollable, svg, text};
+use iced::widget::{column, container, mouse_area, row, scrollable, svg, text};
 use iced::{Alignment, Element, Length, Task, Theme};
 
 use crate::components::button::{self, Button, Variant};
 use crate::components::group_box::{self, GroupBox};
-use crate::components::theme::{ControlSize, Tokens};
+use crate::components::theme::{self, ControlSize, Tokens};
 
-/// The page padding and the gap between sections, as the Slint example sets
-/// them.
+/// The page padding and the gap between sections, as the Slint example sets them.
 const PAGE: f32 = 24.0;
 
 pub fn run(theme: Theme) -> iced::Result {
@@ -36,14 +47,25 @@ pub fn run(theme: Theme) -> iced::Result {
 struct App {
     /// What was pressed last, so a click is visible. Every button in the gallery
     /// carries a message, because a button without one is how iced draws a
-    /// disabled control and these are the enabled ones; the single disabled
-    /// button below is the one that has none.
+    /// disabled control and these are the enabled ones; the single disabled button
+    /// below is the one that has none.
     pressed: Option<&'static str>,
+    /// Which section heading the pointer is over, and which was pressed, so the
+    /// code icon can draw the two states the Slint heading animates to.
+    hovered: Option<&'static str>,
+    pressed_source: Option<&'static str>,
 }
 
 #[derive(Debug, Clone)]
 enum Message {
     Pressed(&'static str),
+    HoverSource(Option<&'static str>),
+    PressSource(Option<&'static str>),
+    /// A section heading was released: ask the page for that sample.
+    ShowSource {
+        index: usize,
+        title: &'static str,
+    },
 }
 
 fn boot() -> App {
@@ -53,6 +75,13 @@ fn boot() -> App {
 fn update(app: &mut App, message: Message) -> Task<Message> {
     match message {
         Message::Pressed(label) => app.pressed = Some(label),
+        Message::HoverSource(title) => app.hovered = title,
+        Message::PressSource(title) => app.pressed_source = title,
+        Message::ShowSource { index, title } => {
+            app.pressed_source = None;
+            // The page scrolls to the sample; natively this does nothing.
+            crate::bridge::show(index, title);
+        }
     }
     Task::none()
 }
@@ -81,33 +110,102 @@ fn icon_control(
     }
 }
 
-/// A glyph from the set the Slint example names — `icon: "search"` there, the
-/// same Lucide mark here. iced ships no icon set, so the artwork is the caller's,
-/// and it is tinted like the label beside it: the ink of the button's own
-/// variant, resolved from the theme when the glyph is drawn rather than captured
-/// when the element was built.
+/// A glyph from the set the Slint example names — `icon: "search"` there, the same
+/// Lucide mark here. iced ships no icon set, so the artwork is the caller's, and
+/// it is tinted like the label beside it: the ink of the button's own variant,
+/// resolved from the theme when the glyph is drawn rather than captured when the
+/// element was built.
 fn glyph<'a>(markup: &'static [u8], variant: Variant, outline: bool) -> Element<'a, Message> {
-    let tone = move |theme: &Theme| button::ink(Tokens::of(theme), variant, outline);
     svg(svg::Handle::from_memory(markup))
         .width(16.0)
         .height(16.0)
         .style(move |theme: &Theme, _status| svg::Style {
-            color: Some(tone(theme)),
+            color: Some(button::ink(Tokens::of(theme), variant, outline)),
         })
         .into()
 }
 
-/// One section, titled and outlined, the way the Slint example wraps each of its
-/// groups in a `GroupBox`.
-fn section<'a>(title: &'static str, body: impl Into<Element<'a, Message>>) -> Element<'a, Message> {
+/// A section heading: the title, and the code icon that asks the page for this
+/// sample. Either one is the button, as in Slint's `SourceHeading`, and the icon is
+/// the same 28px box — `primary` at 0.12 with a 0.35 border at rest, 0.22 and 0.55
+/// on hover, 0.34 and 0.7 while pressed.
+fn heading<'a>(app: &App, index: usize, title: &'static str) -> Element<'a, Message> {
+    let hovered = app.hovered == Some(title);
+    let pressed = app.pressed_source == Some(title);
+
+    let label = mouse_area(
+        container(
+            text(title)
+                .size(theme::FONT_SIZE_SM)
+                .font(iced::Font {
+                    weight: iced::font::Weight::Medium,
+                    ..iced::Font::DEFAULT
+                }),
+        )
+        .width(Length::Fill)
+        .center_x(Length::Fill)
+        .style(|theme: &Theme| container::Style {
+            text_color: Some(Tokens::of(theme).muted_foreground),
+            ..container::Style::default()
+        }),
+    )
+    .on_press(Message::PressSource(Some(title)))
+    .on_release(Message::ShowSource { index, title });
+
+    let icon = mouse_area(
+        container(
+            svg(svg::Handle::from_memory(CODE_XML))
+                .width(16.0)
+                .height(16.0)
+                .style(|theme: &Theme, _status| svg::Style {
+                    color: Some(Tokens::of(theme).primary),
+                }),
+        )
+        .width(28.0)
+        .height(28.0)
+        .center_x(28.0)
+        .center_y(28.0)
+        .style(move |theme: &Theme| {
+            let primary = Tokens::of(theme).primary;
+            let (fill, line) = if pressed {
+                (0.34, 0.7)
+            } else if hovered {
+                (0.22, 0.55)
+            } else {
+                (0.12, 0.35)
+            };
+            container::Style {
+                background: Some(primary.scale_alpha(fill).into()),
+                border: iced::border::rounded(theme::RADIUS_LG)
+                    .color(primary.scale_alpha(line))
+                    .width(1.0),
+                ..container::Style::default()
+            }
+        }),
+    )
+    .on_enter(Message::HoverSource(Some(title)))
+    .on_exit(Message::HoverSource(None))
+    .on_press(Message::PressSource(Some(title)))
+    .on_release(Message::ShowSource { index, title });
+
+    row![label, icon]
+        .spacing(8.0)
+        .align_y(Alignment::Center)
+        .into()
+}
+
+/// The box under a heading: the same `GroupBox` with the outline variant the Slint
+/// example wraps its sections in, untitled because the heading above it carries the
+/// title.
+fn body_box<'a>(body: impl Into<Element<'a, Message>>) -> Element<'a, Message> {
     GroupBox::new()
-        .title(title)
         .variant(group_box::Variant::Outline)
         .body(body)
         .into()
 }
 
 fn view(app: &App) -> Element<'_, Message> {
+    // section: Variants
     let variants = column![
         row![
             control("Default"),
@@ -130,6 +228,7 @@ fn view(app: &App) -> Element<'_, Message> {
     ]
     .spacing(8.0);
 
+    // section: Outline
     let outline = row![
         control("Primary").variant(Variant::Primary).outline(),
         control("Secondary").variant(Variant::Secondary).outline(),
@@ -141,8 +240,9 @@ fn view(app: &App) -> Element<'_, Message> {
     .spacing(8.0)
     .align_y(Alignment::Center);
 
-    // 20, 24, 32 and 40 pixels tall, centred on one another so the row reads as
-    // a ladder rather than as four controls on a baseline.
+    // section: Sizes
+    // 20, 24, 32 and 40 pixels tall, centred on one another so the row reads as a
+    // ladder rather than as four controls on a baseline.
     let sizes = row![
         control("Extra small").size(ControlSize::XSmall),
         control("Small").size(ControlSize::Small),
@@ -152,6 +252,7 @@ fn view(app: &App) -> Element<'_, Message> {
     .spacing(8.0)
     .align_y(Alignment::Center);
 
+    // section: Icons and states
     let icons_and_states = row![
         control("Search").icon(glyph(SEARCH, Variant::Default, false)),
         // Slint puts this one on the trailing edge; see the module note.
@@ -167,6 +268,7 @@ fn view(app: &App) -> Element<'_, Message> {
     .spacing(8.0)
     .align_y(Alignment::Center);
 
+    // section: Button group
     // Touching, not joined: each button keeps its own radius, where Slint's
     // `group-start`/`group-end` square the shared corners.
     let groups = row![
@@ -187,6 +289,7 @@ fn view(app: &App) -> Element<'_, Message> {
     .spacing(16.0)
     .align_y(Alignment::Center);
 
+    // section: Progress
     let progress = row![
         control("Installing").variant(Variant::Primary).loading(true),
         control("Installing").loading(true),
@@ -194,6 +297,7 @@ fn view(app: &App) -> Element<'_, Message> {
     .spacing(8.0)
     .align_y(Alignment::Center);
 
+    // section: Dropdown
     let dropdown = row![
         control("Primary")
             .variant(Variant::Primary)
@@ -206,10 +310,12 @@ fn view(app: &App) -> Element<'_, Message> {
     .spacing(8.0)
     .align_y(Alignment::Center);
 
+    // section: Custom size
     let custom_size = row![icon_control("Favourite", HEART, Variant::Ghost, false)
         .size(ControlSize::XSmall)]
     .align_y(Alignment::Center);
 
+    // section: Custom color
     let custom_color = row![
         control("Custom Button").variant(Variant::Success),
         control("Outline Button").variant(Variant::Success).outline(),
@@ -217,6 +323,7 @@ fn view(app: &App) -> Element<'_, Message> {
     .spacing(8.0)
     .align_y(Alignment::Center);
 
+    // section: Icon only
     let icon_only = row![
         icon_control("Search", SEARCH, Variant::Primary, false),
         icon_control("Info", INFO, Variant::Default, false),
@@ -227,22 +334,33 @@ fn view(app: &App) -> Element<'_, Message> {
     .spacing(8.0)
     .align_y(Alignment::Center);
 
+    // section: end
     let status = text(match app.pressed {
         Some(label) => format!("Last pressed: {label}"),
         None => "Press any control but the disabled one — the gallery is live.".to_string(),
     });
 
     let gallery = column![
-        section("Variants", variants),
-        section("Outline", outline),
-        section("Sizes", sizes),
-        section("Icons and states", icons_and_states),
-        section("Button group", groups),
-        section("Progress", progress),
-        section("Dropdown", dropdown),
-        section("Custom size", custom_size),
-        section("Custom color", custom_color),
-        section("Icon only", icon_only),
+        heading(app, 0, "Variants"),
+        body_box(variants),
+        heading(app, 1, "Outline"),
+        body_box(outline),
+        heading(app, 2, "Sizes"),
+        body_box(sizes),
+        heading(app, 3, "Icons and states"),
+        body_box(icons_and_states),
+        heading(app, 4, "Button group"),
+        body_box(groups),
+        heading(app, 5, "Progress"),
+        body_box(progress),
+        heading(app, 6, "Dropdown"),
+        body_box(dropdown),
+        heading(app, 7, "Custom size"),
+        body_box(custom_size),
+        heading(app, 8, "Custom color"),
+        body_box(custom_color),
+        heading(app, 9, "Icon only"),
+        body_box(icon_only),
         status,
     ]
     .spacing(PAGE)
@@ -253,8 +371,8 @@ fn view(app: &App) -> Element<'_, Message> {
 }
 
 // The marks the Slint example asks for by name, taken from the icon set this
-// repository already ships (`crates/slint-component/ui/icons`, Lucide, ISC), so
-// the two galleries draw the same glyphs rather than two lookalikes.
+// repository already ships (`crates/slint-component/ui/icons`, Lucide, ISC), so the
+// two galleries draw the same glyphs rather than two lookalikes.
 
 const SEARCH: &[u8] = br#"<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m21 21-4.34-4.34"/><circle cx="11" cy="11" r="8"/></svg>"#;
 
@@ -271,3 +389,5 @@ const CHEVRON_DOWN: &[u8] = br#"<svg xmlns="http://www.w3.org/2000/svg" viewBox=
 const ARROW_LEFT: &[u8] = br#"<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m12 19-7-7 7-7"/><path d="M19 12H5"/></svg>"#;
 
 const HEART: &[u8] = br#"<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 9.5a5.5 5.5 0 0 1 9.591-3.676.56.56 0 0 0 .818 0A5.49 5.49 0 0 1 22 9.5c0 2.29-1.5 4-3 5.5l-5.492 5.313a2 2 0 0 1-3 .019L5 15c-1.5-1.5-3-3.2-3-5.5"/></svg>"#;
+
+const CODE_XML: &[u8] = br#"<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m18 16 4-4-4-4"/><path d="m6 8-4 4 4 4"/><path d="m14.5 4-5 16"/></svg>"#;

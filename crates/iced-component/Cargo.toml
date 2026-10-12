@@ -40,6 +40,11 @@ iced_core = "0.14"
 # The browser entry point in `src/wasm.rs`. iced brings its own web backend, but
 # the page has to be able to call into the module, and that is wasm-bindgen's job.
 wasm-bindgen = "0.2"
+# The bridge posts the clicked sample to the page that embeds the gallery, which
+# is a `postMessage` on the parent window, so the gallery needs the browser
+# bindings the way the Slint and GPUI galleries do. Native builds do not compile
+# this at all.
+web-sys = { version = "0.3", features = ["Location", "Window"] }
 
 [profile.release]
 # The browser has to compile this module before it shows anything, so the profile
