@@ -68,8 +68,10 @@ if ! "$wasm_bindgen" "$wasm" --out-dir "$out" --target web --no-typescript; then
   exit 1
 fi
 
-# The page is static and is served from the same folder.
-cp "$crate_dir/www/index.html" "$out/index.html"
+# The page itself and the sources its button can show. This is the half of the
+# gallery that is not a module, and it has its own script so it can be built and
+# checked without compiling anything.
+"$crate_dir/scripts/build-page.sh"
 
 # Smaller is a faster first paint, and wasm-opt is best effort: a refusal leaves
 # the module rustc built rather than failing the build.

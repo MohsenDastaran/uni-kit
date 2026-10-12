@@ -286,11 +286,67 @@ The repository is already public and Apache-2.0. The site is already at [https:/
 
 The first toolkit after Slint, in progress. The plan, the conventions and the
 checklist are in [iced-integration.md](iced-integration.md), and the components
-are written against **iced 0.14** in `crates/iced-component`.
+are written against **iced 0.14** in `crates/iced-component`. Coverage is
+whatever `crates/iced-component/scripts/status.mjs` prints; it is generated from
+the tree rather than written down here, so it cannot go stale.
 
 An iced component is Rust source: it arrives in `src/components/` with the theme
 it reads, and the install says `cargo add iced` instead of touching a build
 script.
+
+### The gallery
+
+One module answers for every component — `?story=<registry key>` — and the demos
+live in the library, at `src/demos/<story>.rs`, so the example binary and the
+browser gallery run the same application rather than two copies that drift.
+
+```bash
+make dev:website-iced        # build the module, then serve the site
+make build:wasm-iced         # the release module
+make -C crates/iced-component build-page   # the page and the sources alone
+```
+
+The site serves it at `/iced-gallery`, in the release workflow as well. The page
+is static — no bundler, and the only generated part is wasm-bindgen's glue — and
+it is built **release**: a debug iced module is 90 MB against 7.8 MB. Rendering
+needs WebGPU or WebGL2, and the page says so when a browser offers neither.
+
+### A sample per section, like Slint
+
+The Slint button page is ten outlined sections. The iced one is the same ten:
+variants, outline, sizes, icons and states, button group, progress, dropdown,
+custom size, custom colour, icon only — drawn from the same icon set the Slint
+example names (`crates/slint-component/ui/icons`), with the two differences iced
+cannot draw stated in the module: a `suffix-icon` (iced's button carries one icon,
+before the label) and a squared `ButtonGroup` join (every button rounds its own
+corners).
+
+**Done when every component's demo has the sections its Slint example has.**
+Button is the first; the others are one section each.
+
+- [x] Button — the ten Slint sections
+
+### Source icons scroll to the sample
+
+The gallery's **View source** button shows the Rust the story is running. The
+build writes each demo beside the module — `www/dist/src/<story>.rs` — and the
+page fetches the one it needs, so a browser that never opens the source never
+downloads it. `?source=1` opens it without a click, which is what makes the view
+linkable and checkable.
+
+Embedded, the button also posts `{source: "iced-component", title}` to the page
+hosting it, which is how the GPUI gallery's source button works; the site accepts
+that name and scrolls to the component's own heading, and its code.
+
+**Done when:** every story's source is served, and the site's framework code
+switch knows iced, so a component page carries iced panels beside the GPUI and
+Slint ones.
+
+- [x] The gallery serves its demos and toggles the source view
+- [x] The site accepts the iced gallery's message and scrolls to the component
+- [ ] `rehype-framework-code` handles iced panels: `FRAMEWORKS` is `gpui` and
+      `slint` today, and every `rust` fence is read as GPUI, so a component page
+      shows no iced source even when the gallery can
 
 ## Later
 

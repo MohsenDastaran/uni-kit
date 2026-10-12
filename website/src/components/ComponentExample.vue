@@ -699,7 +699,11 @@ function exampleHeadings(): HTMLElement[] {
   const root = document.querySelector(".doc-content");
   if (!root) return [];
   const headings: HTMLElement[] = [];
-  for (const node of root.querySelectorAll<HTMLElement>("h2, h3, h4")) {
+  // The page's own heading counts: a gallery that names the component rather
+  // than one of its sections — which is what both the GPUI and iced galleries do
+  // — lands on the component, and the code under its title is the first thing
+  // the reader wants.
+  for (const node of root.querySelectorAll<HTMLElement>("h1, h2, h3, h4")) {
     const text = plainHeading(node);
     if (/^api reference\b/i.test(text)) break;
     if (/^import$/i.test(text)) continue;
@@ -775,7 +779,11 @@ function onExampleMessage(event: MessageEvent) {
   } else if (event.data && typeof event.data === "object") {
     payload = event.data;
   }
-  if (!payload || payload.source !== "gpui-kit") return;
+  // Which galleries may ask the page to reveal a source section. GPUI posts
+  // `gpui-kit`; iced posts the library name it is listed under. Anything else is
+  // ignored, so a stray frame cannot scroll the reader's page.
+  const galleries = new Set(["gpui-kit", "iced-component"]);
+  if (!payload || !galleries.has(payload.source)) return;
   const title = typeof payload.title === "string" ? payload.title : "";
   const index = typeof payload.index === "number" ? payload.index : null;
   showExample(title, index);

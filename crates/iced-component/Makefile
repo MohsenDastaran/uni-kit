@@ -1,4 +1,4 @@
-.PHONY: build check run build-wasm clean-wasm install-iced-bindgen
+.PHONY: build check run build-wasm build-page clean-wasm install-iced-bindgen
 
 # The components and the gallery, then every usage example. Both must be clean:
 # an application installs this source, so a warning here is a warning there.
@@ -19,6 +19,12 @@ run:
 # build that takes a couple of minutes either way.
 build-wasm:
 	./scripts/build-wasm.sh --release
+
+# The page and the demo sources it serves, without touching the module. Enough
+# to work on — or check — the page, its source view and its themes, and the
+# release build runs it as its last step.
+build-page:
+	./scripts/build-page.sh
 
 clean-wasm:
 	rm -rf www/dist
