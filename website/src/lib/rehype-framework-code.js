@@ -7,9 +7,9 @@ import { logoElement } from './toggle-logos.js';
 // block is GPUI. A block that only one framework has is omitted from the other
 // framework, including the heading that introduces nothing else.
 
-export const FRAMEWORKS = ['gpui', 'slint'];
+export const FRAMEWORKS = ['gpui', 'slint', 'iced'];
 
-const NAMES = { gpui: 'GPUI', slint: 'Slint' };
+const NAMES = { gpui: 'GPUI', slint: 'Slint', iced: 'Iced' };
 
 const COPY = {
   en: {
@@ -26,7 +26,13 @@ const text = (value) => ({ type: 'text', value });
 const element = (tagName, properties, children = []) => ({ type: 'element', tagName, properties, children });
 
 function frameworkOf(pre) {
-  return pre.properties?.dataLanguage === 'slint' ? 'slint' : 'gpui';
+  // Each remark plugin names its fences: `slint` for Slint, `iced` for iced
+  // (aliased to Rust for the highlighter, because a language Shiki does not know
+  // loses the whole block). Everything else on a component page is the GPUI
+  // block the page was written around.
+  const language = pre.properties?.dataLanguage;
+  if (language === 'slint' || language === 'iced') return language;
+  return 'gpui';
 }
 
 function isBlank(node) {
@@ -146,7 +152,7 @@ function selector(copy, slug) {
               ariaChecked: index === 0 ? 'true' : 'false',
               tabIndex: index === 0 ? 0 : -1,
             },
-            [logoElement(framework), text(NAMES[framework])],
+            [logoElement(framework), text(NAMES[framework])].filter(Boolean),
           ),
         ),
       ]),
@@ -213,6 +219,8 @@ export function rehypeFrameworkCode() {
     const covered = {
       gpui: false,
       slint: Boolean(slug && hasSlintExample(slug) && !hasSlintUsage(slug)),
+      // Nothing stands in for an iced sample yet: a block without one says so.
+      iced: false,
     };
 
     const blocks = [];
@@ -223,18 +231,24 @@ export function rehypeFrameworkCode() {
     });
     if (blocks.length === 0) return;
 
+    // One control per example, holding every framework's version of it. The first
+    // block of a run opens the control; a block of a framework that has not spoken
+    // yet joins it, in whatever order the remark plugins inserted them — GPUI's
+    // Rust fence, then the Slint and iced samples they add.
     let open = null;
     for (const { node, parent } of blocks) {
       const framework = frameworkOf(node);
       const index = parent.children.indexOf(node);
-
-      if (
-        framework === 'slint' &&
+      const joins =
         open?.parent === parent &&
-        parent.children.slice(parent.children.indexOf(open.group) + 1, index).every(isBlank)
-      ) {
-        open.slint.children = open.filled ? [...open.slint.children, node] : [node];
-        open.filled = true;
+        !open.filled.has(framework) &&
+        parent.children.slice(parent.children.indexOf(open.group) + 1, index).every(isBlank);
+
+      if (joins) {
+        const panel = open.panels[framework];
+        panel.children = open.spoke.has(framework) ? [...panel.children, node] : [node];
+        open.spoke.add(framework);
+        open.filled.add(framework);
         parent.children.splice(index, 1);
         continue;
       }
@@ -253,7 +267,7 @@ export function rehypeFrameworkCode() {
         FRAMEWORKS.map((name) => panels[name]),
       );
       parent.children[index] = group;
-      open = framework === 'gpui' ? { group, parent, slint: panels.slint, filled: false } : null;
+      open = { group, parent, panels, spoke: new Set([framework]), filled: new Set([framework]) };
     }
 
     markSingleFramework(tree);

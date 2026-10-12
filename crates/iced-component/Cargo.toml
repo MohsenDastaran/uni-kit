@@ -29,7 +29,11 @@ path = "src/main.rs"
 # plain `cargo add iced` installs a component that does not compile, so the CLI
 # prints this exact line — `registry/index.js` and this file are kept in step by
 # `crates/iced-component/scripts/check.sh`.
-iced = { version = "0.14", features = ["svg", "canvas", "image-without-codecs", "qr_code", "markdown", "advanced", "webgl"] }
+iced = { version = "0.14", features = ["svg", "canvas", "image-without-codecs", "qr_code", "markdown", "advanced", "webgl", "fira-sans"] }
+# `fira-sans` embeds a font. A browser gives a canvas no system fonts, so a wasm
+# build with no font of its own draws every label as nothing — the shapes appear
+# and the words do not. Native builds take the system font and ignore this.
+#
 # `text_view` is the one component that needs a second crate: it implements
 # `Widget` itself, and iced exposes that trait only through `iced_core`. The CLI
 # learns which components these are from `registry/build-manifest.mjs`, which

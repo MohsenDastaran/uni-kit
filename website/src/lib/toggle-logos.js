@@ -49,6 +49,11 @@ export const toggleLogos = {
 
 export function logoElement(name) {
   const logo = toggleLogos[name];
+  // A framework the site has no mark for still belongs in the switch: it is the
+  // name that carries the meaning, and the row is built from whatever marks
+  // exist. iced has none yet — an official one can be added to `toggleLogos` and
+  // this picks it up.
+  if (!logo) return null;
   return {
     type: 'element',
     tagName: 'svg',

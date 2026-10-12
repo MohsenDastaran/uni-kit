@@ -360,23 +360,31 @@ Button is the first; the others are one section each.
 
 #### Where button stands
 
-The **gallery side is done**: ten sections, ten headings, the bridge, the markers,
-and the boxes drawn to Slint's measurements. That is the part that runs.
+**Done, both sides.** The gallery has its ten sections, ten headings, the bridge
+and the markers; the page carries an iced panel per section, holding the same Rust
+the gallery runs — `let variants = column![ … ]` under "Variants". `FRAMEWORKS` in
+`rehype-framework-code` is `gpui`, `slint`, `iced`, and the grouping takes any
+number of them: the first block of a run opens the control and a framework that
+has not spoken yet joins it.
 
-The **page side is not**, and this is the next step:
+Four things cost time and are worth knowing before the next component:
 
-- `website/src/lib/remark-iced-source.js` carries the plugin that reads the
-  markers and injects one panel per section, and it is written but **not
-  registered** in `astro.config.mjs`.
-- Registering it with `iced` added to `rehype-framework-code`'s `FRAMEWORKS`
-  collapsed the Slint panels — 21 became 1 on the button page — so that change was
-  reverted rather than shipped broken. The grouping in `rehype-framework-code`
-  assumes two frameworks and has to learn three; that is the work left.
-- Two findings to keep: the site's Shiki registers `rust` and a custom `slint`
-  grammar, and a fence in a language it does not know loses the whole block — so
-  the iced samples are `rust` fences carrying `data-gallery-framework="iced"`. And
-  the page's message handler only reacts to a frame it recognises as one of its
-  own example frames, so the payload above is what it will accept.
+- **A framework needs a language Shiki can name.** The iced samples are
+  `lang: 'iced'`, aliased to `rust` in `src/lib/markdown.js` for the highlighter.
+  A `data-*` property set on a code node does **not** survive the trip to HTML,
+  which is why the first attempt put every iced sample in the GPUI panel; the
+  language does.
+- **`data-*` properties are camel-cased** on the way into hast, so
+  `data-gallery-framework` is read as `dataGalleryFramework`.
+- **A framework in `FRAMEWORKS` needs everything the switch asks for**, and
+  `toggle-logos.js` had no iced mark, so `logo.viewBox` threw and 78 component
+  pages came out as error pages. `logoElement` returns nothing for a framework
+  without a mark now, and the switch skips it — an official iced mark can be added
+  to `toggleLogos` whenever one is sourced.
+- **A wasm build needs a font.** A browser gives a canvas no system fonts, so the
+  gallery drew every label as nothing: shapes and icons appeared, words did not.
+  `fira-sans` is in the feature list, in the crate and in the install hint
+  together, and it costs about 0.4 MB in the module.
 
 ### Source icons scroll to the sample
 

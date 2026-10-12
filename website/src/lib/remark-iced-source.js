@@ -166,7 +166,10 @@ export function icedSections(slug, root = process.cwd()) {
 // instead, which `rehype-framework-code` reads first.
 const icedCode = (value) => ({
   type: 'code',
-  lang: 'rust',
+  // The language is the only thing about a code block that survives the trip to
+  // HTML — a `data-*` property set here does not — so iced has a language name,
+  // and `src/lib/markdown.js` aliases it to Rust for the highlighter.
+  lang: 'iced',
   meta: null,
   value,
   data: { hProperties: { 'data-gallery-framework': 'iced' } },

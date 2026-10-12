@@ -13,6 +13,7 @@ import { rehypeHeadingAnchors } from './src/lib/rehype-heading-anchors.js';
 import { rehypeFrameworkCode, remarkFrameworkOnly } from './src/lib/rehype-framework-code.js';
 import { rehypeFrameworkApi } from './src/lib/rehype-framework-api.js';
 import { remarkSlintSource } from './src/lib/remark-slint-source.js';
+import { remarkIcedSource } from './src/lib/remark-iced-source.js';
 import { wasmExamplesDevServer } from './src/lib/wasm-middleware.js';
 import { shikiConfig, defaultHighlightLang } from './src/lib/markdown.js';
 
@@ -59,7 +60,7 @@ export default defineConfig({
     // Astro 7 made Sätteri the default processor; the remark/rehype pipeline is
     // opt-in now, and the math plugins only run on it.
     processor: unified({
-      remarkPlugins: [remarkMath, remarkSnippets, remarkFrameworkOnly, remarkSlintSource, remarkCallouts, [remarkDocLinks, { base: BASE }]],
+      remarkPlugins: [remarkMath, remarkSnippets, remarkFrameworkOnly, remarkSlintSource, remarkIcedSource, remarkCallouts, [remarkDocLinks, { base: BASE }]],
       rehypePlugins: [rehypeMathjax, rehypeFrameworkCode, rehypeHeadingIds, rehypeFrameworkApi, rehypeHeadingAnchors],
     }),
     shikiConfig,
