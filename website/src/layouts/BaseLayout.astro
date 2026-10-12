@@ -15,7 +15,7 @@ export interface Props {
 
 const {
     title,
-    description = "A comprehensive Rust framework for building fantastic, high-performance desktop apps with GPUI.",
+    description = "A universal, framework-agnostic ecosystem of UI components. With more GUI frameworks on the way.",
     lang = "en",
     ogTitle,
     canonical = new URL(Astro.url.pathname, SITE_URL).href,
@@ -66,11 +66,21 @@ const jsonLd = JSON.stringify(structuredData ?? defaultStructuredData).replace(
          and the mark does not change for it. iOS will not take an SVG, so the
          home-screen icon stays a raster. -->
         <link rel="icon" href={`${base}uni-kit.svg`} type="image/svg+xml" />
+        <!-- Google Search does not read an SVG favicon, so the mark is declared a
+         second time as a raster it does read. The SVG stays first for browsers
+         that take it, because it is the one that scales. -->
+        <link rel="icon" href={`${base}uni-kit.png`} type="image/png" />
         <link rel="apple-touch-icon" href={`${base}uni-kit.png`} />
+        <link rel="manifest" href={`${base}site.webmanifest`} />
+        <!-- The colour a mobile browser paints its toolbar, per appearance. Both
+         are the theme tokens' background, so the bar matches the page. -->
+        <meta name="theme-color" content="#ffffff" media="(prefers-color-scheme: light)" />
+        <meta name="theme-color" content="#040404" media="(prefers-color-scheme: dark)" />
         <link rel="stylesheet" href={`${base}theme-tokens.css`} />
 
         <!-- OG / Twitter -->
         <meta property="og:type" content="website" />
+        <meta property="og:locale" content="en_US" />
         <meta property="og:site_name" content={SITE_TITLE} />
         <meta property="og:title" content={socialTitle} />
         <meta property="og:description" content={description} />

@@ -1,5 +1,6 @@
 ---
 import BaseLayout from './BaseLayout.astro';
+import { SITE_URL } from '../lib/site';
 
 export interface Props {
   title?: string;
@@ -7,7 +8,7 @@ export interface Props {
 }
 
 const { title, description } = Astro.props;
-const canonical = new URL(Astro.url.pathname, 'https://gpui-kit.com').href;
+const canonical = new URL(Astro.url.pathname, SITE_URL).href;
 ---
 
 <BaseLayout title={title} description={description} lang="en" canonical={canonical}>

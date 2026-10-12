@@ -1,10 +1,11 @@
 import { readdirSync, readFileSync, statSync } from 'node:fs';
 import { extname, join, relative, resolve } from 'node:path';
 import { expandDocVariables } from './doc-variables.js';
+import { SITE_URL } from './site';
 
 const SITE_TITLE = 'uni-kit';
 const SITE_DESCRIPTION =
-  'A comprehensive Rust framework for building fantastic, high-performance desktop apps with GPUI.';
+  'A universal, framework-agnostic ecosystem of UI components. With more GUI frameworks on the way.';
 const BASE_URL = import.meta.env.BASE_URL.replace(/\/$/, '');
 
 interface PageEntry {
@@ -218,7 +219,7 @@ export function buildLlmsIndex(websiteRoot: string): string {
       }`,
     );
 
-  return `# ${SITE_TITLE}\n\n> ${SITE_DESCRIPTION}\n\n${documentationLicenseNotice('en', 'https://gpui-kit.com')}\n\n${FRAMEWORK_NOTICE}\n## Table of Contents\n\n${lines.join('\n')}\n`;
+  return `# ${SITE_TITLE}\n\n> ${SITE_DESCRIPTION}\n\n${documentationLicenseNotice('en', SITE_URL)}\n\n${FRAMEWORK_NOTICE}\n## Table of Contents\n\n${lines.join('\n')}\n`;
 }
 
 export function buildLlmsContent(websiteRoot: string): string {
@@ -228,7 +229,7 @@ export function buildLlmsContent(websiteRoot: string): string {
     { dir: join(websiteRoot, 'component'), prefix: 'component' },
   ];
 
-  const header = `# ${SITE_TITLE}\n\n> ${SITE_DESCRIPTION}\n\n${documentationLicenseNotice('en', 'https://gpui-kit.com')}\n\n${FRAMEWORK_NOTICE}\n---\n`;
+  const header = `# ${SITE_TITLE}\n\n> ${SITE_DESCRIPTION}\n\n${documentationLicenseNotice('en', SITE_URL)}\n\n${FRAMEWORK_NOTICE}\n---\n`;
 
   const pages: string[] = [];
   for (const { dir, prefix } of sections) {
@@ -239,7 +240,7 @@ export function buildLlmsContent(websiteRoot: string): string {
         ? `\n\n${TESTED_RECIPE_LABEL}: ${entry.recipes.join(', ')}`
         : '';
       const lang = entry.url.startsWith(`${BASE_URL}/zh-CN/`) ? 'zh-CN' : 'en';
-      const source = `https://gpui-kit.com${entry.url}`;
+      const source = `${SITE_URL}${entry.url}`;
       pages.push(`# ${entry.title}\n\nSource: ${entry.url}${provenance}\n\n${documentationLicenseSummary(lang, source)}\n\n${body}`);
     }
   }
