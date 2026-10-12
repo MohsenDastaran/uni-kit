@@ -255,11 +255,10 @@ impl<'a, Message> Button<'a, Message> {
         match status {
             button::Status::Hovered => {
                 if self.variant == Variant::Ghost {
-                    if tokens.dark {
-                        theme::alpha(tokens.accent, 0.5)
-                    } else {
-                        tokens.accent
-                    }
+                    // shadcn's ghost hover is the accent surface, whole, in both
+                    // appearances; halving it in the dark theme left the one
+                    // control with no border and no fill with no hover either.
+                    tokens.accent
                 } else if transparent {
                     Color::TRANSPARENT
                 } else if outline {
@@ -271,7 +270,12 @@ impl<'a, Message> Button<'a, Message> {
                 } else if status_variant {
                     theme::alpha(tone, 0.3)
                 } else if self.variant == Variant::Primary {
-                    theme::mix(tokens.primary, tokens.background, 0.9)
+                    // 90% of the fill over the page, which is shadcn's
+                    // `bg-primary/90`: lighter than the fill in the dark theme,
+                    // very slightly lighter in the light one. The weight here was
+                    // inverted, so the fill went *to* the page and the button
+                    // disappeared under the pointer.
+                    theme::mix(tokens.primary, tokens.background, 0.1)
                 } else if self.variant == Variant::Secondary {
                     theme::mix(tokens.secondary, tokens.background, 0.1)
                 } else {
