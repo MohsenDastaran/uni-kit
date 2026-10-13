@@ -464,9 +464,17 @@ None of this waits on `popover`, so it can run beside the overlay family rather 
 after it. `form` is the exception and goes last, because it composes the controls
 below instead of being one.
 
-- `checkbox` — implemented, and `radio`, `switch` and `toggle` follow its shape. Not
-  ticked yet: it has not been looked at in both themes, and like `label` it may have
-  no `// section:` markers, which is the same debt and the same fix.
+- [x] `checkbox` — done, and it carried exactly the debt suspected: no `// section:`
+      markers, so no iced sample could be cut and no card had anywhere to scroll. It
+      has nine now, one per page heading, and only **Custom Tab Order** is sample-less
+      because iced 0.14 has no tab-order or focus-trap API — named in the module docs
+      rather than faked. The appearance check then found a real bug: iced's checkbox
+      draws its checkmark whenever the box is filled and has no second glyph, so
+      `indeterminate(true)` on an unchecked box drew a **tick** where Slint draws a
+      minus. The icon slot takes `U+2212` now, from the face the mandatory `fira-sans`
+      feature embeds — the generic sans-serif resolves to no face on wasm, which is the
+      same trap that once made every label in the gallery invisible. `radio`, `switch`
+      and `toggle` follow its shape.
 - [ ] `radio`, `switch`, `toggle` — one shape, three controls, so `handle` is built
       once and the three differ in what it draws
 - [ ] `slider`, `stepper` — and `number-input`'s stepper behaviour, which is already
