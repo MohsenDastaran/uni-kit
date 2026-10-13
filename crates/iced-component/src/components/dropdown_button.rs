@@ -17,6 +17,9 @@
 //! styles both halves. The label, the leading icon, the loading state, the
 //! selected state and the main action belong to the leading half, exactly as
 //! `text`, `icon`, `loading`, `selected` and the `main` callback do in Slint.
+//! The [`Popover`] wraps the caret half alone, so a press on the label runs the
+//! main action and never opens the menu — Slint's `main.clicked` and
+//! `caret.clicked => menu.show()` are two halves because they are two actions.
 //!
 //! # The open state is the caller's, as a popover's is
 //!
@@ -248,58 +251,57 @@ impl<'a, Message: Clone + 'static> DropdownButton<'a, Message> {
         self
     }
 
-    /// The two halves as one element: the caller's leading half, then the caret
-    /// half, flush at zero spacing.
-    fn halves(&self) -> Element<'a, Message> {
-        let main = {
-            let mut button = Button::new(self.label.clone())
-                .variant(self.variant)
-                .size(self.size)
-                .loading(self.loading)
-                .selected(self.selected);
-            if self.outline {
-                button = button.outline();
+    /// The leading half: the label, the icon, and the main action. It is a
+    /// plain button, not part of the popover's trigger, so pressing it can never
+    /// open the menu — the Slint control's `main` half.
+    fn main_half(&self) -> Element<'a, Message> {
+        let mut button = Button::new(self.label.clone())
+            .variant(self.variant)
+            .size(self.size)
+            .loading(self.loading)
+            .selected(self.selected);
+        if self.outline {
+            button = button.outline();
+        }
+        if let Some(icon) = &self.icon {
+            button = button.icon(icon());
+        }
+        match &self.on_chosen {
+            // Without a message the leading half is drawn disabled, which is
+            // this crate's spelling for a control that cannot be pressed.
+            Some(on_chosen) if !self.disabled => {
+                let on_chosen = on_chosen.clone();
+                button.on_press(on_chosen(0, DropdownAction::Main))
             }
-            if let Some(icon) = &self.icon {
-                button = button.icon(icon());
-            }
-            match &self.on_chosen {
-                // Without a message the leading half is drawn disabled, which is
-                // this crate's spelling for a control that cannot be pressed.
-                Some(on_chosen) if !self.disabled => {
-                    let on_chosen = on_chosen.clone();
-                    button.on_press(on_chosen(0, DropdownAction::Main))
-                }
-                _ => button,
-            }
-        };
-
-        let caret = {
-            let mut button = Button::new("")
-                .variant(self.variant)
-                .size(self.size)
-                .selected(self.selected || self.open);
-            if self.outline {
-                button = button.outline();
-            }
-            if let Some(caret) = &self.caret {
-                button = button.icon(caret());
-            }
-            button
-        };
-
-        row![main, caret]
-            .spacing(0.0)
-            .align_y(Alignment::Center)
-            .into()
+            _ => button,
+        }
+        .into()
     }
 
-    /// The popover the whole control is: the halves, the menu, and the two
-    /// reports. A disabled control gets no `on_open_change`, so its trigger
-    /// cannot open anything — iced's own spelling for a control that answers
-    /// nothing.
+    /// The trailing half: the caret, and the popover's whole trigger. Only this
+    /// half opens the menu, which is what makes a split button two controls and
+    /// not one wide one.
+    fn caret_half(&self) -> Element<'a, Message> {
+        let mut button = Button::new("")
+            .variant(self.variant)
+            .size(self.size)
+            .selected(self.selected || self.open);
+        if self.outline {
+            button = button.outline();
+        }
+        if let Some(caret) = &self.caret {
+            button = button.icon(caret());
+        }
+        button.into()
+    }
+
+    /// The popover the whole control is: the caret as its trigger, the menu, and
+    /// the two reports, hung beside the leading half. A disabled control gets no
+    /// `on_open_change`, so its caret cannot open anything — iced's own spelling
+    /// for a control that answers nothing.
     fn into_element(self) -> Element<'a, Message> {
-        let trigger = self.halves();
+        let main = self.main_half();
+        let caret = self.caret_half();
         // A menu without a callback still needs one: the report is where the
         // control's own `on_chosen` lives. A control built without a callback
         // still draws its rows and still highlights them; only the report of a
@@ -317,7 +319,7 @@ impl<'a, Message: Clone + 'static> DropdownButton<'a, Message> {
             menu = menu.on_highlight(move |index| on_highlight(index));
         }
 
-        let mut popover = Popover::new(trigger)
+        let mut popover = Popover::new(caret)
             .filled(true)
             .placement(Placement::Bottom)
             .offset(4.0)
@@ -325,13 +327,16 @@ impl<'a, Message: Clone + 'static> DropdownButton<'a, Message> {
             .content(menu.into_element())
             .open(self.open && !self.disabled);
 
-        if !self.disabled {
-            if let Some(on_open_change) = self.on_open_change {
-                popover = popover.on_open_change(on_open_change);
-            }
+        if !self.disabled
+            && let Some(on_open_change) = self.on_open_change
+        {
+            popover = popover.on_open_change(on_open_change);
         }
 
-        popover.into()
+        row![main, popover]
+            .spacing(0.0)
+            .align_y(Alignment::Center)
+            .into()
     }
 }
 
