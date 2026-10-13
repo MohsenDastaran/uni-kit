@@ -2,13 +2,22 @@
 //! beside it: a label, an optional description under it, the indeterminate
 //! dash, sizes, and a disabled state.
 //!
-//! The box is built from the primitives iced gives rather than from iced's own
-//! `checkbox`, because the Slint control stacks a label and a muted description
-//! beside the box and iced's checkbox takes a single text run. The tick is the
-//! renderer's own checkmark glyph, drawn from `Iced-Icons`, the only icon font
-//! iced ships — Slint names a `"check"` or `"minus"` SVG in a folder its build
-//! script resolves, and an iced application owns its assets, so the glyph is
-//! the one place this file draws something the Slint version names.
+//! The box is iced's own `checkbox`, restyled. The Slint control stacks a label
+//! and a muted description beside the box, and iced's checkbox takes a single
+//! text run, so the caller passes no iced label and the component lays the two
+//! lines out itself. The marks are the renderer's own glyphs — the checkmark
+//! from `Iced-Icons`, the only icon font iced ships, and the minus sign from the
+//! text face the `fira-sans` feature embeds, because that icon font has no minus.
+//! Slint names a `"check"` or `"minus"` SVG in a folder its build script
+//! resolves, and an iced application owns its assets, so a glyph is the one place
+//! this file draws something the Slint version names.
+//!
+//! The dash is not the renderer's tick. `Iced-Icons` — the only icon font iced
+//! ships — carries a checkmark and its scroll arrows and no minus, so the
+//! indeterminate mark is the minus sign `U+2212` from the default text font,
+//! set through iced's own `.icon(..)` slot. The tick stays the renderer's
+//! checkmark, and a checked indeterminate box draws the tick, as Slint's
+//! `indeterminate && !checked ? "minus" : "check"` does.
 //!
 //! **Disabled is the absence of a message**, as everywhere in this crate:
 //! `on_toggle(msg)` produces an enabled control, and a checkbox built without
@@ -26,6 +35,19 @@ use iced::widget::{checkbox, column, row, text};
 use iced::{Border, Color, Element, Theme};
 
 use super::theme::{self, ControlSize, Tokens};
+
+/// The face the indeterminate minus is drawn from.
+///
+/// The checkmark names `Iced-Icons` and always resolves; the minus cannot, that
+/// font having none. On the web the renderer's generic sans-serif has no face
+/// behind it — the wasm default font is named explicitly for the same reason —
+/// so the dash names the face the mandatory `fira-sans` feature embeds, and an
+/// install gets that feature in the dependency line. A native build resolves the
+/// generic family against the system's own fonts.
+#[cfg(target_arch = "wasm32")]
+const DASH_FONT: iced::Font = iced::Font::with_name("Fira Sans");
+#[cfg(not(target_arch = "wasm32"))]
+const DASH_FONT: iced::Font = iced::Font::DEFAULT;
 
 /// A checkbox, built with the methods below.
 pub struct Checkbox<'a, Message> {
@@ -49,7 +71,9 @@ impl<'a, Message> Checkbox<'a, Message> {
         }
     }
 
-    /// The dash: a filled-looking box for a choice that stands for "some".
+    /// The dash: a filled box carrying a minus, for a choice that stands for
+    /// "some". A box that is both checked and indeterminate draws the tick, as
+    /// Slint's does.
     pub fn indeterminate(mut self, indeterminate: bool) -> Self {
         self.indeterminate = indeterminate;
         self
@@ -179,6 +203,7 @@ where
 {
     fn from(control: Checkbox<'a, Message>) -> Self {
         let size = control.size;
+        let dash = control.indeterminate && !control.checked;
         let on = control.checked || control.indeterminate;
         let box_size = control.box_size();
         let label = control.label;
@@ -187,7 +212,7 @@ where
         let on_toggle = control.on_toggle;
         let disabled = on_toggle.is_none();
 
-        let box_control = checkbox(on)
+        let mut box_control = checkbox(on)
             .size(box_size)
             .spacing(0.0)
             .on_toggle_maybe(on_toggle)
@@ -196,6 +221,19 @@ where
                     .disabled(disabled)
                     .resolve(Tokens::of(theme), status)
             });
+
+        // iced draws its checkmark whenever the box is checked and has no second
+        // glyph, so the indeterminate minus goes through the icon slot in a text
+        // face, where `U+2212` exists. `Iced-Icons` carries no minus.
+        if dash {
+            box_control = box_control.icon(checkbox::Icon {
+                font: DASH_FONT,
+                code_point: '\u{2212}',
+                size: None,
+                line_height: text::LineHeight::default(),
+                shaping: text::Shaping::Basic,
+            });
+        }
 
         if label.is_empty() && description.is_empty() {
             return box_control.into();
