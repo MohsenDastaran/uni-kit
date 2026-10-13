@@ -107,6 +107,154 @@ pub enum Placement {
     Right,
 }
 
+/// Where an arrow sits along the edge the panel shares with the trigger.
+///
+/// It is [`Popover::arrow`]'s argument, and the triangle it draws is a mark on
+/// the panel in the panel's own fill rather than a widget in the flow, so the
+/// arrow and the surface cannot disagree about where the panel is.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
+pub enum Arrow {
+    /// No arrow. The Slint component the catalogue exposes has no arrow
+    /// property and its example never shows one, so this is the default.
+    #[default]
+    None,
+    /// The arrow at the start of the shared edge — the left of the edge for a
+    /// panel above or below the trigger, the top of it for a panel beside one.
+    Start,
+    /// The arrow at the middle of the shared edge.
+    Center,
+    /// The arrow at the end of the shared edge.
+    End,
+}
+
+/// Which edge of the panel faces the trigger, once the panel has been placed.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+enum Facing {
+    /// The panel is above the trigger; the arrow crosses the panel's bottom.
+    Above,
+    /// The panel is below the trigger; the arrow crosses the panel's top.
+    Below,
+    /// The panel is to the left; the arrow crosses its right edge.
+    Left,
+    /// The panel is to the right; the arrow crosses its left edge.
+    Right,
+}
+
+impl Facing {
+    /// Which edge of a placed panel faces the trigger it describes. A panel
+    /// that overlaps the trigger on both axes is inside it, which no placement
+    /// produces, and is treated as if it were below.
+    fn of(panel: Rectangle, trigger: Rectangle) -> Self {
+        if panel.y + panel.height <= trigger.y {
+            Self::Above
+        } else if panel.y >= trigger.y + trigger.height {
+            Self::Below
+        } else if panel.x + panel.width <= trigger.x {
+            Self::Left
+        } else {
+            Self::Right
+        }
+    }
+
+    /// Whether the arrow travels along the horizontal axis. Along a vertical
+    /// edge, "start" means the top.
+    fn horizontal(self) -> bool {
+        !matches!(self, Self::Left | Self::Right)
+    }
+
+    /// The point the arrow's tip sits on: the middle of the edge it grows out
+    /// of, and on the surface itself so the join is not a seam.
+    fn tip(self, panel: Rectangle, at: f32) -> Point {
+        match self {
+            Self::Below => Point::new(panel.x + at, panel.y),
+            Self::Above => Point::new(panel.x + at, panel.y + panel.height),
+            Self::Right => Point::new(panel.x, panel.y + at),
+            Self::Left => Point::new(panel.x + panel.width, panel.y + at),
+        }
+    }
+
+    /// How long the edge the arrow slides along is.
+    fn edge_length(self, panel: Rectangle) -> f32 {
+        if self.horizontal() {
+            panel.width
+        } else {
+            panel.height
+        }
+    }
+}
+
+impl Arrow {
+    /// How far along the shared edge the arrow's tip sits, or `None` when there
+    /// is no arrow to place. The arrow is kept on the edge even when the end it
+    /// was asked for is round the corner.
+    fn along(self, edge_length: f32, gap: f32) -> Option<f32> {
+        let at = match self {
+            Self::None => return None,
+            Self::Start => gap / 2.0,
+            Self::Center => edge_length / 2.0,
+            Self::End => edge_length - gap / 2.0,
+        };
+        Some(at.clamp(gap, (edge_length - gap).max(gap)))
+    }
+
+    /// Draw the arrow, if there is one, between a placed panel and its trigger.
+    ///
+    /// iced 0.14's renderer draws rectangles ([`renderer::Quad`]) and text and
+    /// nothing else: `Quad` has no rotation and there is no triangle primitive,
+    /// so a triangle cannot be handed to it. This draws one out of the rows it
+    /// does take — a stepped triangle, `gap` quads tall and about `gap` wide —
+    /// which is the shape the eye reads at this size. It is exact where it
+    /// touches the panel (the full widths are the widest it gets) and stepped
+    /// only along the two slanted sides.
+    pub fn draw(
+        self,
+        renderer: &mut iced::Renderer,
+        fill: Color,
+        panel: Rectangle,
+        trigger: Rectangle,
+        gap: f32,
+    ) {
+        let facing = Facing::of(panel, trigger);
+        let Some(at) = self.along(facing.edge_length(panel), gap) else {
+            return;
+        };
+        let tip = facing.tip(panel, at);
+        let half = gap / 2.0;
+
+        for step in 0..(gap.ceil() as i32).max(1) {
+            // How far from the tip this row is, `0.0` at the tip and `1.0` at
+            // the base.
+            let along = (step as f32 + 0.5) / gap;
+            let spread = half * along;
+            // Each row grows away from the surface, which is toward the trigger.
+            let distance = if matches!(facing, Facing::Below | Facing::Right) {
+                -along * gap
+            } else {
+                along * gap
+            };
+            let rect = if facing.horizontal() {
+                Rectangle::new(
+                    Point::new(tip.x - spread, tip.y + distance),
+                    Size::new(spread * 2.0, 1.0),
+                )
+            } else {
+                Rectangle::new(
+                    Point::new(tip.x + distance, tip.y - spread),
+                    Size::new(1.0, spread * 2.0),
+                )
+            };
+            renderer.fill_quad(
+                renderer::Quad {
+                    bounds: rect,
+                    snap: false,
+                    ..renderer::Quad::default()
+                },
+                fill,
+            );
+        }
+    }
+}
+
 /// A floating panel anchored to a trigger, built with the methods below.
 ///
 /// The trigger is laid out where the caller puts the popover, and is the only
@@ -122,6 +270,7 @@ pub struct Popover<'a, Message> {
     offset: f32,
     padding: f32,
     panel_width: f32,
+    arrow: Arrow,
     style: Box<dyn Fn(&Theme) -> PanelStyle + 'a>,
     /// The theme the trigger was last drawn with. An overlay is built without
     /// one — `layout`, `draw` and `update` are handed a theme and the overlay
@@ -147,6 +296,7 @@ impl<'a, Message> Popover<'a, Message> {
             offset: 8.0,
             padding: theme::SPACING_MD,
             panel_width: 260.0,
+            arrow: Arrow::default(),
             style: Box::new(|theme: &Theme| PanelStyle::resolve(Tokens::of(theme))),
             theme: std::cell::RefCell::new(None),
             on_open_change: None,
@@ -211,6 +361,22 @@ impl<'a, Message> Popover<'a, Message> {
         self
     }
 
+    /// An arrow between the surface and the trigger, in the panel's own fill.
+    ///
+    /// GPUI's `Popover` has `.arrow(true)` and draws a triangle between the
+    /// surface and the trigger; the Slint component the catalogue exposes has no
+    /// arrow property and its example never shows one. [`Arrow::None`] is
+    /// therefore the default, and the port's own [`Tooltip`](super::tooltip) is
+    /// the caller that asks for one.
+    ///
+    /// It is drawn inside the gap [`offset`](Self::offset) leaves, and the gap
+    /// is the arrow's length as well as the space it crosses, so a caller that
+    /// wants a longer arrow widens the gap with it.
+    pub fn arrow(mut self, arrow: Arrow) -> Self {
+        self.arrow = arrow;
+        self
+    }
+
     /// The surface, resolved from the tokens by default: the popover fill, a
     /// one-pixel border, `radius-lg` and the drop shadow. A caller that wants
     /// its own states it as a function of the theme, which is Slint's
@@ -245,6 +411,26 @@ impl<'a, Message> Popover<'a, Message> {
     pub fn filled(mut self, filled: bool) -> Self {
         self.filled = filled;
         self
+    }
+
+    /// Take the trigger back out of the popover.
+    ///
+    /// The popover owns its trigger, and iced's [`Element`] is not `Clone`, so a
+    /// widget that is built *around* a popover — one that has to lay the trigger
+    /// out itself and also wants the popover to place a panel against it, which
+    /// is exactly [`Tooltip`](super::tooltip) — lends the element and takes it
+    /// back. The trigger comes back only if the popover still has one; nothing
+    /// else removes it.
+    pub fn into_trigger(self) -> Option<Element<'a, Message>> {
+        self.trigger.into()
+    }
+
+    /// Take the panel's content back out of the popover, for the reason
+    /// [`into_trigger`](Self::into_trigger) takes the trigger back: an
+    /// [`Element`] is not `Clone`, so a widget that lends one lends it for one
+    /// build and asks for it again.
+    pub fn into_content(self) -> Option<Element<'a, Message>> {
+        self.panel.into()
     }
 
     /// Report every request to change the open state: a trigger click wants
@@ -339,6 +525,8 @@ impl PanelStyle {
         self
     }
 
+    /// The colour text inside the panel inherits, for a caller drawing the
+    /// content itself.
     pub fn content_color(&self) -> Color {
         self.text_color
     }
@@ -448,13 +636,28 @@ impl State {
 }
 
 /// Where the panel ends up, once the trigger and the window are known.
+///
+/// [`place`] is the whole of the popover's positioning and is public so that a
+/// widget built on the popover — [`Tooltip`](super::tooltip), which needs the
+/// same flip and clamp against a trigger it draws itself — borrows the rule
+/// instead of writing a second one that could drift.
 #[derive(Debug, Clone, Copy, PartialEq)]
-struct Placed {
+pub struct Placed {
     /// The panel's top-left corner, in window coordinates.
     origin: Point,
 }
 
 impl Placed {
+    /// The panel's top-left corner, in window coordinates.
+    pub fn origin(&self) -> Point {
+        self.origin
+    }
+
+    /// The panel's rectangle, for a panel of `size`.
+    pub fn bounds(&self, size: Size) -> Rectangle {
+        Rectangle::new(self.origin, size)
+    }
+
     /// The panel's corner for a side, with no regard for the window.
     fn corner(trigger: Rectangle, panel: Size, gap: f32, placement: Placement) -> Point {
         match placement {
@@ -489,7 +692,7 @@ impl Placed {
 
     /// Prefer `placement`, flip when it does not fit, and clamp the result into
     /// the window. The trigger is in window coordinates.
-    fn resolve(
+    pub fn resolve(
         trigger: Rectangle,
         panel: Size,
         window: Size,
@@ -529,6 +732,9 @@ struct Panel<'a, 'b, Message> {
     style: PanelStyle,
     /// Whether the surface is drawn here, around the content.
     filled: bool,
+    /// The arrow drawn between the surface and the trigger, in the surface's own
+    /// fill, or [`Arrow::None`].
+    arrow: Arrow,
     /// The trigger, in window coordinates.
     trigger: Rectangle,
     gap: f32,
@@ -659,6 +865,11 @@ impl<Message> overlay::Overlay<Message, Theme, iced::Renderer> for Panel<'_, '_,
         if self.filled {
             self.style.draw(renderer, bounds);
         }
+        // The arrow goes after the surface and before the content: it is a mark
+        // on the panel, so it has to be over the fill; and the panel is inside
+        // the window, so nothing overlaps it anyway.
+        self.arrow
+            .draw(renderer, self.style.background(), bounds, self.trigger, self.gap);
 
         let mut style = *inherited;
         style.text_color = self.style.text_color;
@@ -858,6 +1069,7 @@ where
             tree: &mut state.panel,
             style,
             filled: self.filled,
+            arrow: self.arrow,
             trigger,
             gap: self.offset,
             padding: self.padding,
