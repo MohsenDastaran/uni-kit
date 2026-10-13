@@ -22412,6 +22412,43 @@
           "module": "theme"
         }
       ],
+      "color-picker": [
+        {
+          "src": "crates/iced-component/src/components/button.rs",
+          "target": "button.rs",
+          "module": "button"
+        },
+        {
+          "src": "crates/iced-component/src/components/color_picker.rs",
+          "target": "color_picker.rs",
+          "module": "color_picker"
+        },
+        {
+          "src": "crates/iced-component/src/components/input.rs",
+          "target": "input.rs",
+          "module": "input"
+        },
+        {
+          "src": "crates/iced-component/src/components/number_input.rs",
+          "target": "number_input.rs",
+          "module": "number_input"
+        },
+        {
+          "src": "crates/iced-component/src/components/popover.rs",
+          "target": "popover.rs",
+          "module": "popover"
+        },
+        {
+          "src": "crates/iced-component/src/components/slider.rs",
+          "target": "slider.rs",
+          "module": "slider"
+        },
+        {
+          "src": "crates/iced-component/src/components/theme.rs",
+          "target": "theme.rs",
+          "module": "theme"
+        }
+      ],
       "combobox": [
         {
           "src": "crates/iced-component/src/components/combobox.rs",
@@ -22820,6 +22857,23 @@
           "src": "crates/iced-component/src/components/radio.rs",
           "target": "radio.rs",
           "module": "radio"
+        },
+        {
+          "src": "crates/iced-component/src/components/theme.rs",
+          "target": "theme.rs",
+          "module": "theme"
+        }
+      ],
+      "rating": [
+        {
+          "src": "crates/iced-component/src/components/button.rs",
+          "target": "button.rs",
+          "module": "button"
+        },
+        {
+          "src": "crates/iced-component/src/components/rating.rs",
+          "target": "rating.rs",
+          "module": "rating"
         },
         {
           "src": "crates/iced-component/src/components/theme.rs",

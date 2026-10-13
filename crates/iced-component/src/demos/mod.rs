@@ -16,6 +16,7 @@ pub mod button;
 pub mod calendar;
 pub mod card;
 pub mod checkbox;
+pub mod color_picker;
 pub mod combobox;
 pub mod date_picker;
 pub mod description_list;
@@ -41,6 +42,7 @@ pub mod pagination;
 pub mod popover;
 pub mod progress;
 pub mod radio;
+pub mod rating;
 pub mod scrollable;
 pub mod select;
 pub mod sheet;
@@ -73,6 +75,7 @@ pub const STORIES: &[&str] = &[
     "calendar",
     "card",
     "checkbox",
+    "color-picker",
     "combobox",
     "date-picker",
     "description-list",
@@ -98,6 +101,7 @@ pub const STORIES: &[&str] = &[
     "popover",
     "progress",
     "radio",
+    "rating",
     "scrollable",
     "select",
     "sheet",
@@ -133,6 +137,7 @@ pub fn run(story: &str, theme: iced::Theme) -> iced::Result {
         "calendar" => calendar::run(theme),
         "card" => card::run(theme),
         "checkbox" => checkbox::run(theme),
+        "color-picker" => color_picker::run(theme),
         "combobox" => combobox::run(theme),
         "date-picker" => date_picker::run(theme),
         "description-list" => description_list::run(theme),
@@ -158,6 +163,7 @@ pub fn run(story: &str, theme: iced::Theme) -> iced::Result {
         "popover" => popover::run(theme),
         "progress" => progress::run(theme),
         "radio" => radio::run(theme),
+        "rating" => rating::run(theme),
         "scrollable" => scrollable::run(theme),
         "select" => select::run(theme),
         "sheet" => sheet::run(theme),

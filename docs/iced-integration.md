@@ -353,12 +353,12 @@ scripts/check.sh               # theme parity, feature agreement, manifest, chec
 | --- | --- | --- | --- | --- | --- | --- | --- |
 | `accordion` | `accordion.rs` | yes | yes | yes | 366 | yes | yes |
 | `alert` | `alert.rs` | yes | yes | yes | 319 | yes | yes |
-| `alert-dialog` | `alert_dialog.rs` | yes | yes | — | — | — | — |
+| `alert-dialog` | `alert_dialog.rs` | yes | yes | yes | 242 | yes | yes |
 | `attachment` | `attachment.rs` | yes | yes | yes | 1169 | yes | yes |
 | `avatar` | `avatar.rs` | yes | yes | yes | 320 | yes | yes |
 | `badge` | `badge.rs` | yes | yes | yes | 237 | yes | yes |
 | `bubble` | `bubble.rs` | yes | yes | — | — | — | — |
-| `button` | `button.rs` | yes | yes | yes | 571 | yes | yes |
+| `button` | `button.rs` | yes | yes | yes | 586 | yes | yes |
 | `calendar` | `calendar.rs` | yes | yes | yes | 507 | yes | yes |
 | `card` | `card.rs` | yes | yes | yes | 198 | yes | yes |
 | `carousel` | `carousel.rs` | yes | yes | — | — | — | — |
@@ -366,13 +366,13 @@ scripts/check.sh               # theme parity, feature agreement, manifest, chec
 | `checkbox` | `checkbox.rs` | yes | yes | yes | 269 | yes | yes |
 | `clipboard` | `clipboard.rs` | yes | yes | — | — | — | — |
 | `collapsible` | `collapsible.rs` | yes | yes | yes | 192 | — | yes |
-| `color-picker` | `color_picker.rs` | yes | yes | — | — | — | — |
+| `color-picker` | `color_picker.rs` | yes | yes | yes | 936 | yes | yes |
 | `combobox` | `combobox.rs` | yes | yes | yes | 738 | yes | yes |
 | `command` | `command.rs` | yes | yes | — | — | — | — |
 | `data-table` | `data_table.rs` | yes | yes | — | — | — | — |
 | `date-picker` | `date_picker.rs` | yes | yes | yes | 539 | yes | yes |
 | `description-list` | `description_list.rs` | yes | yes | yes | 441 | yes | yes |
-| `dialog` | `dialog.rs` | yes | yes | — | — | — | — |
+| `dialog` | `dialog.rs` | yes | yes | yes | 620 | yes | yes |
 | `dock` | `dock.rs` | yes | yes | — | — | — | — |
 | `dropdown_button` | `dropdown_button.rs` | yes | yes | yes | 357 | yes | — |
 | `editor` | `editor.rs` | yes | yes | — | — | — | — |
@@ -380,34 +380,34 @@ scripts/check.sh               # theme parity, feature agreement, manifest, chec
 | `focus-trap` | `focus_trap.rs` | yes | yes | — | — | — | — |
 | `form` | `form.rs` | yes | yes | yes | 593 | yes | yes |
 | `group-box` | `group_box.rs` | yes | yes | yes | 227 | yes | yes |
-| `hover-card` | `hover_card.rs` | yes | yes | — | — | — | — |
+| `hover-card` | `hover_card.rs` | yes | yes | yes | 177 | yes | yes |
 | `icon` | `icon.rs` | yes | yes | yes | 214 | yes | yes |
 | `image` | `image.rs` | yes | yes | — | — | — | — |
 | `input` | `input.rs` | yes | yes | yes | 373 | yes | yes |
 | `input-group` | `input_group.rs` | yes | yes | — | — | — | — |
 | `kbd` | `kbd.rs` | yes | yes | yes | 141 | yes | yes |
 | `label` | `label.rs` | yes | yes | yes | 122 | yes | yes |
-| `list` | `list.rs` | yes | yes | — | — | — | — |
+| `list` | `list.rs` | yes | yes | yes | 241 | yes | yes |
 | `marker` | `marker.rs` | yes | yes | yes | 123 | yes | yes |
 | `menu` | `menu.rs` | yes | yes | yes | 650 | yes | yes |
 | `message` | `message.rs` | yes | yes | — | — | — | — |
 | `message-role` | `message_role.rs` | yes | yes | yes | 235 | yes | yes |
 | `message-scroller` | `message_scroller.rs` | yes | yes | yes | 676 | yes | yes |
-| `notification` | `notification.rs` | yes | yes | — | — | — | — |
+| `notification` | `notification.rs` | yes | yes | yes | 418 | yes | yes |
 | `number-input` | `number_input.rs` | yes | yes | yes | 524 | yes | yes |
 | `otp-input` | `otp_input.rs` | yes | yes | yes | 522 | yes | yes |
-| `pagination` | `pagination.rs` | yes | yes | — | — | — | — |
+| `pagination` | `pagination.rs` | yes | yes | yes | 276 | yes | yes |
 | `popover` | `popover.rs` | yes | yes | yes | 1117 | yes | yes |
 | `progress` | `progress.rs` | yes | yes | yes | 413 | yes | yes |
 | `questionnaire` | `questionnaire.rs` | yes | yes | — | — | — | — |
 | `radio` | `radio.rs` | yes | yes | yes | 349 | yes | yes |
-| `rating` | `rating.rs` | yes | yes | — | — | — | — |
+| `rating` | `rating.rs` | yes | yes | yes | 197 | yes | yes |
 | `resizable` | `resizable.rs` | yes | yes | — | — | — | — |
 | `root` | `root.rs` | yes | yes | — | — | — | — |
 | `scrollable` | `scrollable.rs` | yes | yes | yes | 468 | yes | yes |
 | `select` | `select.rs` | yes | yes | yes | 507 | yes | yes |
 | `settings` | `settings.rs` | yes | yes | — | — | — | — |
-| `sheet` | `sheet.rs` | yes | yes | — | — | — | — |
+| `sheet` | `sheet.rs` | yes | yes | yes | 726 | yes | yes |
 | `shimmer` | `shimmer.rs` | yes | yes | yes | 249 | yes | yes |
 | `sidebar` | `sidebar.rs` | yes | yes | — | — | — | — |
 | `skeleton` | `skeleton.rs` | yes | yes | yes | 152 | yes | yes |
@@ -417,7 +417,7 @@ scripts/check.sh               # theme parity, feature agreement, manifest, chec
 | `status-bar` | `status_bar.rs` | yes | yes | — | — | — | — |
 | `stepper` | `stepper.rs` | yes | yes | yes | 642 | yes | yes |
 | `switch` | `switch.rs` | yes | yes | yes | 235 | yes | yes |
-| `table` | `table.rs` | yes | yes | — | — | — | — |
+| `table` | `table.rs` | yes | yes | yes | 744 | yes | yes |
 | `tabs` | `tabs.rs` | yes | yes | yes | 300 | — | yes |
 | `tag` | `tag.rs` | yes | yes | yes | 257 | yes | yes |
 | `text-view` | `text_view.rs` | yes | yes | yes | 919 | yes | yes |
@@ -427,11 +427,11 @@ scripts/check.sh               # theme parity, feature agreement, manifest, chec
 | `title-bar` | `title_bar.rs` | yes | yes | — | — | — | — |
 | `toggle` | `toggle.rs` | yes | yes | yes | 268 | yes | yes |
 | `toolbar` | `toolbar.rs` | yes | yes | — | — | — | — |
-| `tooltip` | `tooltip.rs` | yes | yes | yes | 705 | yes | yes |
+| `tooltip` | `tooltip.rs` | yes | yes | yes | 718 | yes | yes |
 | `tree` | `tree.rs` | yes | yes | yes | 352 | yes | yes |
 | `virtual-list` | `virtual_list.rs` | yes | yes | — | — | — | — |
 
-**42 / 79** components have an iced source, an example and a registry entry.
+**52 / 79** components have an iced source, an example and a registry entry.
 
-Still to do: `alert-dialog`, `bubble`, `carousel`, `chart`, `clipboard`, `collapsible`, `color-picker`, `command`, `data-table`, `dialog`, `dock`, `dropdown_button`, `editor`, `focus-trap`, `hover-card`, `image`, `input-group`, `list`, `message`, `notification`, `pagination`, `questionnaire`, `rating`, `resizable`, `root`, `settings`, `sheet`, `sidebar`, `speech`, `status-bar`, `table`, `tabs`, `theme`, `time-field`, `title-bar`, `toolbar`, `virtual-list`.
+Still to do: `bubble`, `carousel`, `chart`, `clipboard`, `collapsible`, `command`, `data-table`, `dock`, `dropdown_button`, `editor`, `focus-trap`, `image`, `input-group`, `message`, `questionnaire`, `resizable`, `root`, `settings`, `sidebar`, `speech`, `status-bar`, `tabs`, `theme`, `time-field`, `title-bar`, `toolbar`, `virtual-list`.
 <!-- iced-checklist:end -->
