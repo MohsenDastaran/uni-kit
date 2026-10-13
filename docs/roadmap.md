@@ -489,6 +489,14 @@ are recorded rather than quietly fixed:
   returns `destructive`, the same value as the failed fill, so the initials disappear in
   both themes — reproduced deliberately from `message.slint`, where the tint foreground is
   the destructive token. The one-line fix is `destructive_foreground`.
+- **A dialog's auto close glyph is ghost ink on a primary-filled panel**, low contrast in the
+  light theme. It mirrors Slint's own ghost button on the same fill, so it is inherited
+  rather than introduced.
+
+Three instances now, and they are one shape: an ink or a hue chosen for one surface, used
+on another. The theme has no text-safe variant of these pairs, which is why each component
+rediscovers it — and why the fix is a theme decision rather than three component patches.
+The `check.sh` theme-parity step means any such change moves the Slint theme with it.
 
 `message-role` was also the last component missing from a framework's sidebar: the sidebar
 is built by scanning `website/component/*.md`, and it had no page — so a component that
