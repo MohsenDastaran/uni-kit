@@ -22611,6 +22611,23 @@
           "module": "theme"
         }
       ],
+      "list": [
+        {
+          "src": "crates/iced-component/src/components/list.rs",
+          "target": "list.rs",
+          "module": "list"
+        },
+        {
+          "src": "crates/iced-component/src/components/scrollable.rs",
+          "target": "scrollable.rs",
+          "module": "scrollable"
+        },
+        {
+          "src": "crates/iced-component/src/components/theme.rs",
+          "target": "theme.rs",
+          "module": "theme"
+        }
+      ],
       "marker": [
         {
           "src": "crates/iced-component/src/components/marker.rs",
@@ -22691,6 +22708,28 @@
           "src": "crates/iced-component/src/components/otp_input.rs",
           "target": "otp_input.rs",
           "module": "otp_input"
+        },
+        {
+          "src": "crates/iced-component/src/components/theme.rs",
+          "target": "theme.rs",
+          "module": "theme"
+        }
+      ],
+      "pagination": [
+        {
+          "src": "crates/iced-component/src/components/button.rs",
+          "target": "button.rs",
+          "module": "button"
+        },
+        {
+          "src": "crates/iced-component/src/components/pagination.rs",
+          "target": "pagination.rs",
+          "module": "pagination"
+        },
+        {
+          "src": "crates/iced-component/src/components/scrollable.rs",
+          "target": "scrollable.rs",
+          "module": "scrollable"
         },
         {
           "src": "crates/iced-component/src/components/theme.rs",

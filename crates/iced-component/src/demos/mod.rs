@@ -28,12 +28,14 @@ pub mod icon;
 pub mod input;
 pub mod kbd;
 pub mod label;
+pub mod list;
 pub mod marker;
 pub mod menu;
 pub mod message_role;
 pub mod message_scroller;
 pub mod number_input;
 pub mod otp_input;
+pub mod pagination;
 pub mod popover;
 pub mod progress;
 pub mod radio;
@@ -81,12 +83,14 @@ pub const STORIES: &[&str] = &[
     "input",
     "kbd",
     "label",
+    "list",
     "marker",
     "menu",
     "message-role",
     "message-scroller",
     "number-input",
     "otp-input",
+    "pagination",
     "popover",
     "progress",
     "radio",
@@ -137,12 +141,14 @@ pub fn run(story: &str, theme: iced::Theme) -> iced::Result {
         "input" => input::run(theme),
         "kbd" => kbd::run(theme),
         "label" => label::run(theme),
+        "list" => list::run(theme),
         "marker" => marker::run(theme),
         "menu" => menu::run(theme),
         "message-role" => message_role::run(theme),
         "message-scroller" => message_scroller::run(theme),
         "number-input" => number_input::run(theme),
         "otp-input" => otp_input::run(theme),
+        "pagination" => pagination::run(theme),
         "popover" => popover::run(theme),
         "progress" => progress::run(theme),
         "radio" => radio::run(theme),
