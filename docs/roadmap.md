@@ -649,6 +649,9 @@ each to the same handful of traps. What works:
   change that "isn't showing" is usually one of them — restart with `--force`.
 - **Do not `pkill -f` a pattern that matches your own command line.** It has killed
   this session's shell three times; bracket a character or kill by PID.
+- **Click the canvas before sending keys.** Keyboard-driven state needs the headless
+  canvas focused first; without that one click every keystroke is silently ignored, and
+  the state looks like it never changes.
 
 ### Every card scrolls to its own sample
 
