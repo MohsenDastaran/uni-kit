@@ -537,3 +537,35 @@ where
         container(control).height(Length::Shrink).into()
     }
 }
+
+/// The pressable handle the form controls share.
+///
+/// `radio`, `switch` and `toggle` are one shape with three drawings. What they
+/// share is how they behave: each reports the value it wants to become instead
+/// of mutating its own state, and iced spells "cannot be pressed" as a control
+/// with no message. What differs is the drawing and the value reported, so the
+/// handle is built once, here, on iced's own [`button`]: a pressable element
+/// with no padding or size of its own, whose content is the control's mark and
+/// whose style is the chrome the control resolves.
+///
+/// The style stays a closure rather than a resolved value because iced reports
+/// hover and press only to the element that owns the interaction, and this
+/// element is it. iced 0.14 gives a bare button no focus ring and no Space or
+/// Enter activation, so the ring and the keyboard path Slint's `FocusScope`
+/// adds belong to the application.
+pub fn handle<'a, Message>(
+    content: impl Into<Element<'a, Message>>,
+    on_press: Option<Message>,
+    style: impl Fn(&Theme, button::Status) -> button::Style + 'a,
+) -> Element<'a, Message>
+where
+    Message: Clone + 'a,
+{
+    button(content)
+        .padding(0)
+        .width(Length::Shrink)
+        .height(Length::Shrink)
+        .on_press_maybe(on_press)
+        .style(style)
+        .into()
+}
