@@ -319,8 +319,15 @@ impl<'a, Message: Clone + 'static> DropdownButton<'a, Message> {
             menu = menu.on_highlight(move |index| on_highlight(index));
         }
 
+        // One surface, and the popover owns it. `Menu::into_element` hands back
+        // the body — the 4px inset and the rows — and draws no surface of its
+        // own, so `filled(true)` here is the panel the eye sees, never a menu
+        // border inside a popover border. `padding(0.0)` keeps that surface on
+        // the body itself: the menu body carries the 4px inset, so a nonzero
+        // popover inset would put the two rectangles at different sizes.
         let mut popover = Popover::new(caret)
             .filled(true)
+            .padding(0.0)
             .placement(Placement::Bottom)
             .offset(4.0)
             .panel_width(self.menu_width)

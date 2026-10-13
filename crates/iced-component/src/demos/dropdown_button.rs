@@ -17,6 +17,11 @@
 //! has no state of its own, so each control below renders from its slot in
 //! `open` and reports every request to move it through `on_open_change`.
 //!
+//! The shortcuts below are the Slint example's, with `⌘` and `⌥` spelled `Cmd`
+//! and `Alt`: on wasm the monospace family resolves to the embedded Fira Sans,
+//! which has no glyph for either mark, so `⌘E` painted as `E`. The marks the face
+//! does have (`⇧`, `⌫`) are kept, because they render.
+//!
 //! One thing iced 0.14 cannot express is named rather than hidden: the two
 //! halves cannot share one outline. Slint joins them with `spacing: -1px` and
 //! squares the meeting edges; iced has no negative spacing and this crate's
@@ -250,7 +255,7 @@ fn view(app: &App) -> Element<'_, Message> {
         DropdownButton::new("Export").items([
             Item::new("Export all rows (.csv)")
                 .icon(DOWNLOAD)
-                .shortcut("⌘E"),
+                .shortcut("Cmd E"),
             Item::new("Download report (.pdf)").icon(FILE_TEXT),
             Item::separator(),
             Item::new("Copy as Markdown").icon(COPY),
@@ -270,7 +275,7 @@ fn view(app: &App) -> Element<'_, Message> {
         app,
         1,
         DropdownButton::new("Export").items([
-            Item::new("Export all rows (.csv)").shortcut("⌘E"),
+            Item::new("Export all rows (.csv)").shortcut("Cmd E"),
             Item::new("Download report (.pdf)"),
         ])
     ));
@@ -352,7 +357,7 @@ fn view(app: &App) -> Element<'_, Message> {
             app,
             7,
             DropdownButton::new("Save").icon(|| icon(DOWNLOAD)).items([
-                Item::new("Save as new file…").icon(FILE).shortcut("⌘S"),
+                Item::new("Save as new file…").icon(FILE).shortcut("Cmd S"),
                 Item::new("Save as template…").icon(COPY),
             ])
         ),
@@ -395,7 +400,7 @@ fn view(app: &App) -> Element<'_, Message> {
                 .items([
                     Item::new("Run with release profile")
                         .icon(ZAP)
-                        .shortcut("⇧⌘R"),
+                        .shortcut("⇧Cmd R"),
                     Item::new("Run with debugger").icon(BOT),
                     Item::separator(),
                     Item::new("Stop").icon(SQUARE).disabled(true),
