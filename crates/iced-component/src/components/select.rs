@@ -43,7 +43,9 @@
 //! [`Select::on_chosen`] is a row's click. The highlight, which a menu cannot keep
 //! in the element tree it is rebuilt into, is [`Select::highlighted`] and
 //! [`Select::on_highlight`], and both the pointer and any key the application
-//! binds move it.
+//! binds move it. The pointer's report is a hover and is transient, so
+//! [`Select::on_leave`] is its other half; the keyboard's row is the caller's
+//! own and is not cleared by it — see [`Menu::on_highlight`].
 //!
 //! A click on a row reports the choice and closes nothing: the caller answers with
 //! its own `open` and `selected`, which is what the Slint example does when its
@@ -139,6 +141,7 @@ pub struct Select<'a, Message> {
     on_open_change: Option<Box<dyn Fn(bool) -> Message + 'a>>,
     on_chosen: Option<Rc<dyn Fn(usize) -> Message + 'a>>,
     on_highlight: Option<Rc<dyn Fn(usize) -> Message + 'a>>,
+    on_leave: Option<Rc<dyn Fn(Option<usize>) -> Message + 'a>>,
 }
 
 impl<'a, Message: Clone + 'static> Select<'a, Message> {
@@ -168,6 +171,7 @@ impl<'a, Message: Clone + 'static> Select<'a, Message> {
             on_open_change: None,
             on_chosen: None,
             on_highlight: None,
+            on_leave: None,
         }
     }
 
@@ -311,8 +315,24 @@ impl<'a, Message: Clone + 'static> Select<'a, Message> {
     /// Report the row the pointer entered, by index, the way
     /// [`Menu::on_highlight`] does. The caller draws it by passing the same index
     /// to [`highlighted`](Self::highlighted).
+    ///
+    /// It is a **hover**, as it is on the menu, so it is transient: pass the
+    /// matching [`on_leave`](Self::on_leave) to clear it. A composer that also
+    /// owns the row a key moved to keeps the two apart, or the pointer's leave
+    /// takes the keyboard's row with it.
     pub fn on_highlight(mut self, on_highlight: impl Fn(usize) -> Message + 'a) -> Self {
         self.on_highlight = Some(Rc::new(on_highlight));
+        self
+    }
+
+    /// Report that the pointer left a row, or left the panel: `Some(index)` is
+    /// the row it left and `None` is the panel as a whole, the same report
+    /// [`Menu::on_leave`] makes and for the same reason. It is the half that
+    /// clears the hover [`on_highlight`](Self::on_highlight) sets; clear only
+    /// the row it was on, because a lower row's leave follows an upper row's
+    /// entry.
+    pub fn on_leave(mut self, on_leave: impl Fn(Option<usize>) -> Message + 'a) -> Self {
+        self.on_leave = Some(Rc::new(on_leave));
         self
     }
 
@@ -338,6 +358,7 @@ impl<'a, Message: Clone + 'static> Select<'a, Message> {
             on_open_change,
             on_chosen,
             on_highlight,
+            on_leave,
         } = self;
 
         // The chosen row carries the check mark, which is where the Slint row
@@ -460,6 +481,9 @@ impl<'a, Message: Clone + 'static> Select<'a, Message> {
         }
         if let Some(on_highlight) = on_highlight {
             menu = menu.on_highlight(move |index| on_highlight(index));
+        }
+        if let Some(on_leave) = on_leave {
+            menu = menu.on_leave(move |row| on_leave(row));
         }
 
         popover.content(menu.into_element()).into()
