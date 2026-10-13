@@ -442,11 +442,16 @@ both themes is named plainly rather than ticked.
       (row widths 1,1,3,3,5,5,7 with centroids at start/centre/end). The dark label
       surface is `#f8f8f8` on `#080808` — **19.5:1**, not the white-on-white it could
       have been — and two code icons were clicked to confirm the page scrolls to their
-      own samples. Two things it found and left for the popover's owner: the arrow's
-      **taper is inverted** against `Arrow::draw`'s own doc, so an above-panel arrow
-      reads as pointing up into the surface, and a demo comment claims the first card is
-      the flip test when the first panel actually draws above. Left/right sides and the
-      native window are unverified — no demo uses the former.
+      own samples. Two defects it found are fixed, both by measurement: the arrow's taper was
+      **inverted** against `Arrow::draw`'s own doc, so an above-panel arrow pointed up
+      into the surface — `abdfb567` now draws it widest where it meets the panel and
+      narrowing to the trigger (`8,6,6,4,4,2,2` at Start, `7,7,5,5,3,3,1,1` at Centre
+      and End, against `1,1,3,3,5,5,7` before), and renamed `Facing::tip` to
+      `Facing::base` with a comment saying the sign is the taper, because that is the
+      kind of sign that inverts silently. A demo comment claiming the first card was
+      the flip test was wrong — it was measured drawing above at both viewports, and
+      the flip is the Underline trigger in a 290px window — corrected in `9fa19e5f`.
+      Left/right placements and the native window are unverified; no demo uses them.
       - [x] `menu`, `dropdown_button` — done, one item shape between them (the shape `select`
       composes). Two defects were found by looking rather than reading: the surface was
       drawn **twice** — `Menu::into_element` added one and every caller added another —
