@@ -447,28 +447,23 @@ both themes is named plainly rather than ticked.
       reads as pointing up into the surface, and a demo comment claims the first card is
       the flip test when the first panel actually draws above. Left/right sides and the
       native window are unverified — no demo uses the former.
-      - [ ] `menu`, `dropdown_button` — committed (`1194bd4c`), one item shape between them
-      (the shape `select` composes), and **still unticked because the rows do not
-      paint**. The A/B settled which side owns that: the popover's `Panel::draw` hands
-      the content the **panel's** layout node where `Panel::mouse_interaction` and
-      `operate` two methods away correctly use `Self::content_layout(layout)`, and
-      `Column::draw` zips its children against `layout.children()` — so every nested
-      column is one level high and keeps only its **first child**. That is why the
-      popover demo's own multi-child panels paint one line, why the menu's surface
-      measures correctly and paints no rows, and why hovering the open panel reports
-      row 1 everywhere: the hit test collapses with it. Drawing the same rows inline
-      with no popover paints all five, so the body is sound. Fix is in flight.
-      Keyboard traversal works and is **demonstrated**, not described: ↓ ↓ ↑ End Home
-      and Enter, with the separator skipped, read out of the demo's status line, and
-      Escape and outside click close. A real bug was found and fixed on the way: the
-      split button's **leading half** opened the menu, where Slint has `main.clicked`
-      versus `caret.clicked` — the popover now wraps the caret alone. Two bugs are
-      reported and still open: the menu family draws **two surfaces** (every caller
-      adds one over `MenuStyle`, against menu.rs's own "the two are never both asked
-      for"), and **shortcut modifier glyphs do not render** — `⌘N` paints as `N`,
-      because the gallery's `Font::MONOSPACE` has no such glyph on wasm. That is the
-      fourth wasm-only font trap in this project, and the same shape each time: a face
-      that does not exist resolves to nothing instead of falling back.
+      - [x] `menu`, `dropdown_button` — done, one item shape between them (the shape `select`
+      composes). Two defects were found by looking rather than reading: the surface was
+      drawn **twice** — `Menu::into_element` added one and every caller added another —
+      so the menu now returns only its body and exactly one container owns the surface,
+      a rule stated in five places; and `build_separator` was **never called**, so a
+      separator painted a blank 32px row instead of Slint's 9px band and 1px rule (the
+      panel was 167px, it is 145px). The shortcut glyphs were settled by parsing the
+      embedded face's cmap rather than guessing: `⇧` and `⌫` are present, `⌘` and `⌥`
+      are not, so `⌘N` was painting as `N`, and the demos spell `Cmd`/`Alt` with the rule
+      on `Menu::shortcut`. Verified by measurement: every actionable row hovers to the
+      accent in both themes (clip hashes per row), selected and highlighted are
+      distinguishable, Escape and outside-click return the closed hash exactly, keyboard
+      traversal still skips the separator, and the dropdown's label half runs its action
+      while only the caret opens the menu. Two things are named and left: the dropdown's
+      default width is 240px against Slint's 280px, so a long label wraps where Slint
+      elides — iced 0.14 has no ellipsis — and `demos/kbd.rs` still writes `⌘` in the
+      same face, which renders as a bare letter.
       - [ ] `select` — input plus popover plus menu.
 - [ ] `combobox` — select plus free text.
 - [ ] `date-picker` — popover plus the `calendar` that is already done.
