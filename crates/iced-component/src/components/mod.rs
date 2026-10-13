@@ -41,4 +41,5 @@ pub mod tabs;
 pub mod tag;
 pub mod text_view;
 pub mod textarea;
+pub mod tooltip;
 pub mod tree;

@@ -36,6 +36,7 @@ pub mod spinner;
 pub mod tag;
 pub mod text_view;
 pub mod textarea;
+pub mod tooltip;
 pub mod tree;
 
 mod index;
@@ -73,6 +74,7 @@ pub const STORIES: &[&str] = &[
     "tag",
     "text-view",
     "textarea",
+    "tooltip",
     "tree",
 ];
 
@@ -113,6 +115,7 @@ pub fn run(story: &str, theme: iced::Theme) -> iced::Result {
         "tag" => tag::run(theme),
         "text-view" => text_view::run(theme),
         "textarea" => textarea::run(theme),
+        "tooltip" => tooltip::run(theme),
         "tree" => tree::run(theme),
         other => index::run(theme, other.to_string()),
     }
