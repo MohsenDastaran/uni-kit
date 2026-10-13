@@ -89,6 +89,7 @@
   "iced": [
     "accordion",
     "alert",
+    "alert-dialog",
     "attachment",
     "avatar",
     "badge",
@@ -127,6 +128,7 @@
     "spinner",
     "stepper",
     "switch",
+    "table",
     "tabs",
     "tag",
     "text-view",

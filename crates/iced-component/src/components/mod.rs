@@ -11,6 +11,7 @@ pub mod theme;
 
 pub mod accordion;
 pub mod alert;
+pub mod alert_dialog;
 pub mod attachment;
 pub mod avatar;
 pub mod badge;
@@ -49,6 +50,7 @@ pub mod slider;
 pub mod spinner;
 pub mod stepper;
 pub mod switch;
+pub mod table;
 pub mod tabs;
 pub mod tag;
 pub mod text_view;

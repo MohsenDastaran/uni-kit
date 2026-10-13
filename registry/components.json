@@ -22294,6 +22294,28 @@
           "module": "theme"
         }
       ],
+      "alert-dialog": [
+        {
+          "src": "crates/iced-component/src/components/alert_dialog.rs",
+          "target": "alert_dialog.rs",
+          "module": "alert_dialog"
+        },
+        {
+          "src": "crates/iced-component/src/components/button.rs",
+          "target": "button.rs",
+          "module": "button"
+        },
+        {
+          "src": "crates/iced-component/src/components/dialog.rs",
+          "target": "dialog.rs",
+          "module": "dialog"
+        },
+        {
+          "src": "crates/iced-component/src/components/theme.rs",
+          "target": "theme.rs",
+          "module": "theme"
+        }
+      ],
       "attachment": [
         {
           "src": "crates/iced-component/src/components/attachment.rs",
@@ -22893,6 +22915,23 @@
           "src": "crates/iced-component/src/components/switch.rs",
           "target": "switch.rs",
           "module": "switch"
+        },
+        {
+          "src": "crates/iced-component/src/components/theme.rs",
+          "target": "theme.rs",
+          "module": "theme"
+        }
+      ],
+      "table": [
+        {
+          "src": "crates/iced-component/src/components/scrollable.rs",
+          "target": "scrollable.rs",
+          "module": "scrollable"
+        },
+        {
+          "src": "crates/iced-component/src/components/table.rs",
+          "target": "table.rs",
+          "module": "table"
         },
         {
           "src": "crates/iced-component/src/components/theme.rs",

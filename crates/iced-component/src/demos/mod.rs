@@ -8,6 +8,7 @@
 
 pub mod accordion;
 pub mod alert;
+pub mod alert_dialog;
 pub mod attachment;
 pub mod avatar;
 pub mod badge;
@@ -45,6 +46,7 @@ pub mod slider;
 pub mod spinner;
 pub mod stepper;
 pub mod switch;
+pub mod table;
 pub mod tag;
 pub mod text_view;
 pub mod textarea;
@@ -59,6 +61,7 @@ mod index;
 pub const STORIES: &[&str] = &[
     "accordion",
     "alert",
+    "alert-dialog",
     "attachment",
     "avatar",
     "badge",
@@ -96,6 +99,7 @@ pub const STORIES: &[&str] = &[
     "spinner",
     "stepper",
     "switch",
+    "table",
     "tag",
     "text-view",
     "textarea",
@@ -113,6 +117,7 @@ pub fn run(story: &str, theme: iced::Theme) -> iced::Result {
     match story {
         "accordion" => accordion::run(theme),
         "alert" => alert::run(theme),
+        "alert-dialog" => alert_dialog::run(theme),
         "attachment" => attachment::run(theme),
         "avatar" => avatar::run(theme),
         "badge" => badge::run(theme),
@@ -150,6 +155,7 @@ pub fn run(story: &str, theme: iced::Theme) -> iced::Result {
         "spinner" => spinner::run(theme),
         "stepper" => stepper::run(theme),
         "switch" => switch::run(theme),
+        "table" => table::run(theme),
         "tag" => tag::run(theme),
         "text-view" => text_view::run(theme),
         "textarea" => textarea::run(theme),
