@@ -468,7 +468,14 @@ both themes is named plainly rather than ticked.
       while only the caret opens the menu. Two things are named and left: the dropdown's
       default width is 240px against Slint's 280px, so a long label wraps where Slint
       elides — iced 0.14 has no ellipsis — and `demos/kbd.rs` still writes `⌘` in the
-      same face, which renders as a bare letter.
+      same face, which renders as a bare letter. The hover highlight also clears on a **direct jump**
+      out of the panel now: `Panel::update` forwarded events only `if inside`, so a
+      one-event exit never reached a row's `on_exit` and the accent stuck — a fast flick
+      left it behind. It always forwards now, as iced's own overlay does with its list,
+      and each widget guards its own `cursor.is_over`. Five commits, one per file, and
+      the shared popover change was re-checked against the tooltip, whose closed hash
+      returned byte-identical. `dropdown_button` still has no leave path of its own, so
+      its caller cannot clear a hover through the new report.
       - [x] `select` — done, and it composes rather than re-derives: the trigger is
       `input::Style` with the size ladder, the panel is `Popover::filled(true)` around
       `Menu::into_element()` following menu.rs's one-surface rule, and a chosen row is
