@@ -31,13 +31,16 @@ pub mod number_input;
 pub mod otp_input;
 pub mod popover;
 pub mod progress;
+pub mod radio;
 pub mod scrollable;
 pub mod shimmer;
 pub mod skeleton;
 pub mod spinner;
+pub mod switch;
 pub mod tag;
 pub mod text_view;
 pub mod textarea;
+pub mod toggle;
 pub mod tooltip;
 pub mod tree;
 
@@ -71,13 +74,16 @@ pub const STORIES: &[&str] = &[
     "otp-input",
     "popover",
     "progress",
+    "radio",
     "scrollable",
     "shimmer",
     "skeleton",
     "spinner",
+    "switch",
     "tag",
     "text-view",
     "textarea",
+    "toggle",
     "tooltip",
     "tree",
 ];
@@ -114,13 +120,16 @@ pub fn run(story: &str, theme: iced::Theme) -> iced::Result {
         "otp-input" => otp_input::run(theme),
         "popover" => popover::run(theme),
         "progress" => progress::run(theme),
+        "radio" => radio::run(theme),
         "scrollable" => scrollable::run(theme),
         "shimmer" => shimmer::run(theme),
         "skeleton" => skeleton::run(theme),
         "spinner" => spinner::run(theme),
+        "switch" => switch::run(theme),
         "tag" => tag::run(theme),
         "text-view" => text_view::run(theme),
         "textarea" => textarea::run(theme),
+        "toggle" => toggle::run(theme),
         "tooltip" => tooltip::run(theme),
         "tree" => tree::run(theme),
         other => index::run(theme, other.to_string()),
