@@ -554,8 +554,21 @@ below instead of being one.
       Named, not faked: iced 0.14 has no subtree opacity (disabled is fill and ink),
       no layout transition (the thumb snaps), and no focus ring or Space/Enter on a
       bare button; `ToggleGroup` was not built.
-- [ ] `slider`, `stepper` — and `number-input`'s stepper behaviour, which is already
-      built and should be shared rather than copied
+- [x] `slider`, `stepper` — done, and the stepper behaviour was shared rather than
+      copied: `stepper::step_index` is built on `number_input::step_value` and skips a
+      disabled step in the direction of travel, which is Slint's `step-by`; the slider's
+      arrow keys call the same function. Clamping is verified at **both** ends in both
+      themes — the slider drags to 100% and 0%, the stepper clamps to "Step 1 of 4" with
+      Previous disabled and to "Step 4 of 4" with a disabled Done — and the negative
+      cases are the good ones: dragging a disabled slider leaves the clip hash
+      **byte-identical**, and clicking a disabled step leaves its row unchanged. The
+      section titles are the Slint example's GroupBox headings rather than only the
+      page's `##` ones, which is what puts a panel under every example and matches the
+      button precedent; the author flagged the choice, and it is the right one. Two
+      things were left unverified: the scratch install for these two (the manifest
+      closure carries `number_input`, `input`, `button` and `theme`, and it compiles,
+      but it was not installed and built), and the stepper demo's arrow-key
+      subscription, which was wired and native-built but not re-driven in wasm.
 - [ ] `form` — composition and validation over the controls above, not a new control;
       it has no rendering of its own, so what it owns is layout, labels, error
       placement and the state that ties a control to its message
