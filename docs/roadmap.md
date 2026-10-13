@@ -821,6 +821,9 @@ each to the same handful of traps. What works:
   keystroke" — a false negative that reads exactly like a broken input.
 - **Click, then type.** With focus emulation on, the first click after a navigation does
   not always register; the reliable sequence is to click the field and then send keys.
+- **To enter a value: click, End, then keys.** Triple-click-and-type produced `08:05` where
+  `18:45` was intended, and `Input.insertText` was ignored outright — the reliable sequence
+  is a click on the segment, `End` to move the caret to the end, then the keystrokes.
 
 #### A `Stack` sizes itself from its first child
 
