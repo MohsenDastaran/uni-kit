@@ -22510,6 +22510,45 @@
           "module": "theme"
         }
       ],
+      "number-input": [
+        {
+          "src": "crates/iced-component/src/components/button.rs",
+          "target": "button.rs",
+          "module": "button"
+        },
+        {
+          "src": "crates/iced-component/src/components/input.rs",
+          "target": "input.rs",
+          "module": "input"
+        },
+        {
+          "src": "crates/iced-component/src/components/number_input.rs",
+          "target": "number_input.rs",
+          "module": "number_input"
+        },
+        {
+          "src": "crates/iced-component/src/components/theme.rs",
+          "target": "theme.rs",
+          "module": "theme"
+        }
+      ],
+      "otp-input": [
+        {
+          "src": "crates/iced-component/src/components/input.rs",
+          "target": "input.rs",
+          "module": "input"
+        },
+        {
+          "src": "crates/iced-component/src/components/otp_input.rs",
+          "target": "otp_input.rs",
+          "module": "otp_input"
+        },
+        {
+          "src": "crates/iced-component/src/components/theme.rs",
+          "target": "theme.rs",
+          "module": "theme"
+        }
+      ],
       "progress": [
         {
           "src": "crates/iced-component/src/components/progress.rs",
@@ -22599,6 +22638,18 @@
           "src": "crates/iced-component/src/components/text_view.rs",
           "target": "text_view.rs",
           "module": "text_view"
+        },
+        {
+          "src": "crates/iced-component/src/components/theme.rs",
+          "target": "theme.rs",
+          "module": "theme"
+        }
+      ],
+      "textarea": [
+        {
+          "src": "crates/iced-component/src/components/textarea.rs",
+          "target": "textarea.rs",
+          "module": "textarea"
         },
         {
           "src": "crates/iced-component/src/components/theme.rs",

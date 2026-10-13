@@ -39,14 +39,18 @@ const icons = fs
   .filter((name) => name.endsWith('.svg'))
   .sort();
 
-function closure(start) {
+// Walks what a file imports until every file it reaches has been seen, and
+// returns the sorted set: everything a copy has to carry for the start file to
+// compile. Slint reaches a sibling with `import`, iced with `super::`, so both
+// feed the walk and it stays one mechanism.
+function closure(start, importsOfFile) {
   const seen = new Set();
   const pending = [start];
   while (pending.length) {
     const file = pending.pop();
     if (seen.has(file)) continue;
     seen.add(file);
-    for (const imported of importsOf(file)) pending.push(imported);
+    for (const imported of importsOfFile(file)) pending.push(imported);
   }
   return [...seen].sort();
 }
@@ -57,7 +61,7 @@ const slint = {
 };
 for (const file of slintFiles.sort()) {
   const name = file.replace(/\.slint$/, '');
-  const files = closure(file).map((imported) => ({
+  const files = closure(file, importsOf).map((imported) => ({
     src: `crates/slint-component/ui/${imported}`,
     target: imported,
   }));
@@ -102,13 +106,41 @@ for (const name of GPUI_BLOCKS) {
 }
 
 // iced components are Rust source a project copies in, like Slint's, so every
-// entry names real files: the component and the theme it reads. The theme is
-// shared, so the CLI writes it once however many components are installed.
+// entry names real files: the component, every sibling component it composes,
+// and the theme they read. The theme is shared, so the CLI writes it once
+// however many components are installed.
 //
 // A component reaches the theme as `super::theme`, which is why the installed
-// directory can be moved or renamed without editing anything: the two files are
+// directory can be moved or renamed without editing anything: the files are
 // siblings wherever they land.
 const icedUi = path.join(root, 'crates/iced-component/src/components');
+
+// A component that composes a sibling names it as `super::<module>`, and the
+// copied file only compiles with that sibling beside it. Installing
+// `number-input` used to write `number_input.rs` and `theme.rs` alone, and the
+// project then failed on a missing `input.rs` and `button.rs`. Which siblings
+// those are is read from the source, so a component that grows a composition
+// grows its install with it.
+//
+// Doc comments link siblings too — ``[`Button`](super::button)`` — without
+// depending on them, so comments come out first: a link must not drag a file
+// into every entry that merely mentions it. A name only counts as a sibling
+// when a file of that name exists, which keeps `use super::<item>` inside a
+// file's own test module from naming a component. The theme is reached this way
+// by nearly every component and is added to each entry once, below.
+function componentImportsOf(file) {
+  const text = fs
+    .readFileSync(path.join(icedUi, file), 'utf8')
+    .replace(/\/\*[\s\S]*?\*\//g, '')
+    .replace(/(^|[^:])\/\/[^\n]*/g, '$1');
+  return [...text.matchAll(/\bsuper::([a-z_][a-z0-9_]*)/g)]
+    .map((match) => `${match[1]}.rs`)
+    .filter(
+      (imported) =>
+        imported !== 'theme.rs' && fs.existsSync(path.join(icedUi, imported)),
+    );
+}
+
 const iced = rust('src/components');
 if (fs.existsSync(icedUi)) {
   const theme = 'crates/iced-component/src/components/theme.rs';
@@ -141,8 +173,14 @@ if (fs.existsSync(icedUi)) {
       throw new Error(`iced components "${module}" and another file both map to the registry key "${name}".`);
     }
     const src = `crates/iced-component/src/components/${file}`;
+    // The component and every sibling it composes, sorted by the closure, then
+    // the theme. A component with no sibling keeps the entry it had.
     iced.components[name] = [
-      { src, target: file, module },
+      ...closure(file, componentImportsOf).map((imported) => ({
+        src: `crates/iced-component/src/components/${imported}`,
+        target: imported,
+        module: imported.replace(/\.rs$/, ''),
+      })),
       { src: theme, target: 'theme.rs', module: 'theme' },
     ];
     const source = fs.readFileSync(path.join(root, src), 'utf8');

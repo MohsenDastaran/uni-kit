@@ -62,18 +62,29 @@ else
 fi
 
 if [[ "${1:-}" == "--install" ]]; then
-  step "install into a scratch project"
-  scratch="$(mktemp -d)"
-  if cargo new --bin "$scratch/app" --quiet >/dev/null 2>&1 \
-    && (cd "$scratch/app" && cargo add iced --features svg,canvas,image,qr_code,markdown --quiet >/dev/null 2>&1) \
-    && (cd "$scratch/app" && UNI_KIT_ROOT="$root" node "$root/registry/index.js" add iced button >/dev/null) \
-    && printf 'mod components;\n' > "$scratch/app/src/main.rs" \
-    && (cd "$scratch/app" && CARGO_TARGET_DIR="$crate_dir/target" cargo build --quiet 2>/dev/null); then
-    ok "uni-kit add iced button installs a project that compiles"
-  else
-    bad "install and compile in a scratch project"
-  fi
-  rm -rf "$scratch"
+  # One scratch project per component. Installing the family into a single
+  # project would let `input` supply the file `number-input` is supposed to
+  # carry, which is the hole this check exists to find: the entry that omitted
+  # `input.rs` and `button.rs` compiled here only because `button` was the one
+  # component installed.
+  #
+  # The scratch is a bin crate and keeps a `main`, because a bin without one
+  # fails to build for that reason alone and the check would then pass or fail
+  # without ever compiling the installed component.
+  for component in button input number-input otp-input scrollable; do
+    step "install iced $component into a scratch project"
+    scratch="$(mktemp -d)"
+    if cargo new --bin "$scratch/app" --quiet >/dev/null 2>&1 \
+      && (cd "$scratch/app" && cargo add iced --features svg,canvas,image,qr_code,markdown --quiet >/dev/null 2>&1) \
+      && (cd "$scratch/app" && UNI_KIT_ROOT="$root" node "$root/registry/index.js" add iced "$component" >/dev/null) \
+      && printf 'mod components;\nfn main() {}\n' > "$scratch/app/src/main.rs" \
+      && (cd "$scratch/app" && CARGO_TARGET_DIR="$crate_dir/target" cargo build --quiet 2>/dev/null); then
+      ok "uni-kit add iced $component installs a project that compiles"
+    else
+      bad "uni-kit add iced $component does not compile in a scratch project"
+    fi
+    rm -rf "$scratch"
+  done
 fi
 
 if [[ $failed -eq 0 ]]; then printf '\niced-component: all checks passed\n'; else printf '\niced-component: checks FAILED\n'; fi

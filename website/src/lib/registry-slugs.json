@@ -107,6 +107,8 @@
     "marker",
     "message-role",
     "message-scroller",
+    "number-input",
+    "otp-input",
     "progress",
     "scrollable",
     "shimmer",
@@ -115,6 +117,7 @@
     "tabs",
     "tag",
     "text-view",
+    "textarea",
     "tree"
   ],
   "quickgui": []
