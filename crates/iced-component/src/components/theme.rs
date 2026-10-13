@@ -108,6 +108,20 @@ impl ControlSize {
         }
     }
 
+    /// A text field's height in a row: 20 / 24 / 44 / 32, the Slint theme's
+    /// `input-height(size)`, and taller than a button at `large` — a field is a
+    /// box a caret has to sit in, not a control a label has to fit. `input.rs`
+    /// repeats the table for its own frame; `select` reads it here so its trigger
+    /// is the same box as the field beside it.
+    pub fn input_height(self) -> f32 {
+        match self {
+            Self::XSmall => 20.0,
+            Self::Small => 24.0,
+            Self::Large => 44.0,
+            Self::Medium => 32.0,
+        }
+    }
+
     /// A text field's size. Medium is text-sm and large is text-base.
     pub fn input_font_size(self) -> f32 {
         match self {
