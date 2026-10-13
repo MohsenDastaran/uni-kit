@@ -22495,6 +22495,23 @@
           "module": "theme"
         }
       ],
+      "form": [
+        {
+          "src": "crates/iced-component/src/components/form.rs",
+          "target": "form.rs",
+          "module": "form"
+        },
+        {
+          "src": "crates/iced-component/src/components/label.rs",
+          "target": "label.rs",
+          "module": "label"
+        },
+        {
+          "src": "crates/iced-component/src/components/theme.rs",
+          "target": "theme.rs",
+          "module": "theme"
+        }
+      ],
       "group-box": [
         {
           "src": "crates/iced-component/src/components/group_box.rs",

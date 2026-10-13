@@ -24,6 +24,7 @@ pub mod date_picker;
 pub mod description_list;
 pub mod dropdown_button;
 pub mod empty;
+pub mod form;
 pub mod group_box;
 pub mod icon;
 pub mod input;

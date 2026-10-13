@@ -20,6 +20,7 @@ pub mod date_picker;
 pub mod description_list;
 pub mod dropdown_button;
 pub mod empty;
+pub mod form;
 pub mod group_box;
 pub mod icon;
 pub mod input;
@@ -68,6 +69,7 @@ pub const STORIES: &[&str] = &[
     "description-list",
     "dropdown-button",
     "empty",
+    "form",
     "group-box",
     "icon",
     "input",
@@ -119,6 +121,7 @@ pub fn run(story: &str, theme: iced::Theme) -> iced::Result {
         "description-list" => description_list::run(theme),
         "dropdown-button" => dropdown_button::run(theme),
         "empty" => empty::run(theme),
+        "form" => form::run(theme),
         "group-box" => group_box::run(theme),
         "icon" => icon::run(theme),
         "input" => input::run(theme),
