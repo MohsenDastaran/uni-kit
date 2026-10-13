@@ -834,25 +834,32 @@ impl<Message> overlay::Overlay<Message, Theme, iced::Renderer> for Panel<'_, '_,
             shell.capture_event();
         }
 
-        if inside {
-            // The content's node, not the panel's: `layout` is the surface, and
-            // the content was laid out as its single child. A container routes
-            // events to its children by zipping them against
-            // `layout.children()`, so passing the panel node would hand every
-            // event to the first child stretched over the whole panel and leave
-            // the rest of the content unreachable.
-            let content = Self::content_layout(layout);
-            self.content.as_widget_mut().update(
-                self.tree,
-                event,
-                content,
-                cursor,
-                renderer,
-                clipboard,
-                shell,
-                &bounds,
-            );
-        }
+        // The content is updated whether or not the pointer is over the panel.
+        // A `mouse_area` publishes its exit only when it is updated with the
+        // cursor outside its bounds, so gating this on `inside` meant a pointer
+        // that left a row for outside the panel in one move — or faster than a
+        // frame — was never delivered to the row and its hover never cleared.
+        // iced's own overlay menu always updates its list for the same reason,
+        // and every widget here guards its own hit test with
+        // `cursor.is_over(...)`; an outside press has already been answered and
+        // captured above.
+        //
+        // The content's node, not the panel's: `layout` is the surface, and the
+        // content was laid out as its single child. A container routes events to
+        // its children by zipping them against `layout.children()`, so passing
+        // the panel node would hand every event to the first child stretched
+        // over the whole panel and leave the rest of the content unreachable.
+        let content = Self::content_layout(layout);
+        self.content.as_widget_mut().update(
+            self.tree,
+            event,
+            content,
+            cursor,
+            renderer,
+            clipboard,
+            shell,
+            &bounds,
+        );
     }
 
     fn mouse_interaction(
