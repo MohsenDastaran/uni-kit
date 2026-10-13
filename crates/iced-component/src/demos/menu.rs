@@ -32,7 +32,7 @@ use iced::{Alignment, Element, Length, Subscription, Task, Theme};
 use crate::components::button::Button;
 use crate::components::group_box::{self, GroupBox};
 use crate::components::menu::{Item, Menu, PANEL_WIDTH};
-use crate::components::popover::{PanelStyle, Popover, panel_container};
+use crate::components::popover::Popover;
 use crate::components::theme::{self, Tokens};
 
 /// The page padding and the gap between sections, as the Slint example sets them.
@@ -200,30 +200,37 @@ fn subscription(_app: &App) -> Subscription<Message> {
 }
 
 /// The rows a section's menu holds, in the Slint example's order.
+///
+/// The shortcuts are the Slint example's, with the two modifier marks the wasm
+/// face cannot draw spelled out. On wasm the monospace family resolves to the
+/// embedded Fira Sans, which has `⇧` and `⌫` and no `⌘` or `⌥`; `⌘N` therefore
+/// painted as `N`, a shortcut that reads wrong. `Cmd N` and `Alt Z` render in
+/// the 48px column and mean the same thing on every platform. The marks the face
+/// does have are kept, so `⇧Cmd Z` is a shift and a command and not three words.
 fn menu_items(slot: usize) -> Vec<Item> {
     match slot {
         0 => vec![
-            Item::new("New file").shortcut("⌘N"),
-            Item::new("Open…").shortcut("⌘O"),
-            Item::new("Save").shortcut("⌘S"),
+            Item::new("New file").shortcut("Cmd N"),
+            Item::new("Open…").shortcut("Cmd O"),
+            Item::new("Save").shortcut("Cmd S"),
             Item::separator(),
             Item::new("Export as CSV"),
         ],
         1 => vec![
             Item::new("Rename").icon(PENCIL).shortcut("F2"),
-            Item::new("Duplicate").icon(COPY).shortcut("⌘D"),
+            Item::new("Duplicate").icon(COPY).shortcut("Cmd D"),
             Item::new("Move to…").icon(FOLDER),
             Item::new("Delete").icon(TRASH).shortcut("⌫"),
         ],
         2 => vec![
             Item::new("Show minimap").checked(true),
-            Item::new("Wrap lines").shortcut("⌥Z").checked(true),
+            Item::new("Wrap lines").shortcut("Alt Z").checked(true),
             Item::new("Show whitespace"),
         ],
         3 => vec![
-            Item::new("Cut").shortcut("⌘X"),
-            Item::new("Copy").shortcut("⌘C"),
-            Item::new("Paste").shortcut("⌘V").disabled(true),
+            Item::new("Cut").shortcut("Cmd X"),
+            Item::new("Copy").shortcut("Cmd C"),
+            Item::new("Paste").shortcut("Cmd V").disabled(true),
         ],
         4 => vec![
             Item::new("Archive").icon(ARCHIVE),
@@ -231,11 +238,11 @@ fn menu_items(slot: usize) -> Vec<Item> {
             Item::new("Delete project").icon(TRASH).danger(true),
         ],
         _ => vec![
-            Item::new("Undo").shortcut("⌘Z"),
-            Item::new("Redo").shortcut("⇧⌘Z"),
+            Item::new("Undo").shortcut("Cmd Z"),
+            Item::new("Redo").shortcut("⇧Cmd Z"),
             Item::separator(),
-            Item::new("Find…").shortcut("⌘F"),
-            Item::new("Replace…").shortcut("⌘H").disabled(true),
+            Item::new("Find…").shortcut("Cmd F"),
+            Item::new("Replace…").shortcut("Cmd H").disabled(true),
         ],
     }
 }
@@ -379,30 +386,26 @@ fn trigger<'a>(label: &str) -> Button<'a, Message> {
     Button::new(label.to_string()).outline()
 }
 
-/// The panel every menu is drawn in. It is a function of the theme, not a value:
-/// an overlay is constructed without a theme, and a surface resolved for one
-/// appearance is the wrong colour in the other. It is the popover's own panel, so
-/// a menu and every other overlay in this crate are one surface.
-fn menu_style(theme: &Theme) -> PanelStyle {
-    PanelStyle::resolve(Tokens::of(theme))
-}
-
 fn view(app: &App) -> Element<'_, Message> {
     // section: Usage
     // The whole of a menu: the items, the trigger, the caller's flag, and the
     // one message that moves it. `on_chosen` is the contract `select` composes.
+    // `filled(true)` is the panel's one surface — `Menu::into_element` hands back
+    // the rows and their inset and draws none — and `padding(0.0)` keeps that
+    // surface on the body rather than a few pixels outside it.
     let usage = Popover::new(trigger("Open menu"))
         .open(app.open[0])
         .panel_width(PANEL_WIDTH)
-        .content(panel_container(
+        .filled(true)
+        .padding(0.0)
+        .content(
             Menu::new(menu_items(0))
-            .selected(app.chosen[0])
-            .highlighted(app.highlighted.0)
-            .on_chosen(|index| Message::Chosen { slot: 0, index })
-            .on_highlight(move |index| Message::Highlighted { slot: 0, index })
-            .into_element(),
-            menu_style,
-        ))
+                .selected(app.chosen[0])
+                .highlighted(app.highlighted.0)
+                .on_chosen(|index| Message::Chosen { slot: 0, index })
+                .on_highlight(move |index| Message::Highlighted { slot: 0, index })
+                .into_element(),
+        )
         .on_open_change(|open| Message::Opened { slot: 0, open });
 
     let usage_section = column![
@@ -420,15 +423,16 @@ fn view(app: &App) -> Element<'_, Message> {
     let icons = Popover::new(trigger("Open icons"))
         .open(app.open[1])
         .panel_width(PANEL_WIDTH)
-        .content(panel_container(
+        .filled(true)
+        .padding(0.0)
+        .content(
             Menu::new(menu_items(1))
-            .selected(app.chosen[1])
-            .highlighted(app.highlighted.0)
-            .on_chosen(|index| Message::Chosen { slot: 1, index })
-            .on_highlight(move |index| Message::Highlighted { slot: 1, index })
-            .into_element(),
-            menu_style,
-        ))
+                .selected(app.chosen[1])
+                .highlighted(app.highlighted.0)
+                .on_chosen(|index| Message::Chosen { slot: 1, index })
+                .on_highlight(move |index| Message::Highlighted { slot: 1, index })
+                .into_element(),
+        )
         .on_open_change(|open| Message::Opened { slot: 1, open });
 
     let icons_section = body_box(icons);
@@ -439,15 +443,16 @@ fn view(app: &App) -> Element<'_, Message> {
     let checks = Popover::new(trigger("Open checks"))
         .open(app.open[2])
         .panel_width(PANEL_WIDTH)
-        .content(panel_container(
+        .filled(true)
+        .padding(0.0)
+        .content(
             Menu::new(menu_items(2))
-            .selected(app.chosen[2])
-            .highlighted(app.highlighted.0)
-            .on_chosen(|index| Message::Chosen { slot: 2, index })
-            .on_highlight(move |index| Message::Highlighted { slot: 2, index })
-            .into_element(),
-            menu_style,
-        ))
+                .selected(app.chosen[2])
+                .highlighted(app.highlighted.0)
+                .on_chosen(|index| Message::Chosen { slot: 2, index })
+                .on_highlight(move |index| Message::Highlighted { slot: 2, index })
+                .into_element(),
+        )
         .on_open_change(|open| Message::Opened { slot: 2, open });
 
     let checks_section = body_box(checks);
@@ -458,15 +463,16 @@ fn view(app: &App) -> Element<'_, Message> {
     let disabled = Popover::new(trigger("Open disabled"))
         .open(app.open[3])
         .panel_width(PANEL_WIDTH)
-        .content(panel_container(
+        .filled(true)
+        .padding(0.0)
+        .content(
             Menu::new(menu_items(3))
-            .selected(app.chosen[3])
-            .highlighted(app.highlighted.0)
-            .on_chosen(|index| Message::Chosen { slot: 3, index })
-            .on_highlight(move |index| Message::Highlighted { slot: 3, index })
-            .into_element(),
-            menu_style,
-        ))
+                .selected(app.chosen[3])
+                .highlighted(app.highlighted.0)
+                .on_chosen(|index| Message::Chosen { slot: 3, index })
+                .on_highlight(move |index| Message::Highlighted { slot: 3, index })
+                .into_element(),
+        )
         .on_open_change(|open| Message::Opened { slot: 3, open });
 
     let disabled_section = body_box(disabled);
@@ -477,15 +483,16 @@ fn view(app: &App) -> Element<'_, Message> {
     let destructive = Popover::new(trigger("Open destructive"))
         .open(app.open[4])
         .panel_width(PANEL_WIDTH)
-        .content(panel_container(
+        .filled(true)
+        .padding(0.0)
+        .content(
             Menu::new(menu_items(4))
-            .selected(app.chosen[4])
-            .highlighted(app.highlighted.0)
-            .on_chosen(|index| Message::Chosen { slot: 4, index })
-            .on_highlight(move |index| Message::Highlighted { slot: 4, index })
-            .into_element(),
-            menu_style,
-        ))
+                .selected(app.chosen[4])
+                .highlighted(app.highlighted.0)
+                .on_chosen(|index| Message::Chosen { slot: 4, index })
+                .on_highlight(move |index| Message::Highlighted { slot: 4, index })
+                .into_element(),
+        )
         .on_open_change(|open| Message::Opened { slot: 4, open });
 
     let destructive_section = body_box(destructive);
@@ -497,15 +504,16 @@ fn view(app: &App) -> Element<'_, Message> {
     let keyboard = Popover::new(trigger("Open with the keyboard"))
         .open(app.open[5])
         .panel_width(PANEL_WIDTH)
-        .content(panel_container(
+        .filled(true)
+        .padding(0.0)
+        .content(
             Menu::new(menu_items(5))
-            .selected(app.chosen[5])
-            .highlighted(app.highlighted.0)
-            .on_chosen(|index| Message::Chosen { slot: 5, index })
-            .on_highlight(move |index| Message::Highlighted { slot: 5, index })
-            .into_element(),
-            menu_style,
-        ))
+                .selected(app.chosen[5])
+                .highlighted(app.highlighted.0)
+                .on_chosen(|index| Message::Chosen { slot: 5, index })
+                .on_highlight(move |index| Message::Highlighted { slot: 5, index })
+                .into_element(),
+        )
         .on_open_change(|open| Message::Opened { slot: 5, open });
 
     let keyboard_section = body_box(keyboard);

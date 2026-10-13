@@ -11,10 +11,20 @@
 //! no anchor is not a control: every card in the Slint example puts one inside
 //! a `PopupWindow`.
 //!
-//! A caller that wants the panel's own surface on its own draws it with
-//! [`MenuStyle`], the way [`PanelStyle`](super::popover::PanelStyle) draws a
-//! popover's. A menu in a popover asks the popover for `filled(true)` instead,
-//! so the body and its surface are one surface rather than two.
+//! This file draws the **body** — the 4px inset and the rows — and never the
+//! surface. One container owns the surface, and it is exactly one:
+//!
+//! - a menu in a [`Popover`](super::popover::Popover) asks the popover for
+//!   `filled(true)`, which draws the family's [`PanelStyle`](super::popover::PanelStyle)
+//!   surface around the body; [`Menu::into_element`] is what goes in
+//!   [`Popover::content`](super::popover::Popover::content);
+//! - a caller placing a menu with no popover wraps the body with
+//!   [`menu_container`], which draws the same surface from [`MenuStyle`].
+//!
+//! Never both. [`Menu::into_element`] used to draw a `MenuStyle` of its own as
+//! well, so every popover — `filled(true)` in `DropdownButton`, and
+//! `panel_container` in the gallery — drew a second rounded border a few pixels
+//! inside the first: one menu, painted as two panels.
 //!
 //! # The item shape
 //!
@@ -128,7 +138,14 @@ impl Item {
     }
 
     /// The shortcut shown at the trailing edge, right-aligned in a 48px column
-    /// in the monospace face, `⌘N` in the Slint example.
+    /// in the monospace face — `⌘N` in the Slint example.
+    ///
+    /// The face does not decide what a shortcut says, but it decides what
+    /// renders. On wasm the gallery's monospace family resolves to the embedded
+    /// Fira Sans, which has `⇧` and `⌫` and **not** `⌘` or `⌥`, so the gallery
+    /// spells those two in words (`Cmd N`, `Alt Z`) rather than painting a blank
+    /// where a modifier should be. See `demos/menu.rs`; the rule is the caller's,
+    /// because the shortcut is the caller's string.
     pub fn shortcut(mut self, shortcut: impl Into<String>) -> Self {
         self.shortcut = shortcut.into();
         self
@@ -273,6 +290,13 @@ impl<'a, Message> Menu<'a, Message> {
         Message: Clone + 'a,
     {
         let item = &self.items[index];
+        // A separator is its own shape, not a row: the Slint one is a 9px band
+        // with a one-pixel rule, and `build_row` for it drew a 32px blank row
+        // with no rule. It answers no pointer and carries no highlight, so it
+        // never becomes a `mouse_area`.
+        if item.is_separator() {
+            return build_separator();
+        }
         let highlighted = self.highlighted == Some(index);
         let selected = self.selected == Some(index);
 
@@ -292,7 +316,10 @@ impl<'a, Message> Menu<'a, Message> {
     }
 
     /// The panel's body, without a surface: the 4px inset and a row per item.
-    /// The [`Popover`](super::popover::Popover) draws the surface around it.
+    /// The container draws the surface around it — see the module comment for the
+    /// one-owner rule. The body carries the inset, so neither surface asks for
+    /// one: [`Popover::filled`](super::popover::Popover::filled) is told
+    /// `padding(0.0)`, and [`menu_container`] adds no padding of its own.
     pub fn into_element(self) -> Element<'a, Message>
     where
         Message: Clone + 'a,
@@ -301,15 +328,14 @@ impl<'a, Message> Menu<'a, Message> {
         for index in 0..self.items.len() {
             rows = rows.push(self.row_element(index));
         }
-        // The panel's own surface travels with the menu body, so a caller that
-        // drops the menu into a bare popover — `Popover::filled(false)` — still
-        // gets the popover fill, the border token as a one-pixel edge and
-        // `radius-lg`, which is what the Slint `Menu` draws around its rows.
-        // `Popover::filled(true)` draws the same surface and this one over it,
-        // which is why the two are never both asked for.
-        container(container(rows).padding(PANEL_PADDING).width(Length::Fill))
+        // The body, and only the body. The surface is the container's: the
+        // popover's `filled(true)` surface, or `menu_container`'s. Drawing a
+        // `MenuStyle` here as well would put a second rounded border a few pixels
+        // inside the first — one menu, painted as two panels. The two are never
+        // both asked for.
+        container(rows)
+            .padding(PANEL_PADDING)
             .width(Length::Fill)
-            .style(|theme: &Theme| MenuStyle::resolve(Tokens::of(theme)).container_style())
             .into()
     }
 }
@@ -523,8 +549,10 @@ impl Default for MenuStyle {
 }
 
 /// The panel's surface around a menu body, for a caller that is not using a
-/// [`Popover`](super::popover::Popover) to place the menu. It adds the 4px
-/// inset the Slint panel has, so the caller passes the menu itself as `content`.
+/// [`Popover`](super::popover::Popover) to place the menu. It draws the surface
+/// and nothing else — the body already carries the 4px inset the Slint panel
+/// has — so the caller passes [`Menu::into_element`] as `content` and gets one
+/// panel, never a body surface inside a container surface.
 pub fn menu_container<'a, Message>(
     content: impl Into<Element<'a, Message>>,
     style: MenuStyle,
@@ -533,7 +561,6 @@ where
     Message: 'a,
 {
     container(content)
-        .padding(PANEL_PADDING)
         .width(Length::Fill)
         .style(move |_theme: &Theme| style.container_style())
         .into()
