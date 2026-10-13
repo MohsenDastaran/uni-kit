@@ -673,7 +673,20 @@ below instead of being one.
       trait (so Custom Styling has no iced panel and the module says why), the table is
       static with no sorting, selection or keyboard, and the scrollbar cannot widen on
       hover.
-- [ ] `list`, `pagination` — built on `scrollable`.
+- [x] `list`, `pagination` — done, both on the finished `scrollable`, and both needing a
+      small extension to a landed component that was committed **on its own first**: the
+      button gained a trailing icon for pagination's "Next ›". The list's rows are buttons
+      in a scroll area with hover and selected states, and pagination draws a five-wide
+      window with ellipses, first/last and prev/next, the current page a primary button and
+      the rest ghost — sitting in a horizontal scroll area so a wide run scrolls instead of
+      clipping. Verified in proportion with pixel samples rather than assertions: clicking a
+      row **moved** the selected fill from one row to another by sampled colour, and
+      clicking page 3 moved the primary fill with it while the previous arrow became
+      enabled. Dark showed no white surface anywhere, including the search field, which is
+      the trap the table had just paid for. Named, not faked: no keyboard or accessibility
+      layer, no virtual scrolling, no list sections, search or loading state — the search
+      field is the reference's mock, not a working filter — and pagination's horizontal
+      scrollbar never overflows in these demos, so it was never seen.
 - [ ] `notification`, `hover-card`, and the rest of the 79 as they come.
 
 **A component is done when all of this is true**
