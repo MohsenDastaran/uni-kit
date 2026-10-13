@@ -469,7 +469,22 @@ both themes is named plainly rather than ticked.
       default width is 240px against Slint's 280px, so a long label wraps where Slint
       elides — iced 0.14 has no ellipsis — and `demos/kbd.rs` still writes `⌘` in the
       same face, which renders as a bare letter.
-      - [ ] `select` — input plus popover plus menu.
+      - [x] `select` — done, and it composes rather than re-derives: the trigger is
+      `input::Style` with the size ladder, the panel is `Popover::filled(true)` around
+      `Menu::into_element()` following menu.rs's one-surface rule, and a chosen row is
+      the item marked `checked(true)` plus `Menu::selected`. Rows are the menu's own
+      `Item`, so `select` inherits icons, shortcuts, disabled, danger and separators.
+      The size table it needed (`ControlSize::input_height`) went into `theme.rs` as its
+      **own commit first**, which is the shared-file rule applied without being asked.
+      Drove it: open, hover to the accent, arrows moving the highlight, choosing row 2
+      so the trigger reads `egui`, and Escape and an outside click returning the closed
+      frame byte for byte — in both themes, with the dark panel measured at `#171717`
+      against a `#0a0a0a` page. Two defects it found and left, both outside its files:
+      a hovered menu row's highlight does not clear when the pointer leaves (inherited
+      from `Menu` reporting on enter only), and `dropdown_button` is not counted by
+      `status.mjs` because its registry key is `dropdown-button` while the Slint
+      inventory key is `dropdown_button` — so a landed component still reads as
+      outstanding.
 - [ ] `combobox` — select plus free text.
 - [ ] `date-picker` — popover plus the `calendar` that is already done.
 
