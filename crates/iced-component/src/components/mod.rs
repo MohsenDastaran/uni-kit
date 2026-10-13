@@ -31,6 +31,7 @@ pub mod message_role;
 pub mod message_scroller;
 pub mod number_input;
 pub mod otp_input;
+pub mod popover;
 pub mod progress;
 pub mod scrollable;
 pub mod shimmer;

@@ -27,6 +27,7 @@ pub mod message_role;
 pub mod message_scroller;
 pub mod number_input;
 pub mod otp_input;
+pub mod popover;
 pub mod progress;
 pub mod scrollable;
 pub mod shimmer;
@@ -63,6 +64,7 @@ pub const STORIES: &[&str] = &[
     "message-scroller",
     "number-input",
     "otp-input",
+    "popover",
     "progress",
     "scrollable",
     "shimmer",
@@ -102,6 +104,7 @@ pub fn run(story: &str, theme: iced::Theme) -> iced::Result {
         "message-scroller" => message_scroller::run(theme),
         "number-input" => number_input::run(theme),
         "otp-input" => otp_input::run(theme),
+        "popover" => popover::run(theme),
         "progress" => progress::run(theme),
         "scrollable" => scrollable::run(theme),
         "shimmer" => shimmer::run(theme),

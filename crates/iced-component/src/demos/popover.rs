@@ -276,12 +276,12 @@ fn activity_row<'a>(
 }
 
 fn view(app: &App) -> Element<'_, Message> {
-    // The surface every panel below draws, resolved once: the popover fill, the
-    // border token as a one-pixel edge, `radius-lg` and the shadow token. A
-    // component that reads the theme builds this in its own `view`, which is
-    // where the theme in force is known.
-    let tokens = theme::LIGHT;
-    let panel_style = PanelStyle::resolve(tokens);
+    // The surface every panel below draws. It is a function of the theme, not a
+    // value: the appearance is not known where a panel is built — an overlay is
+    // constructed without one — and a surface resolved for one appearance is the
+    // wrong colour in the other. The closure captures nothing, so it is `Copy`
+    // and every section can share it.
+    let panel_style = |theme: &Theme| PanelStyle::resolve(Tokens::of(theme));
 
     // The panels, in the order the sections below show them. Each one renders
     // from a flag and reports every request to change it back through the one
@@ -430,15 +430,17 @@ fn view(app: &App) -> Element<'_, Message> {
     // The host's own surface: `primary` for the fill, no edge, `radius-xl`, and
     // the panel draws it here rather than around the content, which is what
     // Slint's `panel-background`, `panel-border: false` and `panel-radius` do.
-    let styled_surface = PanelStyle::resolve(tokens)
-        .fill(tokens.primary)
-        .border(tokens.primary, 0.0)
-        .radius(theme::RADIUS_XL)
-        .text_color(tokens.primary_foreground);
     let styled = Popover::new(trigger("Custom style"))
         .open(app.open[10])
         .panel_width(300.0)
-        .panel(styled_surface)
+        .panel(|theme| {
+            let tokens = Tokens::of(theme);
+            PanelStyle::resolve(tokens)
+                .fill(tokens.primary)
+                .border(tokens.primary, 0.0)
+                .radius(theme::RADIUS_XL)
+                .text_color(tokens.primary_foreground)
+        })
         .filled(true)
         .content(
             column![
@@ -448,13 +450,13 @@ fn view(app: &App) -> Element<'_, Message> {
                         weight: iced::font::Weight::Semibold,
                         ..iced::Font::DEFAULT
                     })
-                    .style(move |_theme: &Theme| text::Style {
-                        color: Some(tokens.primary_foreground),
+                    .style(|theme: &Theme| text::Style {
+                        color: Some(Tokens::of(theme).primary_foreground),
                     }),
                 text("A custom surface, radius, and no border.")
                     .size(theme::FONT_SIZE_XS)
-                    .style(move |_theme: &Theme| text::Style {
-                        color: Some(tokens.primary_foreground),
+                    .style(|theme: &Theme| text::Style {
+                        color: Some(Tokens::of(theme).primary_foreground),
                     }),
             ]
             .spacing(4.0)

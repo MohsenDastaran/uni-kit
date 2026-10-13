@@ -51,17 +51,17 @@
 //!   from, so a control inside the panel closes it by sending the same message
 //!   an outside click would — the "Dismiss Popover manually" card does that.
 //!
-//! # What this port does not do exactly
+//! # Coordinates
 //!
-//! A widget's layout inside a scroll area is in that area's **content**
-//! coordinates. `overlay` is handed the scroll offset as `translation` and the
-//! panel is placed correctly, but `update` — where a press has to be matched
-//! against the trigger — is handed no such offset, so the trigger's hit test
-//! only agrees with the window near the top of the scrollable. The gallery puts
-//! its triggers there, so the cards work; a popover attached to a trigger far
-//! down a long scroll area will open only when that area is scrolled to it.
-//! `iced::widget::scrollable` passes a viewport to `update` but it is the full
-//! window in 0.14, so the offset cannot be recovered from it.
+//! A popover lives inside whatever scrolls it, so the two rectangles it works
+//! with are read from the layout the runtime hands it and nothing is
+//! recomputed: `update` matches a press against `layout.bounds()`, which
+//! `scrollable` has already translated into the content coordinates its
+//! `Cursor` is in (it adds the scroll offset to the cursor before dispatching,
+//! `scrollable.rs:800`), and `overlay` places the panel at
+//! `layout.position() - translation`, the offset the runtime passes there for
+//! the same reason. iced's own `pick_list` takes its trigger hit test from
+//! `cursor.is_over(layout.bounds())` in exactly the same way.
 //!
 //! # Focus
 //!
@@ -122,7 +122,14 @@ pub struct Popover<'a, Message> {
     offset: f32,
     padding: f32,
     panel_width: f32,
-    style: PanelStyle,
+    style: Box<dyn Fn(&Theme) -> PanelStyle + 'a>,
+    /// The theme the trigger was last drawn with. An overlay is built without
+    /// one — `layout`, `draw` and `update` are handed a theme and the overlay
+    /// constructor is not — but the base tree is drawn *before* the overlay is
+    /// built in `UserInterface::draw`, so [`Popover::draw`] has already recorded
+    /// the theme in force by the time the panel asks for it. That is why this
+    /// port is exact rather than a frame behind.
+    theme: std::cell::RefCell<Option<Theme>>,
     on_open_change: Option<std::rc::Rc<dyn Fn(bool) -> Message + 'a>>,
 }
 
@@ -140,7 +147,8 @@ impl<'a, Message> Popover<'a, Message> {
             offset: 8.0,
             padding: theme::SPACING_MD,
             panel_width: 260.0,
-            style: PanelStyle::default(),
+            style: Box::new(|theme: &Theme| PanelStyle::resolve(Tokens::of(theme))),
+            theme: std::cell::RefCell::new(None),
             on_open_change: None,
         }
     }
@@ -205,19 +213,24 @@ impl<'a, Message> Popover<'a, Message> {
 
     /// The surface, resolved from the tokens by default: the popover fill, a
     /// one-pixel border, `radius-lg` and the drop shadow. A caller that wants
-    /// its own draws one from [`PanelStyle::resolve`], which is Slint's
+    /// its own states it as a function of the theme, which is Slint's
     /// `panel-background`, `panel-radius` and `panel-border`:
     ///
     /// ```ignore
-    /// let tokens = Tokens::of(theme);
-    /// Popover::new(trigger).panel(
+    /// Popover::new(trigger).panel(|theme| {
+    ///     let tokens = Tokens::of(theme);
     ///     PanelStyle::resolve(tokens)
     ///         .fill(tokens.primary)
-    ///         .border(tokens.primary, 0.0),
-    /// )
+    ///         .border(tokens.primary, 0.0)
+    /// })
     /// ```
-    pub fn panel(mut self, style: PanelStyle) -> Self {
-        self.style = style;
+    ///
+    /// It is a function rather than a value because the appearance is not known
+    /// where the panel is built — an overlay is constructed without a theme —
+    /// and a surface resolved for one appearance is the wrong colour in the
+    /// other. This crate's `input.rs` says the same thing about its frame.
+    pub fn panel(mut self, style: impl Fn(&Theme) -> PanelStyle + 'a) -> Self {
+        self.style = Box::new(style);
         self
     }
 
@@ -398,23 +411,24 @@ impl Default for PanelStyle {
 /// shadow and the panel's text colour, inherited by everything inside.
 ///
 /// A caller wraps its content with this when it wants the panel to look after
-/// the surface, which is what the Slint example's `@children` slot gets. The
-/// popover's own inset still applies — the content is laid out inside the panel
-/// either way — so this adds no padding of its own.
+/// the surface, which is what the Slint example's `@children` slot gets. Like
+/// [`Popover::panel`] it takes a function of the theme, so the surface follows
+/// the appearance in force. The popover's own inset still applies — the content
+/// is laid out inside the panel either way — so this adds no padding of its own.
 ///
 /// [`PanelStyle::container_style`] is the same styling, for a caller that builds
 /// the container itself; [`Popover::filled`] is the same surface drawn by the
 /// panel, for content that is already a surface.
 pub fn panel_container<'a, Message>(
     content: impl Into<Element<'a, Message>>,
-    style: PanelStyle,
+    style: impl Fn(&Theme) -> PanelStyle + 'a,
 ) -> Element<'a, Message>
 where
     Message: 'a,
 {
     container(content)
         .width(Length::Fill)
-        .style(move |_theme: &Theme| style.container_style())
+        .style(move |theme: &Theme| style(theme).container_style())
         .into()
 }
 
@@ -720,6 +734,9 @@ where
         cursor: mouse::Cursor,
         viewport: &Rectangle,
     ) {
+        // The base tree is drawn before the overlay is built for the same frame,
+        // so this is the theme the panel about to be constructed belongs to.
+        *self.theme.borrow_mut() = Some(theme.clone());
         self.trigger.as_widget().draw(
             &tree.children[0],
             renderer,
@@ -821,6 +838,8 @@ where
         }
         let content = self.panel.as_mut()?;
         let state = tree.state.downcast_mut::<State>();
+        let theme = self.theme.borrow().clone().unwrap_or(Theme::Light);
+        let style = (self.style)(&theme);
         // The content's sub-tree is reconciled here, before the overlay is built
         // from it: iced's own `overlay` builds its menu the same way. Without it
         // the content's tree holds no widget state, and a text widget has no
@@ -837,7 +856,7 @@ where
         Some(overlay::Element::new(Box::new(Panel {
             content,
             tree: &mut state.panel,
-            style: self.style,
+            style,
             filled: self.filled,
             trigger,
             gap: self.offset,
