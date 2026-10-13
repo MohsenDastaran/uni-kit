@@ -477,7 +477,7 @@ both themes is named plainly rather than ticked.
       returned byte-identical. `dropdown_button` still has no leave path of its own, so
       its caller cannot clear a hover through the new report.
 
-#### Two legibility decisions left open
+#### Four legibility cases, and the one gap behind them
 
 Both are faithful to the Slint originals and both are visible defects, which is why they
 are recorded rather than quietly fixed:
@@ -492,11 +492,21 @@ are recorded rather than quietly fixed:
 - **A dialog's auto close glyph is ghost ink on a primary-filled panel**, low contrast in the
   light theme. It mirrors Slint's own ghost button on the same fill, so it is inherited
   rather than introduced.
+- **A disabled command paints in the enabled ink.** A ghost `Button` cannot take the muted
+  disabled colour at all, so the toolbar's disabled `Publish` is drawn through the shared
+  `button::handle` with its own closure instead — worked around rather than fixed, because
+  `button.rs` belongs to another component's work. Measured: light 115 against 23 for
+  enabled ink, dark 163 against 250.
 
-Three instances now, and they are one shape: an ink or a hue chosen for one surface, used
-on another. The theme has no text-safe variant of these pairs, which is why each component
-rediscovers it — and why the fix is a theme decision rather than three component patches.
-The `check.sh` theme-parity step means any such change moves the Slint theme with it.
+Four instances now, and they are one shape: an ink or a hue chosen for one surface, used on
+another — error text, a failed marker's initials, a close glyph on a fill, a disabled label.
+The theme has no text-safe variant of these pairs, which is why each component rediscovers it,
+and why the fix is a theme decision rather than four component patches. The `check.sh`
+theme-parity step means any such change moves the Slint theme with it.
+
+One more trap is worth noting beside them because it bit the same component: **an SVG keeps
+its own black** unless the style closure colours it, so an un-coloured icon vanishes in the
+dark theme. The toolbar sets every icon from `button::ink` for that reason.
 
 `message-role` was also the last component missing from a framework's sidebar: the sidebar
 is built by scanning `website/component/*.md`, and it had no page — so a component that
