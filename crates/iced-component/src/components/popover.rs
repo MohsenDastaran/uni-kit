@@ -828,10 +828,17 @@ impl<Message> overlay::Overlay<Message, Theme, iced::Renderer> for Panel<'_, '_,
         }
 
         if inside {
+            // The content's node, not the panel's: `layout` is the surface, and
+            // the content was laid out as its single child. A container routes
+            // events to its children by zipping them against
+            // `layout.children()`, so passing the panel node would hand every
+            // event to the first child stretched over the whole panel and leave
+            // the rest of the content unreachable.
+            let content = Self::content_layout(layout);
             self.content.as_widget_mut().update(
                 self.tree,
                 event,
-                layout,
+                content,
                 cursor,
                 renderer,
                 clipboard,
@@ -873,11 +880,17 @@ impl<Message> overlay::Overlay<Message, Theme, iced::Renderer> for Panel<'_, '_,
 
         let mut style = *inherited;
         style.text_color = self.style.text_color;
-        // The overlay's node *is* the content, inside the panel's inset, so it
-        // draws against its own layout.
+        // The content's node, not the panel's. The panel node is the surface;
+        // the content was laid out as its single child. A container draws its
+        // children by zipping them against `layout.children()`, so handing it
+        // the panel node makes every nested column one level high and paints
+        // only its first child — a plausible-looking panel that silently drops
+        // the rest of its rows. `mouse_interaction` and `operate` already take
+        // this node.
+        let content = Self::content_layout(layout);
         self.content
             .as_widget()
-            .draw(self.tree, renderer, theme, &style, layout, cursor, &bounds);
+            .draw(self.tree, renderer, theme, &style, content, cursor, &bounds);
     }
 
     fn operate(
