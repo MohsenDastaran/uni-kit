@@ -810,6 +810,15 @@ each to the same handful of traps. What works:
 - **Click, then type.** With focus emulation on, the first click after a navigation does
   not always register; the reliable sequence is to click the field and then send keys.
 
+#### A `Stack` sizes itself from its first child
+
+iced's `Stack` defaults to `Shrink` and takes its size from the first child, so a layer
+meant to cover a frame — which is how `dialog` and everything built on it are drawn —
+ends up as a fragment of whatever sits behind it. The command palette's dialog sections
+rendered as a tiny rectangle until both stacks were given `Width::Fill`/`Height::Fill`.
+Nobody reads that from the type signature, and it cost a screenshot to notice, which is
+the third time in this family that looking at a picture beat reading the code.
+
 ### Every card scrolls to its own sample
 
 A card's code icon scrolls the page to that card's copyable sample, and the sample
