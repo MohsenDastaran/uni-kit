@@ -39,18 +39,24 @@
 //!
 //! # Hover, and the highlight the caller owns
 //!
-//! A row reports the pointer entering it through [`Menu::on_highlight`], and it
-//! is drawn on the accent surface when the caller passes that index back to
+//! A row reports the pointer entering it through [`Menu::on_highlight`] and
+//! leaving it — or leaving the panel — through [`Menu::on_leave`], and it is
+//! drawn on the accent surface when the caller passes an index back to
 //! [`Menu::highlighted`]. The highlight cannot live in the menu itself, because
 //! the menu becomes an element rather than a widget of its own; the caller
 //! keeping it is also iced's own arrangement — `pick_list` holds
 //! `hovered_option` in the application's state and its menu reports
 //! `on_option_hovered` so the application can follow along.
 //!
-//! So the slider of the menu — which row is lit — is one index the application
-//! owns, and both the pointer and any key the application binds move it. The
-//! demo's "Keyboard Shortcuts" card shows the arrangement: a row chosen is
-//! [`Menu::on_chosen`]'s index, a row hovered is `on_highlight`'s.
+//! [`Menu::on_highlight`] is a **hover**, and a hover is transient: a pointer
+//! that has left leaves no row lit. It is not the selection — that is
+//! [`Menu::on_chosen`] and [`Menu::selected`] — and it is not the row a key has
+//! moved to either, even though [`Menu::highlighted`] draws both. An
+//! application keeps the hover in one index and the key's row in another, and
+//! draws whichever is live, because a keyboard highlight has to survive the
+//! pointer merely crossing the panel: an application that folds the two into
+//! one index loses the key's row when the pointer leaves. The demo's "Keyboard
+//! Shortcuts" card shows the arrangement.
 //!
 //! # What is not here
 //!
@@ -201,15 +207,18 @@ impl Item {
 ///
 /// The consequence is named plainly: the highlight is the *caller's*, because an
 /// element cannot keep it. [`Menu::highlighted`] is what the row under the
-/// pointer is drawn as, and the caller moves it from [`Menu::on_highlight`] —
-/// which a `mouse_area` fires on entry. iced cannot put the traversal inside the
-/// element without the tree the last paragraph describes, so this component
-/// reports and the caller decides, exactly as iced's own `pick_list` keeps its
-/// `hovered_option` in the application's state.
+/// pointer is drawn as, and the caller moves it from [`Menu::on_highlight`] and
+/// [`Menu::on_leave`] — the entry and exit a `mouse_area` fires. iced cannot put
+/// the traversal inside the element without the tree the last paragraph
+/// describes, so this component reports and the caller decides, exactly as
+/// iced's own `pick_list` keeps its `hovered_option` in the application's state.
 pub struct Menu<'a, Message> {
     items: Vec<Item>,
     on_chosen: Option<Callback<'a, Message>>,
     on_highlight: Option<Callback<'a, Message>>,
+    /// The pointer's two exits: a row it left, or the panel as a whole. See
+    /// [`on_leave`](Menu::on_leave) for why the row travels with the report.
+    on_leave: Option<LeaveCallback<'a, Message>>,
     /// The row drawn as chosen — Slint's `checked`, and GPUI's `selected`. It is
     /// the caller's, because the caller's data says which item is current.
     selected: Option<usize>,
@@ -223,6 +232,10 @@ pub struct Menu<'a, Message> {
 /// to keep its callbacks across frames; the closure is only ever called.
 type Callback<'a, Message> = std::rc::Rc<dyn Fn(usize) -> Message + 'a>;
 
+/// The leave report, which carries the row when there was one — see
+/// [`Menu::on_leave`].
+type LeaveCallback<'a, Message> = std::rc::Rc<dyn Fn(Option<usize>) -> Message + 'a>;
+
 impl<'a, Message> Menu<'a, Message> {
     /// A menu of `items`. An empty menu draws an empty panel rather than
     /// nothing: `select` composes this with a list that may filter to nothing.
@@ -231,6 +244,7 @@ impl<'a, Message> Menu<'a, Message> {
             items: items.into_iter().collect(),
             on_chosen: None,
             on_highlight: None,
+            on_leave: None,
             selected: None,
             highlighted: None,
         }
@@ -263,9 +277,42 @@ impl<'a, Message> Menu<'a, Message> {
     /// Report the row the pointer entered, by index. The caller draws it by
     /// passing the same index to [`highlighted`](Self::highlighted).
     ///
+    /// This is a **hover**, not a choice and not the row a key moved to. A hover
+    /// is transient — [`on_leave`](Self::on_leave) is its other half — and a
+    /// composer that owns both a hover and a keyboard highlight keeps them in
+    /// separate indices, because a leave clears only the hover. Folding the two
+    /// into one index loses the key's row the moment the pointer crosses the
+    /// panel, even though it never stopped over it. See the module comment.
+    ///
     /// This is iced `combo_box`'s `on_option_hovered`.
     pub fn on_highlight(mut self, on_highlight: impl Fn(usize) -> Message + 'a) -> Self {
         self.on_highlight = Some(std::rc::Rc::new(on_highlight));
+        self
+    }
+
+    /// Report that the pointer left a row, or left the panel: `Some(index)` is
+    /// the row it left and `None` is the panel as a whole.
+    ///
+    /// This is the half that clears a hover
+    /// ([`on_highlight`](Self::on_highlight) is the half that sets one), and the
+    /// row index is part of the report because iced walks the rows top-down:
+    /// when the pointer moves from a lower row to an upper one, the upper row's
+    /// entry is published **before** the lower row's leave. A composer must
+    /// therefore clear only the row it was on, never whatever index is lit:
+    ///
+    /// ```ignore
+    /// Menu::new(items).on_leave(move |left| Message::Left(left))
+    /// // in update:
+    /// //   Message::Left(Some(index)) if hovered == Some(index) => hovered = None,
+    /// //   Message::Left(None) => hovered = None,
+    /// ```
+    ///
+    /// `None` clears the hover whatever row it was on, because the panel is no
+    /// longer under the pointer. Neither report touches the row a key moved to
+    /// or the selected row — those are the caller's own state, and a keyboard
+    /// highlight must outlive the pointer crossing the panel.
+    pub fn on_leave(mut self, on_leave: impl Fn(Option<usize>) -> Message + 'a) -> Self {
+        self.on_leave = Some(std::rc::Rc::new(on_leave));
         self
     }
 
@@ -301,18 +348,27 @@ impl<'a, Message> Menu<'a, Message> {
         let selected = self.selected == Some(index);
 
         let row = build_row(item, highlighted, selected, self.items.len(), index);
-        let Some(on_chosen) = &self.on_chosen else {
+        // A row is a pointer target only if it has something to report. The
+        // three reports are attached independently: a caller that wants only a
+        // hover, or only a press, still gets one, and `on_leave` is what clears
+        // the hover when the pointer moves on.
+        if self.on_highlight.is_none() && self.on_leave.is_none() && self.on_chosen.is_none() {
             return row;
-        };
-        let on_chosen = on_chosen.clone();
-        let Some(on_highlight) = &self.on_highlight else {
-            return row;
-        };
-        let on_highlight = on_highlight.clone();
-        mouse_area(row)
-            .on_enter(on_highlight(index))
-            .on_press(on_chosen(index))
-            .into()
+        }
+        let mut area = mouse_area(row);
+        if let Some(on_highlight) = &self.on_highlight {
+            let on_highlight = on_highlight.clone();
+            area = area.on_enter(on_highlight(index));
+        }
+        if let Some(on_leave) = &self.on_leave {
+            let on_leave = on_leave.clone();
+            area = area.on_exit(on_leave(Some(index)));
+        }
+        if let Some(on_chosen) = &self.on_chosen {
+            let on_chosen = on_chosen.clone();
+            area = area.on_press(on_chosen(index));
+        }
+        area.into()
     }
 
     /// The panel's body, without a surface: the 4px inset and a row per item.
@@ -333,10 +389,22 @@ impl<'a, Message> Menu<'a, Message> {
         // `MenuStyle` here as well would put a second rounded border a few pixels
         // inside the first — one menu, painted as two panels. The two are never
         // both asked for.
-        container(rows)
+        let body: Element<'a, Message> = container(rows)
             .padding(PANEL_PADDING)
             .width(Length::Fill)
-            .into()
+            .into();
+        // The panel's own edge: a row's exit fires when the pointer leaves that
+        // row, but the panel's fires when it leaves the panel, which is the
+        // report that clears a hover sitting on the 4px inset or a separator.
+        // It draws nothing — a `mouse_area` is a pointer target, not a surface,
+        // so the one-owner rule above still holds.
+        match &self.on_leave {
+            Some(on_leave) => {
+                let on_leave = on_leave.clone();
+                mouse_area(body).on_exit(on_leave(None)).into()
+            }
+            None => body,
+        }
     }
 }
 
