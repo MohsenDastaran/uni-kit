@@ -175,11 +175,12 @@ impl Item {
 /// The panel is an ordinary iced element — a `container` of rows, each a
 /// `mouse_area` — and [`Menu::into_element`] hands it to the
 /// [`Popover`](super::popover::Popover) that floats it. That is the same
-/// structure the popover's own content uses, and it is why the rows measure and
-/// paint: iced reconciles an element tree against the tree it was built into,
-/// and a widget that rebuilds its children from its own `layout` cannot be
-/// reconciled with them (the children's trees are never created, so a text row
-/// measures at nothing and paints no words).
+/// structure the popover's own content uses, and it is what lets the rows
+/// measure and keep the per-row widget state a pointer target needs: iced
+/// reconciles an element tree against the tree it was built into, and a widget
+/// that rebuilds its children from its own `layout` cannot be reconciled with
+/// them (the children's trees are never created, so a text row measures at
+/// nothing).
 ///
 /// The consequence is named plainly: the highlight is the *caller's*, because an
 /// element cannot keep it. [`Menu::highlighted`] is what the row under the

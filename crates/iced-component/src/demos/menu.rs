@@ -26,7 +26,8 @@
 //! (Lucide, ISC) so the two galleries draw the same glyphs.
 
 use iced::widget::{column, container, mouse_area, scrollable, svg, text};
-use iced::{Alignment, Element, Length, Task, Theme};
+use iced::keyboard;
+use iced::{Alignment, Element, Length, Subscription, Task, Theme};
 
 use crate::components::button::Button;
 use crate::components::group_box::{self, GroupBox};
@@ -55,6 +56,7 @@ pub fn run(theme: Theme) -> iced::Result {
     iced::application(boot, update, view)
         .title("uni-kit — menu")
         .theme(theme)
+        .subscription(subscription)
         .run()
 }
 
@@ -65,9 +67,10 @@ struct App {
     open: [bool; SLOTS],
     /// The last row each menu reported, so a choice is visible.
     chosen: [Option<usize>; SLOTS],
-    /// The row the pointer or a key highlighted last, across all the menus: the
-    /// row under the pointer in a gallery of six is one row.
-    highlighted: Option<usize>,
+    /// The row the pointer or a key highlighted last, and which menu holds it.
+    /// The highlight is the application's — see the component's type comment —
+    /// so a gallery of six menus has one row lit and one menu that owns it.
+    highlighted: (Option<usize>, Option<usize>),
     /// Which section heading the pointer is over, and which was pressed, so the
     /// code icon can draw the two states the Slint heading animates to.
     hovered: Option<&'static str>,
@@ -80,9 +83,11 @@ enum Message {
     Opened { slot: usize, open: bool },
     /// A menu row was chosen, by slot and by index.
     Chosen { slot: usize, index: usize },
-    /// The highlight moved, by index: one row is under the pointer, whatever
-    /// menu it belongs to.
-    Highlighted(usize),
+    /// The highlight moved, to a menu's row.
+    Highlighted { slot: usize, index: usize },
+    /// A traversal key was pressed: `↑`/`↓`/`Home`/`End`, or `Enter` to choose,
+    /// or `Escape` to dismiss.
+    Key(Key),
     HoverSource(Option<&'static str>),
     PressSource(Option<&'static str>),
     /// A section heading was released: ask the page for that sample.
@@ -105,7 +110,41 @@ fn update(app: &mut App, message: Message) -> Task<Message> {
                 *chosen = Some(index);
             }
         }
-        Message::Highlighted(index) => app.highlighted = Some(index),
+        Message::Highlighted { slot, index } => app.highlighted = (Some(index), Some(slot)),
+        // The keys act on the menu that is open and holds the highlight. This
+        // gallery can have one open at a time, and the subscription cannot see
+        // which, so `update` reads it from the state.
+        Message::Key(key) => {
+            if let Some(slot) = app.open.iter().position(|open| *open) {
+                let (index, owner) = app.highlighted;
+                // The highlight is one row of one menu. When it belongs to
+                // another menu, a step starts from this menu's edge rather than
+                // from the neighbour's row.
+                let from = if owner == Some(slot) { index } else { None };
+                match key {
+                    Key::Choose => {
+                        // Enter chooses the highlighted row, or the first
+                        // actionable one when the key is the first thing after
+                        // opening the menu.
+                        let row = from.or_else(|| step_to(slot, None, Key::Down));
+                        if let Some(index) = row
+                            && menu_items(slot).get(index).is_some_and(Item::is_actionable)
+                        {
+                            app.chosen[slot] = Some(index);
+                            app.highlighted = (Some(index), Some(slot));
+                            // The Slint example leaves the menu open on a
+                            // choice; the key does too, so a second Enter
+                            // chooses again.
+                        }
+                    }
+                    Key::Dismiss => {
+                        app.open[slot] = false;
+                        app.highlighted = (None, None);
+                    }
+                    step => app.highlighted = (step_to(slot, from, step), Some(slot)),
+                }
+            }
+        }
         Message::HoverSource(title) => app.hovered = title,
         Message::PressSource(title) => app.pressed_source = title,
         Message::ShowSource { index, title } => {
@@ -115,6 +154,131 @@ fn update(app: &mut App, message: Message) -> Task<Message> {
         }
     }
     Task::none()
+}
+
+/// A key the menu answers, mapped from the keyboard by the subscription and
+/// acted on by `update`, which is where the open menu and its highlight are.
+///
+/// The subscription is `filter_map`ped, and iced requires that closure to be
+/// non-capturing, so nothing about the application's state can be read there.
+/// It maps the key; `update` decides what the key means.
+#[derive(Debug, Clone, Copy)]
+enum Key {
+    Up,
+    Down,
+    First,
+    Last,
+    Choose,
+    Dismiss,
+}
+
+/// The keyboard the menu component leaves to its host.
+///
+/// `Menu` reports the row the pointer entered and draws the row the caller says
+/// is highlighted, but iced 0.14 has no focus handle an overlay can take, so the
+/// keys are the application's. `↑`/`↓` step, `Home`/`End` jump, `Enter` and
+/// `Space` choose the highlighted row and `Escape` closes the menu — the keys the
+/// Slint example shows and the ones the component page documents.
+///
+/// iced requires the `filter_map` closure to be non-capturing, so this reads no
+/// state: it maps the key, and `update` — which sees the open menu and its
+/// highlight — decides what the key means.
+fn subscription(_app: &App) -> Subscription<Message> {
+    iced::keyboard::listen().filter_map(|event| match event {
+        keyboard::Event::KeyPressed { key, .. } => match key.as_ref() {
+            keyboard::Key::Named(keyboard::key::Named::ArrowDown) => Some(Message::Key(Key::Down)),
+            keyboard::Key::Named(keyboard::key::Named::ArrowUp) => Some(Message::Key(Key::Up)),
+            keyboard::Key::Named(keyboard::key::Named::Home) => Some(Message::Key(Key::First)),
+            keyboard::Key::Named(keyboard::key::Named::End) => Some(Message::Key(Key::Last)),
+            keyboard::Key::Named(keyboard::key::Named::Enter) => Some(Message::Key(Key::Choose)),
+            keyboard::Key::Named(keyboard::key::Named::Space) => Some(Message::Key(Key::Choose)),
+            keyboard::Key::Named(keyboard::key::Named::Escape) => Some(Message::Key(Key::Dismiss)),
+            _ => None,
+        },
+        _ => None,
+    })
+}
+
+/// The rows a section's menu holds, in the Slint example's order.
+fn menu_items(slot: usize) -> Vec<Item> {
+    match slot {
+        0 => vec![
+            Item::new("New file").shortcut("⌘N"),
+            Item::new("Open…").shortcut("⌘O"),
+            Item::new("Save").shortcut("⌘S"),
+            Item::separator(),
+            Item::new("Export as CSV"),
+        ],
+        1 => vec![
+            Item::new("Rename").icon(PENCIL).shortcut("F2"),
+            Item::new("Duplicate").icon(COPY).shortcut("⌘D"),
+            Item::new("Move to…").icon(FOLDER),
+            Item::new("Delete").icon(TRASH).shortcut("⌫"),
+        ],
+        2 => vec![
+            Item::new("Show minimap").checked(true),
+            Item::new("Wrap lines").shortcut("⌥Z").checked(true),
+            Item::new("Show whitespace"),
+        ],
+        3 => vec![
+            Item::new("Cut").shortcut("⌘X"),
+            Item::new("Copy").shortcut("⌘C"),
+            Item::new("Paste").shortcut("⌘V").disabled(true),
+        ],
+        4 => vec![
+            Item::new("Archive").icon(ARCHIVE),
+            Item::separator(),
+            Item::new("Delete project").icon(TRASH).danger(true),
+        ],
+        _ => vec![
+            Item::new("Undo").shortcut("⌘Z"),
+            Item::new("Redo").shortcut("⇧⌘Z"),
+            Item::separator(),
+            Item::new("Find…").shortcut("⌘F"),
+            Item::new("Replace…").shortcut("⌘H").disabled(true),
+        ],
+    }
+}
+
+/// The row a step lands on, skipping separators and disabled rows and stopping
+/// at the ends rather than wrapping — the component's own stepping rule, written
+/// where the key is handled.
+fn step_to(slot: usize, from: Option<usize>, step: Key) -> Option<usize> {
+    let items = menu_items(slot);
+    let last = items.len().checked_sub(1);
+    let actionable = |index: usize| items.get(index).is_some_and(Item::is_actionable);
+    match step {
+        Key::First => (0..items.len()).find(|index| actionable(*index)),
+        Key::Last => (0..items.len()).rev().find(|index| actionable(*index)),
+        Key::Down | Key::Up => {
+            let last = last?;
+            let delta: isize = if matches!(step, Key::Down) { 1 } else { -1 };
+            let start = match from {
+                Some(index) if index <= last && actionable(index) => index,
+                Some(index) => index.min(last),
+                None => {
+                    return if delta > 0 {
+                        (0..=last).find(|index| actionable(*index))
+                    } else {
+                        (0..=last).rev().find(|index| actionable(*index))
+                    };
+                }
+            };
+            let mut index = start;
+            loop {
+                let next = index as isize + delta;
+                if next < 0 || next > last as isize {
+                    return Some(start);
+                }
+                index = next as usize;
+                if actionable(index) {
+                    return Some(index);
+                }
+            }
+        }
+        // `Choose` and `Dismiss` are not moves; `update` answers them itself.
+        Key::Choose | Key::Dismiss => from,
+    }
 }
 
 /// A muted line under an example, carrying what the demo has to say about it.
@@ -208,18 +372,11 @@ fn body_box<'a>(body: impl Into<Element<'a, Message>>) -> Element<'a, Message> {
 /// The trigger every menu below opens: the outlined button the Slint example
 /// uses, so the panel and not the trigger is what the section is about.
 ///
-/// The button carries the open as well as the popover. The popover's own
-/// trigger hit test compares the bounds the runtime laid it out with — the
-/// scroll area's content coordinates — against the window-space cursor, which
-/// the popover's module comment names as the one place that port is
-/// approximate; inside this scrolled gallery those two only agree near the top.
-/// A button's press is translated by the scroll area, so the demo opens the
-/// panel the reliable way and leaves the popover every dismissal — Escape, a
-/// click outside, and the same message from a control inside the panel.
-fn trigger<'a>(label: &str, open: Message) -> Button<'a, Message> {
-    Button::new(label.to_string())
-        .outline()
-        .on_press(open)
+/// The button carries no action of its own. Opening and both dismissals — Escape
+/// and a click outside — belong to the [`Popover`] the menu sits in, exactly as
+/// they do for the popover demo's own triggers; the button only draws.
+fn trigger<'a>(label: &str) -> Button<'a, Message> {
+    Button::new(label.to_string()).outline()
 }
 
 /// The panel every menu is drawn in. It is a function of the theme, not a value:
@@ -234,21 +391,15 @@ fn view(app: &App) -> Element<'_, Message> {
     // section: Usage
     // The whole of a menu: the items, the trigger, the caller's flag, and the
     // one message that moves it. `on_chosen` is the contract `select` composes.
-    let usage = Popover::new(trigger("Open menu", Message::Opened { slot: 0, open: true }))
+    let usage = Popover::new(trigger("Open menu"))
         .open(app.open[0])
         .panel_width(PANEL_WIDTH)
         .content(panel_container(
-            Menu::new([
-                Item::new("New file").shortcut("⌘N"),
-                Item::new("Open…").shortcut("⌘O"),
-                Item::new("Save").shortcut("⌘S"),
-                Item::separator(),
-                Item::new("Export as CSV"),
-            ])
+            Menu::new(menu_items(0))
             .selected(app.chosen[0])
-            .highlighted(app.highlighted)
+            .highlighted(app.highlighted.0)
             .on_chosen(|index| Message::Chosen { slot: 0, index })
-            .on_highlight(Message::Highlighted)
+            .on_highlight(move |index| Message::Highlighted { slot: 0, index })
             .into_element(),
             menu_style,
         ))
@@ -266,20 +417,15 @@ fn view(app: &App) -> Element<'_, Message> {
     // Every row keeps the same four columns — a leading icon slot, the label,
     // the shortcut, and a trailing check slot — so a row without an icon still
     // leaves the slot empty rather than shifting its label left.
-    let icons = Popover::new(trigger("Open icons", Message::Opened { slot: 1, open: true }))
+    let icons = Popover::new(trigger("Open icons"))
         .open(app.open[1])
         .panel_width(PANEL_WIDTH)
         .content(panel_container(
-            Menu::new([
-                Item::new("Rename").icon(PENCIL).shortcut("F2"),
-                Item::new("Duplicate").icon(COPY).shortcut("⌘D"),
-                Item::new("Move to…").icon(FOLDER),
-                Item::new("Delete").icon(TRASH).shortcut("⌫"),
-            ])
+            Menu::new(menu_items(1))
             .selected(app.chosen[1])
-            .highlighted(app.highlighted)
+            .highlighted(app.highlighted.0)
             .on_chosen(|index| Message::Chosen { slot: 1, index })
-            .on_highlight(Message::Highlighted)
+            .on_highlight(move |index| Message::Highlighted { slot: 1, index })
             .into_element(),
             menu_style,
         ))
@@ -290,19 +436,15 @@ fn view(app: &App) -> Element<'_, Message> {
     // section: Check state
     // `checked` draws the check mark in the trailing slot; `selected` draws the
     // whole row on the accent surface, which is what a menu of toggles wants.
-    let checks = Popover::new(trigger("Open checks", Message::Opened { slot: 2, open: true }))
+    let checks = Popover::new(trigger("Open checks"))
         .open(app.open[2])
         .panel_width(PANEL_WIDTH)
         .content(panel_container(
-            Menu::new([
-                Item::new("Show minimap").checked(true),
-                Item::new("Wrap lines").shortcut("⌥Z").checked(true),
-                Item::new("Show whitespace"),
-            ])
+            Menu::new(menu_items(2))
             .selected(app.chosen[2])
-            .highlighted(app.highlighted)
+            .highlighted(app.highlighted.0)
             .on_chosen(|index| Message::Chosen { slot: 2, index })
-            .on_highlight(Message::Highlighted)
+            .on_highlight(move |index| Message::Highlighted { slot: 2, index })
             .into_element(),
             menu_style,
         ))
@@ -313,19 +455,15 @@ fn view(app: &App) -> Element<'_, Message> {
     // section: Disabled State
     // A disabled row is never highlighted and never chosen: the arrow keys step
     // over it, and the row is drawn at `muted-foreground`.
-    let disabled = Popover::new(trigger("Open disabled", Message::Opened { slot: 3, open: true }))
+    let disabled = Popover::new(trigger("Open disabled"))
         .open(app.open[3])
         .panel_width(PANEL_WIDTH)
         .content(panel_container(
-            Menu::new([
-                Item::new("Cut").shortcut("⌘X"),
-                Item::new("Copy").shortcut("⌘C"),
-                Item::new("Paste").shortcut("⌘V").disabled(true),
-            ])
+            Menu::new(menu_items(3))
             .selected(app.chosen[3])
-            .highlighted(app.highlighted)
+            .highlighted(app.highlighted.0)
             .on_chosen(|index| Message::Chosen { slot: 3, index })
-            .on_highlight(Message::Highlighted)
+            .on_highlight(move |index| Message::Highlighted { slot: 3, index })
             .into_element(),
             menu_style,
         ))
@@ -336,19 +474,15 @@ fn view(app: &App) -> Element<'_, Message> {
     // section: Destructive
     // `danger` draws the row in `destructive`, which is the one column GPUI's
     // `PopupMenuItem` has and the Slint `MenuEntry` does not.
-    let destructive = Popover::new(trigger("Open destructive", Message::Opened { slot: 4, open: true }))
+    let destructive = Popover::new(trigger("Open destructive"))
         .open(app.open[4])
         .panel_width(PANEL_WIDTH)
         .content(panel_container(
-            Menu::new([
-                Item::new("Archive").icon(ARCHIVE),
-                Item::separator(),
-                Item::new("Delete project").icon(TRASH).danger(true),
-            ])
+            Menu::new(menu_items(4))
             .selected(app.chosen[4])
-            .highlighted(app.highlighted)
+            .highlighted(app.highlighted.0)
             .on_chosen(|index| Message::Chosen { slot: 4, index })
-            .on_highlight(Message::Highlighted)
+            .on_highlight(move |index| Message::Highlighted { slot: 4, index })
             .into_element(),
             menu_style,
         ))
@@ -360,21 +494,15 @@ fn view(app: &App) -> Element<'_, Message> {
     // `↑`/`↓` step to the previous and next actionable row, `Home`/`End` jump to
     // the first and last, and `Enter` and `Space` choose the one highlighted.
     // Escape is the popover's, and closes the panel from anywhere in it.
-    let keyboard = Popover::new(trigger("Open with the keyboard", Message::Opened { slot: 5, open: true }))
+    let keyboard = Popover::new(trigger("Open with the keyboard"))
         .open(app.open[5])
         .panel_width(PANEL_WIDTH)
         .content(panel_container(
-            Menu::new([
-                Item::new("Undo").shortcut("⌘Z"),
-                Item::new("Redo").shortcut("⇧⌘Z"),
-                Item::separator(),
-                Item::new("Find…").shortcut("⌘F"),
-                Item::new("Replace…").shortcut("⌘H").disabled(true),
-            ])
+            Menu::new(menu_items(5))
             .selected(app.chosen[5])
-            .highlighted(app.highlighted)
+            .highlighted(app.highlighted.0)
             .on_chosen(|index| Message::Chosen { slot: 5, index })
-            .on_highlight(Message::Highlighted)
+            .on_highlight(move |index| Message::Highlighted { slot: 5, index })
             .into_element(),
             menu_style,
         ))
@@ -387,13 +515,15 @@ fn view(app: &App) -> Element<'_, Message> {
         chosen.map(|index| (slot, index))
     }), app.highlighted) {
         (Some((slot, index)), _) => format!(
-            "Menu {} reported row {}. A menu stays open on a choice; Escape or a click outside closes it.",
+            "Menu {} chose row {}. A menu stays open on a choice; Escape or a click outside closes it.",
             slot + 1,
             index + 1
         ),
-        (None, Some(index)) => format!("The highlight is on row {}.", index + 1),
-        (None, None) => {
-            "Click a trigger to open a menu; hover a row, or use ↑ ↓ Home End and Enter.".to_string()
+        (None, (Some(index), Some(slot))) => {
+            format!("The highlight is on row {} of menu {}.", index + 1, slot + 1)
+        }
+        _ => {
+            "Click a trigger to open a menu; hover a row, or use ↑ ↓ Home End Enter and Escape.".to_string()
         }
     })
     .size(theme::FONT_SIZE_XS)
