@@ -18,6 +18,8 @@ pub mod card;
 pub mod checkbox;
 pub mod color_picker;
 pub mod combobox;
+pub mod command;
+pub mod data_table;
 pub mod date_picker;
 pub mod description_list;
 pub mod dialog;
@@ -77,6 +79,8 @@ pub const STORIES: &[&str] = &[
     "checkbox",
     "color-picker",
     "combobox",
+    "command",
+    "data-table",
     "date-picker",
     "description-list",
     "dialog",
@@ -139,6 +143,8 @@ pub fn run(story: &str, theme: iced::Theme) -> iced::Result {
         "checkbox" => checkbox::run(theme),
         "color-picker" => color_picker::run(theme),
         "combobox" => combobox::run(theme),
+        "command" => command::run(theme),
+        "data-table" => data_table::run(theme),
         "date-picker" => date_picker::run(theme),
         "description-list" => description_list::run(theme),
         "dialog" => dialog::run(theme),

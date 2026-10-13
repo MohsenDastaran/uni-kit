@@ -22476,6 +22476,65 @@
           "module": "theme"
         }
       ],
+      "command": [
+        {
+          "src": "crates/iced-component/src/components/command.rs",
+          "target": "command.rs",
+          "module": "command"
+        },
+        {
+          "src": "crates/iced-component/src/components/input.rs",
+          "target": "input.rs",
+          "module": "input"
+        },
+        {
+          "src": "crates/iced-component/src/components/kbd.rs",
+          "target": "kbd.rs",
+          "module": "kbd"
+        },
+        {
+          "src": "crates/iced-component/src/components/menu.rs",
+          "target": "menu.rs",
+          "module": "menu"
+        },
+        {
+          "src": "crates/iced-component/src/components/popover.rs",
+          "target": "popover.rs",
+          "module": "popover"
+        },
+        {
+          "src": "crates/iced-component/src/components/scrollable.rs",
+          "target": "scrollable.rs",
+          "module": "scrollable"
+        },
+        {
+          "src": "crates/iced-component/src/components/theme.rs",
+          "target": "theme.rs",
+          "module": "theme"
+        }
+      ],
+      "data-table": [
+        {
+          "src": "crates/iced-component/src/components/data_table.rs",
+          "target": "data_table.rs",
+          "module": "data_table"
+        },
+        {
+          "src": "crates/iced-component/src/components/scrollable.rs",
+          "target": "scrollable.rs",
+          "module": "scrollable"
+        },
+        {
+          "src": "crates/iced-component/src/components/table.rs",
+          "target": "table.rs",
+          "module": "table"
+        },
+        {
+          "src": "crates/iced-component/src/components/theme.rs",
+          "target": "theme.rs",
+          "module": "theme"
+        }
+      ],
       "date-picker": [
         {
           "src": "crates/iced-component/src/components/calendar.rs",

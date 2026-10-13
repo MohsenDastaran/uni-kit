@@ -368,8 +368,8 @@ scripts/check.sh               # theme parity, feature agreement, manifest, chec
 | `collapsible` | `collapsible.rs` | yes | yes | yes | 192 | — | yes |
 | `color-picker` | `color_picker.rs` | yes | yes | yes | 936 | yes | yes |
 | `combobox` | `combobox.rs` | yes | yes | yes | 738 | yes | yes |
-| `command` | `command.rs` | yes | yes | — | — | — | — |
-| `data-table` | `data_table.rs` | yes | yes | — | — | — | — |
+| `command` | `command.rs` | yes | yes | yes | 990 | yes | yes |
+| `data-table` | `data_table.rs` | yes | yes | yes | 804 | yes | yes |
 | `date-picker` | `date_picker.rs` | yes | yes | yes | 539 | yes | yes |
 | `description-list` | `description_list.rs` | yes | yes | yes | 441 | yes | yes |
 | `dialog` | `dialog.rs` | yes | yes | yes | 620 | yes | yes |
@@ -389,7 +389,7 @@ scripts/check.sh               # theme parity, feature agreement, manifest, chec
 | `label` | `label.rs` | yes | yes | yes | 122 | yes | yes |
 | `list` | `list.rs` | yes | yes | yes | 241 | yes | yes |
 | `marker` | `marker.rs` | yes | yes | yes | 123 | yes | yes |
-| `menu` | `menu.rs` | yes | yes | yes | 650 | yes | yes |
+| `menu` | `menu.rs` | yes | yes | yes | 670 | yes | yes |
 | `message` | `message.rs` | yes | yes | — | — | — | — |
 | `message-role` | `message_role.rs` | yes | yes | yes | 235 | yes | yes |
 | `message-scroller` | `message_scroller.rs` | yes | yes | yes | 676 | yes | yes |
@@ -417,7 +417,7 @@ scripts/check.sh               # theme parity, feature agreement, manifest, chec
 | `status-bar` | `status_bar.rs` | yes | yes | — | — | — | — |
 | `stepper` | `stepper.rs` | yes | yes | yes | 642 | yes | yes |
 | `switch` | `switch.rs` | yes | yes | yes | 235 | yes | yes |
-| `table` | `table.rs` | yes | yes | yes | 744 | yes | yes |
+| `table` | `table.rs` | yes | yes | yes | 753 | yes | yes |
 | `tabs` | `tabs.rs` | yes | yes | yes | 300 | — | yes |
 | `tag` | `tag.rs` | yes | yes | yes | 257 | yes | yes |
 | `text-view` | `text_view.rs` | yes | yes | yes | 919 | yes | yes |
@@ -431,7 +431,7 @@ scripts/check.sh               # theme parity, feature agreement, manifest, chec
 | `tree` | `tree.rs` | yes | yes | yes | 352 | yes | yes |
 | `virtual-list` | `virtual_list.rs` | yes | yes | — | — | — | — |
 
-**52 / 79** components have an iced source, an example and a registry entry.
+**54 / 79** components have an iced source, an example and a registry entry.
 
-Still to do: `bubble`, `carousel`, `chart`, `clipboard`, `collapsible`, `command`, `data-table`, `dock`, `dropdown_button`, `editor`, `focus-trap`, `image`, `input-group`, `message`, `questionnaire`, `resizable`, `root`, `settings`, `sidebar`, `speech`, `status-bar`, `tabs`, `theme`, `time-field`, `title-bar`, `toolbar`, `virtual-list`.
+Still to do: `bubble`, `carousel`, `chart`, `clipboard`, `collapsible`, `dock`, `dropdown_button`, `editor`, `focus-trap`, `image`, `input-group`, `message`, `questionnaire`, `resizable`, `root`, `settings`, `sidebar`, `speech`, `status-bar`, `tabs`, `theme`, `time-field`, `title-bar`, `toolbar`, `virtual-list`.
 <!-- iced-checklist:end -->
