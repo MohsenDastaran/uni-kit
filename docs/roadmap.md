@@ -805,6 +805,12 @@ each to the same handful of traps. What works:
 - **Compare clip-region hashes.** A before/after/dismiss triple that returns to the
   original hash is stronger evidence than an image someone has to squint at, and it is
   cheap.
+- **Check whose story you are looking at.** Agents run dev servers on the same machine, and
+  more than one has been surprised by a port already in use: the time field's first dark
+  screenshot showed the *toolbar* demo, because another agent's server had taken the port.
+  Pin a private port, or assert the story in the frame before trusting what you see — a
+  screenshot of the wrong component is evidence of the wrong thing, which is worse than no
+  screenshot.
 - **Expect three caches.** The page stamp in `component-loader.ts`, Astro's
   `node_modules/.astro/data-store.json`, and a long-running dev server's own HTML. A
   change that "isn't showing" is usually one of them — restart with `--force`.
