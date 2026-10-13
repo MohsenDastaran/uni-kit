@@ -581,6 +581,28 @@ that lied. The rule the demos now follow: keep the marks above, spell the rest
 once made every label in the gallery invisible: a glyph with no face resolves to
 nothing, silently.
 
+#### Driving the wasm gallery from a script
+
+Verifying these components means driving a canvas, and three agents have lost a round
+each to the same handful of traps. What works:
+
+- **Coordinates are CSS pixels.** The canvas bitmap is CSS-sized and iced paints at
+  `devicePixelRatio`, so a screenshot at DSF 2 is a scale-up of the same UI and input
+  coordinates are unaffected — drive with `deviceScaleFactor: 1` and read at 2.
+- **Sweep for the hit box.** These controls are as small as 28px, and a click 8px low
+  produces a confident wrong conclusion rather than an error.
+- **Wait out any delay, and hold the hover.** The tooltip opens after 400ms; a
+  screenshot taken straight after a `mouseMoved` is byte-identical by construction,
+  which is exactly how one agent decided the environment could not deliver input at all.
+- **Compare clip-region hashes.** A before/after/dismiss triple that returns to the
+  original hash is stronger evidence than an image someone has to squint at, and it is
+  cheap.
+- **Expect three caches.** The page stamp in `component-loader.ts`, Astro's
+  `node_modules/.astro/data-store.json`, and a long-running dev server's own HTML. A
+  change that "isn't showing" is usually one of them — restart with `--force`.
+- **Do not `pkill -f` a pattern that matches your own command line.** It has killed
+  this session's shell three times; bracket a character or kill by PID.
+
 ### Every card scrolls to its own sample
 
 A card's code icon scrolls the page to that card's copyable sample, and the sample
