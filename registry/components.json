@@ -22402,6 +22402,33 @@
           "module": "theme"
         }
       ],
+      "dropdown-button": [
+        {
+          "src": "crates/iced-component/src/components/button.rs",
+          "target": "button.rs",
+          "module": "button"
+        },
+        {
+          "src": "crates/iced-component/src/components/dropdown_button.rs",
+          "target": "dropdown_button.rs",
+          "module": "dropdown_button"
+        },
+        {
+          "src": "crates/iced-component/src/components/menu.rs",
+          "target": "menu.rs",
+          "module": "menu"
+        },
+        {
+          "src": "crates/iced-component/src/components/popover.rs",
+          "target": "popover.rs",
+          "module": "popover"
+        },
+        {
+          "src": "crates/iced-component/src/components/theme.rs",
+          "target": "theme.rs",
+          "module": "theme"
+        }
+      ],
       "empty": [
         {
           "src": "crates/iced-component/src/components/empty.rs",
@@ -22486,6 +22513,18 @@
           "module": "theme"
         }
       ],
+      "menu": [
+        {
+          "src": "crates/iced-component/src/components/menu.rs",
+          "target": "menu.rs",
+          "module": "menu"
+        },
+        {
+          "src": "crates/iced-component/src/components/theme.rs",
+          "target": "theme.rs",
+          "module": "theme"
+        }
+      ],
       "message-role": [
         {
           "src": "crates/iced-component/src/components/message_role.rs",
@@ -22549,6 +22588,18 @@
           "module": "theme"
         }
       ],
+      "popover": [
+        {
+          "src": "crates/iced-component/src/components/popover.rs",
+          "target": "popover.rs",
+          "module": "popover"
+        },
+        {
+          "src": "crates/iced-component/src/components/theme.rs",
+          "target": "theme.rs",
+          "module": "theme"
+        }
+      ],
       "progress": [
         {
           "src": "crates/iced-component/src/components/progress.rs",
@@ -22561,11 +22612,60 @@
           "module": "theme"
         }
       ],
+      "radio": [
+        {
+          "src": "crates/iced-component/src/components/button.rs",
+          "target": "button.rs",
+          "module": "button"
+        },
+        {
+          "src": "crates/iced-component/src/components/checkbox.rs",
+          "target": "checkbox.rs",
+          "module": "checkbox"
+        },
+        {
+          "src": "crates/iced-component/src/components/radio.rs",
+          "target": "radio.rs",
+          "module": "radio"
+        },
+        {
+          "src": "crates/iced-component/src/components/theme.rs",
+          "target": "theme.rs",
+          "module": "theme"
+        }
+      ],
       "scrollable": [
         {
           "src": "crates/iced-component/src/components/scrollable.rs",
           "target": "scrollable.rs",
           "module": "scrollable"
+        },
+        {
+          "src": "crates/iced-component/src/components/theme.rs",
+          "target": "theme.rs",
+          "module": "theme"
+        }
+      ],
+      "select": [
+        {
+          "src": "crates/iced-component/src/components/input.rs",
+          "target": "input.rs",
+          "module": "input"
+        },
+        {
+          "src": "crates/iced-component/src/components/menu.rs",
+          "target": "menu.rs",
+          "module": "menu"
+        },
+        {
+          "src": "crates/iced-component/src/components/popover.rs",
+          "target": "popover.rs",
+          "module": "popover"
+        },
+        {
+          "src": "crates/iced-component/src/components/select.rs",
+          "target": "select.rs",
+          "module": "select"
         },
         {
           "src": "crates/iced-component/src/components/theme.rs",
@@ -22602,6 +22702,28 @@
           "src": "crates/iced-component/src/components/spinner.rs",
           "target": "spinner.rs",
           "module": "spinner"
+        },
+        {
+          "src": "crates/iced-component/src/components/theme.rs",
+          "target": "theme.rs",
+          "module": "theme"
+        }
+      ],
+      "switch": [
+        {
+          "src": "crates/iced-component/src/components/button.rs",
+          "target": "button.rs",
+          "module": "button"
+        },
+        {
+          "src": "crates/iced-component/src/components/checkbox.rs",
+          "target": "checkbox.rs",
+          "module": "checkbox"
+        },
+        {
+          "src": "crates/iced-component/src/components/switch.rs",
+          "target": "switch.rs",
+          "module": "switch"
         },
         {
           "src": "crates/iced-component/src/components/theme.rs",
@@ -22650,6 +22772,40 @@
           "src": "crates/iced-component/src/components/textarea.rs",
           "target": "textarea.rs",
           "module": "textarea"
+        },
+        {
+          "src": "crates/iced-component/src/components/theme.rs",
+          "target": "theme.rs",
+          "module": "theme"
+        }
+      ],
+      "toggle": [
+        {
+          "src": "crates/iced-component/src/components/button.rs",
+          "target": "button.rs",
+          "module": "button"
+        },
+        {
+          "src": "crates/iced-component/src/components/toggle.rs",
+          "target": "toggle.rs",
+          "module": "toggle"
+        },
+        {
+          "src": "crates/iced-component/src/components/theme.rs",
+          "target": "theme.rs",
+          "module": "theme"
+        }
+      ],
+      "tooltip": [
+        {
+          "src": "crates/iced-component/src/components/popover.rs",
+          "target": "popover.rs",
+          "module": "popover"
+        },
+        {
+          "src": "crates/iced-component/src/components/tooltip.rs",
+          "target": "tooltip.rs",
+          "module": "tooltip"
         },
         {
           "src": "crates/iced-component/src/components/theme.rs",

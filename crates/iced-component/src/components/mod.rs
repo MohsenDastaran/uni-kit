@@ -37,6 +37,7 @@ pub mod popover;
 pub mod progress;
 pub mod radio;
 pub mod scrollable;
+pub mod select;
 pub mod shimmer;
 pub mod skeleton;
 pub mod spinner;

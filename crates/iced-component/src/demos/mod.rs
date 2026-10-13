@@ -33,6 +33,7 @@ pub mod popover;
 pub mod progress;
 pub mod radio;
 pub mod scrollable;
+pub mod select;
 pub mod shimmer;
 pub mod skeleton;
 pub mod spinner;
@@ -76,6 +77,7 @@ pub const STORIES: &[&str] = &[
     "progress",
     "radio",
     "scrollable",
+    "select",
     "shimmer",
     "skeleton",
     "spinner",
@@ -122,6 +124,7 @@ pub fn run(story: &str, theme: iced::Theme) -> iced::Result {
         "progress" => progress::run(theme),
         "radio" => radio::run(theme),
         "scrollable" => scrollable::run(theme),
+        "select" => select::run(theme),
         "shimmer" => shimmer::run(theme),
         "skeleton" => skeleton::run(theme),
         "spinner" => spinner::run(theme),
