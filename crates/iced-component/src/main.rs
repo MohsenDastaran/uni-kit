@@ -24,6 +24,10 @@ fn main() -> iced::Result {
         .unwrap_or_default();
     let dark = arguments.iter().any(|argument| argument == "--dark");
 
-    let theme = crate::components::theme::iced_theme(dark);
+    // This bin is its own crate root, so the library is named rather than reached
+    // through `crate::` — `src/wasm.rs` is a module *of* the library and uses the
+    // short path there. `cargo build --examples` compiles the library and the
+    // examples, not this target, which is how the wrong path survived a check.
+    let theme = iced_component::components::theme::iced_theme(dark);
     demos::run(&story, theme)
 }
