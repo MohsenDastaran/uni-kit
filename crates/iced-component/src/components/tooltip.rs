@@ -160,6 +160,7 @@ pub struct Tooltip<'a, Message> {
     arrow: Arrow,
     offset: f32,
     delay: Duration,
+    padding: Padding,
     style: Box<dyn Fn(&Theme) -> PanelStyle + 'a>,
     /// The appearance the trigger was last drawn with.
     ///
@@ -189,6 +190,12 @@ impl<'a, Message> Tooltip<'a, Message> {
             arrow: Arrow::default(),
             offset: 8.0,
             delay: DEFAULT_DELAY,
+            padding: Padding {
+                top: theme::SPACING_XS,
+                bottom: theme::SPACING_XS,
+                left: theme::SPACING_SM,
+                right: theme::SPACING_SM,
+            },
             style: Box::new(surface),
             theme: Rc::new(RefCell::new(None)),
         }
@@ -232,6 +239,17 @@ impl<'a, Message> Tooltip<'a, Message> {
     /// as iced's own tooltip does.
     pub fn delay(mut self, delay: Duration) -> Self {
         self.delay = delay;
+        self
+    }
+
+    /// The inset between the label and the surface, `4px` above and below and
+    /// `8px` either side by default — the Slint component's own padding.
+    ///
+    /// A caller with a taller panel, such as [`HoverCard`](super::hover_card),
+    /// sets it to one inset on all four sides; the default is unchanged, so a
+    /// plain tooltip draws exactly as it did.
+    pub fn padding(mut self, padding: impl Into<Padding>) -> Self {
+        self.padding = padding.into();
         self
     }
 
@@ -572,12 +590,7 @@ where
             translation,
             gap: self.offset,
             side: self.side.into(),
-            padding: Padding {
-                top: theme::SPACING_XS,
-                bottom: theme::SPACING_XS,
-                left: theme::SPACING_SM,
-                right: theme::SPACING_SM,
-            },
+            padding: self.padding,
         })))
     }
 }
