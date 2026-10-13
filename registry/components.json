@@ -22438,6 +22438,18 @@
           "module": "theme"
         }
       ],
+      "input": [
+        {
+          "src": "crates/iced-component/src/components/input.rs",
+          "target": "input.rs",
+          "module": "input"
+        },
+        {
+          "src": "crates/iced-component/src/components/theme.rs",
+          "target": "theme.rs",
+          "module": "theme"
+        }
+      ],
       "kbd": [
         {
           "src": "crates/iced-component/src/components/kbd.rs",
@@ -22503,6 +22515,18 @@
           "src": "crates/iced-component/src/components/progress.rs",
           "target": "progress.rs",
           "module": "progress"
+        },
+        {
+          "src": "crates/iced-component/src/components/theme.rs",
+          "target": "theme.rs",
+          "module": "theme"
+        }
+      ],
+      "scrollable": [
+        {
+          "src": "crates/iced-component/src/components/scrollable.rs",
+          "target": "scrollable.rs",
+          "module": "scrollable"
         },
         {
           "src": "crates/iced-component/src/components/theme.rs",

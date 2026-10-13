@@ -19,12 +19,14 @@ pub mod description_list;
 pub mod empty;
 pub mod group_box;
 pub mod icon;
+pub mod input;
 pub mod kbd;
 pub mod label;
 pub mod marker;
 pub mod message_role;
 pub mod message_scroller;
 pub mod progress;
+pub mod scrollable;
 pub mod shimmer;
 pub mod skeleton;
 pub mod spinner;
@@ -50,12 +52,14 @@ pub const STORIES: &[&str] = &[
     "empty",
     "group-box",
     "icon",
+    "input",
     "kbd",
     "label",
     "marker",
     "message-role",
     "message-scroller",
     "progress",
+    "scrollable",
     "shimmer",
     "skeleton",
     "spinner",
@@ -84,12 +88,14 @@ pub fn run(story: &str, theme: iced::Theme) -> iced::Result {
         "empty" => empty::run(theme),
         "group-box" => group_box::run(theme),
         "icon" => icon::run(theme),
+        "input" => input::run(theme),
         "kbd" => kbd::run(theme),
         "label" => label::run(theme),
         "marker" => marker::run(theme),
         "message-role" => message_role::run(theme),
         "message-scroller" => message_scroller::run(theme),
         "progress" => progress::run(theme),
+        "scrollable" => scrollable::run(theme),
         "shimmer" => shimmer::run(theme),
         "skeleton" => skeleton::run(theme),
         "spinner" => spinner::run(theme),
