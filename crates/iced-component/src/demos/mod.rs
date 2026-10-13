@@ -16,6 +16,7 @@ pub mod calendar;
 pub mod card;
 pub mod checkbox;
 pub mod combobox;
+pub mod date_picker;
 pub mod description_list;
 pub mod dropdown_button;
 pub mod empty;
@@ -61,6 +62,7 @@ pub const STORIES: &[&str] = &[
     "card",
     "checkbox",
     "combobox",
+    "date-picker",
     "description-list",
     "dropdown-button",
     "empty",
@@ -109,6 +111,7 @@ pub fn run(story: &str, theme: iced::Theme) -> iced::Result {
         "card" => card::run(theme),
         "checkbox" => checkbox::run(theme),
         "combobox" => combobox::run(theme),
+        "date-picker" => date_picker::run(theme),
         "description-list" => description_list::run(theme),
         "dropdown-button" => dropdown_button::run(theme),
         "empty" => empty::run(theme),

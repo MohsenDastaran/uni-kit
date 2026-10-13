@@ -22417,6 +22417,33 @@
           "module": "theme"
         }
       ],
+      "date-picker": [
+        {
+          "src": "crates/iced-component/src/components/calendar.rs",
+          "target": "calendar.rs",
+          "module": "calendar"
+        },
+        {
+          "src": "crates/iced-component/src/components/date_picker.rs",
+          "target": "date_picker.rs",
+          "module": "date_picker"
+        },
+        {
+          "src": "crates/iced-component/src/components/input.rs",
+          "target": "input.rs",
+          "module": "input"
+        },
+        {
+          "src": "crates/iced-component/src/components/popover.rs",
+          "target": "popover.rs",
+          "module": "popover"
+        },
+        {
+          "src": "crates/iced-component/src/components/theme.rs",
+          "target": "theme.rs",
+          "module": "theme"
+        }
+      ],
       "description-list": [
         {
           "src": "crates/iced-component/src/components/description_list.rs",
