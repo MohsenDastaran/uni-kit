@@ -430,11 +430,20 @@ both themes is named plainly rather than ticked.
 
 **The form family**
 
+None of this waits on `popover`, so it can run beside the overlay family rather than
+after it. `form` is the exception and goes last, because it composes the controls
+below instead of being one.
+
 - `checkbox` — implemented, and `radio`, `switch` and `toggle` follow its shape. Not
-  ticked for the same reason.
-- [ ] `radio`, `switch`, `toggle`
-- [ ] `slider`, `number-input`'s stepper behaviour, `stepper`
-- [ ] `form` — composition and validation over the controls above, not a new control.
+  ticked yet: it has not been looked at in both themes, and like `label` it may have
+  no `// section:` markers, which is the same debt and the same fix.
+- [ ] `radio`, `switch`, `toggle` — one shape, three controls, so `handle` is built
+      once and the three differ in what it draws
+- [ ] `slider`, `stepper` — and `number-input`'s stepper behaviour, which is already
+      built and should be shared rather than copied
+- [ ] `form` — composition and validation over the controls above, not a new control;
+      it has no rendering of its own, so what it owns is layout, labels, error
+      placement and the state that ties a control to its message
 
 **Surfaces and data**
 
