@@ -211,6 +211,22 @@ function icedHeading(title) {
 }
 
 /**
+ * The heading the plugin writes for a section the page does not have. It is
+ * iced's own: the other frameworks leave it out, and the lookup skips it there,
+ * the same reading the framework pass gives a heading whose section holds only
+ * iced's sample. A created heading whose sample joins the page's own code under
+ * it does not get that mark from the pass, so it is said here.
+ */
+function icedOnlyHeading(title) {
+  const node = icedHeading(title);
+  const data = (node.data ??= {});
+  const props = (data.hProperties ??= {});
+  props['data-framework-only'] = 'iced';
+  tagIcedHeading(node, title);
+  return node;
+}
+
+/**
  * Where a section the page has no heading for goes: inside `## Usage`, at the end
  * of it, so an added section still reads as part of the examples.
  */
@@ -280,7 +296,12 @@ export function remarkIcedSource() {
         continue;
       }
       const at = anchor ? children.indexOf(anchor) + 1 : usageEnd(children);
-      const nodes = [icedHeading(section.title), icedCode(section.code)];
+      // The page has no heading for this section, so the plugin writes one and
+      // the sample lives under it. It carries the section title the way a
+      // heading the page already had does, so the card's code icon has the
+      // sample as a target of its own.
+      const created = icedOnlyHeading(section.title);
+      const nodes = [created, icedCode(section.code)];
       children.splice(at, 0, ...nodes);
       anchor = nodes[1];
     }

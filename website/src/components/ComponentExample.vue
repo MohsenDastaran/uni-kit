@@ -751,6 +751,11 @@ function showExample(title: string) {
   const described = headings.map((heading) => ({
     text: plainHeading(heading),
     titles: heading.dataset.galleryTitle,
+    // A heading the chosen framework has no sample under is left out of the
+    // view by the stylesheet, and the lookup must not land on one: its
+    // `scrollIntoView` does nothing. An element that is not rendered has no
+    // client rects, which is the same test the browser makes.
+    visible: heading.getClientRects().length > 0,
   }));
   const match = findExampleHeading(described, title);
   const heading = match ? headings[described.indexOf(match)] : undefined;

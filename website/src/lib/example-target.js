@@ -33,15 +33,21 @@ export function gallerySourceTitle(title, _period, _note, subtitle) {
 }
 
 /**
- * @param {{ text: string, titles?: string }[]} headings
+ * @param {{ text: string, titles?: string, visible?: boolean }[]} headings
  * @param {string} title
  */
 export function findExampleHeading(headings, title) {
   const wanted = exampleWords(title);
   if (!wanted) return undefined;
-  const tagged = headings.find((heading) =>
+  // The page shows one framework at a time, and a heading the framework in
+  // force has no sample under is left out of the view. `scrollIntoView` on a
+  // `display: none` heading does nothing, so such a heading is not a candidate
+  // even when it carries the title. The page reads visibility from the DOM; a
+  // heading the caller does not describe is taken as shown.
+  const shown = headings.filter((heading) => heading.visible !== false);
+  const tagged = shown.find((heading) =>
     galleryTitlesOf(heading.titles).some((item) => exampleWords(item) === wanted),
   );
   if (tagged) return tagged;
-  return headings.find((heading) => exampleWords(heading.text) === wanted);
+  return shown.find((heading) => exampleWords(heading.text) === wanted);
 }
