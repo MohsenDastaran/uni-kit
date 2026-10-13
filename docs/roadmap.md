@@ -569,9 +569,21 @@ below instead of being one.
       closure carries `number_input`, `input`, `button` and `theme`, and it compiles,
       but it was not installed and built), and the stepper demo's arrow-key
       subscription, which was wired and native-built but not re-driven in wasm.
-- [ ] `form` — composition and validation over the controls above, not a new control;
-      it has no rendering of its own, so what it owns is layout, labels, error
-      placement and the state that ties a control to its message
+- [x] `form` — done, and it is what the plan said it would be: no control of its own,
+      but the layout, the labels, the error placement and the state tying a control to
+      its message. `LabelLayout::{Above, Beside}` covers Slint's FormField and FormRow,
+      fields carry section and separator rows, `col_span`/`col_start` place a field in a
+      grid, and the error is application state the field only places — while it is set it
+      takes the message line in `danger` and the description steps aside. Verified by
+      driving the whole cycle in both themes: submit produces the error lines, and
+      correcting the field returns the message clip **byte-identical** to its baseline.
+      The install was proven too — `add iced form` writes form, label and theme and the
+      scratch crate compiles. Two things are named rather than faked: a column span is a
+      `FillPortion` share, exact for single-column and full-width rows and proportional
+      for mixed three-column ones, and a hidden field leaves the grid rather than
+      holding an empty cell. One real finding is left for a decision rather than fixed:
+      the light theme's `danger` on the page is **3.76:1**, under AA for 12px text, but it
+      is parity-locked to the Slint theme and shared by every component's error line.
 
 **Surfaces and data**
 
@@ -652,6 +664,14 @@ each to the same handful of traps. What works:
 - **Click the canvas before sending keys.** Keyboard-driven state needs the headless
   canvas focused first; without that one click every keystroke is silently ignored, and
   the state looks like it never changes.
+- **A screenshot preview is not the coordinate space.** Read a 1:1
+  `Page.captureScreenshot` clip to derive coordinates; an estimate taken from a scaled
+  preview was 50px low and looked like a dead control.
+- **Make the clip cover where the text lands.** These fields left-align, so a clip
+  starting mid-width misses typed text entirely and reports "the field never took a
+  keystroke" — a false negative that reads exactly like a broken input.
+- **Click, then type.** With focus emulation on, the first click after a navigation does
+  not always register; the reliable sequence is to click the field and then send keys.
 
 ### Every card scrolls to its own sample
 
