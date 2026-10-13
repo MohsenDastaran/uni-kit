@@ -544,6 +544,23 @@ The gallery runs under `theme::iced_theme`, built from the very tokens the
 components read, so a window clears to the page's own background and a
 default-styled widget agrees with the components beside it.
 
+#### What the wasm face can and cannot draw
+
+Four separate components lost a round to the same thing, so here is the answer. On wasm
+the only embedded faces are Fira Sans Regular (`fira-sans`) and Iced Icons, so a
+symbol the regular face lacks draws **nothing at all** rather than falling back to
+anything. Parsing that face's cmap settles which marks are safe:
+
+- **Present:** `⇧` `⌫` `↑` `↓` `←` `→` `⌦` `⇪` `⏎`
+- **Absent:** `⌘` `⌥` `⌃` `↵` `⎋` `⇥` `⌤` `␣` `⎇`
+
+A shortcut written with an absent mark reads wrong instead of not at all — `⌘N` paints
+as a bare `N` — which is how the menu, kbd and tooltip demos each shipped a shortcut
+that lied. The rule the demos now follow: keep the marks above, spell the rest
+(`Cmd`, `Alt`), and check the cmap rather than assuming. This is the same failure that
+once made every label in the gallery invisible: a glyph with no face resolves to
+nothing, silently.
+
 ### Every card scrolls to its own sample
 
 A card's code icon scrolls the page to that card's copyable sample, and the sample
