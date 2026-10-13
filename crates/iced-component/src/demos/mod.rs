@@ -18,6 +18,7 @@ pub mod checkbox;
 pub mod combobox;
 pub mod date_picker;
 pub mod description_list;
+pub mod dialog;
 pub mod dropdown_button;
 pub mod empty;
 pub mod form;
@@ -37,6 +38,7 @@ pub mod progress;
 pub mod radio;
 pub mod scrollable;
 pub mod select;
+pub mod sheet;
 pub mod shimmer;
 pub mod skeleton;
 pub mod slider;
@@ -67,6 +69,7 @@ pub const STORIES: &[&str] = &[
     "combobox",
     "date-picker",
     "description-list",
+    "dialog",
     "dropdown-button",
     "empty",
     "form",
@@ -86,6 +89,7 @@ pub const STORIES: &[&str] = &[
     "radio",
     "scrollable",
     "select",
+    "sheet",
     "shimmer",
     "skeleton",
     "slider",
@@ -119,6 +123,7 @@ pub fn run(story: &str, theme: iced::Theme) -> iced::Result {
         "combobox" => combobox::run(theme),
         "date-picker" => date_picker::run(theme),
         "description-list" => description_list::run(theme),
+        "dialog" => dialog::run(theme),
         "dropdown-button" => dropdown_button::run(theme),
         "empty" => empty::run(theme),
         "form" => form::run(theme),
@@ -138,6 +143,7 @@ pub fn run(story: &str, theme: iced::Theme) -> iced::Result {
         "radio" => radio::run(theme),
         "scrollable" => scrollable::run(theme),
         "select" => select::run(theme),
+        "sheet" => sheet::run(theme),
         "shimmer" => shimmer::run(theme),
         "skeleton" => skeleton::run(theme),
         "slider" => slider::run(theme),

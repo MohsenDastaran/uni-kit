@@ -22456,6 +22456,23 @@
           "module": "theme"
         }
       ],
+      "dialog": [
+        {
+          "src": "crates/iced-component/src/components/button.rs",
+          "target": "button.rs",
+          "module": "button"
+        },
+        {
+          "src": "crates/iced-component/src/components/dialog.rs",
+          "target": "dialog.rs",
+          "module": "dialog"
+        },
+        {
+          "src": "crates/iced-component/src/components/theme.rs",
+          "target": "theme.rs",
+          "module": "theme"
+        }
+      ],
       "dropdown-button": [
         {
           "src": "crates/iced-component/src/components/button.rs",
@@ -22737,6 +22754,33 @@
           "src": "crates/iced-component/src/components/select.rs",
           "target": "select.rs",
           "module": "select"
+        },
+        {
+          "src": "crates/iced-component/src/components/theme.rs",
+          "target": "theme.rs",
+          "module": "theme"
+        }
+      ],
+      "sheet": [
+        {
+          "src": "crates/iced-component/src/components/button.rs",
+          "target": "button.rs",
+          "module": "button"
+        },
+        {
+          "src": "crates/iced-component/src/components/popover.rs",
+          "target": "popover.rs",
+          "module": "popover"
+        },
+        {
+          "src": "crates/iced-component/src/components/scrollable.rs",
+          "target": "scrollable.rs",
+          "module": "scrollable"
+        },
+        {
+          "src": "crates/iced-component/src/components/sheet.rs",
+          "target": "sheet.rs",
+          "module": "sheet"
         },
         {
           "src": "crates/iced-component/src/components/theme.rs",
