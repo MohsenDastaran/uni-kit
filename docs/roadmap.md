@@ -476,6 +476,27 @@ both themes is named plainly rather than ticked.
       the shared popover change was re-checked against the tooltip, whose closed hash
       returned byte-identical. `dropdown_button` still has no leave path of its own, so
       its caller cannot clear a hover through the new report.
+
+#### Two legibility decisions left open
+
+Both are faithful to the Slint originals and both are visible defects, which is why they
+are recorded rather than quietly fixed:
+
+- The **light theme's `danger`** on the page background measures **3.76:1**, under AA for
+  12px text, and it colours every component's error line. It is parity-locked to the Slint
+  theme, which `check.sh` enforces, so raising it moves both frameworks.
+- **`message-role`'s failed state draws its initials in the fill's own colour.** `Role::ink`
+  returns `destructive`, the same value as the failed fill, so the initials disappear in
+  both themes — reproduced deliberately from `message.slint`, where the tint foreground is
+  the destructive token. The one-line fix is `destructive_foreground`.
+
+`message-role` was also the last component missing from a framework's sidebar: the sidebar
+is built by scanning `website/component/*.md`, and it had no page — so a component that
+exists, with a working demo, was invisible in every framework's list. Its page and its
+section markers both landed in `0523e3be`, and with them the iced sidebar is complete at 45
+components. One caveat belongs with it: `html[data-framework]` defaults to `slint`, so a
+production first visit to a page whose framework list is iced-only redirects to
+`/component` — pre-existing behaviour, and message-role is the only page where it bites.
       - [x] `select` — done, and it composes rather than re-derives: the trigger is
       `input::Style` with the size ladder, the panel is `Popover::filled(true)` around
       `Menu::into_element()` following menu.rs's one-surface rule, and a chosen row is
