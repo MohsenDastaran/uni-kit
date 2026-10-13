@@ -643,7 +643,20 @@ below instead of being one.
       repeated a bug the other had already paid for. Verified in proportion — a
       screenshot per theme with the sheet open, and one driven open with a scrim click
       returning the frame byte-identical.
-- [ ] `alert-dialog` — composes `dialog`, so it comes after it.
+- [x] `alert-dialog` — done, and it composes `dialog` rather than inventing a third
+      mechanism, so it inherits the in-flow `Stack` layer and the dialog's stated gaps (no
+      focus trap, no Escape at the layer, no scroll lock, no transition). What it adds is
+      the confirmation surface: title and description pass-through, Cancel and confirm
+      texts, a `destructive` flag that turns the confirm button into Danger, and a centred
+      footer with Cancel first — with a press on Cancel, the backdrop or the close control
+      all reporting `false` through the composed dialog, which matches Slint's
+      `closed → cancelled`. A caller that passes no `on_open_change` gets no Cancel button
+      and nothing captured, which is documented rather than left to be discovered.
+      Verified in proportion: one screenshot per theme with the dialog open over the dimmed
+      page, and one driven open-then-Cancel returning the frame byte-identical to the
+      settled baseline in both themes — the first baseline per theme was discarded because
+      the canvas settles a one-pixel edge on the first interaction, which is the kind of
+      detail that makes a hash comparison mean something.
 - [ ] `table`, `list`, `pagination` — built on `scrollable`.
 - [ ] `notification`, `hover-card`, and the rest of the 79 as they come.
 
