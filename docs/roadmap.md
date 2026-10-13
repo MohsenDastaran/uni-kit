@@ -630,7 +630,19 @@ below instead of being one.
       Named, not faked: no focus trap, no Escape at the layer itself (the demo binds it, as
       date-picker's does), no scroll lock, no transition, and `content_padding` is a value
       rather than Slint's sub-420px breakpoint.
-- [ ] `sheet` — in flight beside this one; the side-anchored sibling.
+- [x] `sheet` — done, side-anchored and flush to its edge, covering a page the caller
+      passes in. It reuses `popover`'s `PanelStyle` and re-exports its `Placement`, and
+      names why the popover's `Placed` flip does not apply to it — a sheet is flush to its
+      edge, so it never flips. Two defects were found by **looking at the screenshot**
+      rather than by reading: `Placement::default()` is the popover's `Bottom`, so an
+      unset sheet anchored to the wrong edge until the default became `Right`; and its
+      panel draw handed the content the panel's own layout node, so only the first child
+      painted — the same trap `popover` documents, re-learned by a component that wrote
+      its own panel draw rather than reusing `popover`'s. That is a design gap worth
+      settling: there are now two implementations of "draw a panel", and one of them
+      repeated a bug the other had already paid for. Verified in proportion — a
+      screenshot per theme with the sheet open, and one driven open with a scrim click
+      returning the frame byte-identical.
 - [ ] `alert-dialog` — composes `dialog`, so it comes after it.
 - [ ] `table`, `list`, `pagination` — built on `scrollable`.
 - [ ] `notification`, `hover-card`, and the rest of the 79 as they come.
