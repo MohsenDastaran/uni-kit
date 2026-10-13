@@ -14,9 +14,9 @@ The site is already Astro at [https://gpui-kit.com](https://gpui-kit.com) (`webs
 - [x] 4. Framework selector on the website
 - [x] 5. Write Slint components (one per GPUI component)
 - [x] 6. Slint usage, main controls first
-- [ ] 7. Add blocks (Login, Dashboard, Settings)
-- [ ] 8. Starter templates
-- [ ] 9. Deploy & launch
+- [x] 7. Add blocks (Login, Dashboard, Settings)
+- [x] 8. Starter templates
+- [x] 9. Deploy & launch
 
 ---
 
@@ -341,17 +341,19 @@ Button is the first; the others are one section each.
    what keeps the page's code and the running code the same file. Close the last
    section with `// section: end`, or the lines that assemble the gallery (the
    status line among them) are shown as part of it.
+
 3. **Give each section a heading.** `heading(app, index, title)` draws the title
    and the 28px code box, and posts through `crate::bridge`:
 
    ```json
-   {"source": "gpui-kit", "index": 0, "title": "Variants"}
+   { "source": "gpui-kit", "index": 0, "title": "Variants" }
    ```
 
    the same payload and the same tag the Slint and GPUI galleries post. Indexes
    count from zero, in the order the sections appear. Both the title and the icon
    are the button, as in Slint's `SourceHeading`, and the icon is the same box:
    `primary` at 0.12 with a 0.35 border, 0.22/0.55 on hover, 0.34/0.7 pressed.
+
 4. **Run it natively first** — `cargo build --examples`, then
    `cargo run --bin iced-gallery -- <name>` — before building any wasm.
 5. **Build**: `make -C crates/iced-component build-page` for the page alone,
@@ -392,27 +394,115 @@ Four things cost time and are worth knowing before the next component:
   together, are the difference between a gallery with labels and a gallery
   without.
 
-### Source icons scroll to the sample
+### The plan: the major components first
 
-The gallery's **View source** button shows the Rust the story is running. The
-build writes each demo beside the module — `www/dist/src/<story>.rs` — and the
-page fetches the one it needs, so a browser that never opens the source never
-downloads it. `?source=1` opens it without a click, which is what makes the view
-linkable and checkable.
+Button is done end to end, so it is the template rather than the exception: what it
+proves is the **route** — a section per example, the markers, the bridge, the page
+panel cut from the same file, the tokens. Everything below walks that route again,
+in an order chosen so each component can be built out of what is already finished.
+`input` is first because half the catalog is a field of some kind.
 
-Embedded, the button also posts `{source: "iced-component", title}` to the page
-hosting it, which is how the GPUI gallery's source button works; the site accepts
-that name and scrolls to the component's own heading, and its code.
+An `[x]` here means the component satisfies the checklist at the end of this section,
+the appearance check included; two components that exist but have not been looked at in
+both themes are named plainly rather than ticked.
 
-**Done when:** every story's source is served, and the site's framework code
-switch knows iced, so a component page carries iced panels beside the GPUI and
-Slint ones.
+**The field family, and the one layout piece everything needs**
 
-- [x] The gallery serves its demos and toggles the source view
-- [x] The site accepts the iced gallery's message and scrolls to the component
-- [ ] `rehype-framework-code` handles iced panels: `FRAMEWORKS` is `gpui` and
-      `slint` today, and every `rust` fence is read as GPUI, so a component page
-      shows no iced source even when the gallery can
+- [ ] `input` — the base: value and placeholder, disabled, invalid, the size ladder,
+      prefix and suffix slots. `textarea`, `number-input`, `otp-input`, `combobox`,
+      `select` and `date-picker` are built on it, which is why it is first.
+- `label` — implemented; the controls below sit beside it. Its appearance check is
+  still owed, so it is not ticked.
+- [ ] `scrollable` — the styled scroll area that `table`, `list` and dialog bodies
+      need. Cheap, and unblocks three later components.
+- [ ] `textarea`, `number-input`, `otp-input` — the field, once, in three shapes.
+
+**The overlay family**
+
+- [ ] `popover` — the positioning layer `select`, `combobox`, `menu`, `tooltip` and
+      `date-picker` all sit in. Nothing else in this family is honest without it.
+- [ ] `tooltip` — a popover on hover. The button page already documents it.
+- [ ] `menu`, `dropdown_button` — a popover with items and keyboard traversal.
+- [ ] `select` — input plus popover plus menu.
+- [ ] `combobox` — select plus free text.
+- [ ] `date-picker` — popover plus the `calendar` that is already done.
+
+**The form family**
+
+- `checkbox` — implemented, and `radio`, `switch` and `toggle` follow its shape. Not
+  ticked for the same reason.
+- [ ] `radio`, `switch`, `toggle`
+- [ ] `slider`, `number-input`'s stepper behaviour, `stepper`
+- [ ] `form` — composition and validation over the controls above, not a new control.
+
+**Surfaces and data**
+
+- [ ] `dialog`, `sheet`, `alert-dialog` — overlays with focus trap and dismissal.
+- [ ] `table`, `list`, `pagination` — built on `scrollable`.
+- [ ] `notification`, `hover-card`, and the rest of the 79 as they come.
+
+**A component is done when all of this is true**
+
+- [ ] `src/components/<name>.rs`, tokens only — no colour written by hand
+- [ ] `src/demos/<name>.rs`, a running example with one `// section:` per example
+- [ ] `examples/<name>.rs`, a thin `main` that calls it
+- [ ] A registry entry, so `add iced <name>` installs it
+- [ ] `./scripts/check.sh` green: module lists, both cargo builds, theme parity,
+      feature agreement, the manifest
+- [ ] Every card's code icon scrolls to *its* sample, and the sample shown is the
+      source of the example that is running
+- [ ] Seen in light **and** dark, by looking at a screenshot, not by reading tokens
+- [ ] One commit per component
+
+### Themes are part of done
+
+A component seen in one appearance is not finished. Three rules came out of the
+button, and everything below inherits them:
+
+- A **solid** control carries its colour in the fill and its label in the
+  **foreground**. A hue used as ink on a fill of the same hue is unreadable in the
+  dark theme, and in the light theme the same mistake hides inside a pale tint.
+- An **outlined** control needs an edge that exists in both appearances. A fixed
+  dark grey is an edge on white and nothing on near-black; a proportion of the
+  foreground is an edge in both.
+- **Hover** moves the fill *toward* the page: 90% of the fill over the background,
+  which is shadcn's `bg-primary/90`. Moving it 90% of the way toward the page made
+  the control vanish under the pointer instead.
+
+The gallery runs under `theme::iced_theme`, built from the very tokens the
+components read, so a window clears to the page's own background and a
+default-styled widget agrees with the components beside it.
+
+### Every card scrolls to its own sample
+
+A card's code icon scrolls the page to that card's copyable sample, and the sample
+**is the gallery example that is already running** — cut from the same file by the
+`// section:` markers, not a usage file written beside it. There is one source of
+truth per example: it runs in the gallery, and the page shows that source verbatim.
+A sample cannot drift from the behaviour it documents, because there is nothing for
+it to drift from. The gallery serves no source files at all now — `www/dist` holds
+the module, the glue and the page — and the page carries the samples because the
+build read them out of the demos.
+
+Embedded, the gallery's code icon posts `{source: "gpui-kit", index, title}` to the
+page hosting it, the same payload Slint and GPUI post. The site accepts that name
+and scrolls to the heading that carries the title, which is the heading over the
+sample in the usage section.
+
+**Done when** every card has a sample to land on, and each one lands on its own.
+
+- [x] The gallery posts the payload and the site scrolls to the titled heading
+- [x] `rehype-framework-code` handles iced panels: `FRAMEWORKS` is `gpui`, `slint`
+      and `iced`, and a sample is named by its language (`iced`, aliased to `rust`
+      for the highlighter) or by `data-gallery-framework`
+- [x] The page's sample is the demo's own source, cut by the section markers
+- [ ] Every gallery card has a sample in the usage section, so no card's icon
+      scrolls to nothing
+- [ ] When several cards share a type — three buttons, two inputs — the card keeps
+      the type as its title and adds a **subtitle**, so each card scrolls to its own
+      sample instead of all of them landing on the first
+- [ ] The scroll is checked by clicking the icon in a browser, not by reading the
+      markup
 
 ## Later
 
