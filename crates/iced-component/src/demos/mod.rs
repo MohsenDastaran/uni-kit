@@ -58,7 +58,9 @@ pub mod table;
 pub mod tag;
 pub mod text_view;
 pub mod textarea;
+pub mod time_field;
 pub mod toggle;
+pub mod toolbar;
 pub mod tooltip;
 pub mod tree;
 
@@ -119,7 +121,9 @@ pub const STORIES: &[&str] = &[
     "tag",
     "text-view",
     "textarea",
+    "time-field",
     "toggle",
+    "toolbar",
     "tooltip",
     "tree",
 ];
@@ -183,7 +187,9 @@ pub fn run(story: &str, theme: iced::Theme) -> iced::Result {
         "tag" => tag::run(theme),
         "text-view" => text_view::run(theme),
         "textarea" => textarea::run(theme),
+        "time-field" => time_field::run(theme),
         "toggle" => toggle::run(theme),
+        "toolbar" => toolbar::run(theme),
         "tooltip" => tooltip::run(theme),
         "tree" => tree::run(theme),
         other => index::run(theme, other.to_string()),

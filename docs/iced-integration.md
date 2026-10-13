@@ -423,15 +423,15 @@ scripts/check.sh               # theme parity, feature agreement, manifest, chec
 | `text-view` | `text_view.rs` | yes | yes | yes | 919 | yes | yes |
 | `textarea` | `textarea.rs` | yes | yes | yes | 399 | yes | yes |
 | `theme` | `theme.rs` | yes | yes | yes | 455 | — | — |
-| `time-field` | `time_field.rs` | yes | yes | — | — | — | — |
+| `time-field` | `time_field.rs` | yes | yes | yes | 608 | yes | yes |
 | `title-bar` | `title_bar.rs` | yes | yes | — | — | — | — |
 | `toggle` | `toggle.rs` | yes | yes | yes | 268 | yes | yes |
-| `toolbar` | `toolbar.rs` | yes | yes | — | — | — | — |
+| `toolbar` | `toolbar.rs` | yes | yes | yes | 328 | yes | yes |
 | `tooltip` | `tooltip.rs` | yes | yes | yes | 718 | yes | yes |
 | `tree` | `tree.rs` | yes | yes | yes | 352 | yes | yes |
 | `virtual-list` | `virtual_list.rs` | yes | yes | — | — | — | — |
 
-**54 / 79** components have an iced source, an example and a registry entry.
+**56 / 79** components have an iced source, an example and a registry entry.
 
-Still to do: `bubble`, `carousel`, `chart`, `clipboard`, `collapsible`, `dock`, `dropdown_button`, `editor`, `focus-trap`, `image`, `input-group`, `message`, `questionnaire`, `resizable`, `root`, `settings`, `sidebar`, `speech`, `status-bar`, `tabs`, `theme`, `time-field`, `title-bar`, `toolbar`, `virtual-list`.
+Still to do: `bubble`, `carousel`, `chart`, `clipboard`, `collapsible`, `dock`, `dropdown_button`, `editor`, `focus-trap`, `image`, `input-group`, `message`, `questionnaire`, `resizable`, `root`, `settings`, `sidebar`, `speech`, `status-bar`, `tabs`, `theme`, `title-bar`, `virtual-list`.
 <!-- iced-checklist:end -->

@@ -23183,6 +23183,23 @@
           "module": "theme"
         }
       ],
+      "time-field": [
+        {
+          "src": "crates/iced-component/src/components/input.rs",
+          "target": "input.rs",
+          "module": "input"
+        },
+        {
+          "src": "crates/iced-component/src/components/time_field.rs",
+          "target": "time_field.rs",
+          "module": "time_field"
+        },
+        {
+          "src": "crates/iced-component/src/components/theme.rs",
+          "target": "theme.rs",
+          "module": "theme"
+        }
+      ],
       "toggle": [
         {
           "src": "crates/iced-component/src/components/button.rs",
@@ -23193,6 +23210,18 @@
           "src": "crates/iced-component/src/components/toggle.rs",
           "target": "toggle.rs",
           "module": "toggle"
+        },
+        {
+          "src": "crates/iced-component/src/components/theme.rs",
+          "target": "theme.rs",
+          "module": "theme"
+        }
+      ],
+      "toolbar": [
+        {
+          "src": "crates/iced-component/src/components/toolbar.rs",
+          "target": "toolbar.rs",
+          "module": "toolbar"
         },
         {
           "src": "crates/iced-component/src/components/theme.rs",

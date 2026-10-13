@@ -141,7 +141,9 @@
     "tag",
     "text-view",
     "textarea",
+    "time-field",
     "toggle",
+    "toolbar",
     "tooltip",
     "tree"
   ],
