@@ -16,6 +16,7 @@ pub mod calendar;
 pub mod card;
 pub mod checkbox;
 pub mod description_list;
+pub mod dropdown_button;
 pub mod empty;
 pub mod group_box;
 pub mod icon;
@@ -23,6 +24,7 @@ pub mod input;
 pub mod kbd;
 pub mod label;
 pub mod marker;
+pub mod menu;
 pub mod message_role;
 pub mod message_scroller;
 pub mod number_input;
@@ -54,6 +56,7 @@ pub const STORIES: &[&str] = &[
     "card",
     "checkbox",
     "description-list",
+    "dropdown-button",
     "empty",
     "group-box",
     "icon",
@@ -61,6 +64,7 @@ pub const STORIES: &[&str] = &[
     "kbd",
     "label",
     "marker",
+    "menu",
     "message-role",
     "message-scroller",
     "number-input",
@@ -95,6 +99,7 @@ pub fn run(story: &str, theme: iced::Theme) -> iced::Result {
         "card" => card::run(theme),
         "checkbox" => checkbox::run(theme),
         "description-list" => description_list::run(theme),
+        "dropdown-button" => dropdown_button::run(theme),
         "empty" => empty::run(theme),
         "group-box" => group_box::run(theme),
         "icon" => icon::run(theme),
@@ -102,6 +107,7 @@ pub fn run(story: &str, theme: iced::Theme) -> iced::Result {
         "kbd" => kbd::run(theme),
         "label" => label::run(theme),
         "marker" => marker::run(theme),
+        "menu" => menu::run(theme),
         "message-role" => message_role::run(theme),
         "message-scroller" => message_scroller::run(theme),
         "number-input" => number_input::run(theme),
