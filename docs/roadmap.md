@@ -687,7 +687,29 @@ below instead of being one.
       layer, no virtual scrolling, no list sections, search or loading state — the search
       field is the reference's mock, not a working filter — and pagination's horizontal
       scrollbar never overflows in these demos, so it was never seen.
-- [ ] `notification`, `hover-card`, and the rest of the 79 as they come.
+- [x] `notification`, `hover-card` — done, **and both reuse `popover`'s surface rather
+      than writing a third one**, which is the first time since the popover that a
+      component inheriting this family's traps did not re-learn one: the notification
+      draws through `panel_container` and `PanelStyle::resolve` with every token resolved
+      inside the style closure, and the hover card composes the tooltip's hover machine and
+      the popover's `Placed` flip instead of writing its own. The one small extension it
+      needed — tooltip padding, for the card's 12px inset — was committed alone first. A
+      defect still turned up **by looking**: `panel_container` deliberately adds no
+      padding, so the first build had the icon flush against the card edge. Verified in
+      proportion and by hash: a notification raises and dismisses with the card clip
+      returning byte-identical in both themes, a second anchor proving the layer's
+      alignment mapping, and the hover card opening on a held hover past its delay and
+      closing on leaving, byte-identical again. Named, not faked: no entry animation or
+      auto-hide, no window-level host, no system delivery, no unique ids, four of six
+      anchors undriven, and the hover card has fixed placement, one delay and no pointer
+      events of its own.
+
+**The family is complete.** Everything the plan named — the field family, the overlay
+family, the form family and this one — is built, ticked with its gaps recorded, and
+verified in proportion. What remains is the rest of the 79 as they come, and the one piece
+of deferred work the recurrences earned: there are still two implementations of "draw a
+surface", and consolidating them is what stops a fourth component re-learning what two
+already paid for.
 
 **A component is done when all of this is true**
 
