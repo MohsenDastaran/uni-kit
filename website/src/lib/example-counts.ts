@@ -1,11 +1,13 @@
 import { existsSync, readFileSync, readdirSync, statSync } from 'node:fs';
 import { join } from 'node:path';
-import { hasIcedExample } from './remark-iced-source.js';
+import { hasIcedExample, icedSections } from './remark-iced-source.js';
 
 // Counts the examples the gallery window actually paints, one per framework.
 // GPUI stories mark each example with `section(...)`. Slint examples mark each
-// one with a GroupBox. A window that is a single example has neither. Iced
-// examples are one file per component, so the file itself is the example.
+// one with a GroupBox. Iced demos mark each example with `// section: <title>`,
+// which `icedSections` reads -- the same reader the sample panels are cut with
+// -- so the count is the number of samples a reader sees on the page. A window
+// that is a single example has no markers at all.
 
 const ROOT = process.cwd();
 const STORIES = join(ROOT, '../crates/story/src/stories');
@@ -168,8 +170,18 @@ function countSlint(slug: string): number {
 
 function countIced(slug: string): number {
   if (!icedExampleSourcesAvailable) return 0;
-  // One example per component, and the file either holds one or does not.
-  return hasIcedExample(slug) ? 1 : 0;
+  // Two files answer two questions, so both are read. `hasIcedExample` says
+  // whether the component has a gallery window at all -- an example that is a
+  // stub or absent counts zero, never one. The number of examples inside that
+  // window comes from `icedSections`, which the remark plugin already uses to
+  // cut the sample panels, so this module reuses that reader instead of
+  // repeating the `// section:` contract and counting markers itself.
+  if (!hasIcedExample(slug)) return 0;
+  const sections = icedSections(slug, ROOT);
+  // A demo with no markers is not zero examples -- `calendar` paints one whole
+  // example and just does not divide it. That is the same reading `countGpui`
+  // gives a story with no `section(...)` calls.
+  return sections.length > 0 ? sections.length : 1;
 }
 
 function countGpui(component: string): number {
