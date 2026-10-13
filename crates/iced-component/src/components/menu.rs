@@ -186,8 +186,28 @@ impl Item {
         !self.separator && !self.disabled
     }
 
+    /// Whether the row draws its check mark. [`Item::checked`] is the builder;
+    /// the boolean reader takes the `is_` prefix, so the two do not collide.
+    pub fn is_checked(&self) -> bool {
+        self.checked
+    }
+
     pub fn label(&self) -> &str {
         &self.label
+    }
+
+    /// The SVG bytes drawn in the leading 16px slot, or nothing when the row has
+    /// no icon. The builder [`Item::icon`] already owns `icon`, so the reader
+    /// names what it hands back.
+    pub fn icon_bytes(&self) -> Option<&'static [u8]> {
+        self.icon
+    }
+
+    /// The shortcut shown at the trailing edge, which [`Item::shortcut`] sets.
+    /// Named for the same reason [`Item::icon_bytes`] is: the builder owns the
+    /// field name.
+    pub fn shortcut_text(&self) -> &str {
+        &self.shortcut
     }
 }
 
