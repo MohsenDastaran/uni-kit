@@ -39,6 +39,7 @@ use super::theme::{self, ControlSize, Tokens};
 pub struct Radio<'a, Message> {
     checked: bool,
     label: String,
+    description: String,
     size: ControlSize,
     on_change: Option<Box<dyn Fn(bool) -> Message + 'a>>,
 }
@@ -48,6 +49,7 @@ impl<'a, Message> Radio<'a, Message> {
         Self {
             checked,
             label: String::new(),
+            description: String::new(),
             size: ControlSize::default(),
             on_change: None,
         }
@@ -55,6 +57,16 @@ impl<'a, Message> Radio<'a, Message> {
 
     pub fn label(mut self, label: impl Into<String>) -> Self {
         self.label = label.into();
+        self
+    }
+
+    /// The smaller muted line under the label, the same second line
+    /// [`Checkbox`](super::checkbox::Checkbox) takes. A radio with one aligns its
+    /// disc with the label's first line rather than centring against the whole
+    /// block, which is the `cross-axis-alignment: start` a row of described
+    /// choices needs.
+    pub fn description(mut self, description: impl Into<String>) -> Self {
+        self.description = description.into();
         self
     }
 
@@ -207,22 +219,50 @@ where
         let Radio {
             checked,
             label,
+            description,
             size,
             on_change,
         } = control;
         let disabled = on_change.is_none();
+        let has_label = !label.is_empty();
+        let has_description = !description.is_empty();
         let style = Style::new(checked, size).disabled(disabled);
+
+        // The disc sits against the label's first line, which matters once a
+        // description makes the block two lines tall; a single label keeps the
+        // centring every other one-line control uses.
+        let align_y = if has_description {
+            Alignment::Start
+        } else {
+            Alignment::Center
+        };
 
         let mut content = row![disc(checked, size, disabled)]
             .spacing(theme::SPACING_SM)
-            .align_y(Alignment::Center);
+            .align_y(align_y);
 
-        if !label.is_empty() {
-            content = content.push(text(label).size(size.label_font_size()).style(
+        let mut lines = column![].spacing(theme::SPACING_XXS);
+
+        if has_label {
+            lines = lines.push(text(label).size(size.label_font_size()).style(
                 move |theme: &Theme| text::Style {
                     color: Some(label_ink(Tokens::of(theme), disabled)),
                 },
             ));
+        }
+
+        if has_description {
+            lines = lines.push(
+                text(description)
+                    .size(theme::FONT_SIZE_XS)
+                    .style(move |theme: &Theme| text::Style {
+                        color: Some(Tokens::of(theme).muted_foreground),
+                    }),
+            );
+        }
+
+        if has_label || has_description {
+            content = content.push(lines);
         }
 
         // The value the radio wants to become: always `true`, never `!checked`.
