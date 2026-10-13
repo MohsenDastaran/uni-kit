@@ -19,6 +19,7 @@ pub mod calendar;
 pub mod card;
 pub mod checkbox;
 pub mod collapsible;
+pub mod combobox;
 pub mod description_list;
 pub mod dropdown_button;
 pub mod empty;
