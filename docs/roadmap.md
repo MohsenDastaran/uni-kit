@@ -724,6 +724,13 @@ already paid for.
 - [ ] Seen in light **and** dark, by looking at a screenshot, not by reading tokens
 - [ ] One commit per component
 
+**Commit with a pathspec — the index is shared.** Agents work in one checkout, so anything
+one of them stages is visible to every other agent's plain `git commit`. One commit already
+swept up a sibling's staged files this way (caught and re-cut with `reset --soft` and a
+pathspec). Two rules follow: stage your own files and nobody else's, and always name the
+paths when committing — `git commit -F - -- path/a path/b` — so a commit contains what its
+message says it contains regardless of what is sitting in the index.
+
 **Verify in proportion — do not over-engineer, do not over-test.** The list above says
 what must be true, not how hard to look. In practice: one screenshot per theme, read with
 your eyes; one driven interaction where the component's whole point is interaction; and
