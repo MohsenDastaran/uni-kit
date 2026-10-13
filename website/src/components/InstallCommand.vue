@@ -10,6 +10,10 @@ const baseUrl = import.meta.env.BASE_URL;
 const MANAGERS = ["npx", "pnpm", "bun"] as const;
 type Manager = (typeof MANAGERS)[number];
 
+/** The frameworks a command can name, in the order the bar shows them. */
+const FRAMEWORKS = ["gpui", "slint", "iced"] as const;
+type Framework = (typeof FRAMEWORKS)[number];
+
 /**
  * A component page lets the markdown pipeline decide both, so the bar carries
  * the command for that page. A block gallery renders one instance per block, so
@@ -22,7 +26,7 @@ type Manager = (typeof MANAGERS)[number];
  */
 const props = defineProps<{
   slug?: string;
-  slugs?: Partial<Record<"gpui" | "slint", string[]>>;
+  slugs?: Partial<Record<Framework, string[]>>;
   host?: string;
 }>();
 
@@ -48,7 +52,7 @@ const targets = computed(() =>
   fromBlock.value ? (props.slugs?.[framework.value] ?? []) : pageNames.value,
 );
 const manager = ref<Manager>("npx");
-const framework = ref<"gpui" | "slint">("slint");
+const framework = ref<Framework>("slint");
 const copied = ref(false);
 const status = ref("");
 /**
@@ -131,10 +135,14 @@ function readManager(): Manager {
   return isManager(stored) ? stored : "npx";
 }
 
-function readFramework() {
-  return document.documentElement.dataset.framework === "gpui"
-    ? "gpui"
-    : "slint";
+/**
+ * The framework the reader has chosen, which is what the command must name. It was
+ * a `gpui`-or-`slint` test, so every other choice — iced among them — installed the
+ * Slint files while the reader was looking at iced.
+ */
+function readFramework(): Framework {
+  const chosen = document.documentElement.dataset.framework;
+  return FRAMEWORKS.includes(chosen as Framework) ? (chosen as Framework) : "slint";
 }
 
 function onStorage(event: StorageEvent) {
