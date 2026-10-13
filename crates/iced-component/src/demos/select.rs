@@ -16,8 +16,11 @@
 //! `// section: end` after the last one.
 //!
 //! The gallery owns every piece of state a select draws from — one open flag, one
-//! chosen index and one highlight per select — because the component has none: it
-//! reports a request and the application answers with its own value. The keyboard
+//! chosen index, and one highlight per select for each of the pointer's hover and
+//! the row a key moved to — because the component has none: it reports a request
+//! and the application answers with its own value. The two highlights are kept
+//! apart, as `Select::on_highlight` requires, so the pointer's leave restores the
+//! key's row rather than clearing it. The keyboard
 //! is the same arrangement. iced 0.14 has no focus trap and no focus handle an
 //! overlay can take, so the arrows, Home/End, Enter/Space and Escape are bound
 //! here and move the highlight the application owns; Escape and a click outside
@@ -97,10 +100,14 @@ struct App {
     selected: [Option<usize>; slot::COUNT],
     /// The last row each select reported, so a choice stays visible.
     last: [Option<usize>; slot::COUNT],
-    /// The row the pointer or a key highlighted last, and which select holds it.
-    /// The highlight is the application's — an element cannot keep it — so the
-    /// gallery has one row lit and one select that owns it.
+    /// The row a key moved to, and which select holds it. The keyboard's, and it
+    /// is not touched by the pointer's reports.
     highlighted: (Option<usize>, Option<usize>),
+    /// The row the pointer is over, and which select holds it. This is the
+    /// transient hover `Select::on_highlight` reports and `Select::on_leave`
+    /// clears; it is kept apart from `highlighted` so a key's row survives the
+    /// pointer crossing the panel.
+    hover: (Option<usize>, Option<usize>),
     /// Which section heading the pointer is over, and which was pressed, so the
     /// code icon can draw the two states the Slint heading animates to.
     hovered: Option<&'static str>,
@@ -108,10 +115,13 @@ struct App {
 }
 
 impl App {
-    /// The highlight a select should draw: the row lit only when this select owns
-    /// it, so a step taken in one panel does not light a row in another.
+    /// The highlight a select should draw: the pointer's hover when it is over
+    /// this select, otherwise the row a key moved to in it. The pointer wins
+    /// while it is there; the key's row comes back once it leaves.
     fn highlighted_in(&self, slot: usize) -> Option<usize> {
-        if self.highlighted.1 == Some(slot) {
+        if self.hover.1 == Some(slot) {
+            self.hover.0
+        } else if self.highlighted.1 == Some(slot) {
             self.highlighted.0
         } else {
             None
@@ -131,10 +141,17 @@ enum Message {
         slot: usize,
         index: usize,
     },
-    /// The highlight moved, to a select's row.
+    /// The highlight moved, to a select's row. This is the pointer's transient
+    /// hover; the keyboard sets `highlighted` instead.
     Highlighted {
         slot: usize,
         index: usize,
+    },
+    /// The pointer left a select's row, or left its panel. `row` is the row it
+    /// left, or `None` for the panel as a whole.
+    Left {
+        slot: usize,
+        row: Option<usize>,
     },
     /// A traversal key was pressed: `↑`/`↓`/`Home`/`End`, `Enter` or `Space` to
     /// choose, `Escape` to dismiss.
@@ -165,6 +182,7 @@ fn boot() -> App {
         selected,
         last: [None; slot::COUNT],
         highlighted: (None, None),
+        hover: (None, None),
         hovered: None,
         pressed_source: None,
     }
@@ -177,8 +195,13 @@ fn update(app: &mut App, message: Message) -> Task<Message> {
                 *flag = open;
                 // A closed select owns no highlight: the row it lit belongs to
                 // the panel, not to the trigger.
-                if !open && app.highlighted.1 == Some(slot) {
-                    app.highlighted = (None, None);
+                if !open {
+                    if app.highlighted.1 == Some(slot) {
+                        app.highlighted = (None, None);
+                    }
+                    if app.hover.1 == Some(slot) {
+                        app.hover = (None, None);
+                    }
                 }
             }
         }
@@ -195,13 +218,27 @@ fn update(app: &mut App, message: Message) -> Task<Message> {
                 *flag = false;
             }
             app.highlighted = (Some(index), Some(slot));
+            app.hover = (None, None);
         }
-        Message::Highlighted { slot, index } => app.highlighted = (Some(index), Some(slot)),
+        Message::Highlighted { slot, index } => app.hover = (Some(index), Some(slot)),
+        // The row travels with the report: iced walks the rows top-down, so an
+        // upper row's entry is published before a lower row's leave. Only the
+        // row the pointer was on may be cleared, or entering the upper row is
+        // undone on the same move. `None` is the panel, and clears the hover
+        // whatever row it sat on.
+        Message::Left { slot, row } => {
+            if app.hover.1 == Some(slot) && (row.is_none() || app.hover.0 == row) {
+                app.hover = (None, None);
+            }
+        }
         // The keys act on the select that is open and holds the highlight. This
         // gallery can have one open at a time, and the subscription cannot see
         // which, so `update` reads it from the state.
         Message::Key(key) => {
             if let Some(slot) = app.open.iter().position(|open| *open) {
+                // A key takes the highlight over from the pointer, as it does in
+                // the menu gallery.
+                app.hover = (None, None);
                 let from = app.highlighted_in(slot);
                 match key {
                     Key::Choose => {
@@ -437,6 +474,7 @@ fn select<'a>(app: &App, slot: usize) -> Select<'a, Message> {
         .on_open_change(move |open| Message::Opened { slot, open })
         .on_chosen(move |index| Message::Chosen { slot, index })
         .on_highlight(move |index| Message::Highlighted { slot, index })
+        .on_leave(move |row| Message::Left { slot, row })
 }
 
 fn view(app: &App) -> Element<'_, Message> {
@@ -468,6 +506,10 @@ fn view(app: &App) -> Element<'_, Message> {
         .on_highlight(|index| Message::Highlighted {
             slot: slot::FRAMEWORK,
             index,
+        })
+        .on_leave(|row| Message::Left {
+            slot: slot::FRAMEWORK,
+            row,
         }),
     );
 
@@ -568,12 +610,19 @@ fn view(app: &App) -> Element<'_, Message> {
     );
 
     // section: end
+    // The status names whichever highlight is live: the pointer's hover while it
+    // is over a row, otherwise the row a key moved to.
+    let lit = if app.hover.0.is_some() {
+        app.hover
+    } else {
+        app.highlighted
+    };
     let status = text(match (
         app.last
             .iter()
             .enumerate()
             .find_map(|(slot, last)| last.map(|index| (slot, index))),
-        app.highlighted,
+        lit,
     ) {
         (Some((slot, index)), _) => format!(
             "Select {} chose row {}. A choice closes the panel; Escape or a click outside closes one without choosing.",
