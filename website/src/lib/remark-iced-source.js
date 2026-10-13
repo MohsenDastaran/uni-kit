@@ -190,10 +190,15 @@ function tagIcedHeading(node, title) {
   props[key] = current.join('|');
 }
 
+// The heading's readable text, with the literal nodes kept. A title the demo
+// writes with backticks — `content` — is an `inlineCode` node, not text, so
+// reading only `text` children dropped the word and the heading never matched
+// its section. Anything else the page can put in a heading (emphasis, a link,
+// math) contributes its children the same way.
 function headingText(node) {
   if (node.type !== 'heading') return '';
   const read = (child) =>
-    child.type === 'text' ? child.value : (child.children ?? []).map(read).join('');
+    typeof child.value === 'string' ? child.value : (child.children ?? []).map(read).join('');
   return node.children.map(read).join('').trim();
 }
 
