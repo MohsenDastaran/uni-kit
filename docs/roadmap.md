@@ -625,6 +625,16 @@ below instead of being one.
 - [ ] Seen in light **and** dark, by looking at a screenshot, not by reading tokens
 - [ ] One commit per component
 
+**Verify in proportion — do not over-engineer, do not over-test.** The list above says
+what must be true, not how hard to look. In practice: one screenshot per theme, read with
+your eyes; one driven interaction where the component's whole point is interaction; and
+the component built as the honest minimum that matches the reference. Clip-hash matrices,
+coordinate sweeps and before/after triples are tools for chasing a *suspected* defect.
+They earned their place on the field and overlay families because the panel content, the
+hover exit and the tooltip delay were each wrong in a way a screenshot could not show —
+but they are not the default, and nothing should be engineered just to make it easier to
+measure.
+
 ### Themes are part of done
 
 A component seen in one appearance is not finished. Three rules came out of the
