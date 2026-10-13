@@ -756,8 +756,12 @@ function showExample(title: string) {
     // `scrollIntoView` does nothing. An element that is not rendered has no
     // client rects, which is the same test the browser makes.
     visible: heading.getClientRects().length > 0,
+    // The framework that owns the heading's section, when one does. The lookup
+    // reads it to tell its own sample from a heading it shares with another
+    // framework that happens to carry the same title.
+    only: heading.dataset.frameworkOnly,
   }));
-  const match = findExampleHeading(described, title);
+  const match = findExampleHeading(described, title, framework.value);
   const heading = match ? headings[described.indexOf(match)] : undefined;
   if (!heading) return;
   const code = codeAfter(heading);
