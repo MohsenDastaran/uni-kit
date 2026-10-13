@@ -77,6 +77,15 @@ impl Align {
     }
 }
 
+/// The `Align` of a table family member is iced's `Alignment` as well: a cell of
+/// [`DataTable`](super::data_table) and a cell of a [`Table`] line up by the same
+/// value, so the two components share this enum rather than deriving a second.
+impl From<Align> for Alignment {
+    fn from(align: Align) -> Self {
+        align.iced()
+    }
+}
+
 /// A cell's horizontal inset at a size: 4 / 6 / 8 / 12, the Slint table's own
 /// ladder. It is not the button's or the field's, so it lives here rather than
 /// on [`ControlSize`].
