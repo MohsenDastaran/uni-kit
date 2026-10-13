@@ -408,12 +408,12 @@ both themes are named plainly rather than ticked.
 
 **The field family, and the one layout piece everything needs**
 
-- [ ] `input` — the base: value and placeholder, disabled, invalid, the size ladder,
+- [x] `input` — the base: value and placeholder, disabled, invalid, the size ladder,
       prefix and suffix slots. `textarea`, `number-input`, `otp-input`, `combobox`,
       `select` and `date-picker` are built on it, which is why it is first.
 - `label` — implemented; the controls below sit beside it. Its appearance check is
   still owed, so it is not ticked.
-- [ ] `scrollable` — the styled scroll area that `table`, `list` and dialog bodies
+- [x] `scrollable` — the styled scroll area that `table`, `list` and dialog bodies
       need. Cheap, and unblocks three later components.
 - [ ] `textarea`, `number-input`, `otp-input` — the field, once, in three shapes.
 
