@@ -10,6 +10,6 @@ use wasm_bindgen::prelude::*;
 /// Run the demo `story` names, wearing the theme the page is wearing.
 #[wasm_bindgen]
 pub fn run(story: String, dark: bool) -> Result<(), JsValue> {
-    let theme = if dark { iced::Theme::Dark } else { iced::Theme::Light };
+    let theme = crate::components::theme::iced_theme(dark);
     crate::demos::run(&story, theme).map_err(|error| JsValue::from_str(&error.to_string()))
 }

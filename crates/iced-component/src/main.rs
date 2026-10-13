@@ -24,6 +24,6 @@ fn main() -> iced::Result {
         .unwrap_or_default();
     let dark = arguments.iter().any(|argument| argument == "--dark");
 
-    let theme = if dark { iced::Theme::Dark } else { iced::Theme::Light };
+    let theme = crate::components::theme::iced_theme(dark);
     demos::run(&story, theme)
 }

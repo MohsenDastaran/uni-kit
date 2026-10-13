@@ -404,3 +404,25 @@ fn hue(p: f32, q: f32, t: f32) -> f32 {
         p
     }
 }
+
+/// The theme the gallery runs under.
+///
+/// iced's own light and dark palettes are greys of its choosing, and a window
+/// clears to its palette's background — so an embedded gallery sat a shade lighter
+/// than the page around it however carefully the page was coloured. This palette is
+/// the same tokens every component reads, so the clear is the page's own background
+/// in either appearance.
+pub fn iced_theme(dark: bool) -> iced::Theme {
+    let tokens = if dark { DARK } else { LIGHT };
+    iced::Theme::custom(
+        if dark { "uni-kit dark" } else { "uni-kit light" }.to_string(),
+        iced::theme::Palette {
+            background: tokens.background,
+            text: tokens.foreground,
+            primary: tokens.primary,
+            success: tokens.success,
+            warning: tokens.warning,
+            danger: tokens.danger,
+        },
+    )
+}
