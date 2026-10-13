@@ -505,7 +505,22 @@ both themes is named plainly rather than ticked.
       rows, custom check glyph, trigger variants, `cleanable`, an empty element or
       elision, and the host's arrows act on an open panel because iced 0.14 reports no
       focus to the application.
-- [ ] `date-picker` — popover plus the `calendar` that is already done.
+- [x] `date-picker` — done, the last of this family: the field's frame as the trigger,
+      the popover's single surface for the panel, and the calendar inside it. It needed
+      one shared-file extension — `Calendar::bordered(false)` — committed **alone,
+      first**, so the popover owns the panel edge and no second border appears. Verified
+      by driving it rather than reading it: paging months, picking a day so the trigger
+      reads `2026-11-10`, and Escape and an outside click each restoring the picked frame
+      **byte-identical**; a blocked weekend leaving the frame **unchanged** where the
+      Monday beside it selects; presets filling yesterday and a range; a two-click range
+      completing; and a two-month panel **flipping above** the trigger near the window
+      floor. Contrast measured at ~17.6:1 for the selected day in light and ~15.9:1 in
+      dark. The install was run too — `add iced date-picker` writes calendar, date_picker,
+      input, popover and theme, and an app using it compiles clean. Named, not faked: no
+      year grid or in-component year clamp, no arbitrary disabled-date matcher (only
+      weekends), no `cleanable`/`date_format`/`first_day_of_week`/12-hour clock, no
+      elision, and time fields use the field size ladder rather than Slint's fixed
+      height.
 
 **The form family**
 
