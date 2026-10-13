@@ -62,6 +62,8 @@ else
 fi
 
 if [[ "${1:-}" == "--install" ]]; then
+  step "install every iced component into a scratch project"
+
   # One scratch project per component. Installing the family into a single
   # project would let `input` supply the file `number-input` is supposed to
   # carry, which is the hole this check exists to find: the entry that omitted
@@ -71,20 +73,69 @@ if [[ "${1:-}" == "--install" ]]; then
   # The scratch is a bin crate and keeps a `main`, because a bin without one
   # fails to build for that reason alone and the check would then pass or fail
   # without ever compiling the installed component.
-  for component in button input number-input otp-input scrollable; do
-    step "install iced $component into a scratch project"
-    scratch="$(mktemp -d)"
-    if cargo new --bin "$scratch/app" --quiet >/dev/null 2>&1 \
-      && (cd "$scratch/app" && cargo add iced --features svg,canvas,image,qr_code,markdown --quiet >/dev/null 2>&1) \
-      && (cd "$scratch/app" && UNI_KIT_ROOT="$root" node "$root/registry/index.js" add iced "$component" >/dev/null) \
-      && printf 'mod components;\nfn main() {}\n' > "$scratch/app/src/main.rs" \
-      && (cd "$scratch/app" && CARGO_TARGET_DIR="$crate_dir/target" cargo build --quiet 2>/dev/null); then
-      ok "uni-kit add iced $component installs a project that compiles"
+  #
+  # The list is the manifest's own keys rather than a list kept here, so every
+  # component the registry ships is installed and compiled — including the
+  # compositions whose closure is large enough to have dropped a file, such as
+  # `command`, `combobox`, `date-picker` and `data-table`. The extra crates are
+  # the ones the manifest records a component reaching for beyond iced
+  # (`text-view` and `iced_core`), at the version it recorded, which is the same
+  # statement `uni-kit add` prints for an application.
+  install_list="$(node -e '
+    const fs = require("fs");
+    const registry = JSON.parse(fs.readFileSync(process.argv[1], "utf8"));
+    const iced = registry.iced;
+    for (const name of Object.keys(iced.components).sort()) {
+      const extra = (iced.needs_extra?.[name] ?? []).map(
+        (crate) => `${crate}@${iced.extra_versions[crate]}`,
+      );
+      process.stdout.write(`${name}\t${extra.join(" ")}\n`);
+    }
+  ' "$root/registry/components.json")"
+
+  # The features the crate and the install hint agreed on above, as `cargo add`
+  # spells them. Asking for the same set is what lets the scratch reuse the iced
+  # the crate build already compiled in the shared target directory.
+  install_features="${crate_features% }"
+  install_features="${install_features// /,}"
+
+  if [[ -z "$install_list" || -z "$install_features" ]]; then
+    bad "could not read the iced components and features from the registry"
+  else
+    install_total=0
+    install_passed=0
+    while IFS=$'\t' read -r component extras; do
+      [[ -z "$component" ]] && continue
+      install_total=$((install_total + 1))
+      scratch="$(mktemp -d)"
+      log="$scratch/build.log"
+      # `--offline` and the shared target directory keep iced compiled once; the
+      # crate build above has already put every crate the scratch resolves into
+      # the local cargo cache, so each iteration only rebuilds the copied source.
+      if (
+        cd "$scratch" &&
+        cargo new --bin app --quiet &&
+        cd app &&
+        cargo add iced --features "$install_features" --quiet --offline &&
+        for extra in $extras; do cargo add "$extra" --quiet --offline || exit 1; done &&
+        UNI_KIT_ROOT="$root" node "$root/registry/index.js" add iced "$component" >/dev/null &&
+        printf 'mod components;\nfn main() {}\n' > src/main.rs &&
+        CARGO_TARGET_DIR="$crate_dir/target" cargo build --quiet --offline
+      ) >/dev/null 2>"$log"; then
+        install_passed=$((install_passed + 1))
+        ok "uni-kit add iced $component installs a project that compiles"
+      else
+        bad "uni-kit add iced $component does not compile in a scratch project"
+        tail -20 "$log" | sed 's/^/      /'
+      fi
+      rm -rf "$scratch"
+    done <<< "$install_list"
+    if [[ $install_passed -eq $install_total ]]; then
+      ok "$install_passed of $install_total iced components install and compile"
     else
-      bad "uni-kit add iced $component does not compile in a scratch project"
+      bad "$install_passed of $install_total iced components install and compile"
     fi
-    rm -rf "$scratch"
-  done
+  fi
 fi
 
 if [[ $failed -eq 0 ]]; then printf '\niced-component: all checks passed\n'; else printf '\niced-component: checks FAILED\n'; fi
