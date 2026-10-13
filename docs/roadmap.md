@@ -439,22 +439,29 @@ both themes is named plainly rather than ticked.
       a stepper moving 12→16 with a hover fill) — so the method is what needs fixing:
       hover, then **wait out the 400ms delay** before screenshotting, and sweep for the
       28px hit box. Until that is done, the tooltip is one screenshot short of done.
-- [ ] `menu`, `dropdown_button` — a popover with items and keyboard traversal, one
-      item shape between them (the shape `select` will compose). Two things are open
-      and both are recorded rather than guessed: the **rows do not paint** inside the
-      panel while the panel's own surface, height and padding do, and the author
-      attributes that to the popover dropping nested children — but the popover demo's
-      panel content does paint, so an A/B of the two in one session has to settle
-      which it is. And the interaction is unverified for a reason that is itself
-      wrong: both this agent and the tooltip's concluded that `Popover::update`
-      compares content-space bounds to a window-space cursor. `scrollable` adds the
-      scroll offset to the cursor before dispatching (`scrollable.rs:800`), which is
-      what `pick_list` relies on, and the popover's author disproved the claim and
-      corrected its own commit — the false reading came from a probe that stored the
-      trigger rect on every press and from clicking 8px below a 28px button. Keyboard
-      traversal is reported through `on_highlight` rather than owned (iced 0.14 has no
-      focus trap), so the demo has to demonstrate it for the card to be honest.
-- [ ] `select` — input plus popover plus menu.
+- [ ] `menu`, `dropdown_button` — committed (`1194bd4c`), one item shape between them
+      (the shape `select` composes), and **still unticked because the rows do not
+      paint**. The A/B settled which side owns that: the popover's `Panel::draw` hands
+      the content the **panel's** layout node where `Panel::mouse_interaction` and
+      `operate` two methods away correctly use `Self::content_layout(layout)`, and
+      `Column::draw` zips its children against `layout.children()` — so every nested
+      column is one level high and keeps only its **first child**. That is why the
+      popover demo's own multi-child panels paint one line, why the menu's surface
+      measures correctly and paints no rows, and why hovering the open panel reports
+      row 1 everywhere: the hit test collapses with it. Drawing the same rows inline
+      with no popover paints all five, so the body is sound. Fix is in flight.
+      Keyboard traversal works and is **demonstrated**, not described: ↓ ↓ ↑ End Home
+      and Enter, with the separator skipped, read out of the demo's status line, and
+      Escape and outside click close. A real bug was found and fixed on the way: the
+      split button's **leading half** opened the menu, where Slint has `main.clicked`
+      versus `caret.clicked` — the popover now wraps the caret alone. Two bugs are
+      reported and still open: the menu family draws **two surfaces** (every caller
+      adds one over `MenuStyle`, against menu.rs's own "the two are never both asked
+      for"), and **shortcut modifier glyphs do not render** — `⌘N` paints as `N`,
+      because the gallery's `Font::MONOSPACE` has no such glyph on wasm. That is the
+      fourth wasm-only font trap in this project, and the same shape each time: a face
+      that does not exist resolves to nothing instead of falling back.
+      - [ ] `select` — input plus popover plus menu.
 - [ ] `combobox` — select plus free text.
 - [ ] `date-picker` — popover plus the `calendar` that is already done.
 
