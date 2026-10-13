@@ -608,7 +608,22 @@ below instead of being one.
 
 **Surfaces and data**
 
-- [ ] `dialog`, `sheet`, `alert-dialog` — overlays with focus trap and dismissal.
+- [x] `dialog` — done, and it is deliberately **not** a `Widget::overlay`, which is what
+      the brief suggested and what the code proves wrong: iced's `overlay::Group` updates
+      every overlay in the group and does not stop on a neighbour's capture, so two open
+      overlays would each see the other's press. A modal needs the topmost layer to be the
+      only one answered, so it is a full-size in-flow layer for `Stack`, whose `update`
+      runs last-first and stops on capture — nested dialogs route correctly. Backdrop is
+      the `overlay` token, the panel is the popover's fill/edge/radius/shadow, and a press
+      on the panel asks to stay open while a press on the backdrop closes when the caller
+      allows it. Verified in proportion: one screenshot per theme with the dialog open
+      (panel set off from the dimmed page, no white-on-white), and a driven open, backdrop
+      close and Escape each returning the frame byte-identical to the closed baseline.
+      Named, not faked: no focus trap, no Escape at the layer itself (the demo binds it, as
+      date-picker's does), no scroll lock, no transition, and `content_padding` is a value
+      rather than Slint's sub-420px breakpoint.
+- [ ] `sheet` — in flight beside this one; the side-anchored sibling.
+- [ ] `alert-dialog` — composes `dialog`, so it comes after it.
 - [ ] `table`, `list`, `pagination` — built on `scrollable`.
 - [ ] `notification`, `hover-card`, and the rest of the 79 as they come.
 
