@@ -18,9 +18,11 @@
 //! The gallery is one tall [`scrollable`](crate::components::scrollable), which
 //! is also the point: a label drawn inside the layout that owns its trigger is
 //! clipped at the edge of the list it describes, and every one of these is an
-//! overlay instead. The first card's label is preferred above its button, so the
-//! very first hover is also the flip test — there is no room above a trigger at
-//! the top of the page.
+//! overlay instead. The first card's label is preferred above its button, and at
+//! the top of the page there is room for it: the panel draws above the button in
+//! the full window and the 584x680 embed alike. The flip is exercised instead by
+//! the second card's `Underline` trigger, which prefers the side below it and
+//! flips to the top in a short viewport.
 
 use iced::widget::{column, container, row, scrollable, svg, text};
 use iced::{Alignment, Element, Length, Padding, Task, Theme};
@@ -241,8 +243,9 @@ fn view(app: &App) -> Element<'_, Message> {
 
     // section: Hover the button
     // The label waits out Slint's `delay` (400ms) and cancels if the pointer
-    // leaves first. Its preferred side is the top, which the first card of the
-    // page has no room for, so the flip is what this one actually shows.
+    // leaves first. Its preferred side is the top, and at the top of the page
+    // there is room for it — the panel draws above the button rather than
+    // flipping.
     let hover: Element<'_, Message> = tip(
         line("Create a new document"),
         Button::new("New file")
