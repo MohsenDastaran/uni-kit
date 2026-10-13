@@ -162,9 +162,10 @@ impl Facing {
         !matches!(self, Self::Left | Self::Right)
     }
 
-    /// The point the arrow's tip sits on: the middle of the edge it grows out
-    /// of, and on the surface itself so the join is not a seam.
-    fn tip(self, panel: Rectangle, at: f32) -> Point {
+    /// The point the arrow's base sits on: the middle of the edge it grows out
+    /// of, and on the surface itself so the join is not a seam. The base is the
+    /// arrow's widest row; the tip is a gap away, out at the trigger.
+    fn base(self, panel: Rectangle, at: f32) -> Point {
         match self {
             Self::Below => Point::new(panel.x + at, panel.y),
             Self::Above => Point::new(panel.x + at, panel.y + panel.height),
@@ -203,9 +204,11 @@ impl Arrow {
     /// nothing else: `Quad` has no rotation and there is no triangle primitive,
     /// so a triangle cannot be handed to it. This draws one out of the rows it
     /// does take — a stepped triangle, `gap` quads tall and about `gap` wide —
-    /// which is the shape the eye reads at this size. It is exact where it
-    /// touches the panel (the full widths are the widest it gets) and stepped
-    /// only along the two slanted sides.
+    /// which is the shape the eye reads at this size. The base sits on the panel
+    /// and is the arrow's widest row; the rows narrow from there towards the
+    /// trigger, where the tip is, so the arrow points away from the surface and
+    /// at the trigger for every placement. It is exact along the base and
+    /// stepped only along the two slanted sides.
     pub fn draw(
         self,
         renderer: &mut iced::Renderer,
@@ -218,15 +221,19 @@ impl Arrow {
         let Some(at) = self.along(facing.edge_length(panel), gap) else {
             return;
         };
-        let tip = facing.tip(panel, at);
+        let base = facing.base(panel, at);
         let half = gap / 2.0;
 
         for step in 0..(gap.ceil() as i32).max(1) {
-            // How far from the tip this row is, `0.0` at the tip and `1.0` at
-            // the base.
+            // How far this row has travelled from the surface: `0.0` at the
+            // base, which is on the panel, and `1.0` at the tip, at the trigger.
             let along = (step as f32 + 0.5) / gap;
-            let spread = half * along;
-            // Each row grows away from the surface, which is toward the trigger.
+            // Widest at the base and narrowing to a point at the tip. This
+            // sign is the whole of the taper: inverted, an arrow above a panel
+            // reads as pointing up into the surface instead of down at the
+            // trigger.
+            let spread = half * (1.0 - along);
+            // Each row steps away from the surface, toward the trigger.
             let distance = if matches!(facing, Facing::Below | Facing::Right) {
                 -along * gap
             } else {
@@ -234,12 +241,12 @@ impl Arrow {
             };
             let rect = if facing.horizontal() {
                 Rectangle::new(
-                    Point::new(tip.x - spread, tip.y + distance),
+                    Point::new(base.x - spread, base.y + distance),
                     Size::new(spread * 2.0, 1.0),
                 )
             } else {
                 Rectangle::new(
-                    Point::new(tip.x + distance, tip.y - spread),
+                    Point::new(base.x + distance, base.y - spread),
                     Size::new(1.0, spread * 2.0),
                 )
             };
