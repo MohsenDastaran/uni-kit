@@ -68,6 +68,19 @@ impl ControlSize {
         }
     }
 
+    /// A control's height in a row: 20 / 24 / 32 / 40, GPUI's `h_5`, `h_6`,
+    /// `h_8` and `h_11`. Slint spells the same table `control-height(size)` and
+    /// the buttons and tabs on this side already repeat it; the toggle is the
+    /// first control here to ask for it by name.
+    pub fn control_height(self) -> f32 {
+        match self {
+            Self::XSmall => 20.0,
+            Self::Small => 24.0,
+            Self::Large => 40.0,
+            Self::Medium => 32.0,
+        }
+    }
+
     /// Padding inside a text field, which is wider than a button's.
     pub fn input_padding_x(self) -> f32 {
         match self {
