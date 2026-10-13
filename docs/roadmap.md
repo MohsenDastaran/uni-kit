@@ -475,8 +475,21 @@ below instead of being one.
       feature embeds — the generic sans-serif resolves to no face on wasm, which is the
       same trap that once made every label in the gallery invisible. `radio`, `switch`
       and `toggle` follow its shape.
-- [ ] `radio`, `switch`, `toggle` — one shape, three controls, so `handle` is built
-      once and the three differ in what it draws
+- [x] `radio`, `switch`, `toggle` — done on one shared handle, as planned:
+      `button::handle(content, on_press: Option<Message>, style)` is iced's own button
+      with zero padding, a shrinking size and `on_press_maybe`, so disabled is simply
+      the absence of a message — the same rule `checkbox` follows. The three differ
+      only in what they draw and report: radio draws a disc and a dot and reports
+      `true`; switch draws a track with a sliding thumb and reports the new value;
+      toggle draws its own pressed fill and border. `RadioGroup` holds the index and
+      reports it. Verified by driving real clicks, not by reading: radio exclusivity
+      and each control toggling forward and back, in light **and** dark, by
+      clip-region hash. Their shared-file extensions were committed separately
+      (`ControlSize::control_height` in `theme.rs`, `handle` in `button.rs`) because a
+      shared file left dirty across agents is how the popover's arrow was lost.
+      Named, not faked: iced 0.14 has no subtree opacity (disabled is fill and ink),
+      no layout transition (the thumb snaps), and no focus ring or Space/Enter on a
+      bare button; `ToggleGroup` was not built.
 - [ ] `slider`, `stepper` — and `number-input`'s stepper behaviour, which is already
       built and should be shared rather than copied
 - [ ] `form` — composition and validation over the controls above, not a new control;
