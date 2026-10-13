@@ -724,6 +724,18 @@ already paid for.
 - [ ] Seen in light **and** dark, by looking at a screenshot, not by reading tokens
 - [ ] One commit per component
 
+**The gates check the install, and the check has been shown to fail.** `check.sh --install`
+installs **every** component the manifest lists — not a hand-picked five — each into its own
+scratch crate so no sibling can be silently supplied, sharing the crate's target dir and
+feature set so iced compiles once: **57 of 57 in about 57 seconds warm**. The list is read
+from the manifest keys, so a newly registered component is covered without anyone
+remembering to add it, and a failure now prints the compiler error instead of discarding it.
+It was proven able to fail by feeding a doctored manifest through the CLI's
+`UNI_KIT_REGISTRY` override — removing `input.rs` from `command`'s entry produced
+`error[E0432]: unresolved import super::input` and 56 of 57, and restoring it produced 57 of
+57. That matters more than the coverage number: the earlier version of this check was
+vacuous for a while, and a gate nobody has seen fail is a gate nobody can trust.
+
 **Commit with a pathspec — the index is shared.** Agents work in one checkout, so anything
 one of them stages is visible to every other agent's plain `git commit`. One commit already
 swept up a sibling's staged files this way (caught and re-cut with `reset --soft` and a
