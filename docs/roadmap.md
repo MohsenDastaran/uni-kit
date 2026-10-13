@@ -492,7 +492,19 @@ both themes is named plainly rather than ticked.
       `status.mjs` because its registry key is `dropdown-button` while the Slint
       inventory key is `dropdown_button` — so a landed component still reads as
       outstanding.
-- [ ] `combobox` — select plus free text.
+- [x] `combobox` — done, and it reuses `menu::Item` rather than inventing a second item
+      shape, filtering internally while every index it reports stays into the caller's
+      own list. Composed from the field's style, the popover's single surface and the
+      menu's body, with a search row, a rule and a caller footer. Verified by driving it
+      and by installing it: typing `Sv` filters to SvelteKit, arrows step, Enter chooses
+      and clears the query, Escape closes with the query kept, and reopening the panel is
+      **byte-identical** to the escape-then-reopen frame; multi-select toggles one row
+      without closing; the footer action appends a new value. With the pointer moved
+      away, a filtered single row shows **no stray highlight** — the hover-leave fix
+      arriving where it matters. Named rather than faked: no groups or badges, pinned
+      rows, custom check glyph, trigger variants, `cleanable`, an empty element or
+      elision, and the host's arrows act on an open panel because iced 0.14 reports no
+      focus to the application.
 - [ ] `date-picker` — popover plus the `calendar` that is already done.
 
 **The form family**
