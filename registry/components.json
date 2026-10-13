@@ -22751,11 +22751,65 @@
           "module": "theme"
         }
       ],
+      "slider": [
+        {
+          "src": "crates/iced-component/src/components/button.rs",
+          "target": "button.rs",
+          "module": "button"
+        },
+        {
+          "src": "crates/iced-component/src/components/input.rs",
+          "target": "input.rs",
+          "module": "input"
+        },
+        {
+          "src": "crates/iced-component/src/components/number_input.rs",
+          "target": "number_input.rs",
+          "module": "number_input"
+        },
+        {
+          "src": "crates/iced-component/src/components/slider.rs",
+          "target": "slider.rs",
+          "module": "slider"
+        },
+        {
+          "src": "crates/iced-component/src/components/theme.rs",
+          "target": "theme.rs",
+          "module": "theme"
+        }
+      ],
       "spinner": [
         {
           "src": "crates/iced-component/src/components/spinner.rs",
           "target": "spinner.rs",
           "module": "spinner"
+        },
+        {
+          "src": "crates/iced-component/src/components/theme.rs",
+          "target": "theme.rs",
+          "module": "theme"
+        }
+      ],
+      "stepper": [
+        {
+          "src": "crates/iced-component/src/components/button.rs",
+          "target": "button.rs",
+          "module": "button"
+        },
+        {
+          "src": "crates/iced-component/src/components/input.rs",
+          "target": "input.rs",
+          "module": "input"
+        },
+        {
+          "src": "crates/iced-component/src/components/number_input.rs",
+          "target": "number_input.rs",
+          "module": "number_input"
+        },
+        {
+          "src": "crates/iced-component/src/components/stepper.rs",
+          "target": "stepper.rs",
+          "module": "stepper"
         },
         {
           "src": "crates/iced-component/src/components/theme.rs",
