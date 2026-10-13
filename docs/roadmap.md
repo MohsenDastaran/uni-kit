@@ -431,15 +431,23 @@ both themes is named plainly rather than ticked.
       Two traps are written into the comments: the runtime builds a widget's overlay
       twice per frame, so the panel must be borrowed and not taken, and its sub-tree
       must be reconciled in `overlay` or nothing paints.
-- [ ] `tooltip` — a popover on hover. Committed and its page is right, but **no one
-      has seen the label**: opening, closing, the arrow and the dark label surface are
-      written, compile and unverified, because the author concluded this environment
-      cannot deliver input to the wasm gallery. It can — four components were driven
-      over CDP here (a click, five keystrokes into `input`, `123` into the OTP cells,
-      a stepper moving 12→16 with a hover fill) — so the method is what needs fixing:
-      hover, then **wait out the 400ms delay** before screenshotting, and sweep for the
-      28px hit box. Until that is done, the tooltip is one screenshot short of done.
-- [ ] `menu`, `dropdown_button` — committed (`1194bd4c`), one item shape between them
+- [x] `tooltip` — done, on iced's own hover state machine (`Idle`/`Hovered`/`Open`, a
+      delayed redraw) with placement, flip and arrow from `popover::Placed`. Verified by
+      measurement rather than by assertion: the 28px trigger was found by sweeping, the
+      label is **unchanged at 150 ms and open at 1450 ms**, leaving returns the clip hash
+      to the closed one byte for byte, and cancellation holds — a pointer resting 200 ms
+      or 350 ms never opens it while 1200 ms does. A preferred-top panel draws above and
+      a preferred-bottom one below, and in a 290px-high viewport that bottom one
+      **flips above**. The arrow's stepped triangle was measured at all three positions
+      (row widths 1,1,3,3,5,5,7 with centroids at start/centre/end). The dark label
+      surface is `#f8f8f8` on `#080808` — **19.5:1**, not the white-on-white it could
+      have been — and two code icons were clicked to confirm the page scrolls to their
+      own samples. Two things it found and left for the popover's owner: the arrow's
+      **taper is inverted** against `Arrow::draw`'s own doc, so an above-panel arrow
+      reads as pointing up into the surface, and a demo comment claims the first card is
+      the flip test when the first panel actually draws above. Left/right sides and the
+      native window are unverified — no demo uses the former.
+      - [ ] `menu`, `dropdown_button` — committed (`1194bd4c`), one item shape between them
       (the shape `select` composes), and **still unticked because the rows do not
       paint**. The A/B settled which side owns that: the popover's `Panel::draw` hands
       the content the **panel's** layout node where `Panel::mouse_interaction` and
