@@ -657,7 +657,23 @@ below instead of being one.
       settled baseline in both themes — the first baseline per theme was discarded because
       the canvas settles a one-pixel edge on the first interaction, which is the kind of
       detail that makes a hash comparison mean something.
-- [ ] `table`, `list`, `pagination` — built on `scrollable`.
+- [x] `table` — done, built on the finished `scrollable`, with one type per part the
+      reference names (`Table`, `TableHead`, `TableRow`, `TableCell`, header/body/footer,
+      caption). It found the **build-time token trap** the hard way — its first dark
+      screenshot was a *white table*, because the surface was resolved from the light
+      tokens when the element was built rather than inside the style closure. That is the
+      second time a documented trap has recurred in a new component, the first being the
+      panel layout node that `sheet` re-learned, so the lesson is worth more than the fix:
+      a comment in another file does not prevent it, and the family now has two
+      implementations of "draw a surface" that each rediscovered one. Verified in
+      proportion — a screenshot per theme (header band distinct, badges legible, footer
+      present) plus scrollbar crops, and one driven interaction: the striped toggle tints
+      the rows and a second click returns the clip byte-identical. Named, not faked: no
+      minimum or preferred column width, no elision or wrap, no rounded clip, no `Styled`
+      trait (so Custom Styling has no iced panel and the module says why), the table is
+      static with no sorting, selection or keyboard, and the scrollbar cannot widen on
+      hover.
+- [ ] `list`, `pagination` — built on `scrollable`.
 - [ ] `notification`, `hover-card`, and the rest of the 79 as they come.
 
 **A component is done when all of this is true**
