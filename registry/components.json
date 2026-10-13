@@ -22563,6 +22563,28 @@
           "module": "theme"
         }
       ],
+      "hover-card": [
+        {
+          "src": "crates/iced-component/src/components/hover_card.rs",
+          "target": "hover_card.rs",
+          "module": "hover_card"
+        },
+        {
+          "src": "crates/iced-component/src/components/popover.rs",
+          "target": "popover.rs",
+          "module": "popover"
+        },
+        {
+          "src": "crates/iced-component/src/components/tooltip.rs",
+          "target": "tooltip.rs",
+          "module": "tooltip"
+        },
+        {
+          "src": "crates/iced-component/src/components/theme.rs",
+          "target": "theme.rs",
+          "module": "theme"
+        }
+      ],
       "icon": [
         {
           "src": "crates/iced-component/src/components/icon.rs",
@@ -22669,6 +22691,28 @@
           "src": "crates/iced-component/src/components/message_scroller.rs",
           "target": "message_scroller.rs",
           "module": "message_scroller"
+        },
+        {
+          "src": "crates/iced-component/src/components/theme.rs",
+          "target": "theme.rs",
+          "module": "theme"
+        }
+      ],
+      "notification": [
+        {
+          "src": "crates/iced-component/src/components/button.rs",
+          "target": "button.rs",
+          "module": "button"
+        },
+        {
+          "src": "crates/iced-component/src/components/notification.rs",
+          "target": "notification.rs",
+          "module": "notification"
+        },
+        {
+          "src": "crates/iced-component/src/components/popover.rs",
+          "target": "popover.rs",
+          "module": "popover"
         },
         {
           "src": "crates/iced-component/src/components/theme.rs",

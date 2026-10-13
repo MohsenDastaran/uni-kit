@@ -24,6 +24,7 @@ pub mod dropdown_button;
 pub mod empty;
 pub mod form;
 pub mod group_box;
+pub mod hover_card;
 pub mod icon;
 pub mod input;
 pub mod kbd;
@@ -33,6 +34,7 @@ pub mod marker;
 pub mod menu;
 pub mod message_role;
 pub mod message_scroller;
+pub mod notification;
 pub mod number_input;
 pub mod otp_input;
 pub mod pagination;
@@ -79,6 +81,7 @@ pub const STORIES: &[&str] = &[
     "empty",
     "form",
     "group-box",
+    "hover-card",
     "icon",
     "input",
     "kbd",
@@ -88,6 +91,7 @@ pub const STORIES: &[&str] = &[
     "menu",
     "message-role",
     "message-scroller",
+    "notification",
     "number-input",
     "otp-input",
     "pagination",
@@ -137,6 +141,7 @@ pub fn run(story: &str, theme: iced::Theme) -> iced::Result {
         "empty" => empty::run(theme),
         "form" => form::run(theme),
         "group-box" => group_box::run(theme),
+        "hover-card" => hover_card::run(theme),
         "icon" => icon::run(theme),
         "input" => input::run(theme),
         "kbd" => kbd::run(theme),
@@ -146,6 +151,7 @@ pub fn run(story: &str, theme: iced::Theme) -> iced::Result {
         "menu" => menu::run(theme),
         "message-role" => message_role::run(theme),
         "message-scroller" => message_scroller::run(theme),
+        "notification" => notification::run(theme),
         "number-input" => number_input::run(theme),
         "otp-input" => otp_input::run(theme),
         "pagination" => pagination::run(theme),
