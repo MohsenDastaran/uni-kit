@@ -420,10 +420,40 @@ both themes is named plainly rather than ticked.
 
 **The overlay family**
 
-- [ ] `popover` — the positioning layer `select`, `combobox`, `menu`, `tooltip` and
-      `date-picker` all sit in. Nothing else in this family is honest without it.
-- [ ] `tooltip` — a popover on hover. The button page already documents it.
-- [ ] `menu`, `dropdown_button` — a popover with items and keyboard traversal.
+- [x] `popover` — the positioning layer the rest of this family sits in, built on
+      iced's own overlay mechanism (`Widget::overlay` → `overlay::Element`, the route
+      `pick_list` and `combo_box` take) rather than a fake-positioned `stack!`. Click
+      opens, outside-click and Escape close — verified by clip-region hash, with the
+      three states byte-identical around the open one, and the dark panel surface read
+      after a fix: its style had been resolved at view-build time from light tokens,
+      so the dark panel was white with near-white content. `panel`/`panel_container`
+      take `impl Fn(&Theme) -> PanelStyle` now, which is the shape the family inherits.
+      Two traps are written into the comments: the runtime builds a widget's overlay
+      twice per frame, so the panel must be borrowed and not taken, and its sub-tree
+      must be reconciled in `overlay` or nothing paints.
+- [ ] `tooltip` — a popover on hover. Committed and its page is right, but **no one
+      has seen the label**: opening, closing, the arrow and the dark label surface are
+      written, compile and unverified, because the author concluded this environment
+      cannot deliver input to the wasm gallery. It can — four components were driven
+      over CDP here (a click, five keystrokes into `input`, `123` into the OTP cells,
+      a stepper moving 12→16 with a hover fill) — so the method is what needs fixing:
+      hover, then **wait out the 400ms delay** before screenshotting, and sweep for the
+      28px hit box. Until that is done, the tooltip is one screenshot short of done.
+- [ ] `menu`, `dropdown_button` — a popover with items and keyboard traversal, one
+      item shape between them (the shape `select` will compose). Two things are open
+      and both are recorded rather than guessed: the **rows do not paint** inside the
+      panel while the panel's own surface, height and padding do, and the author
+      attributes that to the popover dropping nested children — but the popover demo's
+      panel content does paint, so an A/B of the two in one session has to settle
+      which it is. And the interaction is unverified for a reason that is itself
+      wrong: both this agent and the tooltip's concluded that `Popover::update`
+      compares content-space bounds to a window-space cursor. `scrollable` adds the
+      scroll offset to the cursor before dispatching (`scrollable.rs:800`), which is
+      what `pick_list` relies on, and the popover's author disproved the claim and
+      corrected its own commit — the false reading came from a probe that stored the
+      trigger rect on every press and from clicking 8px below a 28px button. Keyboard
+      traversal is reported through `on_highlight` rather than owned (iced 0.14 has no
+      focus trap), so the demo has to demonstrate it for the card to be honest.
 - [ ] `select` — input plus popover plus menu.
 - [ ] `combobox` — select plus free text.
 - [ ] `date-picker` — popover plus the `calendar` that is already done.
