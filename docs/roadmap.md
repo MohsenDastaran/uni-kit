@@ -403,19 +403,20 @@ in an order chosen so each component can be built out of what is already finishe
 `input` is first because half the catalog is a field of some kind.
 
 An `[x]` here means the component satisfies the checklist at the end of this section,
-the appearance check included; two components that exist but have not been looked at in
-both themes are named plainly rather than ticked.
+the appearance check included; a component that exists but has not been looked at in
+both themes is named plainly rather than ticked.
 
 **The field family, and the one layout piece everything needs**
 
 - [x] `input` — the base: value and placeholder, disabled, invalid, the size ladder,
       prefix and suffix slots. `textarea`, `number-input`, `otp-input`, `combobox`,
       `select` and `date-picker` are built on it, which is why it is first.
-- `label` — implemented; the controls below sit beside it. Its appearance check is
-  still owed, so it is not ticked.
+- [x] `label` — done. Its demo had no `// section:` markers at all, so no iced sample
+  could be cut from it and no card could scroll anywhere: the affordance was added
+  with it, and the card-to-sample path is verified in a real browser.
 - [x] `scrollable` — the styled scroll area that `table`, `list` and dialog bodies
       need. Cheap, and unblocks three later components.
-- [ ] `textarea`, `number-input`, `otp-input` — the field, once, in three shapes.
+- [x] `textarea`, `number-input`, `otp-input` — the field, once, in three shapes.
 
 **The overlay family**
 

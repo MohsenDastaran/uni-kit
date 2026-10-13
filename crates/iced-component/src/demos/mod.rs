@@ -25,6 +25,8 @@ pub mod label;
 pub mod marker;
 pub mod message_role;
 pub mod message_scroller;
+pub mod number_input;
+pub mod otp_input;
 pub mod progress;
 pub mod scrollable;
 pub mod shimmer;
@@ -32,6 +34,7 @@ pub mod skeleton;
 pub mod spinner;
 pub mod tag;
 pub mod text_view;
+pub mod textarea;
 pub mod tree;
 
 mod index;
@@ -58,6 +61,8 @@ pub const STORIES: &[&str] = &[
     "marker",
     "message-role",
     "message-scroller",
+    "number-input",
+    "otp-input",
     "progress",
     "scrollable",
     "shimmer",
@@ -65,6 +70,7 @@ pub const STORIES: &[&str] = &[
     "spinner",
     "tag",
     "text-view",
+    "textarea",
     "tree",
 ];
 
@@ -94,6 +100,8 @@ pub fn run(story: &str, theme: iced::Theme) -> iced::Result {
         "marker" => marker::run(theme),
         "message-role" => message_role::run(theme),
         "message-scroller" => message_scroller::run(theme),
+        "number-input" => number_input::run(theme),
+        "otp-input" => otp_input::run(theme),
         "progress" => progress::run(theme),
         "scrollable" => scrollable::run(theme),
         "shimmer" => shimmer::run(theme),
@@ -101,6 +109,7 @@ pub fn run(story: &str, theme: iced::Theme) -> iced::Result {
         "spinner" => spinner::run(theme),
         "tag" => tag::run(theme),
         "text-view" => text_view::run(theme),
+        "textarea" => textarea::run(theme),
         "tree" => tree::run(theme),
         other => index::run(theme, other.to_string()),
     }
