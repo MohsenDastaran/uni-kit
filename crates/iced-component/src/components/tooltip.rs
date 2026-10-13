@@ -285,13 +285,40 @@ pub fn surface(theme: &Theme) -> PanelStyle {
 /// This is `iced_widget::tooltip`'s machine, so the timing here matches iced's
 /// own tooltip to the frame.
 #[derive(Debug, Clone, Copy, PartialEq, Default)]
-enum State {
+enum Hover {
     #[default]
     Idle,
     /// The pointer is on the trigger and the delay is running from `at`.
     Hovered { at: Instant },
     /// The label is showing.
     Open,
+}
+
+/// The widget's own state: the hover timer, and the tree the label is measured
+/// in.
+///
+/// The tree is kept because a text element does not measure itself twice. iced
+/// lays the label out on the frame's event pass and paints it on the same
+/// frame's draw pass, and [`Text`](iced::widget::Text) paints the paragraph its
+/// *layout* cached in the tree — so an overlay that hands a fresh tree to each
+/// pass paints an empty paragraph. It is the same reason
+/// [`Popover`](super::popover::Popover) keeps its content tree in its own state,
+/// and it is why a label drawn this way is a filled panel with no text in it
+/// until it is not.
+struct State {
+    hover: Hover,
+    label: Tree,
+}
+
+impl State {
+    fn new() -> Self {
+        Self {
+            hover: Hover::default(),
+            // Empty until the panel is first built, when the popover's own
+            // `diff` reconciles it with the label.
+            label: Tree::empty(),
+        }
+    }
 }
 
 impl<Message> Widget<Message, Theme, iced::Renderer> for Tooltip<'_, Message>
@@ -303,7 +330,7 @@ where
     }
 
     fn state(&self) -> widget::tree::State {
-        widget::tree::State::new(State::default())
+        widget::tree::State::new(State::new())
     }
 
     fn children(&self) -> Vec<Tree> {
@@ -426,35 +453,49 @@ where
             // (`text != ""`), so it never leaves `Idle`.
             let wanted = over && self.label.is_some();
 
-            match (*state, wanted) {
-                (State::Idle, true) => {
+            match (state.hover, wanted) {
+                (Hover::Idle, true) => {
                     if self.delay == Duration::ZERO {
-                        *state = State::Open;
+                        state.hover = Hover::Open;
                         shell.invalidate_layout();
                     } else {
-                        *state = State::Hovered { at: now };
+                        state.hover = Hover::Hovered { at: now };
                     }
                     shell.request_redraw_at(now + self.delay);
                 }
                 // Left before the delay was up: the timer Slint stops.
-                (State::Hovered { .. }, false) => *state = State::Idle,
-                (State::Hovered { at }, true) if now.duration_since(at) < self.delay => {
+                (Hover::Hovered { .. }, false) => state.hover = Hover::Idle,
+                (Hover::Hovered { at }, true) if now.duration_since(at) < self.delay => {
                     // Not yet: ask for the frame the deadline lands on. A wake-up
                     // that arrives early has to ask again, or the label would
                     // wait for the next unrelated redraw.
                     shell.request_redraw_at(now + (self.delay - now.duration_since(at)));
                 }
-                (State::Hovered { .. }, true) => {
-                    *state = State::Open;
+                (Hover::Hovered { .. }, true) => {
+                    state.hover = Hover::Open;
                     shell.invalidate_layout();
                 }
                 // Left while showing: hidden at once, with no fade. Slint closes
                 // its popup on the same event.
-                (State::Open, false) => {
-                    *state = State::Idle;
+                (Hover::Open, false) => {
+                    state.hover = Hover::Idle;
                     shell.invalidate_layout();
+                    // The label is an overlay, and an overlay goes away because
+                    // the *next* draw asks for one. `invalidate_layout` alone
+                    // leaves the window with no reason to paint, so the frame
+                    // that had the label stays on screen and the tooltip looks
+                    // stuck open — which is what it did until this was driven in
+                    // a browser. `iced_widget::tooltip` asks for the same redraw
+                    // on the same transition, and a frame that is already a
+                    // redraw does not need asking twice.
+                    if !matches!(
+                        event,
+                        Event::Window(iced::window::Event::RedrawRequested(_))
+                    ) {
+                        shell.request_redraw();
+                    }
                 }
-                (State::Open, true) | (State::Idle, false) => {}
+                (Hover::Open, true) | (Hover::Idle, false) => {}
             }
         }
     }
@@ -502,16 +543,12 @@ where
         _viewport: &Rectangle,
         translation: Vector,
     ) -> Option<overlay::Element<'b, Message, Theme, iced::Renderer>> {
-        if tree.state.downcast_ref::<State>() != &State::Open {
+        if tree.state.downcast_ref::<State>().hover != Hover::Open {
             return None;
         }
         // A closed tooltip builds nothing, and a label-less one has nothing to
         // build — Slint's `text != ""`.
         let label = self.label.as_mut()?;
-        // The label's tree is prepared from the immutable borrow, because the
-        // overlay that follows borrows the element mutably.
-        let mut tree_of_label = Tree::new(label.as_widget());
-        tree_of_label.diff(label.as_widget());
         let theme = self.theme.borrow().clone()?;
         let style = (self.style)(&theme);
         // The trigger's own layout, and the offset between it and the window.
@@ -521,9 +558,14 @@ where
         // and the window in one space, and `UserInterface` sizes the overlay
         // against the window.
         let trigger = layout.bounds();
+        // The label is measured in the tree this widget keeps, so the pass that
+        // paints the panel finds the paragraph the pass that laid it out
+        // measured. Both passes build this overlay; only the first measures.
+        let state = tree.state.downcast_mut::<State>();
+        state.label.diff(label.as_widget());
         Some(overlay::Element::new(Box::new(Content {
             label,
-            tree: tree_of_label,
+            tree: &mut state.label,
             style,
             arrow: self.arrow,
             trigger,
@@ -553,9 +595,10 @@ where
 /// the same triangle, and [`PanelStyle`] is the same surface.
 struct Content<'a, 'b, Message> {
     label: &'b mut Element<'a, Message>,
-    /// The label's own tree. It is measured here, on the same pass that draws,
-    /// so there is no second measurement to keep in step with this one.
-    tree: Tree,
+    /// The label's own tree, kept by [`State`] across the frame's two passes.
+    /// The pass that lays the panel out measures the label in it; the pass that
+    /// paints the panel reads the paragraph from it.
+    tree: &'b mut Tree,
     style: PanelStyle,
     arrow: Arrow,
     /// The trigger, in the coordinates of whatever scrolls the tooltip.
@@ -589,12 +632,15 @@ impl<Message> overlay::Overlay<Message, Theme, iced::Renderer> for Content<'_, '
         );
         let placed = Placed::resolve(trigger, size, bounds, self.gap, self.side);
         let origin = placed.origin();
+        // The label sits inside the panel's inset, and the panel is moved to
+        // where it was placed. A child's position is relative to its parent's
+        // origin and `Node::translate` moves only the node it is called on, so
+        // the inset goes on the child and the placement on the panel: putting
+        // the placement on the child as well draws the label a panel-origin away
+        // from its own surface, which is a filled panel with no text in it.
         layout::Node::with_children(
             size,
-            vec![label.move_to(Point::new(
-                origin.x + self.padding.left,
-                origin.y + self.padding.top,
-            ))],
+            vec![label.move_to(Point::new(self.padding.left, self.padding.top))],
         )
         .translate(Vector::new(origin.x, origin.y))
     }
