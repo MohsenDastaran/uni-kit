@@ -1,6 +1,6 @@
 //! A push button. Mirrors GPUI Component's `Button` and the Slint version beside
-//! it: variants, outline, sizes, a leading icon, a loading state and a selected
-//! state, with the same fills for rest, hover, press and disabled.
+//! it: variants, outline, sizes, a leading icon, a trailing icon, a loading state
+//! and a selected state, with the same fills for rest, hover, press and disabled.
 //!
 //! An iced button carries its own message rather than a callback, so the message
 //! is a value the caller passes in — `button("Save").on_press(Message::Save)`.
@@ -63,6 +63,7 @@ pub struct Button<'a, Message> {
     loading: bool,
     selected: bool,
     icon: Option<Element<'a, Message>>,
+    suffix_icon: Option<Element<'a, Message>>,
     on_press: Option<Message>,
     width: Length,
 }
@@ -77,6 +78,7 @@ impl<'a, Message> Button<'a, Message> {
             loading: false,
             selected: false,
             icon: None,
+            suffix_icon: None,
             on_press: None,
             width: Length::Shrink,
         }
@@ -113,6 +115,14 @@ impl<'a, Message> Button<'a, Message> {
     /// A leading element, drawn before the label at the icon box's size.
     pub fn icon(mut self, icon: impl Into<Element<'a, Message>>) -> Self {
         self.icon = Some(icon.into());
+        self
+    }
+
+    /// A trailing element, drawn after the label. The Slint `Button`'s
+    /// `suffix-icon`, which is what makes `pagination`'s next control read
+    /// "Next ›" rather than "› Next".
+    pub fn suffix_icon(mut self, icon: impl Into<Element<'a, Message>>) -> Self {
+        self.suffix_icon = Some(icon.into());
         self
     }
 
@@ -162,7 +172,8 @@ impl<'a, Message> Button<'a, Message> {
         }
     }
 
-    /// The content row: the icon, the label, and the gap between them.
+    /// The content row: the leading icon, the label, the trailing icon, and the
+    /// gaps between them.
     fn content(self) -> Element<'a, Message>
     where
         Message: Clone + 'a,
@@ -193,6 +204,9 @@ impl<'a, Message> Button<'a, Message> {
                         color: Some(ink(Tokens::of(theme), variant, outline)),
                     }),
             );
+        }
+        if let Some(suffix) = self.suffix_icon {
+            contents = contents.push(suffix);
         }
         contents.into()
     }
@@ -438,6 +452,7 @@ impl Style {
             loading: self.loading,
             selected: self.selected,
             icon: None,
+            suffix_icon: None,
             on_press: None,
             width: Length::Shrink,
         }
