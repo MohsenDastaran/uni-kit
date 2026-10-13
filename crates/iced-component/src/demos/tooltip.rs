@@ -6,6 +6,16 @@
 //! Run it with `cargo run --example tooltip`, or in the browser as
 //! `?story=tooltip` in the gallery the website embeds.
 //!
+//! A shortcut in a label is written in the marks the wasm face can draw, not in
+//! the marks the shortcut itself uses. On wasm the gallery's faces are the
+//! embedded Fira Sans Regular and Iced Icons, whose cmap has `⇧` (U+21E7),
+//! `⌫` (U+232B) and the arrows, and **not** `⌘` (U+2318), `⌥` (U+2325) or
+//! `⌃` (U+2303). A mark the face lacks draws nothing, so `⌘S` paints as a bare
+//! `S` and the shortcut reads wrong rather than not at all. This gallery
+//! therefore spells those marks in words — `Cmd` for command, `Alt` for option —
+//! as `demos/kbd.rs` and `demos/menu.rs` do; the rule is documented on
+//! `Menu::shortcut`. The marks the face does have are kept.
+//!
 //! Each section carries a heading the component page has — the title, and the
 //! code icon that asks the embedding page to scroll to that sample. Clicking
 //! either one posts the section's index and title through [`crate::bridge`], the
@@ -262,9 +272,9 @@ fn view(app: &App) -> Element<'_, Message> {
     // section: Basic Tooltip with Text
     // One label per button, and the third asks for the side under its trigger.
     let basic = row![
-        tip(line("Bold (⌘B)"), Button::new("Bold").outline()),
-        tip(line("Italic (⌘I)"), Button::new("Italic").outline()),
-        tip(line("Underline (⌘U)"), Button::new("Underline").outline())
+        tip(line("Bold (Cmd B)"), Button::new("Bold").outline()),
+        tip(line("Italic (Cmd I)"), Button::new("Italic").outline()),
+        tip(line("Underline (Cmd U)"), Button::new("Underline").outline())
             .placement(Side::Bottom),
     ]
     .spacing(16.0)
@@ -276,7 +286,7 @@ fn view(app: &App) -> Element<'_, Message> {
     // action registry a component can ask, so the shortcut is part of the label
     // — which is what the Slint component does with the same card.
     let keybinding: Element<'_, Message> = tip(
-        line("Save the workspace — ⌘S"),
+        line("Save the workspace — Cmd S"),
         Button::new("Save")
             .icon(glyph(DOWNLOAD, 16.0, |tokens| tokens.foreground))
             .outline(),
