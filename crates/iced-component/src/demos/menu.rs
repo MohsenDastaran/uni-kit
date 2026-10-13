@@ -18,7 +18,10 @@
 //! below, and the row each menu last reported. A menu never moves its own
 //! highlight out of the tree the popover rebuilds — that is the port's — but
 //! whether the panel is showing is the application's, and so is what a choice
-//! means.
+//! means. The pointer's hover and the row a key moved to are kept apart, as the
+//! menu's `on_highlight` requires: the pointer reports a transient hover, so a
+//! key's row is drawn again once the pointer leaves, rather than being lost to
+//! it.
 //!
 //! The icons are named in the Slint example by string and resolved by its build
 //! script. There is no such resolver here: an iced application owns its assets,
@@ -67,14 +70,33 @@ struct App {
     open: [bool; SLOTS],
     /// The last row each menu reported, so a choice is visible.
     chosen: [Option<usize>; SLOTS],
-    /// The row the pointer or a key highlighted last, and which menu holds it.
-    /// The highlight is the application's — see the component's type comment —
-    /// so a gallery of six menus has one row lit and one menu that owns it.
+    /// The row the pointer is over, and which menu holds it. This is the
+    /// transient hover `Menu::on_highlight` reports and `Menu::on_leave`
+    /// clears; it is kept apart from `highlighted` so a key's row survives the
+    /// pointer crossing the panel.
+    hover: (Option<usize>, Option<usize>),
+    /// The row a key moved to, and which menu holds it. The keyboard's, and it
+    /// is not touched by the pointer's reports.
     highlighted: (Option<usize>, Option<usize>),
     /// Which section heading the pointer is over, and which was pressed, so the
     /// code icon can draw the two states the Slint heading animates to.
     hovered: Option<&'static str>,
     pressed_source: Option<&'static str>,
+}
+
+impl App {
+    /// The row a menu draws lit: the pointer's hover when it is over this menu,
+    /// otherwise the row a key moved to in it. The pointer wins while it is
+    /// there, and the key's row is what comes back once it leaves.
+    fn lit(&self, slot: usize) -> Option<usize> {
+        if self.hover.1 == Some(slot) {
+            self.hover.0
+        } else if self.highlighted.1 == Some(slot) {
+            self.highlighted.0
+        } else {
+            None
+        }
+    }
 }
 
 #[derive(Debug, Clone)]
@@ -83,8 +105,11 @@ enum Message {
     Opened { slot: usize, open: bool },
     /// A menu row was chosen, by slot and by index.
     Chosen { slot: usize, index: usize },
-    /// The highlight moved, to a menu's row.
+    /// The pointer entered a menu's row: the transient hover.
     Highlighted { slot: usize, index: usize },
+    /// The pointer left a row, or left the panel. `row` is the row it left, or
+    /// `None` for the panel as a whole.
+    Left { slot: usize, row: Option<usize> },
     /// A traversal key was pressed: `↑`/`↓`/`Home`/`End`, or `Enter` to choose,
     /// or `Escape` to dismiss.
     Key(Key),
@@ -103,6 +128,15 @@ fn update(app: &mut App, message: Message) -> Task<Message> {
         Message::Opened { slot, open } => {
             if let Some(flag) = app.open.get_mut(slot) {
                 *flag = open;
+                // A closed menu owns no highlight: there is no row to light.
+                if !open {
+                    if app.highlighted.1 == Some(slot) {
+                        app.highlighted = (None, None);
+                    }
+                    if app.hover.1 == Some(slot) {
+                        app.hover = (None, None);
+                    }
+                }
             }
         }
         Message::Chosen { slot, index } => {
@@ -110,12 +144,26 @@ fn update(app: &mut App, message: Message) -> Task<Message> {
                 *chosen = Some(index);
             }
         }
-        Message::Highlighted { slot, index } => app.highlighted = (Some(index), Some(slot)),
+        Message::Highlighted { slot, index } => app.hover = (Some(index), Some(slot)),
+        // The row travels with the report: iced walks the rows top-down, so an
+        // upper row's entry is published before a lower row's leave. Only the
+        // row the pointer was on may be cleared, or entering the upper row is
+        // undone on the same move. `None` is the panel, and clears the hover
+        // whatever row it sat on.
+        Message::Left { slot, row } => {
+            if app.hover.1 == Some(slot) && (row.is_none() || app.hover.0 == row) {
+                app.hover = (None, None);
+            }
+        }
         // The keys act on the menu that is open and holds the highlight. This
         // gallery can have one open at a time, and the subscription cannot see
         // which, so `update` reads it from the state.
         Message::Key(key) => {
             if let Some(slot) = app.open.iter().position(|open| *open) {
+                // A key takes the highlight over from the pointer: the row it
+                // moves to is drawn, and the pointer's hover is dropped so the
+                // two do not fight. The pointer sets it again if it moves.
+                app.hover = (None, None);
                 let (index, owner) = app.highlighted;
                 // The highlight is one row of one menu. When it belongs to
                 // another menu, a step starts from this menu's edge rather than
@@ -401,9 +449,10 @@ fn view(app: &App) -> Element<'_, Message> {
         .content(
             Menu::new(menu_items(0))
                 .selected(app.chosen[0])
-                .highlighted(app.highlighted.0)
+                .highlighted(app.lit(0))
                 .on_chosen(|index| Message::Chosen { slot: 0, index })
                 .on_highlight(move |index| Message::Highlighted { slot: 0, index })
+                .on_leave(move |row| Message::Left { slot: 0, row })
                 .into_element(),
         )
         .on_open_change(|open| Message::Opened { slot: 0, open });
@@ -428,9 +477,10 @@ fn view(app: &App) -> Element<'_, Message> {
         .content(
             Menu::new(menu_items(1))
                 .selected(app.chosen[1])
-                .highlighted(app.highlighted.0)
+                .highlighted(app.lit(1))
                 .on_chosen(|index| Message::Chosen { slot: 1, index })
                 .on_highlight(move |index| Message::Highlighted { slot: 1, index })
+                .on_leave(move |row| Message::Left { slot: 1, row })
                 .into_element(),
         )
         .on_open_change(|open| Message::Opened { slot: 1, open });
@@ -448,9 +498,10 @@ fn view(app: &App) -> Element<'_, Message> {
         .content(
             Menu::new(menu_items(2))
                 .selected(app.chosen[2])
-                .highlighted(app.highlighted.0)
+                .highlighted(app.lit(2))
                 .on_chosen(|index| Message::Chosen { slot: 2, index })
                 .on_highlight(move |index| Message::Highlighted { slot: 2, index })
+                .on_leave(move |row| Message::Left { slot: 2, row })
                 .into_element(),
         )
         .on_open_change(|open| Message::Opened { slot: 2, open });
@@ -468,9 +519,10 @@ fn view(app: &App) -> Element<'_, Message> {
         .content(
             Menu::new(menu_items(3))
                 .selected(app.chosen[3])
-                .highlighted(app.highlighted.0)
+                .highlighted(app.lit(3))
                 .on_chosen(|index| Message::Chosen { slot: 3, index })
                 .on_highlight(move |index| Message::Highlighted { slot: 3, index })
+                .on_leave(move |row| Message::Left { slot: 3, row })
                 .into_element(),
         )
         .on_open_change(|open| Message::Opened { slot: 3, open });
@@ -488,9 +540,10 @@ fn view(app: &App) -> Element<'_, Message> {
         .content(
             Menu::new(menu_items(4))
                 .selected(app.chosen[4])
-                .highlighted(app.highlighted.0)
+                .highlighted(app.lit(4))
                 .on_chosen(|index| Message::Chosen { slot: 4, index })
                 .on_highlight(move |index| Message::Highlighted { slot: 4, index })
+                .on_leave(move |row| Message::Left { slot: 4, row })
                 .into_element(),
         )
         .on_open_change(|open| Message::Opened { slot: 4, open });
@@ -509,9 +562,10 @@ fn view(app: &App) -> Element<'_, Message> {
         .content(
             Menu::new(menu_items(5))
                 .selected(app.chosen[5])
-                .highlighted(app.highlighted.0)
+                .highlighted(app.lit(5))
                 .on_chosen(|index| Message::Chosen { slot: 5, index })
                 .on_highlight(move |index| Message::Highlighted { slot: 5, index })
+                .on_leave(move |row| Message::Left { slot: 5, row })
                 .into_element(),
         )
         .on_open_change(|open| Message::Opened { slot: 5, open });
@@ -519,9 +573,16 @@ fn view(app: &App) -> Element<'_, Message> {
     let keyboard_section = body_box(keyboard);
 
     // section: end
+    // The status names whichever highlight is live: the pointer's hover while it
+    // is over a row, otherwise the row a key moved to.
+    let lit = if app.hover.0.is_some() {
+        app.hover
+    } else {
+        app.highlighted
+    };
     let status = text(match (app.chosen.iter().enumerate().find_map(|(slot, chosen)| {
         chosen.map(|index| (slot, index))
-    }), app.highlighted) {
+    }), lit) {
         (Some((slot, index)), _) => format!(
             "Menu {} chose row {}. A menu stays open on a choice; Escape or a click outside closes it.",
             slot + 1,
