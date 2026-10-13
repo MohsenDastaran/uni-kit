@@ -141,6 +141,7 @@ pub struct Calendar<'a, Message> {
     range: Option<(Date, Date)>,
     columns: usize,
     block_weekends: bool,
+    bordered: bool,
     previous: Option<Element<'a, Message>>,
     next: Option<Element<'a, Message>>,
     on_select: Option<Box<dyn Fn(Date) -> Message + 'a>>,
@@ -157,6 +158,7 @@ impl<'a, Message> Calendar<'a, Message> {
             range: None,
             columns: 1,
             block_weekends: false,
+            bordered: true,
             previous: None,
             next: None,
             on_select: None,
@@ -187,6 +189,18 @@ impl<'a, Message> Calendar<'a, Message> {
     /// Weekends cannot be picked and are lettered faintly.
     pub fn block_weekends(mut self, block: bool) -> Self {
         self.block_weekends = block;
+        self
+    }
+
+    /// Whether the calendar draws its own one-pixel border and `radius-lg`.
+    /// `true` by default, which is what the Slint `Calendar` draws on its own; a
+    /// caller that places it inside a surface it already owns — the date
+    /// picker's [`Popover`](super::popover::Popover) — asks for `false`, so the
+    /// panel has one surface rather than a border inside a border, the same rule
+    /// [`Menu`](super::menu::Menu) follows. The 16px padding stays either way:
+    /// it is the grid's inset, not part of the edge.
+    pub fn bordered(mut self, bordered: bool) -> Self {
+        self.bordered = bordered;
         self
     }
 
@@ -433,6 +447,7 @@ where
 {
     fn from(mut calendar: Calendar<'a, Message>) -> Self {
         let count = calendar.columns.max(1);
+        let bordered = calendar.bordered;
         let mut previous = calendar.previous.take();
         let mut next = calendar.next.take();
         let mut months = row![]
@@ -473,15 +488,15 @@ where
         container(months)
             .padding(PANEL_PADDING)
             .width(Length::Fixed(width))
-            .style(|theme: &Theme| {
+            .style(move |theme: &Theme| {
                 let tokens = Tokens::of(theme);
                 container::Style {
                     text_color: Some(tokens.foreground),
                     background: Some(Background::Color(Color::TRANSPARENT)),
                     border: Border {
                         color: tokens.border,
-                        width: 1.0,
-                        radius: theme::RADIUS_LG.into(),
+                        width: if bordered { 1.0 } else { 0.0 },
+                        radius: if bordered { theme::RADIUS_LG } else { 0.0 }.into(),
                     },
                     shadow: Shadow::default(),
                     ..container::Style::default()
