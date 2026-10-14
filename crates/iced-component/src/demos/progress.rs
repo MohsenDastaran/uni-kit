@@ -61,7 +61,10 @@ fn caption(value: f32) -> iced::widget::Text<'static, iced::Theme, iced::Rendere
 fn view(app: &App) -> Element<'_, Message> {
     let value = app.value;
 
-    column![
+    // section: Progress
+    // The buttons stand in for the subscription an application would run: each
+    // press moves the value the bar and the loading form read.
+    let progress = column![
         row![
             Button::new("Advance")
                 .variant(Variant::Primary)
@@ -71,16 +74,37 @@ fn view(app: &App) -> Element<'_, Message> {
         ]
         .spacing(12)
         .align_y(iced::Alignment::Center),
+        Progress::new(value),
+        text("The loading form: the value is the phase of the band.").size(14.0),
+        Progress::new(value).loading(true),
+    ]
+    .spacing(12);
+
+    // section: Values
+    let values = column![
+        Progress::new(0.0),
+        Progress::new(0.25),
+        Progress::new(0.5),
+        Progress::new(0.75),
+        Progress::new(1.0),
+    ]
+    .spacing(12);
+
+    // section: Sizes and status colors
+    let sizes = column![
         text("The four heights: 4, 6, 8 and 10 pixels.").size(14.0),
         Progress::new(value).size(ControlSize::XSmall),
         Progress::new(value).size(ControlSize::Small),
         Progress::new(value),
         Progress::new(value).size(ControlSize::Large),
-        text("A status colour, and one the caller names.").size(14.0),
+        text("Two of the status colours.").size(14.0),
         Progress::new(value).status(Status::Success),
         Progress::new(value).status(Status::Danger),
-        text("The loading form: the value is the phase of the band.").size(14.0),
-        Progress::new(value).loading(true),
+    ]
+    .spacing(12);
+
+    // section: Progress circle
+    let circles = column![
         text("The circle, at 8, 12, 16 and 20 across.").size(14.0),
         row![
             ProgressCircle::new(value).size(ControlSize::XSmall),
@@ -94,7 +118,11 @@ fn view(app: &App) -> Element<'_, Message> {
         .spacing(12)
         .align_y(iced::Alignment::Center),
     ]
-    .spacing(12)
-    .padding(16)
-    .into()
+    .spacing(12);
+    // section: end
+
+    column![progress, values, sizes, circles]
+        .spacing(24)
+        .padding(16)
+        .into()
 }
