@@ -14,11 +14,14 @@
 //!
 //! The markers are the component page's own `###` headings, in its order:
 //! Single, Multiple, Icons and custom content, Sizes, Borderless and disabled,
-//! With Borders, Handle Toggle Events, Nested Accordions. A section here toggles
-//! a panel that is [`crate::components::collapsible::reveal`] underneath, so
-//! every one of them animates — the accordion inherits the reveal rather than
-//! drawing its own, which is the whole point of the composition. The header is
-//! still the caller's element, and the open set is the caller's state.
+//! With Borders, Handle Toggle Events, Nested Accordions. The page has no
+//! heading for a caller-supplied disclosure, so that example sits under
+//! **Icons and custom content**, the closest heading the page documents, and
+//! its marker repeats that title. A section here toggles a panel that is
+//! [`crate::components::collapsible::reveal`] underneath, so every one of them
+//! animates — the accordion inherits the reveal rather than drawing its own,
+//! which is the whole point of the composition. The header is still the
+//! caller's element, and the open set is the caller's state.
 
 use std::collections::BTreeSet;
 
@@ -46,6 +49,7 @@ const BORDERED: u8 = 7;
 const EVENTS: u8 = 8;
 const OUTER: u8 = 9;
 const INNER: u8 = 10;
+const CUSTOM_ICON: u8 = 11;
 
 pub fn run(theme: Theme) -> iced::Result {
     iced::application(boot, update, view)
@@ -106,6 +110,7 @@ fn boot() -> App {
             (EVENTS, 0),
             (OUTER, 0),
             (INNER, 0),
+            (CUSTOM_ICON, 0),
         ]
         .into_iter()
         .collect(),
@@ -270,6 +275,33 @@ fn panel<'a>(
         .size(size)
         .bordered(bordered)
         .into()
+}
+
+/// A section whose disclosure is the caller's own mark rather than the
+/// component's default chevron. `Section::disclosure` takes any element, so
+/// the icon set stays the caller's: this swaps Lucide's `arrow-right` for
+/// `arrow-down` as the section opens, where the component would have drawn its
+/// `chevron-down`/`chevron-up`.
+fn arrow_section<'a>(
+    app: &App,
+    group: u8,
+    index: u8,
+    title: &'static str,
+    body: &'static str,
+) -> Section<'a, Message> {
+    let open = is_open(app, group, index);
+    Section::new(accordion::text_header(
+        title,
+        label_size(ControlSize::Medium),
+        toggle(app, group, index, title, false),
+    ))
+    .open(open)
+    .disclosure(mark(
+        if open { ARROW_DOWN } else { ARROW_RIGHT },
+        12.0,
+        muted,
+    ))
+    .content(line(body, theme::FONT_SIZE_SM, muted))
 }
 
 /// The header of a section that is not interactive: no button, no hover, and
@@ -472,6 +504,30 @@ fn view(app: &App) -> Element<'_, Message> {
     ])
     .size(ControlSize::Medium);
 
+    // section: Icons and custom content
+    // The marker repeats the heading above because the page has no heading of
+    // its own for a caller-supplied disclosure: this example sits under the
+    // closest one the page documents. `Section::disclosure` hands the trailing
+    // lane the caller's element — here Lucide's arrow in place of the
+    // component's default chevron — so the icon set stays the caller's.
+    let custom_icon = Accordion::new([
+        arrow_section(
+            app,
+            CUSTOM_ICON,
+            0,
+            "Custom arrow",
+            "The disclosure in the trailing lane is the caller's arrow.",
+        ),
+        arrow_section(
+            app,
+            CUSTOM_ICON,
+            1,
+            "Second section",
+            "Each section draws the mark its own open state wants.",
+        ),
+    ])
+    .size(ControlSize::Medium);
+
     // section: Sizes
     // The size ladder: compact rows at xsmall, sidebar rows at small, roomy rows
     // at large. iced has no wrapping grid, so the three stack.
@@ -643,15 +699,17 @@ fn view(app: &App) -> Element<'_, Message> {
         body_box(multiple),
         heading(app, 2, "Icons and custom content"),
         body_box(icons),
-        heading(app, 3, "Sizes"),
+        heading(app, 3, "Icons and custom content"),
+        body_box(custom_icon),
+        heading(app, 4, "Sizes"),
         body_box(sizes),
-        heading(app, 4, "Borderless and disabled"),
+        heading(app, 5, "Borderless and disabled"),
         body_box(borderless_and_disabled),
-        heading(app, 5, "With Borders"),
+        heading(app, 6, "With Borders"),
         body_box(with_borders),
-        heading(app, 6, "Handle Toggle Events"),
+        heading(app, 7, "Handle Toggle Events"),
         body_box(events),
-        heading(app, 7, "Nested Accordions"),
+        heading(app, 8, "Nested Accordions"),
         body_box(nested),
         status,
     ]
@@ -671,5 +729,11 @@ const BELL: &[u8] = br#"<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 
 const SETTINGS: &[u8] = br#"<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z"/><circle cx="12" cy="12" r="3"/></svg>"#;
 
 const PLUS: &[u8] = br#"<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14"/><path d="M12 5v14"/></svg>"#;
+
+/// Lucide's `arrow-right`, the custom disclosure while a section is closed.
+const ARROW_RIGHT: &[u8] = br#"<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14"/><path d="m12 5 7 7-7 7"/></svg>"#;
+
+/// Lucide's `arrow-down`, the same disclosure while a section is open.
+const ARROW_DOWN: &[u8] = br#"<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14"/><path d="m19 12-7 7-7-7"/></svg>"#;
 
 const CODE_XML: &[u8] = br#"<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m18 16 4-4-4-4"/><path d="m6 8-4 4 4 4"/><path d="m14.5 4-5 16"/></svg>"#;
