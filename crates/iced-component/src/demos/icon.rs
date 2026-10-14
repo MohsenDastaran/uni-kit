@@ -20,7 +20,7 @@ use iced::{Background, Border, Color, Element, Length, Task, Theme};
 
 use crate::components::button::{Button, Variant};
 use crate::components::icon::Icon;
-use crate::components::theme::{ControlSize, DARK, LIGHT, Tokens};
+use crate::components::theme::{self, ControlSize, DARK, LIGHT, Tokens};
 
 /// The tokens the mode on screen is using. `.theme(..)` above switches the
 /// iced theme, and this is how the view names the same set for a colour the
@@ -30,16 +30,14 @@ fn tokens(app: &App) -> Tokens {
 }
 
 pub fn run(theme: iced::Theme) -> iced::Result {
-    iced::application(boot, update, view)
+    // The passed theme decides the boot appearance, so the demo's own flag and
+    // the window's tokens are the same set from the first frame; the toggle
+    // below then swaps both together. A demo that only toggled its own flag
+    // would name light tokens on a dark window.
+    let dark = theme.extended_palette().is_dark;
+    iced::application(move || boot(dark), update, view)
         .title("uni-kit — icon")
-        .theme(|app: &App| {
-            Some(if app.dark {
-                Theme::Dark
-            } else {
-                Theme::Light
-            })
-        })
-        .theme(theme)
+        .theme(|app: &App| Some(theme::iced_theme(app.dark)))
         .run()
 }
 
@@ -84,11 +82,11 @@ enum Message {
     ToggleTheme,
 }
 
-fn boot() -> App {
+fn boot(dark: bool) -> App {
     App {
         spinning: true,
         pressed: None,
-        dark: false,
+        dark,
     }
 }
 
