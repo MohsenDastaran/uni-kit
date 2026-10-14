@@ -949,9 +949,15 @@ bugs until you check:
   cfg falls through to a dummy provider on wasm and returns `Unimplemented`; a CDP read-back
   after a copy returned `""`. So a copy control can show its own feedback and cannot promise the
   write landed — the clipboard demo says exactly that rather than claiming success.
-- **No interval subscription under this crate's runtime.** `iced::time::every` exists only with
-  the `tokio`/`smol` backends and the crate resolves `thread-pool`, so a component cannot own a
-  timed reset or an animated spin; `icon.rs` names the same gap for its spinner.
+- **No interval subscription under this crate's runtime — but that is not a missing clock.**
+  `iced::time::every` exists only with the `tokio`/`smol` backends and the crate resolves
+  `thread-pool`, so a component cannot own a *subscription*. It can own a clock: sample the frame's
+  own instant in `RedrawRequested(at)`, and either call `shell.request_redraw()` while something
+  moves (the collapsible's reveal, the icon's spinner at Slint's 800ms tick) or
+  `shell.request_redraw_at(deadline)` for a single wake-up (the clipboard's 2s reset, the tooltip's
+  400ms delay). Three components named this as a gap and all three were wrong; this note previously
+  said a component "cannot own a timed reset or an animated spin", which discouraged exactly the
+  work that turned out to be straightforward.
 
 #### A demo's `// section:` titles match the page's `###` examples
 
