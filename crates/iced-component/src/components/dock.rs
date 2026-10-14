@@ -80,7 +80,7 @@ use iced::advanced::renderer;
 use iced::advanced::widget::Tree;
 use iced::advanced::widget::tree::{self, Tag};
 use iced::advanced::{Clipboard, Layout, Shell, Widget, mouse, overlay};
-use iced::widget::{button, column, container, row, text};
+use iced::widget::{button, column, container, row, svg, text};
 use iced::widget::container::Style as ContainerStyle;
 use iced::{Alignment, Border, Element, Event, Font, Length, Padding, Point, Rectangle, Size, Theme,
            Vector, font, touch};
@@ -113,6 +113,10 @@ const TAB_PADDING: f32 = 12.0;
 const TAB_CLOSE_PADDING: f32 = 8.0;
 /// A close control's box, Slint's 16x16 glyph.
 const CLOSE_SIZE: f32 = 16.0;
+/// The Lucide `x` from `crates/slint-component/ui/icons/x.svg` (Lucide, ISC):
+/// the tab close mark, in the same one-line form the crate's other embedded
+/// icons use.
+const CLOSE_XML: &[u8] = br#"<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg>"#;
 /// The active tab's underline, Slint's two-pixel primary rule inset ten pixels.
 const UNDERLINE_HEIGHT: f32 = 2.0;
 const UNDERLINE_INSET: f32 = 10.0;
@@ -1033,12 +1037,22 @@ fn tab<'a, Message: Clone + 'a>(
         });
 
     if closable && active && let Some(on_close) = on_close {
+        // The mark is the embedded `x`, not the `×` character: a text child is
+        // laid out at its box's leading edge, so the glyph sat a pixel from the
+        // left of a 16x16 box when measured. The container centres it on both
+        // axes; the ink is resolved inside the closure so an SVG does not keep
+        // the light theme's colour in the dark.
+        let mark = svg(svg::Handle::from_memory(CLOSE_XML))
+            .width(CLOSE_SIZE)
+            .height(CLOSE_SIZE)
+            .style(|theme: &Theme, _status| svg::Style {
+                color: Some(Tokens::of(theme).muted_foreground),
+            });
+
         let close = button(
-            text("×")
-                .size(theme::FONT_SIZE_XS)
-                .style(|theme: &Theme| text::Style {
-                    color: Some(Tokens::of(theme).muted_foreground),
-                }),
+            container(mark)
+                .center_x(Length::Fill)
+                .center_y(Length::Fill),
         )
         .padding(0.0)
         .width(CLOSE_SIZE)
