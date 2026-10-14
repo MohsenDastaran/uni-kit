@@ -19,6 +19,7 @@ pub mod button;
 pub mod calendar;
 pub mod card;
 pub mod checkbox;
+pub mod clipboard;
 pub mod collapsible;
 pub mod color_picker;
 pub mod combobox;

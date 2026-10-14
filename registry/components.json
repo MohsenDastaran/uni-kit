@@ -22400,6 +22400,23 @@
           "module": "theme"
         }
       ],
+      "clipboard": [
+        {
+          "src": "crates/iced-component/src/components/button.rs",
+          "target": "button.rs",
+          "module": "button"
+        },
+        {
+          "src": "crates/iced-component/src/components/clipboard.rs",
+          "target": "clipboard.rs",
+          "module": "clipboard"
+        },
+        {
+          "src": "crates/iced-component/src/components/theme.rs",
+          "target": "theme.rs",
+          "module": "theme"
+        }
+      ],
       "collapsible": [
         {
           "src": "crates/iced-component/src/components/collapsible.rs",

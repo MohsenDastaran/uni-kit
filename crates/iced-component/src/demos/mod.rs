@@ -16,6 +16,7 @@ pub mod button;
 pub mod calendar;
 pub mod card;
 pub mod checkbox;
+pub mod clipboard;
 pub mod collapsible;
 pub mod color_picker;
 pub mod combobox;
@@ -86,6 +87,7 @@ pub const STORIES: &[&str] = &[
     "calendar",
     "card",
     "checkbox",
+    "clipboard",
     "collapsible",
     "color-picker",
     "combobox",
@@ -159,6 +161,7 @@ pub fn run(story: &str, theme: iced::Theme) -> iced::Result {
         "calendar" => calendar::run(theme),
         "card" => card::run(theme),
         "checkbox" => checkbox::run(theme),
+        "clipboard" => clipboard::run(theme),
         "collapsible" => collapsible::run(theme),
         "color-picker" => color_picker::run(theme),
         "combobox" => combobox::run(theme),
