@@ -252,13 +252,11 @@ where
         }
 
         if has_description {
-            lines = lines.push(
-                text(description)
-                    .size(theme::FONT_SIZE_XS)
-                    .style(move |theme: &Theme| text::Style {
-                        color: Some(Tokens::of(theme).muted_foreground),
-                    }),
-            );
+            lines = lines.push(text(description).size(theme::FONT_SIZE_XS).style(
+                move |theme: &Theme| text::Style {
+                    color: Some(Tokens::of(theme).muted_foreground),
+                },
+            ));
         }
 
         if has_label || has_description {
