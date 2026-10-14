@@ -27,6 +27,7 @@ pub mod description_list;
 pub mod dialog;
 pub mod dropdown_button;
 pub mod empty;
+pub mod focus_trap;
 pub mod form;
 pub mod group_box;
 pub mod hover_card;
@@ -52,6 +53,7 @@ pub mod radio;
 pub mod rating;
 pub mod scrollable;
 pub mod select;
+pub mod settings;
 pub mod sheet;
 pub mod shimmer;
 pub mod sidebar;
@@ -98,6 +100,7 @@ pub const STORIES: &[&str] = &[
     "dialog",
     "dropdown-button",
     "empty",
+    "focus-trap",
     "form",
     "group-box",
     "hover-card",
@@ -123,6 +126,7 @@ pub const STORIES: &[&str] = &[
     "rating",
     "scrollable",
     "select",
+    "settings",
     "sheet",
     "shimmer",
     "sidebar",
@@ -172,6 +176,7 @@ pub fn run(story: &str, theme: iced::Theme) -> iced::Result {
         "dialog" => dialog::run(theme),
         "dropdown-button" => dropdown_button::run(theme),
         "empty" => empty::run(theme),
+        "focus-trap" => focus_trap::run(theme),
         "form" => form::run(theme),
         "group-box" => group_box::run(theme),
         "hover-card" => hover_card::run(theme),
@@ -197,6 +202,7 @@ pub fn run(story: &str, theme: iced::Theme) -> iced::Result {
         "rating" => rating::run(theme),
         "scrollable" => scrollable::run(theme),
         "select" => select::run(theme),
+        "settings" => settings::run(theme),
         "sheet" => sheet::run(theme),
         "shimmer" => shimmer::run(theme),
         "sidebar" => sidebar::run(theme),

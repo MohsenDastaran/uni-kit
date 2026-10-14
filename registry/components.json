@@ -22647,6 +22647,18 @@
           "module": "theme"
         }
       ],
+      "focus-trap": [
+        {
+          "src": "crates/iced-component/src/components/focus_trap.rs",
+          "target": "focus_trap.rs",
+          "module": "focus_trap"
+        },
+        {
+          "src": "crates/iced-component/src/components/theme.rs",
+          "target": "theme.rs",
+          "module": "theme"
+        }
+      ],
       "form": [
         {
           "src": "crates/iced-component/src/components/form.rs",
@@ -23065,6 +23077,23 @@
           "src": "crates/iced-component/src/components/select.rs",
           "target": "select.rs",
           "module": "select"
+        },
+        {
+          "src": "crates/iced-component/src/components/theme.rs",
+          "target": "theme.rs",
+          "module": "theme"
+        }
+      ],
+      "settings": [
+        {
+          "src": "crates/iced-component/src/components/label.rs",
+          "target": "label.rs",
+          "module": "label"
+        },
+        {
+          "src": "crates/iced-component/src/components/settings.rs",
+          "target": "settings.rs",
+          "module": "settings"
         },
         {
           "src": "crates/iced-component/src/components/theme.rs",

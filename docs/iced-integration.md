@@ -377,7 +377,7 @@ scripts/check.sh               # theme parity, feature agreement, manifest, chec
 | `dropdown_button` | `dropdown_button.rs` | yes | yes | yes | 357 | yes | — |
 | `editor` | `editor.rs` | yes | yes | — | — | — | — |
 | `empty` | `empty.rs` | yes | yes | yes | 330 | yes | yes |
-| `focus-trap` | `focus_trap.rs` | yes | yes | — | — | — | — |
+| `focus-trap` | `focus_trap.rs` | yes | yes | yes | 217 | yes | yes |
 | `form` | `form.rs` | yes | yes | yes | 593 | yes | yes |
 | `group-box` | `group_box.rs` | yes | yes | yes | 227 | yes | yes |
 | `hover-card` | `hover_card.rs` | yes | yes | yes | 177 | yes | yes |
@@ -406,7 +406,7 @@ scripts/check.sh               # theme parity, feature agreement, manifest, chec
 | `root` | `root.rs` | yes | yes | — | — | — | — |
 | `scrollable` | `scrollable.rs` | yes | yes | yes | 468 | yes | yes |
 | `select` | `select.rs` | yes | yes | yes | 507 | yes | yes |
-| `settings` | `settings.rs` | yes | yes | — | — | — | — |
+| `settings` | `settings.rs` | yes | yes | yes | 211 | yes | yes |
 | `sheet` | `sheet.rs` | yes | yes | yes | 726 | yes | yes |
 | `shimmer` | `shimmer.rs` | yes | yes | yes | 249 | yes | yes |
 | `sidebar` | `sidebar.rs` | yes | yes | yes | 675 | yes | yes |
@@ -431,7 +431,7 @@ scripts/check.sh               # theme parity, feature agreement, manifest, chec
 | `tree` | `tree.rs` | yes | yes | yes | 352 | yes | yes |
 | `virtual-list` | `virtual_list.rs` | yes | yes | — | — | — | — |
 
-**64 / 79** components have an iced source, an example and a registry entry.
+**66 / 79** components have an iced source, an example and a registry entry.
 
-Still to do: `bubble`, `carousel`, `chart`, `dock`, `dropdown_button`, `editor`, `focus-trap`, `message`, `resizable`, `root`, `settings`, `speech`, `theme`, `title-bar`, `virtual-list`.
+Still to do: `bubble`, `carousel`, `chart`, `dock`, `dropdown_button`, `editor`, `message`, `resizable`, `root`, `speech`, `theme`, `title-bar`, `virtual-list`.
 <!-- iced-checklist:end -->
