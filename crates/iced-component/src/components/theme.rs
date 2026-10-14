@@ -17,6 +17,8 @@
 // installs twenty, so the unused half is not a mistake to warn about.
 #![allow(dead_code)]
 
+use std::cell::Cell;
+
 use iced::{Color, Font, Theme};
 
 // ---------------------------------------------------------------- scales
@@ -202,12 +204,123 @@ pub struct Tokens {
 
 impl Tokens {
     /// The tokens that match a theme.
+    ///
+    /// A gallery embedded in a documentation page sets the page's palette once,
+    /// at boot ([`set_site_palette`]); from then on that is the palette in
+    /// force, because it is the one the page around the frame is drawn in.
+    /// Native and standalone runs never set it and keep the built-in tables.
     pub fn of(theme: &Theme) -> Self {
-        if theme.extended_palette().is_dark {
-            DARK
-        } else {
-            LIGHT
-        }
+        SITE_PALETTE.with(|palette| palette.get()).unwrap_or_else(|| {
+            if theme.extended_palette().is_dark {
+                DARK
+            } else {
+                LIGHT
+            }
+        })
+    }
+
+    /// The tokens of an embedding page's palette.
+    ///
+    /// `token` answers with the page's value for one of the theme tokens its
+    /// navbar applies — `--background`, `--primary`, and the rest of the scale
+    /// on `<html>`. A background and a foreground are required; every other
+    /// token falls back to the nearest one that is present, the way the page's
+    /// own CSS does, so a page that publishes a shorter scale still yields a
+    /// whole palette rather than a half-drawn one. `None` means the page has no
+    /// palette at all, and the caller should keep the built-in tables.
+    pub fn from_site(dark: bool, token: impl Fn(&str) -> Option<Color>) -> Option<Self> {
+        let background = token("--background")?;
+        let foreground = token("--foreground")?;
+        // The page's mode names which built-in table is the fallback for a
+        // token the page itself did not publish.
+        let built_in = if dark { DARK } else { LIGHT };
+        let or = |value: Option<Color>, fallback: Color| value.unwrap_or(fallback);
+        let data = |index: usize| token(&format!("--data-{index}"));
+
+        let surface = or(token("--card"), background);
+        let primary = or(token("--primary"), foreground);
+        let primary_foreground = or(token("--primary-foreground"), background);
+        let secondary = or(token("--secondary"), background);
+        let secondary_foreground = or(token("--secondary-foreground"), foreground);
+        let muted = or(token("--muted"), background);
+        let muted_foreground = or(token("--muted-foreground"), foreground);
+        let accent = or(token("--accent"), background);
+        let accent_foreground = or(token("--accent-foreground"), foreground);
+        let destructive = or(token("--destructive"), built_in.destructive);
+        let border = or(token("--border"), foreground);
+        let input = or(token("--input"), foreground);
+        let ring = or(token("--ring"), foreground);
+
+        Some(Self {
+            dark,
+            background,
+            foreground,
+            surface,
+            primary,
+            primary_foreground,
+            secondary,
+            secondary_foreground,
+            muted,
+            muted_foreground,
+            // The page publishes no link token. GPUI draws a link in
+            // `primary`, so that is the nearest role to take it from.
+            link: primary,
+            // A text field keeps the border's colour at a third of its weight
+            // over the page in dark mode, and sits on the page in light mode,
+            // which is what the Slint theme computes.
+            input_background: if dark { alpha(input, 0.3) } else { background },
+            accent,
+            accent_foreground,
+            destructive,
+            destructive_foreground: if dark {
+                destructive
+            } else {
+                primary_foreground
+            },
+            danger: destructive,
+            border,
+            input,
+            ring,
+            selection: or(token("--selection"), built_in.selection),
+            // The page's first data colour is its informational one, and the
+            // five are its chart series — the same reading the Slint palette
+            // makes of `--data-*`.
+            info: or(data(1), built_in.info),
+            success: or(token("--success"), built_in.success),
+            warning: or(token("--warning"), built_in.warning),
+            chart_1: or(data(1), built_in.chart_1),
+            chart_2: or(data(2), built_in.chart_2),
+            chart_3: or(data(3), built_in.chart_3),
+            chart_4: or(data(4), built_in.chart_4),
+            chart_5: or(data(5), built_in.chart_5),
+            // The dark theme names this surface; the light theme mixes it
+            // barely off the border. `mix` weights its second colour, so the
+            // background keeps 0.8.
+            description_label: if dark {
+                muted
+            } else {
+                mix(background, border, 0.2)
+            },
+            description_label_foreground: foreground,
+            group_box: muted,
+            group_box_foreground: secondary_foreground,
+            group_box_title_foreground: muted_foreground,
+            popover: or(token("--popover"), background),
+            sidebar: or(token("--sidebar"), background),
+            // A dim and a shadow are translucency, not palette: the page has
+            // no token for either, and the built-in weights are already right
+            // for a light or a dark surface.
+            overlay: if dark {
+                rgba(0x00, 0x00, 0x00, 0xa0)
+            } else {
+                rgba(0x00, 0x00, 0x00, 0x4d)
+            },
+            shadow: if dark {
+                rgba(0x00, 0x00, 0x00, 0x80)
+            } else {
+                rgba(0x00, 0x00, 0x00, 0x1f)
+            },
+        })
     }
 
     /// The colour a status reports in.
@@ -220,6 +333,24 @@ impl Tokens {
             Status::Danger => self.danger,
         }
     }
+}
+
+thread_local! {
+    /// The palette the embedding page asked for, for the life of the process.
+    ///
+    /// iced's [`Theme`] carries six colours and a component reads the whole
+    /// token scale, so the extra roles have nowhere to live in a theme. The
+    /// gallery reads the page's tokens once, at boot, and parks them here,
+    /// which is the only place [`Tokens::of`] looks for them.
+    static SITE_PALETTE: Cell<Option<Tokens>> = const { Cell::new(None) };
+}
+
+/// Wear `tokens` as the palette every component reads, until set again.
+///
+/// The gallery calls this with the embedding page's own palette; `None` returns
+/// a process to the built-in light and dark tables.
+pub fn set_site_palette(tokens: Option<Tokens>) {
+    SITE_PALETTE.with(|palette| palette.set(tokens));
 }
 
 pub const LIGHT: Tokens = Tokens {
@@ -441,8 +572,19 @@ fn hue(p: f32, q: f32, t: f32) -> f32 {
 /// in either appearance.
 pub fn iced_theme(dark: bool) -> iced::Theme {
     let tokens = if dark { DARK } else { LIGHT };
+    theme_for(if dark { "uni-kit dark" } else { "uni-kit light" }, &tokens)
+}
+
+/// The iced theme a token set describes, named for the palette it came from.
+///
+/// iced draws its own widgets from the six-colour [`iced::theme::Palette`],
+/// while the components draw from the whole [`Tokens`] scale. This is the
+/// bridge: a page's tokens become the theme's own six core colours, so a window
+/// clears to the page's background and iced's built-in drawing sits in the same
+/// palette the components do.
+pub fn theme_for(name: &str, tokens: &Tokens) -> iced::Theme {
     iced::Theme::custom(
-        if dark { "uni-kit dark" } else { "uni-kit light" }.to_string(),
+        name.to_string(),
         iced::theme::Palette {
             background: tokens.background,
             text: tokens.foreground,

@@ -53,13 +53,19 @@
         }
         document.documentElement.dataset.theme = dark ? 'dark' : 'light';
 
-        // Watch the host page's theme class, and start over when it changes.
+        // Watch the host page's palette, and start over when it changes. Two
+        // light palettes differ in `data-theme` alone, so a `class`-only
+        // observer would leave the frame sitting in the old one while the page
+        // changed around it. The pre-paint script on the page sets that
+        // attribute for a catalog palette and removes it for the plain light
+        // and dark choices, so both halves of the theme are watched here.
         const root = window.parent !== window ? window.parent.document.documentElement : null;
         if (root) {
+          const applied = `${root.classList.contains('dark')}:${root.dataset.theme ?? ''}`;
           new MutationObserver(() => {
-            const now = root.classList.contains('dark');
-            if (now !== (document.documentElement.dataset.theme === 'dark')) location.reload();
-          }).observe(root, { attributes: true, attributeFilter: ['class'] });
+            const now = `${root.classList.contains('dark')}:${root.dataset.theme ?? ''}`;
+            if (now !== applied) location.reload();
+          }).observe(root, { attributes: true, attributeFilter: ['class', 'data-theme'] });
         }
       })();
     </script>
