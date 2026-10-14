@@ -164,11 +164,17 @@ where
         }
 
         if let Some(label) = label {
+            // A count chip is a solid fill, so its ink is the solid-fill
+            // foreground every other control in this crate reads. A literal
+            // white measured 3.76:1 on the light danger, 2.77:1 on the dark one
+            // and 3.90:1 on the page's dark `--destructive`; the token takes the
+            // dark pair to 6.48:1 and the page's dark pair to 4.60:1 and leaves
+            // the authored light pair where it is.
             let chip = container(
                 text(label)
                     .size(10.0)
-                    .style(|_: &Theme| text::Style {
-                        color: Some(Color::WHITE),
+                    .style(|theme: &Theme| text::Style {
+                        color: Some(Tokens::of(theme).primary_foreground),
                     }),
             )
             .height(Length::Fixed(number_height))
