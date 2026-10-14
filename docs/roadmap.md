@@ -740,6 +740,13 @@ already paid for.
 - [ ] Seen in light **and** dark, by looking at a screenshot, not by reading tokens
 - [ ] One commit per component
 
+**The GPUI original is not always under `crates/component/src`.** Three briefs named it
+wrongly, and each agent spent a search correcting them: `focus-trap` lives in
+`crates/base/src/focus_trap.rs`, and `input-group` in `crates/component/src/input/group.rs`
+rather than `input_group.rs`. Glob for the name instead of trusting a path — and note that a
+component living in `base` is a signal about what it is: a focus trap is infrastructure, which
+is also why iced has no counterpart to express it.
+
 **`check-one.sh` is superseded, and misleading.** It copies only the demo's direct imports,
 so it cannot build a *composed* component — `date_picker`, `toolbar` and `sidebar` have each
 spent a paragraph reporting it broken, and it fails for reasons that have nothing to do with
