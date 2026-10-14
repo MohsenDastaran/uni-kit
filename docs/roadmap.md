@@ -821,6 +821,10 @@ each to the same handful of traps. What works:
 - **Compare clip-region hashes.** A before/after/dismiss triple that returns to the
   original hash is stronger evidence than an image someone has to squint at, and it is
   cheap.
+- **A wheel scroll can leave stale tiles.** Under swiftshader the questionnaire's lower
+  captures came back with damaged tiles after a scroll; a forced one-pixel resize repaint
+  cleared them. An environment artifact that looks exactly like a rendering defect, so force
+  a repaint before believing a scrolled screenshot.
 - **Check whose story you are looking at.** Agents run dev servers on the same machine, and
   more than one has been surprised by a port already in use: the time field's first dark
   screenshot showed the *toolbar* demo, because another agent's server had taken the port.
