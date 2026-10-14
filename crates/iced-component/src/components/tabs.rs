@@ -194,22 +194,24 @@ impl<'a, Message: Clone + 'a> From<Tabs<'a, Message>> for Element<'a, Message> {
         for (index, tab) in control.tabs.into_iter().enumerate() {
             let is_selected = index == selected;
             let disabled = tab.disabled || tab.on_press.is_none();
-            let ink_color = ink(Tokens::of(&Theme::Dark), variant, is_selected, disabled);
-            let _ = ink_color;
 
-            let mut content = row![]
+            // The underline rule sits in the tab's own bottom 2px, where Slint
+            // draws it (`y: parent.height - 2px`), so the padding gives it that
+            // space rather than the rule adding height to the selected tab.
+            let bottom = if variant == Variant::Underline { 4.0 } else { 6.0 };
+            let mut label_row = row![]
                 .spacing(6.0)
                 .align_y(Alignment::Center)
                 .padding(iced::Padding {
                     top: 6.0,
                     right: control_pad,
-                    bottom: 6.0,
+                    bottom,
                     left: control_pad,
                 });
             if let Some(icon) = tab.icon {
-                content = content.push(icon);
+                label_row = label_row.push(icon);
             }
-            content = content.push(
+            label_row = label_row.push(
                 text(tab.label)
                     .size(label_size)
                     .font(iced::Font {
@@ -224,6 +226,27 @@ impl<'a, Message: Clone + 'a> From<Tabs<'a, Message>> for Element<'a, Message> {
                         color: Some(ink(Tokens::of(theme), variant, is_selected, disabled)),
                     }),
             );
+
+            // The rule is inside the control, not beside it, so the whole tab —
+            // rule included — is one hit box and one hover fill. Unselected tabs
+            // draw a transparent rule of the same height, which keeps every
+            // label on one baseline.
+            let mut content: Element<'a, Message> = label_row.into();
+            if variant == Variant::Underline {
+                content = column![
+                    content,
+                    container(iced::widget::Space::new())
+                        .width(Length::Fill)
+                        .height(Length::Fixed(2.0))
+                        .style(move |theme: &Theme| ContainerStyle {
+                            background: is_selected
+                                .then(|| Tokens::of(theme).primary.into()),
+                            ..ContainerStyle::default()
+                        }),
+                ]
+                .spacing(0.0)
+                .into();
+            }
 
             let mut control = button(content)
                 .padding(0.0)
