@@ -22,7 +22,7 @@
 // gets a warning for each one it does not want.
 #![allow(dead_code)]
 
-use iced::widget::{button, column, container, row, text};
+use iced::widget::{button, column, container, row, svg, text};
 use iced::{Alignment, Color, Element, Length, Theme};
 
 use super::theme::{self, ControlSize, Tokens};
@@ -276,30 +276,49 @@ where
         content = content.push(body);
 
         if let Some(message) = on_close {
-            let close = button(text("×").size(14.0))
-                .padding(0.0)
-                .width(Length::Fixed(16.0))
-                .height(Length::Fixed(16.0))
-                .style(move |theme: &Theme, status| {
-                    let tokens = Tokens::of(theme);
-                    let ink = status_color(tokens, ink);
-                    let background = match status {
-                        button::Status::Hovered => Some(theme::alpha(ink, 0.1)),
-                        button::Status::Pressed => Some(theme::alpha(ink, 0.16)),
-                        _ => None,
-                    };
-                    button::Style {
-                        background: background.map(Into::into),
-                        text_color: ink,
-                        border: iced::Border {
-                            radius: theme::RADIUS_SM.into(),
-                            ..iced::Border::default()
-                        },
-                        shadow: iced::Shadow::default(),
-                        snap: false,
-                    }
-                })
-                .on_press(message);
+            // The mark is an SVG, not a `×` text glyph: the character carries
+            // its own side bearings inside its em box, so it cannot be centred
+            // honestly, and `align_x` on a single line of text is a no-op. The
+            // ink is resolved inside the style closure, because an SVG tinted
+            // once at build time keeps the light theme's colour in the dark.
+            let glyph = svg(svg::Handle::from_memory(CLOSE_XML))
+                .width(CLOSE_SIZE)
+                .height(CLOSE_SIZE)
+                .style(move |theme: &Theme, _status| svg::Style {
+                    color: Some(status_color(Tokens::of(theme), ink)),
+                });
+
+            // The mark fills its box on both axes, so it is centred by
+            // construction rather than left at the top-left iced's button would
+            // otherwise place it.
+            let close = button(
+                container(glyph)
+                    .center_x(Length::Fill)
+                    .center_y(Length::Fill),
+            )
+            .padding(0.0)
+            .width(Length::Fixed(CLOSE_SIZE))
+            .height(Length::Fixed(CLOSE_SIZE))
+            .style(move |theme: &Theme, status| {
+                let tokens = Tokens::of(theme);
+                let ink = status_color(tokens, ink);
+                let background = match status {
+                    button::Status::Hovered => Some(theme::alpha(ink, 0.1)),
+                    button::Status::Pressed => Some(theme::alpha(ink, 0.16)),
+                    _ => None,
+                };
+                button::Style {
+                    background: background.map(Into::into),
+                    text_color: ink,
+                    border: iced::Border {
+                        radius: theme::RADIUS_SM.into(),
+                        ..iced::Border::default()
+                    },
+                    shadow: iced::Shadow::default(),
+                    snap: false,
+                }
+            })
+            .on_press(message);
 
             content = content.push(container(close).align_y(if banner {
                 Alignment::Center
@@ -315,6 +334,20 @@ where
             .into()
     }
 }
+
+/// The dismiss control's box, and the size its mark is drawn at.
+///
+/// The Slint authority is a 16px square and draws the `x` icon at 14px inside
+/// it; GPUI's close icon resolves to 16px at the default size
+/// (`size.max(Size::Medium)`), and the crate's `dialog` and `notification`
+/// close controls draw this same stroke at 16px. The mark fills its box here,
+/// which is also the size the row's status glyph uses.
+const CLOSE_SIZE: f32 = 16.0;
+
+/// The Lucide `x` from `crates/slint-component/ui/icons/x.svg` (Lucide, ISC):
+/// the mark the Slint close control names, in the same one-line form the
+/// crate's other embedded icons use.
+const CLOSE_XML: &[u8] = br#"<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg>"#;
 
 fn status_color(tokens: Tokens, status: Option<theme::Status>) -> Color {
     match status {
