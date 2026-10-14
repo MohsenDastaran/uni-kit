@@ -873,6 +873,22 @@ each to the same handful of traps. What works:
   `18:45` was intended, and `Input.insertText` was ignored outright — the reliable sequence
   is a click on the segment, `End` to move the caret to the end, then the keystrokes.
 
+#### A live drag *is* possible — with widget-tree state
+
+A claim recorded earlier from `data-table` ("iced has no drag delta for a controlled widget") is
+**too broad**, and `resizable` disproved it: a divider that implements `iced::advanced::Widget`
+directly — the route `slider` takes — keeps `{dragging, press, start_split}` in its widget-tree
+state and receives `CursorMoved`, so it reports `start + (position - press)` clamped, one message
+per pixel. Measured with the button still down: the divider had already moved 80px, and the same
+80 persisted after release. The narrow version is that a *stateless element* has no drag delta;
+anything that owns tree state can have a live drag, and a component that gives up on drag without
+checking this will be needlessly worse than the reference.
+
+The same component also hit the menu's hover-exit shape again: drawing the hover colour from
+`cursor.is_over` alone left the strip active after the pointer left, because iced repaints only on
+request. Tracking the flag in tree state and calling `shell.request_redraw()` on change measured
+rest 229, hover 151, away 229.
+
 #### A `Canvas` can silently draw nothing
 
 `speech`'s first waveform was a `Canvas`, and inside a field's suffix — and in the first body box
