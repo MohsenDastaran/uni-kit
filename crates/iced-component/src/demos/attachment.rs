@@ -4,7 +4,9 @@
 //! The previews are elements the caller builds: here a text glyph stands in for
 //! a media glyph and a tinted panel for an image preview, because iced ships no
 //! icon set and an application owns its assets. A real application passes
-//! `svg(handle)` or `image(handle)` in the same place.
+//! `svg(handle)` or `image(handle)` in the same place. The complete state's
+//! mark is the exception: it is the embedded Lucide `check`, because the `✓`
+//! character the stand-in would use is in neither face the wasm module embeds.
 //!
 //! Run it with `cargo run --example attachment`, or in the browser as
 //! `?story=attachment` in the gallery the website embeds.
@@ -125,10 +127,28 @@ fn update(app: &mut App, message: Message) -> Task<Message> {
     Task::none()
 }
 
-/// The caller's glyph for a media slot. The media box's text colour is the
-/// status's icon colour, so a failed piece's glyph turns destructive on its own.
+/// The caller's glyph for a media slot: a text stand-in for the file-type icon
+/// an application would pass. The media box sets its inherited text colour, so
+/// the mark takes the chip's own ink.
 fn glyph<'a>(label: &'static str) -> Element<'a, Message> {
     text(label).size(11.0).into()
+}
+
+/// The complete state's mark: the Lucide `check` the Slint `Icon` names.
+///
+/// It is an SVG drawn from the embedded Lucide set, not a `✓` text glyph. The
+/// wasm face is Fira Sans Regular plus Iced Icons and the check character
+/// (U+2713) is in neither, so a text mark paints the font's notdef instead — a
+/// thin 6x16 sliver where the tick belonged. An SVG from the same set the Slint
+/// example names draws the mark in both faces.
+fn check_glyph<'a>() -> Element<'a, Message> {
+    svg(svg::Handle::from_memory(CHECK_XML))
+        .width(16.0)
+        .height(16.0)
+        .style(|theme: &Theme, _status| svg::Style {
+            color: Some(Tokens::of(theme).foreground),
+        })
+        .into()
 }
 
 /// The caller's preview. An image element goes here in an application; the
@@ -309,7 +329,7 @@ fn view(app: &App) -> Element<'_, Message> {
         Attachment::new("published-report.pdf")
             .description("Uploaded · 1.8 MB")
             .status(Status::Complete)
-            .icon(glyph("✓"))
+            .icon(check_glyph())
             .width(272.0),
     ]
     .spacing(theme::SPACING_MD);
@@ -526,3 +546,7 @@ fn view(app: &App) -> Element<'_, Message> {
 // ships (`crates/slint-component/ui/icons`, Lucide, ISC), so the three galleries
 // draw the same glyph.
 const CODE_XML: &[u8] = br#"<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m18 16 4-4-4-4"/><path d="m6 8-4 4 4 4"/><path d="m14.5 4-5 16"/></svg>"#;
+
+// The Lucide `check`, from the same set. The complete media slot's mark is this
+// SVG rather than the `✓` character, which the embedded face cannot draw.
+const CHECK_XML: &[u8] = br#"<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>"#;

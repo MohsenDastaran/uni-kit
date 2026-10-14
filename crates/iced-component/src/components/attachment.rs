@@ -20,16 +20,24 @@
 //! application owns its assets, so the media glyph and the preview are the
 //! caller's elements: `.icon(..)` is drawn centred when there is no preview and
 //! `.preview(..)` is drawn in the media box. `remove-icon` likewise takes an
-//! element and falls back to the Slint default's shape, the `×` glyph. The
-//! overlay spinner and the metadata's progress bar are drawn on a `canvas`
-//! here, because a file installed on its own may not have `spinner.rs` or
-//! `progress.rs` beside it to reach for.
+//! element and falls back to the Slint default's mark, the Lucide `x` embedded
+//! below — not the `×` text character, which carries its own side bearings in
+//! its em box and so cannot be centred, and which a browser without the right
+//! face cannot draw at all. The overlay spinner and the metadata's progress bar
+//! are drawn on a `canvas` here, because a file installed on its own may not
+//! have `spinner.rs` or `progress.rs` beside it to reach for.
 //!
 //! **Where this differs from the Slint component, deliberately:**
 //!
 //! - `icon-color` cannot repaint an element the caller built, so it is the
 //!   media box's inherited text colour: a caller's text glyph takes it, while
 //!   an image or an SVG keeps the colours the caller drew it in.
+//! - A failed piece's media glyph is the foreground, not the destructive hue
+//!   the Slint `icon-color` default names. The failed media fill *is* the
+//!   destructive hue at a tenth over the page, so destructive ink on it is a
+//!   hue on its own pale tint: 3.29:1 in the built-in light table. The failure
+//!   still reads through the fill, the border and the description; the glyph
+//!   only has to be legible.
 //! - The remove control's `remove-variant` is not offered. The Slint default is
 //!   the ghost variant, which is what the action control uses too, and that is
 //!   the one treatment drawn here; a caller that wants another passes its own
@@ -60,7 +68,7 @@ use iced::mouse;
 use iced::widget::canvas::path::arc::Arc;
 use iced::widget::canvas::{self, Canvas, Frame, Path};
 use iced::widget::text::{LineHeight, Style as TextStyle, Wrapping};
-use iced::widget::{button, column, container, row, scrollable, space, stack, text};
+use iced::widget::{button, column, container, row, scrollable, space, stack, svg, text};
 use iced::{
     Background, Border, Color, Degrees, Element, Font, Length, Pixels, Radians, Rectangle,
     Renderer, Shadow, Theme,
@@ -184,18 +192,18 @@ impl Style {
 
     /// The colours in force: the overrides where they are set, and the status
     /// treatment otherwise — a failed piece is destructive in its description,
-    /// its border and, without a preview, its media slot and glyph; a pending
-    /// one fades its border; everything else is the card surface.
+    /// its border and, without a preview, its media slot; a pending one fades
+    /// its border; everything else is the card surface. The media *glyph* is
+    /// the foreground in every state: the failed media fill is the destructive
+    /// hue at a tenth, and destructive ink on it is a hue on its own pale tint
+    /// (3.29:1 in the built-in light table), so the failure reads through the
+    /// fill, the border and the description instead.
     pub fn resolve(&self, tokens: Tokens) -> Colors {
         let failed = self.status == Status::Failed;
         Colors {
             fill: self.fill.unwrap_or(tokens.background),
             title: self.title.unwrap_or(tokens.foreground),
-            icon: self.icon.unwrap_or(if failed {
-                tokens.destructive
-            } else {
-                tokens.foreground
-            }),
+            icon: self.icon.unwrap_or(tokens.foreground),
             media: self.media.unwrap_or(if failed {
                 theme::alpha(tokens.destructive, 0.1)
             } else {
@@ -630,10 +638,25 @@ impl<'a, Message: Clone + 'a> Attachment<'a, Message> {
         // vertical one over the media box.
         let actions: Option<Element<'a, Message>> = if self.has_actions() {
             let remove = if on_remove.is_some() {
-                Some(
-                    remove_icon
-                        .unwrap_or_else(|| text("×").size(ControlSize::XSmall.icon_size()).into()),
-                )
+                Some(remove_icon.unwrap_or_else(|| {
+                    // The mark is the embedded `x`, not the `×` character: a
+                    // text glyph is laid out at its box's leading edge, so it
+                    // sits a pixel from the left and a third of the way down
+                    // (measured on the unfixed control: ink 4x5 in a 20x21 box,
+                    // 1/6/15/10 from its edges). `ghost_icon` centres this on
+                    // both axes. The ink is resolved inside the closure because
+                    // an SVG tinted once at build time keeps the light theme's
+                    // colour in the dark.
+                    svg(svg::Handle::from_memory(CLOSE_XML))
+                        .width(CLOSE_SIZE)
+                        .height(CLOSE_SIZE)
+                        .style(|theme: &Theme, _status| svg::Style {
+                            color: Some(
+                                ghost_style(Tokens::of(theme), button::Status::Active).text_color,
+                            ),
+                        })
+                        .into()
+                }))
             } else {
                 None
             };
@@ -961,11 +984,17 @@ fn ghost_icon<'a, Message: Clone + 'a>(
 ) -> Element<'a, Message> {
     let side = control_height(ControlSize::XSmall);
 
-    let mut control = button(icon)
-        .width(Length::Fixed(side))
-        .height(Length::Fixed(side))
-        .padding(0.0)
-        .style(|theme: &Theme, status| ghost_style(Tokens::of(theme), status));
+    // The mark fills the control on both axes, so it is centred by construction
+    // rather than left at the top-left iced's button would otherwise place it.
+    let mut control = button(
+        container(icon)
+            .center_x(Length::Fill)
+            .center_y(Length::Fill),
+    )
+    .width(Length::Fixed(side))
+    .height(Length::Fixed(side))
+    .padding(0.0)
+    .style(|theme: &Theme, status| ghost_style(Tokens::of(theme), status));
 
     if let Some(message) = on_press {
         control = control.on_press(message);
@@ -1032,6 +1061,19 @@ const PROGRESS_GIRTH: f32 = 4.0;
 
 /// The loading ring's diameter, the Slint `Spinner` at `ControlSize.small`.
 const SPINNER: f32 = 14.0;
+
+/// The remove mark's size, in the 20px extra-small ghost control.
+///
+/// The Slint authority is a ghost icon-only `Button` at `xsmall`, which draws
+/// its 12px `x` centred in a 20px square; this crate's dialog, notification,
+/// sheet and alert close controls all draw this same stroke at 16px, and the
+/// alert's is a 16px box the 16px mark fills. 16px is the size here.
+const CLOSE_SIZE: f32 = 16.0;
+
+/// The Lucide `x` from `crates/slint-component/ui/icons/x.svg` (Lucide, ISC):
+/// the default `remove-icon`'s mark, in the same one-line form the crate's
+/// other embedded icons use.
+const CLOSE_XML: &[u8] = br#"<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg>"#;
 
 /// The metadata's bar: the primary colour at a fifth over the track, and the
 /// fill up to the value.
