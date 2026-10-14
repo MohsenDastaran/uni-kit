@@ -908,6 +908,19 @@ box's left edge. The chart found it because every bar value label and x-axis lab
 where it belonged, and the fix is to compute the label's own x from a character-count estimate, as
 the gutter and the chart both now do. Worth knowing before reaching for alignment on one line.
 
+#### A `Canvas` in a region a height animation moves will smear
+
+Third `Canvas` incident, and the most specific. Animating the collapsible's height relayouts the
+whole tree every frame; a `Canvas` sitting in a section that moves because of it came out as about
+five stale rounded bars under the wgpu-to-swiftshader web fallback. The agent isolated it properly:
+absent when the panel is open at boot, absent when the section is scrolled past the viewport (no
+per-frame relayout), **present when `with_layer` is removed**, and persistent across repaints. So it
+needs all three — a per-frame relayout, a `Canvas` inside the moving region, and the web fallback.
+
+The practical rule: prefer a widget that draws quads (`progress` and `speech` have each moved that
+way) and avoid a `Canvas` inside anything that animates its height. The catalog still has `Canvas`
+in `progress`; auditing that is a real, small task rather than a theory.
+
 #### A `Canvas` can silently draw nothing
 
 `speech`'s first waveform was a `Canvas`, and inside a field's suffix — and in the first body box
