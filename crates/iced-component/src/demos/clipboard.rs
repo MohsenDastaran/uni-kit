@@ -15,17 +15,18 @@
 //! `// section: end` after the last one.
 //!
 //! The one heading is the Slint example's single `GroupBox`, "Copy", which the
-//! component page already has. **The two-second check is the caller's here.**
-//! Slint owns `copied` and clears it from a `Timer`; iced's timer needs a runtime
-//! feature this crate does not enable, so this gallery sets the check when the
-//! press reports the value, writes the value through iced's own
-//! `iced::clipboard::write`, and drops the check when the field changes — the
+//! component page already has. **The two-second check is the caller's flag and
+//! the component's deadline.** Slint owns `copied` and clears it from a `Timer`;
+//! here the caller owns the flag, sets it when the press reports the value,
+//! writes the value through iced's own `iced::clipboard::write`, and wraps the
+//! field in [`reset_after`], which asks the shell for one frame at the deadline
+//! and reports `ResetCopy` so the check is cleared. An edit retires it too — the
 //! moment the check stops describing what the field holds.
 
 use iced::widget::{column, container, mouse_area, row, scrollable, svg, text};
 use iced::{Alignment, Element, Length, Task, Theme};
 
-use crate::components::clipboard::Clipboard;
+use crate::components::clipboard::{Clipboard, reset_after};
 use crate::components::group_box::{self, GroupBox};
 use crate::components::input::Input;
 use crate::components::theme::{self, Tokens};
@@ -60,6 +61,8 @@ enum Message {
     UrlChanged(String),
     /// The clipboard was pressed, carrying the value it holds.
     Copy(String),
+    /// The check has been up for its two seconds; retire it.
+    ResetCopy,
     HoverSource(Option<&'static str>),
     PressSource(Option<&'static str>),
     /// A section heading was released: ask the page for that sample.
@@ -83,8 +86,7 @@ fn update(app: &mut App, message: Message) -> Task<Message> {
         Message::UrlChanged(url) => {
             app.url = url;
             // The check belongs to the value that was copied, so an edit retires
-            // it; nothing else here can clear it, because this crate's iced timer
-            // is off (see the module comment).
+            // it; the deadline below retires it after its two seconds.
             app.copied = false;
         }
         Message::Copy(value) => {
@@ -94,6 +96,7 @@ fn update(app: &mut App, message: Message) -> Task<Message> {
             // performing the write the press asked for.
             return iced::clipboard::write(value);
         }
+        Message::ResetCopy => app.copied = false,
         Message::HoverSource(title) => app.hovered_section = title,
         Message::PressSource(title) => app.pressed_source = title,
         Message::ShowSource { index, title } => {
@@ -185,23 +188,28 @@ fn view(app: &App) -> Element<'_, Message> {
     // The clipboard is the field's suffix and copies the field's value: the field
     // is the caller's `String`, and a press reports the URL it holds now. The
     // check is the caller's flag, drawn by the component; the write is iced's own
-    // `Task`, returned from `update`.
-    let copy = Input::new("clipboard-url")
-        .value(&app.url)
-        .width(Length::Fixed(280.0))
-        .on_input(Message::UrlChanged)
-        .suffix(
-            Clipboard::new(&app.url)
-                .copied(app.copied)
-                .on_copy(Message::Copy),
-        );
+    // `Task`, returned from `update`; and `reset_after` carries the two-second
+    // deadline that asks the caller to retire the check.
+    let copy = reset_after(
+        Input::new("clipboard-url")
+            .value(&app.url)
+            .width(Length::Fixed(280.0))
+            .on_input(Message::UrlChanged)
+            .suffix(
+                Clipboard::new(&app.url)
+                    .copied(app.copied)
+                    .on_copy(Message::Copy),
+            ),
+        app.copied,
+        Message::ResetCopy,
+    );
     // section: end
     let status = text(match app.copied {
         true => format!(
-            "Copied {} — the write is the application's iced::clipboard::write.",
+            "Copied {} — the write is the application's, and the check clears itself.",
             app.url
         ),
-        false => "Press the copy control: it reports the field's value and the check comes back."
+        false => "Press the copy control: it reports the field's value, and the check comes back after two seconds."
             .to_string(),
     })
     .size(theme::FONT_SIZE_SM)
