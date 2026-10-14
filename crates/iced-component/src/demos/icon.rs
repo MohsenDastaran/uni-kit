@@ -1,5 +1,5 @@
-//! `icon` — an SVG the application supplies, tinted from the theme and drawn at
-//! the catalog's four sizes, still or turning.
+//! `icon` — an SVG the application supplies, tinted from the theme, drawn at
+//! the catalog's four sizes, and turning on its own clock.
 //!
 //! The artwork below is the example's own: this component never carries an icon
 //! set, because the set belongs to the application. A real one embeds Lucide or
@@ -7,11 +7,18 @@
 //!
 //! Run it with `cargo run --example icon`, or in the browser as
 //! `?story=icon` in the gallery the website embeds.
+//!
+//! Each section carries a heading the component page has. The `// section:
+//! <title>` comments below are the contract the website reads to cut this file
+//! into the usage panels a component page shows, so the code on the page is the
+//! code that runs here. Keep them, one per section, in order, and keep the
+//! closing `// section: end` after the last one.
 
-use iced::widget::{column, container, row, text};
 use iced::widget::svg;
+use iced::widget::{column, container, row, text};
 use iced::{Background, Border, Color, Element, Length, Task, Theme};
 
+use crate::components::button::{Button, Variant};
 use crate::components::icon::Icon;
 use crate::components::theme::{ControlSize, DARK, LIGHT, Tokens};
 
@@ -46,28 +53,49 @@ const STAR: &[u8] = br#"<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 
 /// component's `spinning` comment names.
 const LOADER: &[u8] = br#"<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12a9 9 0 1 1-6.219-8.56"/></svg>"#;
 
-#[derive(Debug, Clone, Default)]
+/// A refresh arrow, the Lucide `refresh-cw` glyph the Slint loading section
+/// also spins.
+const REFRESH: &[u8] = br#"<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 0 1 9-9 9.75 9.75 0 0 1 6.74 2.74L21 8"/><path d="M21 3v5h-5"/><path d="M21 12a9 9 0 0 1-9 9 9.75 9.75 0 0 1-6.74-2.74L3 16"/><path d="M8 16H3v5"/></svg>"#;
+
+/// A tick in a ring, the Lucide `circle-check` glyph.
+const CIRCLE_CHECK: &[u8] = br#"<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="m9 12 2 2 4-4"/></svg>"#;
+
+/// An exclamation in a triangle, the Lucide `triangle-alert` glyph.
+const TRIANGLE_ALERT: &[u8] = br#"<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3"/><path d="M12 9v4"/><path d="M12 17h.01"/></svg>"#;
+
+/// A cross in a ring, the Lucide `circle-x` glyph.
+const CIRCLE_X: &[u8] = br#"<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="m15 9-6 6"/><path d="m9 9 6 6"/></svg>"#;
+
+#[derive(Debug, Clone)]
 struct App {
-    /// The turn, in `0.0..=1.0`. The Spinner example advances its value the
-    /// same way; here a button stands in for a subscription.
-    spin: f32,
+    /// Whether the loading icons run their own clock. `true` at boot, so the
+    /// gallery shows the motion the component owns.
+    spinning: bool,
+    /// The last control pressed, drawn under the sections.
+    pressed: Option<&'static str>,
     dark: bool,
 }
 
 #[derive(Debug, Clone)]
 enum Message {
-    /// A step of the animation, a tenth of a turn.
-    Advance,
+    /// Start or stop the loading icons' turn.
+    ToggleSpin,
+    Pressed(&'static str),
     ToggleTheme,
 }
 
 fn boot() -> App {
-    App::default()
+    App {
+        spinning: true,
+        pressed: None,
+        dark: false,
+    }
 }
 
 fn update(app: &mut App, message: Message) -> Task<Message> {
     match message {
-        Message::Advance => app.spin = (app.spin + 0.1).fract(),
+        Message::ToggleSpin => app.spinning = !app.spinning,
+        Message::Pressed(label) => app.pressed = Some(label),
         Message::ToggleTheme => app.dark = !app.dark,
     }
     Task::none()
@@ -96,7 +124,15 @@ fn section<'a>(title: &'a str, body: impl Into<Element<'a, Message>>) -> Element
 fn view(app: &App) -> Element<'_, Message> {
     let heart = || Icon::<Message>::new(svg::Handle::from_memory(HEART));
     let star = || Icon::<Message>::new(svg::Handle::from_memory(STAR));
+    // The colours: a transparent `.color(..)` follows the theme, and an
+    // explicit token is the caller's own choice, which is why the theme switch
+    // repaints the first and not the second.
+    let ink = tokens(app);
 
+    // section: Basic Icon
+    let basic = row![sample("heart", heart()), sample("star", star())].spacing(12);
+
+    // section: Icon with Custom Size
     let sizes = row![
         sample("xsmall", heart().size(ControlSize::XSmall)),
         sample("small", heart().size(ControlSize::Small)),
@@ -106,10 +142,7 @@ fn view(app: &App) -> Element<'_, Message> {
     ]
     .spacing(12);
 
-    // The colours: a transparent `.color(..)` follows the theme, and an
-    // explicit token is the caller's own choice, which is why the theme switch
-    // repaints the first and not the second.
-    let ink = tokens(app);
+    // section: Icon with Custom Color
     let colors = row![
         sample("foreground", heart()),
         sample("primary", heart().color(ink.primary)),
@@ -119,34 +152,115 @@ fn view(app: &App) -> Element<'_, Message> {
     ]
     .spacing(12);
 
-    let states = row![
-        sample("rest", star()),
-        // A tenth of the way round; press Advance to carry it further.
-        sample("spinning", star().size(ControlSize::Large).spin(app.spin)),
-        sample("loader", Icon::new(svg::Handle::from_memory(LOADER))
-            .size(ControlSize::Large)
-            .color(Color::from_rgb(0.95, 0.75, 0.1))
-            .spin(app.spin)),
-        // The caller's colour wins over the theme's, in either mode.
-        sample("fixed", heart().color(Color::from_rgb(0.55, 0.2, 0.85))),
+    // section: Animated Loading Icon
+    // `spinning` is the component's clock, not the caller's value: Slint's
+    // `spinning` property, one turn every `SPIN_DURATION`. Stop it with the
+    // button under the sections and the icons hold their angle.
+    let loading = row![
+        sample(
+            "loader",
+            Icon::new(svg::Handle::from_memory(LOADER))
+                .size(ControlSize::Large)
+                .spinning(app.spinning),
+        ),
+        sample(
+            "loader primary",
+            Icon::new(svg::Handle::from_memory(LOADER))
+                .size(ControlSize::Large)
+                .color(ink.primary)
+                .spinning(app.spinning),
+        ),
+        sample(
+            "refresh success",
+            Icon::new(svg::Handle::from_memory(REFRESH))
+                .size(ControlSize::Large)
+                .color(ink.success)
+                .spinning(app.spinning),
+        ),
+        sample(
+            "refresh warning",
+            Icon::new(svg::Handle::from_memory(REFRESH))
+                .size(ControlSize::Large)
+                .color(ink.warning)
+                .spinning(app.spinning),
+        ),
     ]
     .spacing(12);
 
+    // section: Status Icons
+    let status = row![
+        sample(
+            "success",
+            Icon::new(svg::Handle::from_memory(CIRCLE_CHECK)).color(ink.success),
+        ),
+        sample(
+            "warning",
+            Icon::new(svg::Handle::from_memory(TRIANGLE_ALERT)).color(ink.warning),
+        ),
+        sample(
+            "danger",
+            Icon::new(svg::Handle::from_memory(CIRCLE_X)).color(ink.danger),
+        ),
+    ]
+    .spacing(12);
+
+    // section: Icon in Button
+    let in_button = row![
+        Button::new("Favourite")
+            .icon(heart())
+            .on_press(Message::Pressed("Favourite")),
+        Button::new("Reload")
+            .variant(Variant::Ghost)
+            .icon(
+                Icon::new(svg::Handle::from_memory(REFRESH))
+                    .color(ink.muted_foreground)
+                    .spinning(app.spinning),
+            )
+            .on_press(Message::Pressed("Reload")),
+    ]
+    .spacing(8)
+    .align_y(iced::Alignment::Center);
+
+    // section: end
+    let controls = row![
+        iced::widget::button(if app.spinning {
+            "Stop the turn"
+        } else {
+            "Start the turn"
+        })
+        .on_press(Message::ToggleSpin),
+        iced::widget::button(if app.dark {
+            "Light theme"
+        } else {
+            "Dark theme"
+        })
+        .on_press(Message::ToggleTheme),
+    ]
+    .spacing(8);
+
+    let status_line = text(match app.pressed {
+        Some(label) => format!("Last pressed: {label}"),
+        None => if app.spinning {
+            "The loading icons turn on their own clock — no subscription."
+        } else {
+            "The turn is stopped; the icons hold the angle they were at."
+        }
+        .to_string(),
+    })
+    .size(12.0)
+    .style(|theme: &Theme| text::Style {
+        color: Some(Tokens::of(theme).muted_foreground),
+    });
+
     let body = column![
-        section("Sizes", sizes),
-        section("Colours", colors),
-        section("States", states),
-        row![
-            iced::widget::button("Advance the turn").on_press(Message::Advance),
-            iced::widget::button(if app.dark {
-                "Light theme"
-            } else {
-                "Dark theme"
-            })
-            .on_press(Message::ToggleTheme),
-        ]
-        .spacing(8),
-        text(format!("spin {:.1}", app.spin)),
+        section("Basic Icon", basic),
+        section("Icon with Custom Size", sizes),
+        section("Icon with Custom Color", colors),
+        section("Animated Loading Icon", loading),
+        section("Status Icons", status),
+        section("Icon in Button", in_button),
+        controls,
+        status_line,
     ]
     .spacing(20)
     .padding(16);
