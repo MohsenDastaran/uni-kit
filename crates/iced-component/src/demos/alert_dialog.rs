@@ -380,12 +380,16 @@ fn view(app: &App) -> Element<'_, Message> {
             .close_button(false)
             .content(
                 column![
-                svg(svg::Handle::from_memory(TRIANGLE_ALERT))
-                    .width(40.0)
-                    .height(40.0)
-                    .style(|theme: &Theme, _status| svg::Style {
-                        color: Some(Tokens::of(theme).warning),
-                    }),
+                container(
+                    svg(svg::Handle::from_memory(TRIANGLE_ALERT))
+                        .width(40.0)
+                        .height(40.0)
+                        .style(|theme: &Theme, _status| svg::Style {
+                            color: Some(Tokens::of(theme).warning),
+                        })
+                )
+                .width(Length::Fill)
+                .center_x(Length::Fill),
                 container(
                     text("Network Permission Required")
                         .size(theme::FONT_SIZE_LG)
