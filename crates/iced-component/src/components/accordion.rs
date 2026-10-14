@@ -396,6 +396,7 @@ pub fn header_target<'a, Message: Clone + 'a>(
         spacing,
         on_toggle,
         background: Box::new(background),
+        lane_inset: 0.0,
     })
 }
 
@@ -454,6 +455,11 @@ struct HeaderTarget<'a, Message> {
     spacing: f32,
     on_toggle: Message,
     background: RowFill<'a>,
+    /// How far the disclosure's lane is held off the row's trailing edge. The
+    /// lane is pinned to that edge, so this is the whole of the mark's distance
+    /// from the card's border — padding the content instead only widens the gap
+    /// between the title and a chevron that has not moved.
+    lane_inset: f32,
 }
 
 impl<'a, Message> Widget<Message, Theme, iced::Renderer> for HeaderTarget<'a, Message>
@@ -529,7 +535,7 @@ where
             vec![
                 content.move_to(iced::Point::new(0.0, 0.0)),
                 lane.move_to(iced::Point::new(
-                    width - lane_width,
+                    (width - lane_width - self.lane_inset).max(0.0),
                     ((height - lane_height) / 2.0).max(0.0),
                 )),
             ],
@@ -756,12 +762,12 @@ impl<'a, Message: Clone + 'a> From<Accordion<'a, Message>> for Element<'a, Messa
             // row-wide target and takes the chevron lane into it, so a caller
             // that already wired its header keeps the tree it had.
             let header: Element<'a, Message> = match section.on_toggle {
-                Some(on_toggle) => header_target(
-                    title.padding(header_padding(pad_x, pad_y, LANE_INSET)),
-                    lane,
-                    12.0,
+                Some(on_toggle) => Element::new(HeaderTarget {
+                    content: title.padding(header_padding(pad_x, pad_y, 0.0)).into(),
+                    disclosure: lane,
+                    spacing: 12.0,
                     on_toggle,
-                    move |theme: &Theme, hovered, pressed| {
+                    background: Box::new(move |theme: &Theme, hovered, pressed| {
                         Some(
                             BackgroundStyle::new(header_fill(
                                 Tokens::of(theme),
@@ -771,8 +777,9 @@ impl<'a, Message: Clone + 'a> From<Accordion<'a, Message>> for Element<'a, Messa
                             ))
                             .with_radius(theme::RADIUS_SM),
                         )
-                    },
-                ),
+                    }),
+                    lane_inset: LANE_INSET,
+                }),
                 None => row![title.padding(header_padding(pad_x, pad_y, pad_x)), lane]
                     .spacing(12.0)
                     .align_y(Alignment::Center)
