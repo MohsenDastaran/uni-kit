@@ -42,6 +42,7 @@ pub mod label;
 pub mod list;
 pub mod marker;
 pub mod menu;
+pub mod message;
 pub mod message_role;
 pub mod message_scroller;
 pub mod notification;
@@ -61,6 +62,7 @@ pub mod shimmer;
 pub mod sidebar;
 pub mod skeleton;
 pub mod slider;
+pub mod speech;
 pub mod spinner;
 pub mod status_bar;
 pub mod stepper;
@@ -117,6 +119,7 @@ pub const STORIES: &[&str] = &[
     "list",
     "marker",
     "menu",
+    "message",
     "message-role",
     "message-scroller",
     "notification",
@@ -136,6 +139,7 @@ pub const STORIES: &[&str] = &[
     "sidebar",
     "skeleton",
     "slider",
+    "speech",
     "spinner",
     "status-bar",
     "stepper",
@@ -195,6 +199,7 @@ pub fn run(story: &str, theme: iced::Theme) -> iced::Result {
         "list" => list::run(theme),
         "marker" => marker::run(theme),
         "menu" => menu::run(theme),
+        "message" => message::run(theme),
         "message-role" => message_role::run(theme),
         "message-scroller" => message_scroller::run(theme),
         "notification" => notification::run(theme),
@@ -214,6 +219,7 @@ pub fn run(story: &str, theme: iced::Theme) -> iced::Result {
         "sidebar" => sidebar::run(theme),
         "skeleton" => skeleton::run(theme),
         "slider" => slider::run(theme),
+        "speech" => speech::run(theme),
         "spinner" => spinner::run(theme),
         "status-bar" => status_bar::run(theme),
         "stepper" => stepper::run(theme),

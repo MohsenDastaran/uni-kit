@@ -22857,6 +22857,33 @@
           "module": "theme"
         }
       ],
+      "message": [
+        {
+          "src": "crates/iced-component/src/components/bubble.rs",
+          "target": "bubble.rs",
+          "module": "bubble"
+        },
+        {
+          "src": "crates/iced-component/src/components/button.rs",
+          "target": "button.rs",
+          "module": "button"
+        },
+        {
+          "src": "crates/iced-component/src/components/message.rs",
+          "target": "message.rs",
+          "module": "message"
+        },
+        {
+          "src": "crates/iced-component/src/components/message_role.rs",
+          "target": "message_role.rs",
+          "module": "message_role"
+        },
+        {
+          "src": "crates/iced-component/src/components/theme.rs",
+          "target": "theme.rs",
+          "module": "theme"
+        }
+      ],
       "message-role": [
         {
           "src": "crates/iced-component/src/components/message_role.rs",
@@ -23223,6 +23250,33 @@
           "src": "crates/iced-component/src/components/slider.rs",
           "target": "slider.rs",
           "module": "slider"
+        },
+        {
+          "src": "crates/iced-component/src/components/theme.rs",
+          "target": "theme.rs",
+          "module": "theme"
+        }
+      ],
+      "speech": [
+        {
+          "src": "crates/iced-component/src/components/button.rs",
+          "target": "button.rs",
+          "module": "button"
+        },
+        {
+          "src": "crates/iced-component/src/components/popover.rs",
+          "target": "popover.rs",
+          "module": "popover"
+        },
+        {
+          "src": "crates/iced-component/src/components/speech.rs",
+          "target": "speech.rs",
+          "module": "speech"
+        },
+        {
+          "src": "crates/iced-component/src/components/tooltip.rs",
+          "target": "tooltip.rs",
+          "module": "tooltip"
         },
         {
           "src": "crates/iced-component/src/components/theme.rs",

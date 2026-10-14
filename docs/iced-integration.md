@@ -390,7 +390,7 @@ scripts/check.sh               # theme parity, feature agreement, manifest, chec
 | `list` | `list.rs` | yes | yes | yes | 241 | yes | yes |
 | `marker` | `marker.rs` | yes | yes | yes | 123 | yes | yes |
 | `menu` | `menu.rs` | yes | yes | yes | 670 | yes | yes |
-| `message` | `message.rs` | yes | yes | — | — | — | — |
+| `message` | `message.rs` | yes | yes | yes | 490 | yes | yes |
 | `message-role` | `message_role.rs` | yes | yes | yes | 235 | yes | yes |
 | `message-scroller` | `message_scroller.rs` | yes | yes | yes | 676 | yes | yes |
 | `notification` | `notification.rs` | yes | yes | yes | 418 | yes | yes |
@@ -412,7 +412,7 @@ scripts/check.sh               # theme parity, feature agreement, manifest, chec
 | `sidebar` | `sidebar.rs` | yes | yes | yes | 675 | yes | yes |
 | `skeleton` | `skeleton.rs` | yes | yes | yes | 152 | yes | yes |
 | `slider` | `slider.rs` | yes | yes | yes | 492 | yes | yes |
-| `speech` | `speech.rs` | yes | yes | — | — | — | — |
+| `speech` | `speech.rs` | yes | yes | yes | 562 | yes | yes |
 | `spinner` | `spinner.rs` | yes | yes | yes | 209 | yes | yes |
 | `status-bar` | `status_bar.rs` | yes | yes | yes | 385 | yes | yes |
 | `stepper` | `stepper.rs` | yes | yes | yes | 642 | yes | yes |
@@ -431,7 +431,7 @@ scripts/check.sh               # theme parity, feature agreement, manifest, chec
 | `tree` | `tree.rs` | yes | yes | yes | 352 | yes | yes |
 | `virtual-list` | `virtual_list.rs` | yes | yes | — | — | — | — |
 
-**68 / 79** components have an iced source, an example and a registry entry.
+**70 / 79** components have an iced source, an example and a registry entry.
 
-Still to do: `carousel`, `chart`, `dock`, `dropdown_button`, `message`, `resizable`, `root`, `speech`, `theme`, `title-bar`, `virtual-list`.
+Still to do: `carousel`, `chart`, `dock`, `dropdown_button`, `resizable`, `root`, `theme`, `title-bar`, `virtual-list`.
 <!-- iced-checklist:end -->
