@@ -22693,6 +22693,18 @@
           "module": "theme"
         }
       ],
+      "image": [
+        {
+          "src": "crates/iced-component/src/components/image.rs",
+          "target": "image.rs",
+          "module": "image"
+        },
+        {
+          "src": "crates/iced-component/src/components/theme.rs",
+          "target": "theme.rs",
+          "module": "theme"
+        }
+      ],
       "input": [
         {
           "src": "crates/iced-component/src/components/input.rs",
@@ -22894,6 +22906,53 @@
           "src": "crates/iced-component/src/components/progress.rs",
           "target": "progress.rs",
           "module": "progress"
+        },
+        {
+          "src": "crates/iced-component/src/components/theme.rs",
+          "target": "theme.rs",
+          "module": "theme"
+        }
+      ],
+      "questionnaire": [
+        {
+          "src": "crates/iced-component/src/components/button.rs",
+          "target": "button.rs",
+          "module": "button"
+        },
+        {
+          "src": "crates/iced-component/src/components/checkbox.rs",
+          "target": "checkbox.rs",
+          "module": "checkbox"
+        },
+        {
+          "src": "crates/iced-component/src/components/form.rs",
+          "target": "form.rs",
+          "module": "form"
+        },
+        {
+          "src": "crates/iced-component/src/components/input.rs",
+          "target": "input.rs",
+          "module": "input"
+        },
+        {
+          "src": "crates/iced-component/src/components/label.rs",
+          "target": "label.rs",
+          "module": "label"
+        },
+        {
+          "src": "crates/iced-component/src/components/progress.rs",
+          "target": "progress.rs",
+          "module": "progress"
+        },
+        {
+          "src": "crates/iced-component/src/components/questionnaire.rs",
+          "target": "questionnaire.rs",
+          "module": "questionnaire"
+        },
+        {
+          "src": "crates/iced-component/src/components/radio.rs",
+          "target": "radio.rs",
+          "module": "radio"
         },
         {
           "src": "crates/iced-component/src/components/theme.rs",

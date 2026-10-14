@@ -29,6 +29,7 @@ pub mod form;
 pub mod group_box;
 pub mod hover_card;
 pub mod icon;
+pub mod image;
 pub mod input;
 pub mod kbd;
 pub mod label;
@@ -43,6 +44,7 @@ pub mod otp_input;
 pub mod pagination;
 pub mod popover;
 pub mod progress;
+pub mod questionnaire;
 pub mod radio;
 pub mod rating;
 pub mod scrollable;
@@ -92,6 +94,7 @@ pub const STORIES: &[&str] = &[
     "group-box",
     "hover-card",
     "icon",
+    "image",
     "input",
     "kbd",
     "label",
@@ -106,6 +109,7 @@ pub const STORIES: &[&str] = &[
     "pagination",
     "popover",
     "progress",
+    "questionnaire",
     "radio",
     "rating",
     "scrollable",
@@ -158,6 +162,7 @@ pub fn run(story: &str, theme: iced::Theme) -> iced::Result {
         "group-box" => group_box::run(theme),
         "hover-card" => hover_card::run(theme),
         "icon" => icon::run(theme),
+        "image" => image::run(theme),
         "input" => input::run(theme),
         "kbd" => kbd::run(theme),
         "label" => label::run(theme),
@@ -172,6 +177,7 @@ pub fn run(story: &str, theme: iced::Theme) -> iced::Result {
         "pagination" => pagination::run(theme),
         "popover" => popover::run(theme),
         "progress" => progress::run(theme),
+        "questionnaire" => questionnaire::run(theme),
         "radio" => radio::run(theme),
         "rating" => rating::run(theme),
         "scrollable" => scrollable::run(theme),

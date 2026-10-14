@@ -382,7 +382,7 @@ scripts/check.sh               # theme parity, feature agreement, manifest, chec
 | `group-box` | `group_box.rs` | yes | yes | yes | 227 | yes | yes |
 | `hover-card` | `hover_card.rs` | yes | yes | yes | 177 | yes | yes |
 | `icon` | `icon.rs` | yes | yes | yes | 214 | yes | yes |
-| `image` | `image.rs` | yes | yes | — | — | — | — |
+| `image` | `image.rs` | yes | yes | yes | 196 | yes | yes |
 | `input` | `input.rs` | yes | yes | yes | 373 | yes | yes |
 | `input-group` | `input_group.rs` | yes | yes | — | — | — | — |
 | `kbd` | `kbd.rs` | yes | yes | yes | 141 | yes | yes |
@@ -399,8 +399,8 @@ scripts/check.sh               # theme parity, feature agreement, manifest, chec
 | `pagination` | `pagination.rs` | yes | yes | yes | 276 | yes | yes |
 | `popover` | `popover.rs` | yes | yes | yes | 1117 | yes | yes |
 | `progress` | `progress.rs` | yes | yes | yes | 413 | yes | yes |
-| `questionnaire` | `questionnaire.rs` | yes | yes | — | — | — | — |
-| `radio` | `radio.rs` | yes | yes | yes | 349 | yes | yes |
+| `questionnaire` | `questionnaire.rs` | yes | yes | yes | 538 | yes | yes |
+| `radio` | `radio.rs` | yes | yes | yes | 387 | yes | yes |
 | `rating` | `rating.rs` | yes | yes | yes | 197 | yes | yes |
 | `resizable` | `resizable.rs` | yes | yes | — | — | — | — |
 | `root` | `root.rs` | yes | yes | — | — | — | — |
@@ -431,7 +431,7 @@ scripts/check.sh               # theme parity, feature agreement, manifest, chec
 | `tree` | `tree.rs` | yes | yes | yes | 352 | yes | yes |
 | `virtual-list` | `virtual_list.rs` | yes | yes | — | — | — | — |
 
-**56 / 79** components have an iced source, an example and a registry entry.
+**58 / 79** components have an iced source, an example and a registry entry.
 
-Still to do: `bubble`, `carousel`, `chart`, `clipboard`, `collapsible`, `dock`, `dropdown_button`, `editor`, `focus-trap`, `image`, `input-group`, `message`, `questionnaire`, `resizable`, `root`, `settings`, `sidebar`, `speech`, `status-bar`, `tabs`, `theme`, `title-bar`, `virtual-list`.
+Still to do: `bubble`, `carousel`, `chart`, `clipboard`, `collapsible`, `dock`, `dropdown_button`, `editor`, `focus-trap`, `input-group`, `message`, `resizable`, `root`, `settings`, `sidebar`, `speech`, `status-bar`, `tabs`, `theme`, `title-bar`, `virtual-list`.
 <!-- iced-checklist:end -->
