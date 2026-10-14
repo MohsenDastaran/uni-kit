@@ -44,7 +44,7 @@
 #![allow(dead_code)]
 
 use iced::widget::Id;
-use iced::widget::text::LineHeight;
+use iced::widget::text::{LineHeight, Wrapping};
 use iced::widget::text_editor;
 use iced::widget::text_editor::{Action, Binding, Content};
 use iced::{Background, Border, Color, Element, Length, Pixels, Theme};
@@ -63,6 +63,8 @@ pub struct Textarea<'a, Message> {
     id: Option<Id>,
     placeholder: String,
     size: ControlSize,
+    font_size: Option<f32>,
+    wrapping: Option<Wrapping>,
     disabled: bool,
     readonly: bool,
     invalid: bool,
@@ -81,6 +83,8 @@ impl<'a, Message> Textarea<'a, Message> {
             id: None,
             placeholder: String::new(),
             size: ControlSize::default(),
+            font_size: None,
+            wrapping: None,
             disabled: false,
             readonly: false,
             invalid: false,
@@ -107,6 +111,24 @@ impl<'a, Message> Textarea<'a, Message> {
 
     pub fn size(mut self, size: ControlSize) -> Self {
         self.size = size;
+        self
+    }
+
+    /// The text size the value draws at. Without it the size step's own font
+    /// size is used — 12 / 14 / 14 / 16 from xsmall to large. The Slint textarea
+    /// has no such property because its size step carries the type; the editor
+    /// asks for this one because its code size is the mono token rather than a
+    /// control step.
+    pub fn font_size(mut self, font_size: f32) -> Self {
+        self.font_size = Some(font_size);
+        self
+    }
+
+    /// How the value wraps. The default is word wrapping, which is what an
+    /// ordinary prose field wants; a code field asks for [`Wrapping::None`] so a
+    /// long line scrolls rather than breaking at a word.
+    pub fn wrapping(mut self, wrapping: Wrapping) -> Self {
+        self.wrapping = Some(wrapping);
         self
     }
 
@@ -191,14 +213,14 @@ impl<'a, Message> Textarea<'a, Message> {
         self.size.input_padding_x()
     }
 
-    fn font_size(&self) -> f32 {
-        self.size.input_font_size()
+    fn resolved_font_size(&self) -> f32 {
+        self.font_size.unwrap_or_else(|| self.size.input_font_size())
     }
 
     /// The line box, `1.45` of the font size — the multiple the Slint component
     /// uses to know how far to slide the field when the caret leaves the box.
     fn line_height(&self) -> f32 {
-        self.font_size() * 1.45
+        self.resolved_font_size() * 1.45
     }
 
     /// What `rows` lines measure in the frame: the text plus the padding above
@@ -345,7 +367,8 @@ where
         let placeholder = control.placeholder.clone();
         let height = control.resolved_height();
         let padding = control.padding();
-        let font_size = control.font_size();
+        let font_size = control.resolved_font_size();
+        let wrapping = control.wrapping;
         let min_height = control.min_height;
         let max_height = control.max_height;
 
@@ -362,6 +385,9 @@ where
 
         if !placeholder.is_empty() {
             field = field.placeholder(placeholder);
+        }
+        if let Some(wrapping) = wrapping {
+            field = field.wrapping(wrapping);
         }
         if let Some(id) = control.id {
             field = field.id(id);
