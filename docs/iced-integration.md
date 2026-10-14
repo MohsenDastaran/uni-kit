@@ -361,7 +361,7 @@ scripts/check.sh               # theme parity, feature agreement, manifest, chec
 | `button` | `button.rs` | yes | yes | yes | 586 | yes | yes |
 | `calendar` | `calendar.rs` | yes | yes | yes | 507 | yes | yes |
 | `card` | `card.rs` | yes | yes | yes | 198 | yes | yes |
-| `carousel` | `carousel.rs` | yes | yes | — | — | — | — |
+| `carousel` | `carousel.rs` | yes | yes | yes | 529 | yes | yes |
 | `chart` | `chart.rs` | yes | yes | — | — | — | — |
 | `checkbox` | `checkbox.rs` | yes | yes | yes | 269 | yes | yes |
 | `clipboard` | `clipboard.rs` | yes | yes | yes | 127 | yes | yes |
@@ -402,7 +402,7 @@ scripts/check.sh               # theme parity, feature agreement, manifest, chec
 | `questionnaire` | `questionnaire.rs` | yes | yes | yes | 538 | yes | yes |
 | `radio` | `radio.rs` | yes | yes | yes | 387 | yes | yes |
 | `rating` | `rating.rs` | yes | yes | yes | 197 | yes | yes |
-| `resizable` | `resizable.rs` | yes | yes | — | — | — | — |
+| `resizable` | `resizable.rs` | yes | yes | yes | 459 | yes | yes |
 | `root` | `root.rs` | yes | yes | — | — | — | — |
 | `scrollable` | `scrollable.rs` | yes | yes | yes | 468 | yes | yes |
 | `select` | `select.rs` | yes | yes | yes | 507 | yes | yes |
@@ -431,7 +431,7 @@ scripts/check.sh               # theme parity, feature agreement, manifest, chec
 | `tree` | `tree.rs` | yes | yes | yes | 352 | yes | yes |
 | `virtual-list` | `virtual_list.rs` | yes | yes | — | — | — | — |
 
-**70 / 79** components have an iced source, an example and a registry entry.
+**72 / 79** components have an iced source, an example and a registry entry.
 
-Still to do: `carousel`, `chart`, `dock`, `dropdown_button`, `resizable`, `root`, `theme`, `title-bar`, `virtual-list`.
+Still to do: `chart`, `dock`, `dropdown_button`, `root`, `theme`, `title-bar`, `virtual-list`.
 <!-- iced-checklist:end -->

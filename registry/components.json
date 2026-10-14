@@ -22400,6 +22400,23 @@
           "module": "theme"
         }
       ],
+      "carousel": [
+        {
+          "src": "crates/iced-component/src/components/button.rs",
+          "target": "button.rs",
+          "module": "button"
+        },
+        {
+          "src": "crates/iced-component/src/components/carousel.rs",
+          "target": "carousel.rs",
+          "module": "carousel"
+        },
+        {
+          "src": "crates/iced-component/src/components/theme.rs",
+          "target": "theme.rs",
+          "module": "theme"
+        }
+      ],
       "checkbox": [
         {
           "src": "crates/iced-component/src/components/checkbox.rs",
@@ -23094,6 +23111,18 @@
           "src": "crates/iced-component/src/components/rating.rs",
           "target": "rating.rs",
           "module": "rating"
+        },
+        {
+          "src": "crates/iced-component/src/components/theme.rs",
+          "target": "theme.rs",
+          "module": "theme"
+        }
+      ],
+      "resizable": [
+        {
+          "src": "crates/iced-component/src/components/resizable.rs",
+          "target": "resizable.rs",
+          "module": "resizable"
         },
         {
           "src": "crates/iced-component/src/components/theme.rs",

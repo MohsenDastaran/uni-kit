@@ -16,6 +16,7 @@ pub mod bubble;
 pub mod button;
 pub mod calendar;
 pub mod card;
+pub mod carousel;
 pub mod checkbox;
 pub mod clipboard;
 pub mod collapsible;
@@ -54,6 +55,7 @@ pub mod progress;
 pub mod questionnaire;
 pub mod radio;
 pub mod rating;
+pub mod resizable;
 pub mod scrollable;
 pub mod select;
 pub mod settings;
@@ -93,6 +95,7 @@ pub const STORIES: &[&str] = &[
     "button",
     "calendar",
     "card",
+    "carousel",
     "checkbox",
     "clipboard",
     "collapsible",
@@ -131,6 +134,7 @@ pub const STORIES: &[&str] = &[
     "questionnaire",
     "radio",
     "rating",
+    "resizable",
     "scrollable",
     "select",
     "settings",
@@ -173,6 +177,7 @@ pub fn run(story: &str, theme: iced::Theme) -> iced::Result {
         "button" => button::run(theme),
         "calendar" => calendar::run(theme),
         "card" => card::run(theme),
+        "carousel" => carousel::run(theme),
         "checkbox" => checkbox::run(theme),
         "clipboard" => clipboard::run(theme),
         "collapsible" => collapsible::run(theme),
@@ -211,6 +216,7 @@ pub fn run(story: &str, theme: iced::Theme) -> iced::Result {
         "questionnaire" => questionnaire::run(theme),
         "radio" => radio::run(theme),
         "rating" => rating::run(theme),
+        "resizable" => resizable::run(theme),
         "scrollable" => scrollable::run(theme),
         "select" => select::run(theme),
         "settings" => settings::run(theme),
