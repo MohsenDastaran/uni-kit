@@ -775,6 +775,12 @@ It caught it immediately and recovered correctly (`git reset --soft HEAD~1`, the
 path, preserving the sibling's content and staged state), but the safe form in a shared tree is
 `git commit --amend -- <your path>`, or no amend at all.
 
+**`Input.insertText` never reaches iced.** Typing into an iced field over CDP needs real
+`keydown` events carrying the text (per character), not `Input.insertText` — that call is ignored, so
+the field sits unchanged and the harness looks like a broken component. The card demo's login field
+found this; the existing note about clicking and pressing `End` first still applies for placing the
+caret.
+
 **Disable smooth scrolling before verifying icon clicks.** The description-list sweep failed on
 odd indices until it emulated `prefers-reduced-motion` and waited for `scrollY` to return to 0 between
 clicks: the page animates the heading into place, so a read taken immediately after the click can
