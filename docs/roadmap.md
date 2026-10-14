@@ -768,6 +768,12 @@ It was proven able to fail by feeding a doctored manifest through the CLI's
 57. That matters more than the coverage number: the earlier version of this check was
 vacuous for a while, and a gate nobody has seen fail is a gate nobody can trust.
 
+**Never `git checkout --` a path you do not own.** One agent ran `cargo fmt` on the crate, which
+reformatted a dozen sibling files, and reverted them with `git checkout --` — the same command that
+destroyed the popover's arrow extension earlier. It happened to be safe because every sibling had
+just committed, but the command does not check that. Revert only your own files, with an explicit
+path list, and tell me if a formatter or a build touches something outside your work.
+
 **Commit with a pathspec — the index is shared.** Agents work in one checkout, so anything
 one of them stages is visible to every other agent's plain `git commit`. One commit already
 swept up a sibling's staged files this way (caught and re-cut with `reset --soft` and a
@@ -893,6 +899,14 @@ The same component also hit the menu's hover-exit shape again: drawing the hover
 `cursor.is_over` alone left the strip active after the pointer left, because iced repaints only on
 request. Tracking the flag in tree state and calling `shell.request_redraw()` on change measured
 rest 229, hover 151, away 229.
+
+#### Text alignment does nothing on a single line
+
+iced's `iced_graphics::text::align` only calls `line.set_align` for **multi-line** paragraphs, so
+`align_x` on one line of text is a no-op — a centred or right-aligned label silently renders at its
+box's left edge. The chart found it because every bar value label and x-axis label landed left of
+where it belonged, and the fix is to compute the label's own x from a character-count estimate, as
+the gutter and the chart both now do. Worth knowing before reaching for alignment on one line.
 
 #### A `Canvas` can silently draw nothing
 
