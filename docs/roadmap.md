@@ -900,6 +900,14 @@ The same component also hit the menu's hover-exit shape again: drawing the hover
 request. Tracking the flag in tree state and calling `shell.request_redraw()` on change measured
 rest 229, hover 151, away 229.
 
+#### `align_bottom` sets the height, it does not align
+
+iced's `Container::align_bottom(h)` **sets the container's height to `h`** rather than aligning a
+child to the bottom of a taller one. The message scroller's floating jump control did
+`.height(Length::Fill).align_bottom(Length::Fixed(48))`, so the stack child became a 48px box at the
+**top** of the scroll region instead of 8px above its bottom. Same family as the `Fill`-in-a-`Shrink`
+trap: a size that reads like an alignment and behaves like a dimension.
+
 #### Text alignment does nothing on a single line
 
 iced's `iced_graphics::text::align` only calls `line.set_align` for **multi-line** paragraphs, so
