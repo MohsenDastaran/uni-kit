@@ -10,10 +10,19 @@
 //! loading form takes the same value as its phase. The component renders the
 //! same at any value, and at zero it draws only the track.
 //!
-//! The bar is drawn on a `canvas` rather than as two containers, because the
-//! fill's width is a fraction of whatever space the bar is given and a widget
-//! does not know that width until it is laid out. The circle uses the same
-//! `canvas` for its arc.
+//! **Both indicators are custom widgets that draw quads, not a `canvas`.** The
+//! fill's width is a fraction of whatever space the bar is given, so it needs a
+//! laid-out size; a `Quad` is the primitive a container proves on every frame.
+//! The circle draws its ring as a rounded `Quad` whose stroke is the border, and
+//! its arc as a run of overlapping round quads along the centreline, because
+//! iced's `Transformation` has no rotation to turn a stroke with.
+//!
+//! The `canvas` versions were retired because a `Canvas` inside a region a height
+//! animation moves **smears** under the web fallback: animating the collapsible's
+//! height relayouts the tree every frame, and the bar came out as a stack of
+//! stale rounded bars. It needs all three — the per-frame relayout, a `Canvas`
+//! inside the moving region, and the wgpu-to-swiftshader fallback — and the quad
+//! path renders correctly in all three.
 
 // An application installs the components it uses, so the parts of this file it
 // does not call are not dead code in the way the compiler means — the file is a
@@ -21,10 +30,14 @@
 // gets a warning for each one it does not want.
 #![allow(dead_code)]
 
-use iced::widget::canvas::{self, Canvas, Frame, Path};
-use iced::widget::canvas::path::arc::Arc;
-use iced::{Color, Element, Length, Renderer, Theme};
-use iced::{mouse, Rectangle};
+use std::marker::PhantomData;
+
+use iced::advanced::Renderer as _;
+use iced::advanced::layout;
+use iced::advanced::renderer::{self, Quad};
+use iced::advanced::widget::{self, Widget};
+use iced::advanced::{Layout, mouse};
+use iced::{Background, Border, Color, Element, Length, Rectangle, Size, Theme};
 
 use super::theme::{self, ControlSize, Status, Tokens};
 
@@ -163,61 +176,91 @@ impl Default for Style {
     }
 }
 
-/// The bar's program: the tinted track, and the fill over it.
-struct Bar {
+/// The bar's widget: the tinted track, and the fill over it.
+struct Bar<Message> {
     status: Status,
     color: Option<Color>,
     loading: bool,
     value: f32,
+    girth: f32,
+    _message: PhantomData<Message>,
 }
 
-impl<Message> canvas::Program<Message> for Bar {
-    type State = ();
+impl<Message> Widget<Message, Theme, iced::Renderer> for Bar<Message> {
+    fn size(&self) -> Size<Length> {
+        Size::new(Length::Fill, Length::Fixed(self.girth))
+    }
+
+    fn layout(
+        &mut self,
+        _tree: &mut widget::Tree,
+        _renderer: &iced::Renderer,
+        limits: &layout::Limits,
+    ) -> layout::Node {
+        layout::atomic(limits, Length::Fill, Length::Fixed(self.girth))
+    }
 
     fn draw(
         &self,
-        _state: &Self::State,
-        renderer: &Renderer,
+        _tree: &widget::Tree,
+        renderer: &mut iced::Renderer,
         theme: &Theme,
-        bounds: Rectangle,
+        _style: &renderer::Style,
+        layout: Layout<'_>,
         _cursor: mouse::Cursor,
-    ) -> Vec<canvas::Geometry> {
-        let mut frame = Frame::new(renderer, bounds.size());
+        _viewport: &Rectangle,
+    ) {
+        let bounds = layout.bounds();
+        if bounds.width < 1.0 || bounds.height < 1.0 {
+            return;
+        }
+
+        // Every token is read when iced draws, so a theme switch moves the bar
+        // with the page.
         let tokens = Tokens::of(theme);
         let tone = self.color.unwrap_or(match self.status {
             Status::Default => tokens.primary,
             status => tokens.status_color(status),
         });
-        let radius = frame.height() / 2.0;
 
-        frame.fill_rectangle(
-            iced::Point::ORIGIN,
-            frame.size(),
-            theme::alpha(tone, 0.2),
+        // The track is square, and the value is a capsule over it: the shape the
+        // `canvas` version drew, kept so the two renderings diff to nothing.
+        renderer.fill_quad(
+            Quad {
+                bounds,
+                ..Quad::default()
+            },
+            Background::Color(theme::alpha(tone, 0.2)),
         );
 
-        let fill = if self.loading {
+        let (x, width) = if self.loading {
             let phase = self.value.clamp(0.0, 1.0);
             let head = ease_in_out(((phase - 0.5) / 0.5).clamp(0.0, 1.0));
             let tail = ease_in_out(1.0 - phase);
-            let width = (frame.width() * (1.0 - head - tail)).max(0.0);
-            Some((frame.width() * head, width))
+            (
+                bounds.width * head,
+                (bounds.width * (1.0 - head - tail)).max(0.0),
+            )
         } else {
-            Some((0.0, frame.width() * self.value.clamp(0.0, 1.0)))
+            (0.0, bounds.width * self.value.clamp(0.0, 1.0))
         };
 
-        if let Some((x, width)) = fill {
-            if width > 0.0 {
-                let path = Path::rounded_rectangle(
-                    iced::Point::new(x, 0.0),
-                    iced::Size::new(width, frame.height()),
-                    radius.into(),
-                );
-                frame.fill(&path, tone);
-            }
+        if width > 0.0 {
+            renderer.fill_quad(
+                Quad {
+                    bounds: Rectangle {
+                        x: bounds.x + x,
+                        y: bounds.y,
+                        width,
+                        height: bounds.height,
+                    },
+                    border: iced::border::rounded(bounds.height / 2.0),
+                    snap: false,
+                    ..Quad::default()
+                },
+                Background::Color(tone),
+            );
         }
-
-        vec![frame.into_geometry()]
     }
 }
 
@@ -227,17 +270,14 @@ where
 {
     fn from(control: Progress<Message>) -> Self {
         let girth = control.girth();
-        let program = Bar {
+        Element::new(Bar {
             status: control.status,
             color: control.color,
             loading: control.loading,
             value: control.fraction(),
-        };
-
-        Canvas::new(program)
-            .width(Length::Fill)
-            .height(Length::Fixed(girth))
-            .into()
+            girth,
+            _message: PhantomData,
+        })
     }
 }
 
@@ -321,41 +361,78 @@ impl<Message> ProgressCircle<Message> {
     }
 }
 
-/// The circle's program: a stroked track, and the arc over it.
-struct Circle {
+/// The circle's widget: a stroked track, and the arc over it.
+struct Circle<Message> {
     status: Status,
     color: Option<Color>,
     loading: bool,
     value: f32,
+    diameter: f32,
+    _message: PhantomData<Message>,
 }
 
-impl<Message> canvas::Program<Message> for Circle {
-    type State = ();
+impl<Message> Widget<Message, Theme, iced::Renderer> for Circle<Message> {
+    fn size(&self) -> Size<Length> {
+        Size::new(Length::Fixed(self.diameter), Length::Fixed(self.diameter))
+    }
+
+    fn layout(
+        &mut self,
+        _tree: &mut widget::Tree,
+        _renderer: &iced::Renderer,
+        limits: &layout::Limits,
+    ) -> layout::Node {
+        layout::atomic(
+            limits,
+            Length::Fixed(self.diameter),
+            Length::Fixed(self.diameter),
+        )
+    }
 
     fn draw(
         &self,
-        _state: &Self::State,
-        renderer: &Renderer,
+        _tree: &widget::Tree,
+        renderer: &mut iced::Renderer,
         theme: &Theme,
-        bounds: Rectangle,
+        _style: &renderer::Style,
+        layout: Layout<'_>,
         _cursor: mouse::Cursor,
-    ) -> Vec<canvas::Geometry> {
+        _viewport: &Rectangle,
+    ) {
+        let bounds = layout.bounds();
+        if bounds.width < 1.0 || bounds.height < 1.0 {
+            return;
+        }
+
         let tokens = Tokens::of(theme);
         let tone = self.color.unwrap_or(match self.status {
             Status::Default => tokens.primary,
             status => tokens.status_color(status),
         });
-        let mut frame = Frame::new(renderer, bounds.size());
-        let diameter = frame.width().min(frame.height());
+        let diameter = bounds.width.min(bounds.height);
         let stroke = (diameter * 0.15).min(5.0);
-        let center = frame.center();
+        let center = bounds.center();
         let radius = ((diameter - stroke) / 2.0).max(0.0);
 
-        frame.stroke(
-            &Path::circle(center, radius),
-            canvas::Stroke::default()
-                .with_color(theme::alpha(tone, 0.2))
-                .with_width(stroke),
+        // The track: a circle whose border is the stroke, the ring `Quad` can
+        // draw without a path.
+        renderer.fill_quad(
+            Quad {
+                bounds: Rectangle {
+                    x: center.x - diameter / 2.0,
+                    y: center.y - diameter / 2.0,
+                    width: diameter,
+                    height: diameter,
+                },
+                border: Border {
+                    color: theme::alpha(tone, 0.2),
+                    width: stroke,
+                    radius: (diameter / 2.0).into(),
+                },
+                snap: false,
+                ..Quad::default()
+            },
+            Background::Color(Color::TRANSPARENT),
         );
 
         let (start, end) = if self.loading {
@@ -369,26 +446,50 @@ impl<Message> canvas::Program<Message> for Circle {
         };
 
         if end > start {
-            let arc = Path::new(|builder| {
-                builder.arc(Arc {
-                    center,
-                    radius,
-                    // The Slint arc starts at the top and sweeps clockwise.
-                    start_angle: iced::Radians::from(iced::Degrees::from(start * 360.0 - 90.0)),
-                    end_angle: iced::Radians::from(iced::Degrees::from(end * 360.0 - 90.0)),
-                });
-            });
-
-            frame.stroke(
-                &arc,
-                canvas::Stroke::default()
-                    .with_color(tone)
-                    .with_width(stroke)
-                    .with_line_cap(canvas::LineCap::Round),
-            );
+            // The Slint arc starts at the top and sweeps clockwise.
+            arc(renderer, center, radius, stroke, start, end, tone);
         }
+    }
+}
 
-        vec![frame.into_geometry()]
+/// One arc of the ring: round quads along the centreline, sampled closely
+/// enough that their outer edges read as one stroke and the round end caps the
+/// `canvas` version drew come for free. iced's `Transformation` has no
+/// rotation, so a turned stroke has no primitive but a dot.
+fn arc(
+    renderer: &mut iced::Renderer,
+    center: iced::Point,
+    radius: f32,
+    stroke: f32,
+    start: f32,
+    end: f32,
+    color: Color,
+) {
+    let sweep = (end - start) * std::f32::consts::TAU;
+    let step = (stroke * 0.4).max(0.5);
+    let samples = ((radius * sweep) / step).ceil().max(1.0) as usize;
+    let dot = iced::border::rounded(stroke / 2.0);
+
+    for index in 0..=samples {
+        let t = index as f32 / samples as f32;
+        let angle = start * std::f32::consts::TAU + t * sweep - std::f32::consts::FRAC_PI_2;
+        let x = center.x + radius * angle.cos();
+        let y = center.y + radius * angle.sin();
+
+        renderer.fill_quad(
+            Quad {
+                bounds: Rectangle {
+                    x: x - stroke / 2.0,
+                    y: y - stroke / 2.0,
+                    width: stroke,
+                    height: stroke,
+                },
+                border: dot,
+                snap: false,
+                ..Quad::default()
+            },
+            Background::Color(color),
+        );
     }
 }
 
@@ -398,16 +499,13 @@ where
 {
     fn from(control: ProgressCircle<Message>) -> Self {
         let diameter = control.diameter.unwrap_or_else(|| control.width());
-        let program = Circle {
+        Element::new(Circle {
             status: control.status,
             color: control.color,
             loading: control.loading,
             value: control.value.clamp(0.0, 1.0),
-        };
-
-        Canvas::new(program)
-            .width(Length::Fixed(diameter))
-            .height(Length::Fixed(diameter))
-            .into()
+            diameter,
+            _message: PhantomData,
+        })
     }
 }
