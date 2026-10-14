@@ -46,17 +46,12 @@ pub fn run(theme: iced::Theme) -> iced::Result {
         .run()
 }
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
 enum Fallback {
     Image,
+    #[default]
     Initials,
     Icon,
-}
-
-impl Default for Fallback {
-    fn default() -> Self {
-        Self::Initials
-    }
 }
 
 #[derive(Debug, Default)]
