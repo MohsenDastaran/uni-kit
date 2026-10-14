@@ -900,6 +900,15 @@ The same component also hit the menu's hover-exit shape again: drawing the hover
 request. Tracking the flag in tree state and calling `shell.request_redraw()` on change measured
 rest 229, hover 151, away 229.
 
+#### `anchor_bottom()` inverts the viewport fraction
+
+A scrollable anchored to the end reports **0 as the newest content and 1 as the top**, so any code
+reading `relative_offset().y` as if it were start-anchored is exactly backwards. The message
+scroller's jump-to-latest ran `snap_to_end` (fraction 1) and landed on the **top** instead, and its
+tail-crossing test `< 1.0` read the tail as "scrolled up", so the fade and the jump control drew at
+rest. Both were found by driving the component — a screenshot of either end state looks correct on
+its own, which is why this survived until someone clicked.
+
 #### `align_bottom` sets the height, it does not align
 
 iced's `Container::align_bottom(h)` **sets the container's height to `h`** rather than aligning a
