@@ -48,6 +48,16 @@
 //!   file on its own and it still compiles. [`MessageScroller::jump_icon`] takes
 //!   the application's artwork, and [`ARROW_DOWN`] is the Lucide glyph the Slint
 //!   button names.
+//!
+//! The jump control floats eight pixels above the frame's bottom edge, and it is
+//! placed there by a `Fill` container with `align_y(End)` and an eight-pixel
+//! bottom inset — not by `align_bottom`. iced's `Container::align_bottom(h)`
+//! *sets the container's height* to `h` rather than aligning a child to the
+//! bottom of a taller box, so `.height(Length::Fill).align_bottom(Fixed(48))` was
+//! a 48-pixel box at the top of the scroll region. Dropping the `.height(Fill)`
+//! alone would not have changed that, because `align_bottom` had already replaced
+//! it with a fixed height; the `Fill` frame keeps the height and the inset, which
+//! is the Slint frame's `parent.height - self.height - 8px`.
 
 // An application installs the components it uses, so the parts of this file it
 // does not call are not dead code in the way the compiler means — the file is a
@@ -508,14 +518,19 @@ fn floating_jump<'a, Message>(icon: svg::Handle, on_jump: Option<Message>) -> El
 where
     Message: Clone + 'a,
 {
+    // `align_bottom(h)` would set this container's height to `h` — a 48px box at
+    // the top of the stack, not a control at the bottom. The frame is `Fill`,
+    // aligned to its end, and the eight-pixel inset is bottom padding, which is
+    // the Slint frame's `parent.height - self.height - 8px`.
     container(jump_button(icon, on_jump))
         .width(Length::Fill)
         .height(Length::Fill)
         .center_x(Length::Fill)
-        // The control's box runs from eight pixels above the bottom edge to
-        // eight pixels below it, so centring it that far above the edge lands
-        // the button where the design puts it.
-        .align_bottom(Length::Fixed(JUMP_BUTTON_EDGE + 2.0 * JUMP_BUTTON_INSET))
+        .align_y(iced::Alignment::End)
+        .padding(iced::Padding {
+            bottom: JUMP_BUTTON_INSET,
+            ..iced::Padding::default()
+        })
         .into()
 }
 
