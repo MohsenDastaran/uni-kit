@@ -804,6 +804,12 @@ nothing, silently.
 Verifying these components means driving a canvas, and three agents have lost a round
 each to the same handful of traps. What works:
 
+- **The gallery does render here.** Chrome's wgpu has no adapter on this machine, but
+  `--enable-unsafe-swiftshader` gives it the WebGL2 fallback and the canvas paints — that is
+  how most of this work was verified. A native window under Xvfb plus lavapipe is an equally
+  valid alternative, and it runs the same `demos::<name>::run`; one agent reached the wrong
+  conclusion that the browser was unusable and took the native route, which was sound but
+  unnecessary.
 - **Coordinates are CSS pixels.** The canvas bitmap is CSS-sized and iced paints at
   `devicePixelRatio`, so a screenshot at DSF 2 is a scale-up of the same UI and input
   coordinates are unaffected — drive with `deviceScaleFactor: 1` and read at 2.
