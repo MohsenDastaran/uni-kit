@@ -409,12 +409,12 @@ scripts/check.sh               # theme parity, feature agreement, manifest, chec
 | `settings` | `settings.rs` | yes | yes | — | — | — | — |
 | `sheet` | `sheet.rs` | yes | yes | yes | 726 | yes | yes |
 | `shimmer` | `shimmer.rs` | yes | yes | yes | 249 | yes | yes |
-| `sidebar` | `sidebar.rs` | yes | yes | — | — | — | — |
+| `sidebar` | `sidebar.rs` | yes | yes | yes | 675 | yes | yes |
 | `skeleton` | `skeleton.rs` | yes | yes | yes | 152 | yes | yes |
 | `slider` | `slider.rs` | yes | yes | yes | 492 | yes | yes |
 | `speech` | `speech.rs` | yes | yes | — | — | — | — |
 | `spinner` | `spinner.rs` | yes | yes | yes | 209 | yes | yes |
-| `status-bar` | `status_bar.rs` | yes | yes | — | — | — | — |
+| `status-bar` | `status_bar.rs` | yes | yes | yes | 385 | yes | yes |
 | `stepper` | `stepper.rs` | yes | yes | yes | 642 | yes | yes |
 | `switch` | `switch.rs` | yes | yes | yes | 235 | yes | yes |
 | `table` | `table.rs` | yes | yes | yes | 753 | yes | yes |
@@ -431,7 +431,7 @@ scripts/check.sh               # theme parity, feature agreement, manifest, chec
 | `tree` | `tree.rs` | yes | yes | yes | 352 | yes | yes |
 | `virtual-list` | `virtual_list.rs` | yes | yes | — | — | — | — |
 
-**58 / 79** components have an iced source, an example and a registry entry.
+**60 / 79** components have an iced source, an example and a registry entry.
 
-Still to do: `bubble`, `carousel`, `chart`, `clipboard`, `collapsible`, `dock`, `dropdown_button`, `editor`, `focus-trap`, `input-group`, `message`, `resizable`, `root`, `settings`, `sidebar`, `speech`, `status-bar`, `tabs`, `theme`, `title-bar`, `virtual-list`.
+Still to do: `bubble`, `carousel`, `chart`, `clipboard`, `collapsible`, `dock`, `dropdown_button`, `editor`, `focus-trap`, `input-group`, `message`, `resizable`, `root`, `settings`, `speech`, `tabs`, `theme`, `title-bar`, `virtual-list`.
 <!-- iced-checklist:end -->

@@ -23077,6 +23077,28 @@
           "module": "theme"
         }
       ],
+      "sidebar": [
+        {
+          "src": "crates/iced-component/src/components/avatar.rs",
+          "target": "avatar.rs",
+          "module": "avatar"
+        },
+        {
+          "src": "crates/iced-component/src/components/scrollable.rs",
+          "target": "scrollable.rs",
+          "module": "scrollable"
+        },
+        {
+          "src": "crates/iced-component/src/components/sidebar.rs",
+          "target": "sidebar.rs",
+          "module": "sidebar"
+        },
+        {
+          "src": "crates/iced-component/src/components/theme.rs",
+          "target": "theme.rs",
+          "module": "theme"
+        }
+      ],
       "skeleton": [
         {
           "src": "crates/iced-component/src/components/skeleton.rs",
@@ -23121,6 +23143,23 @@
           "src": "crates/iced-component/src/components/spinner.rs",
           "target": "spinner.rs",
           "module": "spinner"
+        },
+        {
+          "src": "crates/iced-component/src/components/theme.rs",
+          "target": "theme.rs",
+          "module": "theme"
+        }
+      ],
+      "status-bar": [
+        {
+          "src": "crates/iced-component/src/components/button.rs",
+          "target": "button.rs",
+          "module": "button"
+        },
+        {
+          "src": "crates/iced-component/src/components/status_bar.rs",
+          "target": "status_bar.rs",
+          "module": "status_bar"
         },
         {
           "src": "crates/iced-component/src/components/theme.rs",

@@ -51,9 +51,11 @@ pub mod scrollable;
 pub mod select;
 pub mod sheet;
 pub mod shimmer;
+pub mod sidebar;
 pub mod skeleton;
 pub mod slider;
 pub mod spinner;
+pub mod status_bar;
 pub mod stepper;
 pub mod switch;
 pub mod table;
@@ -116,9 +118,11 @@ pub const STORIES: &[&str] = &[
     "select",
     "sheet",
     "shimmer",
+    "sidebar",
     "skeleton",
     "slider",
     "spinner",
+    "status-bar",
     "stepper",
     "switch",
     "table",
@@ -184,9 +188,11 @@ pub fn run(story: &str, theme: iced::Theme) -> iced::Result {
         "select" => select::run(theme),
         "sheet" => sheet::run(theme),
         "shimmer" => shimmer::run(theme),
+        "sidebar" => sidebar::run(theme),
         "skeleton" => skeleton::run(theme),
         "slider" => slider::run(theme),
         "spinner" => spinner::run(theme),
+        "status-bar" => status_bar::run(theme),
         "stepper" => stepper::run(theme),
         "switch" => switch::run(theme),
         "table" => table::run(theme),
