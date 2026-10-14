@@ -467,7 +467,14 @@ pub fn alpha(color: Color, a: f32) -> Color {
     Color { a, ..color }
 }
 
-/// `a` brought `t` of the way to `b`, the way Slint's `mix` reads.
+/// `a` brought `t` of the way to `b`: `a` keeps `1 - t`, `b` takes `t`.
+///
+/// This is **not** Slint's reading. Slint's `a.mix(b, factor)` weights the
+/// receiver, so it is this call with `t = 1 - factor` — `mix(a, b, 1.0 - factor)`.
+/// A call site that transcribes a Slint factor without inverting it inverts the
+/// weight, which is how the alert's fill became the status colour at 96% instead
+/// of a 4% tint over the page; the call sites that do read a Slint `mix` on
+/// purpose pass the inversion, such as the bubble's `0.24` becoming `0.76`.
 pub fn mix(a: Color, b: Color, t: f32) -> Color {
     let t = t.clamp(0.0, 1.0);
     Color {
