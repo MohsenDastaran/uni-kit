@@ -908,6 +908,21 @@ box's left edge. The chart found it because every bar value label and x-axis lab
 where it belonged, and the fix is to compute the label's own x from a character-count estimate, as
 the gutter and the chart both now do. Worth knowing before reaching for alignment on one line.
 
+#### The fourth `Canvas` incident was invisible, not wrong
+
+`progress` was drawing **nothing at all** on wasm: both themes rendered its bars as empty, and only
+two of its seven circles painted. The component looked unstyled rather than broken, which is why it
+survived this long. Moving it to quads made it visible — and against the one Canvas render that did
+work (the collapsible's fresh-load bar) the quad version is identical above an intensity tolerance
+of 60, with sub-pixel antialiasing differences only, at the same band and fill width. So the Canvas
+version was never a baseline worth matching.
+
+The same component proved the smear with numbers rather than a picture. Before: one open animation
+in a region above it left four stale bars that **persisted** (hot vs settled 0 changed pixels,
+settled vs repainted 25466) — a repaint fixed it, which is the stale-tile trap showing through.
+After: hot, settled and repainted all agree at 0. Two faces of one defect, then: a `Canvas` can draw
+nothing, and it can smear when something above it moves. Both are gone from this catalog now.
+
 #### A `Canvas` in a region a height animation moves will smear
 
 Third `Canvas` incident, and the most specific. Animating the collapsible's height relayouts the
