@@ -22,10 +22,29 @@
 //!
 //! Which sections are open is the caller's state too. iced has no `in-out`
 //! property to bind, so the caller keeps the open set and passes each section's
-//! `open` in. The chevron's rotation and the panel's reveal are animated in
-//! Slint; iced has no built-in animation driver, so the panel is shown or hidden
-//! outright and the chevron is drawn in its end state. A caller that wants the
-//! motion interpolates an `f32` progress in its own subscription.
+//! `open` in.
+//!
+//! **The panel is [`collapsible::reveal`].** A section's content is wrapped in
+//! the same animated reveal the collapsible panel uses, so the height moves from
+//! nothing to the content's measured size over [`collapsible::REVEAL_DURATION`]
+//! — the 150ms Slint gives `animate height` — and a toggle mid-flight reverses
+//! from the height on screen. The content stays mounted while the section is
+//! closed, because that is what lets the reveal measure it and turn around; this
+//! is the composition rather than a second animation, so the accordion inherits
+//! the mechanism and its timing instead of re-deriving them.
+//!
+//! Two things the composition does not carry. The chevron is drawn in its end
+//! state: iced 0.14 has no rotation transition for an arbitrary widget, so
+//! Slint's `animate transform-rotation { duration: 150ms; easing: ease-out; }`
+//! has no counterpart here and the reveal alone carries the motion. And the
+//! Slint accordion writes `easing: ease-out` on its height while the collapsible
+//! authority names no easing — linear — so the shared reveal is a straight line;
+//! the duration matches, the curve is the collapsible's.
+//!
+//! A caller putting a `Canvas` in a section should know the section moves every
+//! frame while it reveals: under the web fallback a `Canvas` in a region a height
+//! animation moves smears, so prefer a widget that draws quads. This file itself
+//! draws no `Canvas`.
 
 // An application installs the components it uses, so the parts of this file it
 // does not call are not dead code in the way the compiler means — the file is a
@@ -37,6 +56,7 @@ use iced::widget::{button, column, container, row, text};
 use iced::widget::container::Style as ContainerStyle;
 use iced::{Alignment, Background, Border, Color, Element, Length, Theme};
 
+use super::collapsible;
 use super::theme::{self, ControlSize, Tokens};
 
 /// One section: the header row, the panel below it and whether it is open.
@@ -316,17 +336,24 @@ impl<'a, Message: 'a> From<Accordion<'a, Message>> for Element<'a, Message> {
             }
             sections = sections.push(header);
 
-            if open && !section.content.is_empty() {
-                sections = sections.push(
-                    column(section.content)
-                        .width(Length::Fill)
-                        .padding(iced::Padding {
-                            top: 0.0,
-                            right: pad_x,
-                            bottom: pad_y,
-                            left: pad_x,
-                        }),
-                );
+            if !section.content.is_empty() {
+                // Wrapped rather than mounted-or-not: the reveal measures the
+                // content at its full height and clips it to the fraction of
+                // that height the section has reached, so a closed section keeps
+                // its content in the tree instead of dropping it and re-mounting
+                // it — which is what lets a toggle mid-flight reverse from where
+                // the panel already is. This is the collapsible panel's own
+                // element, so the accordion inherits that animation rather than
+                // re-deriving it.
+                let body = column(section.content)
+                    .width(Length::Fill)
+                    .padding(iced::Padding {
+                        top: 0.0,
+                        right: pad_x,
+                        bottom: pad_y,
+                        left: pad_x,
+                    });
+                sections = sections.push(collapsible::reveal(body, open));
             }
 
             if !last {
