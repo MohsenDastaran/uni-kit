@@ -4,8 +4,8 @@ impl BaseShowcase {
     pub(in super::super) fn accordion(&self, cx: &mut Context<Self>) -> impl IntoElement {
         let items = [
             (
-                "What is GPUI Base?",
-                "Unstyled, accessible primitives for building native GPUI interfaces.",
+                "What is Iced?",
+                "A cross-platform GUI library for Rust, inspired by Elm.",
             ),
             (
                 "Can I bring my own theme?",
