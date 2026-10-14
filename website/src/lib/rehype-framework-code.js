@@ -54,6 +54,16 @@ function panelIsMissing(panel) {
   return (panel.children ?? []).some((child) => classNames(child).includes('framework-code__missing'));
 }
 
+// A panel with nothing of its framework in it: the missing note, or nothing at
+// all — iced's empty panel is how that framework says it has no sample here.
+function panelAbsent(panel) {
+  const content = (panel.children ?? []).filter((node) => !isBlank(node));
+  return (
+    content.length === 0 ||
+    content.every((node) => classNames(node).includes('framework-code__missing'))
+  );
+}
+
 // A sample that exists in only one framework, and a heading whose section is
 // made entirely of those samples. The other framework drops both.
 function markSingleFramework(tree) {
@@ -200,6 +210,13 @@ export function remarkFrameworkOnly() {
  *
  * The walk stops at anything that is not blank text or a paragraph, so it cannot
  * reach into the section above and hide that too.
+ *
+ * A heading is only marked for the frameworks its *whole section* has no sample
+ * for. An iced sample is spliced directly under the heading it documents, so a
+ * page with prose between that heading and the page's own code leaves the iced
+ * group standing alone: reading only that group would hide a heading whose
+ * GPUI and Slint samples sit below the prose. The samples are collected from
+ * every group under the heading before the mark is written.
  */
 function hideAbsentSections(tree) {
   const visitNode = (node) => {
@@ -214,11 +231,7 @@ function hideAbsentSections(tree) {
           .filter((panel) => panel.properties?.dataFrameworkPanel)
           // Blank nodes are layout, not content: a panel that holds whitespace
           // and the note is still a panel with nothing in it.
-          .filter((panel) =>
-            (panel.children ?? [])
-              .filter((node) => !isBlank(node))
-              .every((node) => classNames(node).includes('framework-code__missing')),
-          )
+          .filter(panelAbsent)
           .map((panel) => panel.properties.dataFrameworkPanel);
         if (absent.length) {
           child.properties = { ...child.properties, dataFrameworkMissing: absent.join(' ') };
@@ -226,27 +239,51 @@ function hideAbsentSections(tree) {
       }
       const missingFrameworks = child.properties?.dataFrameworkMissing;
       if (!missingFrameworks) return;
+      const prose = [];
       for (let at = index - 1; at >= 0; at -= 1) {
         const previous = children[at];
-        if (isBlank(previous) || previous.type === 'element') {
-          if (previous.properties?.dataFrameworkCode) return;
-          if (previous.type === 'element' && previous.tagName !== 'p') {
-            if (isHeading(previous)) {
-              previous.properties = { ...previous.properties, dataFrameworkMissing: missingFrameworks };
-            }
-            return;
+        if (isBlank(previous)) continue;
+        if (previous.properties?.dataFrameworkCode) return;
+        if (previous.type !== 'element') return;
+        if (previous.tagName !== 'p') {
+          if (!isHeading(previous)) return;
+          // The heading's section decides what the framework really has, not
+          // the one group the walk started from.
+          const present = sectionFrameworks(children, at);
+          const absent = missingFrameworks
+            .split(' ')
+            .filter((framework) => !present.has(framework));
+          if (absent.length === 0) return;
+          const value = absent.join(' ');
+          for (const paragraph of prose) {
+            paragraph.properties = { ...paragraph.properties, dataFrameworkMissing: value };
           }
-          if (previous.type === 'element') {
-            previous.properties = { ...previous.properties, dataFrameworkMissing: missingFrameworks };
-            continue;
-          }
-          continue;
+          previous.properties = { ...previous.properties, dataFrameworkMissing: value };
+          return;
         }
-        return;
+        prose.push(previous);
       }
     });
   };
   visitNode(tree);
+}
+
+/** The frameworks with a sample under the heading at `headingIndex`, up to the
+ *  next heading of the same or shallower depth. */
+function sectionFrameworks(children, headingIndex) {
+  const depth = headingDepth(children[headingIndex]);
+  const present = new Set();
+  for (let at = headingIndex + 1; at < children.length; at += 1) {
+    const node = children[at];
+    const nodeDepth = headingDepth(node);
+    if (nodeDepth && nodeDepth <= depth) break;
+    if (!classNames(node).includes('framework-code')) continue;
+    for (const panel of node.children ?? []) {
+      const framework = panel.properties?.dataFrameworkPanel;
+      if (framework && !panelAbsent(panel)) present.add(framework);
+    }
+  }
+  return present;
 }
 
 function isHeading(node) {
