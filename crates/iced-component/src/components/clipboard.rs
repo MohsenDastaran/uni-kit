@@ -7,12 +7,16 @@
 //! this adds over that call is the button, the two Lucide marks from
 //! `crates/slint-component/ui/icons`, and the value a press carries.
 //!
-//! **The check is the caller's state.** The Slint and GPUI versions own `copied`
-//! and clear it from a two-second timer. iced's timer needs a runtime feature
-//! this crate does not enable — the same gap [`Icon`](super::icon) names for its
-//! spin — so this takes the flag back and draws what it is told instead. The
-//! application sets it on the press and clears it when the value it describes
-//! stops being the one that was copied.
+//! **The check is the caller's state, and the reset is a helper it wraps that
+//! state in.** Slint's `Clipboard` owns `copied` and clears it from a `Timer`,
+//! because its button's `clicked` sets both. Here the element cannot clear a
+//! flag it does not own — the press travels to the caller as a message — and
+//! iced has no interval subscription under this crate's runtime to make a
+//! `Timer` of it. What a widget can do is ask the shell for a frame at a
+//! deadline, which is [`reset_after`]: while the caller's `copied` is set it
+//! wakes once after [`COPIED_DURATION`] — Slint's `2s` — and reports `on_reset`,
+//! so the caller clears its own flag and the check goes away on its own. The
+//! component never invents a second source of truth for it.
 //!
 //! **The write is the application's.** An element cannot perform an effect;
 //! iced's clipboard API is a `Task` the application returns from `update`. The
@@ -32,11 +36,19 @@
 // gets a warning for each one it does not want.
 #![allow(dead_code)]
 
+use iced::advanced::layout::{self, Layout};
+use iced::advanced::widget::{self, Tree, Widget};
+use iced::advanced::{renderer, Shell};
+use iced::time::{Duration, Instant};
 use iced::widget::svg;
-use iced::{Element, Theme};
+use iced::{mouse, Element, Event, Length, Rectangle, Size, Theme, Vector};
 
 use super::button::{self, Button, Variant};
 use super::theme::{ControlSize, Tokens};
+
+/// How long the check stays before the caller is asked to clear it, Slint's
+/// `Timer { interval: 2s; }`.
+pub const COPIED_DURATION: Duration = Duration::from_millis(2000);
 
 /// A copy control, built with the methods below.
 pub struct Clipboard<'a, Message> {
@@ -66,8 +78,9 @@ impl<'a, Message> Clipboard<'a, Message> {
     }
 
     /// Whether the caller has just copied `value`: draws the check instead of
-    /// the copy mark. The caller clears it — see the module comment for why the
-    /// two-second reset is not the component's here.
+    /// the copy mark. The caller owns it — set it on the press, and wrap the
+    /// control in [`reset_after`] so it is cleared again after
+    /// [`COPIED_DURATION`].
     pub fn copied(mut self, copied: bool) -> Self {
         self.copied = copied;
         self
@@ -79,6 +92,234 @@ impl<'a, Message> Clipboard<'a, Message> {
     pub fn on_copy(mut self, on_copy: impl Fn(String) -> Message + 'a) -> Self {
         self.on_copy = Some(Box::new(on_copy));
         self
+    }
+}
+
+/// Wraps `content` in the two-second reset the Slint component owns, while
+/// leaving the flag itself with the caller.
+///
+/// iced has no interval subscription under this crate's runtime, so the reset
+/// cannot be a `Timer` the component starts, and an element cannot clear a flag
+/// the caller owns. So the caller keeps `copied` — the value it hands
+/// [`Clipboard::copied`] — and this carries the clock: while `copied` is set it
+/// asks the shell for one frame when [`COPIED_DURATION`] has passed, then
+/// reports `on_reset` so the caller can clear the flag. Wrap the control, or
+/// the field it sits in, and the check comes back on its own the way Slint's
+/// does.
+pub fn reset_after<'a, Message: Clone + 'a>(
+    content: impl Into<Element<'a, Message>>,
+    copied: bool,
+    on_reset: Message,
+) -> Element<'a, Message> {
+    Element::new(Reset {
+        content: content.into(),
+        copied,
+        duration: COPIED_DURATION,
+        on_reset,
+    })
+}
+
+/// The reset on its own. [`reset_after`] builds one; it is private because the
+/// caller gets an `Element`.
+struct Reset<'a, Message> {
+    content: Element<'a, Message>,
+    copied: bool,
+    duration: Duration,
+    on_reset: Message,
+}
+
+/// What a [`Reset`] remembers between frames: which side of the caller's flag
+/// the wait belongs to, when that wait started, and whether it has already
+/// spoken — so one active period reports once, even if the caller leaves the
+/// flag set.
+#[derive(Debug)]
+struct Wait {
+    copied: bool,
+    started: Instant,
+    reported: bool,
+}
+
+impl Wait {
+    fn new(copied: bool) -> Self {
+        Self {
+            copied,
+            started: Instant::now(),
+            reported: false,
+        }
+    }
+}
+
+impl<'a, Message: Clone + 'a> Widget<Message, Theme, iced::Renderer> for Reset<'a, Message> {
+    fn tag(&self) -> widget::tree::Tag {
+        widget::tree::Tag::of::<Wait>()
+    }
+
+    fn state(&self) -> widget::tree::State {
+        widget::tree::State::new(Wait::new(self.copied))
+    }
+
+    fn children(&self) -> Vec<Tree> {
+        vec![Tree::new(&self.content)]
+    }
+
+    fn diff(&self, tree: &mut Tree) {
+        tree.diff_children(&[&self.content]);
+    }
+
+    fn size(&self) -> Size<Length> {
+        self.content.as_widget().size()
+    }
+
+    fn layout(
+        &mut self,
+        tree: &mut Tree,
+        renderer: &iced::Renderer,
+        limits: &layout::Limits,
+    ) -> layout::Node {
+        // The content keeps its own node as this wrapper's only child, so the
+        // wrapper adds no layout of its own and the caller's field is unmoved.
+        let content = self
+            .content
+            .as_widget_mut()
+            .layout(&mut tree.children[0], renderer, limits);
+        let size = content.size();
+        layout::Node::with_children(size, vec![content])
+    }
+
+    fn update(
+        &mut self,
+        tree: &mut Tree,
+        event: &Event,
+        layout: Layout<'_>,
+        cursor: mouse::Cursor,
+        renderer: &iced::Renderer,
+        clipboard: &mut dyn iced::advanced::Clipboard,
+        shell: &mut Shell<'_, Message>,
+        viewport: &Rectangle,
+    ) {
+        // The frame carries the instant, so the deadline is measured against
+        // the frame that wakes it rather than against whatever `Instant::now()`
+        // says this pass.
+        let frame = match event {
+            Event::Window(iced::window::Event::RedrawRequested(at)) => Some(*at),
+            _ => None,
+        };
+        let now = frame.unwrap_or_else(Instant::now);
+        let report = {
+            let wait = tree.state.downcast_mut::<Wait>();
+            // The flag changing starts a new wait, which is what gives a second
+            // copy its own two seconds.
+            if wait.copied != self.copied {
+                wait.copied = self.copied;
+                wait.started = now;
+                wait.reported = false;
+            }
+            if !self.copied || wait.reported {
+                false
+            } else if now.duration_since(wait.started) >= self.duration {
+                wait.reported = true;
+                true
+            } else {
+                // One wake at the deadline is enough; a frame each frame would
+                // spend the window redrawing a check that is not moving. Same
+                // `request_redraw_at` the tooltip's delay uses.
+                shell.request_redraw_at(wait.started + self.duration);
+                false
+            }
+        };
+        if report {
+            shell.publish(self.on_reset.clone());
+        }
+
+        if let Some(content) = layout.children().next() {
+            self.content.as_widget_mut().update(
+                &mut tree.children[0],
+                event,
+                content,
+                cursor,
+                renderer,
+                clipboard,
+                shell,
+                viewport,
+            );
+        }
+    }
+
+    fn draw(
+        &self,
+        tree: &Tree,
+        renderer: &mut iced::Renderer,
+        theme: &Theme,
+        style: &renderer::Style,
+        layout: Layout<'_>,
+        cursor: mouse::Cursor,
+        viewport: &Rectangle,
+    ) {
+        if let Some(content) = layout.children().next() {
+            self.content.as_widget().draw(
+                &tree.children[0],
+                renderer,
+                theme,
+                style,
+                content,
+                cursor,
+                viewport,
+            );
+        }
+    }
+
+    fn mouse_interaction(
+        &self,
+        tree: &Tree,
+        layout: Layout<'_>,
+        cursor: mouse::Cursor,
+        viewport: &Rectangle,
+        renderer: &iced::Renderer,
+    ) -> mouse::Interaction {
+        layout.children().next().map_or(
+            mouse::Interaction::None,
+            |content| {
+                self.content.as_widget().mouse_interaction(
+                    &tree.children[0],
+                    content,
+                    cursor,
+                    viewport,
+                    renderer,
+                )
+            },
+        )
+    }
+
+    fn operate(
+        &mut self,
+        tree: &mut Tree,
+        layout: Layout<'_>,
+        renderer: &iced::Renderer,
+        operation: &mut dyn widget::Operation,
+    ) {
+        if let Some(content) = layout.children().next() {
+            self.content
+                .as_widget_mut()
+                .operate(&mut tree.children[0], content, renderer, operation);
+        }
+    }
+
+    fn overlay<'b>(
+        &'b mut self,
+        tree: &'b mut Tree,
+        layout: Layout<'b>,
+        renderer: &iced::Renderer,
+        viewport: &Rectangle,
+        translation: Vector,
+    ) -> Option<iced::advanced::overlay::Element<'b, Message, Theme, iced::Renderer>> {
+        let content = layout.children().next()?;
+        self.content.as_widget_mut().overlay(
+            &mut tree.children[0],
+            content,
+            renderer,
+            viewport,
+            translation,
+        )
     }
 }
 
