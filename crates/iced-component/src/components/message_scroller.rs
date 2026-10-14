@@ -19,10 +19,10 @@
 //! **Rows are bubbles, not messages.** The Slint scroller passes each turn to
 //! `Message` with `show-avatar: false` and a bubble variant chosen by role, so
 //! the row it actually draws is a bare aligned bubble: no avatar, no author
-//! line, no footer. This component draws that row directly — sent turns on the
-//! muted surface, received turns as plain ghost text — rather than rendering the
-//! whole `Message` to hide its parts. The 480-pixel cap the Slint `Bubble` puts
-//! on the muted surface is [`MessageScroller::max_bubble_width`] here.
+//! line, no footer. The surface belongs to [`super::bubble::Bubble`], which this
+//! component composes rather than drawing a second copy of it — a turn is a
+//! variant, an alignment and its text. The cap the Slint `Bubble` puts on the
+//! muted surface is [`MessageScroller::max_bubble_width`] here.
 //!
 //! Five things differ from the Slint source, all of them because iced cannot
 //! express them:
@@ -62,12 +62,10 @@ use std::rc::Rc;
 use iced::widget::container::Style as ContainerStyle;
 use iced::widget::operation::snap_to_end;
 use iced::widget::scrollable::{Direction, Scrollbar, Viewport};
-use iced::widget::text::Wrapping;
 use iced::widget::{Id, Space, button, column, container, rule, scrollable, svg, text};
-use iced::{
-    Background, Border, Color, Element, Gradient, Length, Radians, Task, Theme, gradient::Linear,
-};
+use iced::{Background, Border, Element, Gradient, Length, Radians, Task, Theme, gradient::Linear};
 
+use super::bubble::{Alignment as BubbleAlignment, Bubble, Variant as BubbleVariant};
 use super::theme::{self, Tokens};
 
 // ------------------------------------------------------------------ the design
@@ -152,62 +150,7 @@ impl Turn {
     }
 }
 
-/// The row a turn draws: a bubble, sized to its content, aligned by its role.
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
-pub enum BubbleVariant {
-    /// The muted surface — GPUI's low-emphasis sent row: a radius, 12 px of
-    /// horizontal padding and 8 px of vertical padding.
-    #[default]
-    Muted,
-    /// No surface at all. Text on the page, full width, which is what the Slint
-    /// `Bubble` draws when its variant is `ghost`.
-    Ghost,
-}
-
 // ------------------------------------------------------------------ styles
-
-/// The colours and geometry a turn's row draws with.
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
-pub struct RowStyle {
-    /// Which of the two bubbles the row draws.
-    pub variant: BubbleVariant,
-}
-
-impl RowStyle {
-    pub fn new(variant: BubbleVariant) -> Self {
-        Self { variant }
-    }
-
-    /// The bubble's fill, radius and padding. A ghost bubble draws no surface,
-    /// which is Slint's `transparent` fill with zero radius and zero padding.
-    pub fn bubble(&self, tokens: Tokens) -> ContainerStyle {
-        match self.variant {
-            BubbleVariant::Muted => ContainerStyle {
-                background: Some(tokens.muted.into()),
-                border: Border {
-                    radius: theme::RADIUS_XL.into(),
-                    ..Border::default()
-                },
-                ..ContainerStyle::default()
-            },
-            BubbleVariant::Ghost => ContainerStyle::default(),
-        }
-    }
-
-    /// The bubble's text. Both variants take the foreground: a ghost row is
-    /// low-emphasis because it carries no surface, not because its ink is dimmed.
-    pub fn ink(&self, tokens: Tokens) -> Color {
-        tokens.foreground
-    }
-
-    /// The padding inside the surface: 8 px above and below, 12 px at the sides.
-    pub fn bubble_padding(&self) -> [f32; 2] {
-        match self.variant {
-            BubbleVariant::Muted => [theme::SPACING_SM, theme::SPACING_MD],
-            BubbleVariant::Ghost => [0.0, 0.0],
-        }
-    }
-}
 
 /// The jump control's circle: GPUI's full radius, a one-pixel border, and the
 /// page's own colour as the fill, so it reads as a control floating over the
@@ -440,58 +383,23 @@ where
     .into()
 }
 
-/// The bubble a turn draws, aligned by its role.
+/// The bubble a turn draws, aligned by its role. `bubble::Bubble` owns the
+/// surface — the muted fill, a ghost's lack of one, the radius, the padding and
+/// the ink — and this only chooses the variant, the edge and the width cap.
 fn turn_row<'a, Message>(turn: &Turn, max_bubble_width: f32) -> Element<'a, Message>
 where
     Message: 'a,
 {
-    let variant = match turn.role {
-        Role::User => BubbleVariant::Muted,
-        Role::Assistant => BubbleVariant::Ghost,
-    };
-    let style = RowStyle::new(variant);
-    let role = turn.role;
-
-    let text = text(turn.body.clone())
-        .size(theme::FONT_SIZE_SM)
-        .wrapping(Wrapping::Word)
-        // Filling a bubble that is itself clamped by `max_width` is what makes a
-        // short line hug its own width and a long line wrap at the cap.
-        .width(Length::Fill)
-        .style(move |theme: &Theme| iced::widget::text::Style {
-            color: Some(style.ink(Tokens::of(theme))),
-        });
-
-    let max_width = match variant {
-        BubbleVariant::Muted => max_bubble_width,
-        // A ghost surface stretches to the list instead of hugging its content,
-        // which is Slint's `horizontal-stretch: ghost ? 1 : 0`.
-        BubbleVariant::Ghost => f32::INFINITY,
+    let (variant, alignment) = match turn.role {
+        Role::User => (BubbleVariant::Muted, BubbleAlignment::End),
+        Role::Assistant => (BubbleVariant::Ghost, BubbleAlignment::Start),
     };
 
-    let bubble = container(text)
-        .max_width(max_width)
-        .padding(style.bubble_padding())
-        .style(move |theme: &Theme| style.bubble(Tokens::of(theme)));
-
-    row_for(role, bubble.into())
-}
-
-/// The row frame: full width, with the bubble pulled to the leading edge for a
-/// received turn and to the trailing edge for a sent one, the way Slint's
-/// `cross-axis-alignment` and GPUI's `flex_row_reverse` do it.
-fn row_for<'a, Message>(role: Role, bubble: Element<'a, Message>) -> Element<'a, Message>
-where
-    Message: 'a,
-{
-    let alignment = match role {
-        Role::User => iced::Alignment::End,
-        Role::Assistant => iced::Alignment::Start,
-    };
-
-    column![bubble]
-        .width(Length::Fill)
-        .align_x(alignment)
+    Bubble::new()
+        .variant(variant)
+        .alignment(alignment)
+        .text(turn.body.clone())
+        .max_width(max_bubble_width)
         .into()
 }
 
