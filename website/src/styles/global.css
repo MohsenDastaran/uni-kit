@@ -568,10 +568,10 @@ html[lang^="ja"] .example-prompt {
   border: 0;
 }
 
-/* These four match the background of the GPUI application inside the frame,
-   not this site's surface, so the frame does not flash a different colour
-   while the WASM loads. An external surface is the one place the guides allow
-   a raw value. */
+/* The pair below matches the background of the GPUI application inside the
+   frame, not this site's surface, so the frame does not flash a different
+   colour while the WASM loads. An external surface is the one place the guides
+   allow a raw value. */
 .component-example--component iframe {
   background: white;
 }
@@ -580,8 +580,12 @@ html[lang^="ja"] .example-prompt {
   background: #0e0e0e;
 }
 
+/* The Slint and iced galleries paint their page's own theme, so their frame
+   follows the palette rather than the light or dark pair above. */
 .component-example--component iframe.component-example__frame--slint,
-.dark .component-example--component iframe.component-example__frame--slint {
+.component-example--component iframe.component-example__frame--iced,
+.dark .component-example--component iframe.component-example__frame--slint,
+.dark .component-example--component iframe.component-example__frame--iced {
   background: var(--background);
 }
 
