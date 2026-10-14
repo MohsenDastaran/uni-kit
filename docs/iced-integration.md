@@ -351,7 +351,7 @@ scripts/check.sh               # theme parity, feature agreement, manifest, chec
 <!-- iced-checklist:start -->
 | Component | iced file | GPUI ref | Slint ref | iced source | lines | example | registry |
 | --- | --- | --- | --- | --- | --- | --- | --- |
-| `accordion` | `accordion.rs` | yes | yes | yes | 366 | yes | yes |
+| `accordion` | `accordion.rs` | yes | yes | yes | 393 | yes | yes |
 | `alert` | `alert.rs` | yes | yes | yes | 319 | yes | yes |
 | `alert-dialog` | `alert_dialog.rs` | yes | yes | yes | 242 | yes | yes |
 | `attachment` | `attachment.rs` | yes | yes | yes | 1169 | yes | yes |
@@ -365,7 +365,7 @@ scripts/check.sh               # theme parity, feature agreement, manifest, chec
 | `chart` | `chart.rs` | yes | yes | yes | 1258 | yes | yes |
 | `checkbox` | `checkbox.rs` | yes | yes | yes | 269 | yes | yes |
 | `clipboard` | `clipboard.rs` | yes | yes | yes | 127 | yes | yes |
-| `collapsible` | `collapsible.rs` | yes | yes | yes | 192 | yes | yes |
+| `collapsible` | `collapsible.rs` | yes | yes | yes | 567 | yes | yes |
 | `color-picker` | `color_picker.rs` | yes | yes | yes | 936 | yes | yes |
 | `combobox` | `combobox.rs` | yes | yes | yes | 738 | yes | yes |
 | `command` | `command.rs` | yes | yes | yes | 990 | yes | yes |
@@ -428,7 +428,7 @@ scripts/check.sh               # theme parity, feature agreement, manifest, chec
 | `toggle` | `toggle.rs` | yes | yes | yes | 268 | yes | yes |
 | `toolbar` | `toolbar.rs` | yes | yes | yes | 328 | yes | yes |
 | `tooltip` | `tooltip.rs` | yes | yes | yes | 718 | yes | yes |
-| `tree` | `tree.rs` | yes | yes | yes | 352 | yes | yes |
+| `tree` | `tree.rs` | yes | yes | yes | 430 | yes | yes |
 | `virtual-list` | `virtual_list.rs` | yes | yes | yes | 265 | yes | yes |
 
 **75 / 79** components have an iced source, an example and a registry entry.

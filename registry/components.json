@@ -22277,6 +22277,11 @@
           "module": "accordion"
         },
         {
+          "src": "crates/iced-component/src/components/collapsible.rs",
+          "target": "collapsible.rs",
+          "module": "collapsible"
+        },
+        {
           "src": "crates/iced-component/src/components/theme.rs",
           "target": "theme.rs",
           "module": "theme"
@@ -23544,6 +23549,11 @@
         }
       ],
       "tree": [
+        {
+          "src": "crates/iced-component/src/components/collapsible.rs",
+          "target": "collapsible.rs",
+          "module": "collapsible"
+        },
         {
           "src": "crates/iced-component/src/components/tree.rs",
           "target": "tree.rs",
