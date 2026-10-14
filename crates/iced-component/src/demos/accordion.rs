@@ -183,13 +183,7 @@ fn is_open(app: &App, group: u8, index: u8) -> bool {
 
 /// The toggle a section's header reports: the caller flips its own state in
 /// `update`, so the message carries the value to write.
-fn toggle(
-    app: &App,
-    group: u8,
-    index: u8,
-    title: &'static str,
-    exclusive: bool,
-) -> Message {
+fn toggle(app: &App, group: u8, index: u8, title: &'static str, exclusive: bool) -> Message {
     Message::Toggle {
         group,
         index,
@@ -287,11 +281,7 @@ fn panel<'a>(
 /// the row's padding, the chevron lane and the hit area that covers both — is
 /// the component's, mounted by `Section::on_toggle`; this is the piece the
 /// click's message is built from.
-fn header<'a>(
-    title: &'a str,
-    label_size: f32,
-    color: fn(&Theme) -> Color,
-) -> Element<'a, Message> {
+fn header<'a>(title: &'a str, label_size: f32, color: fn(&Theme) -> Color) -> Element<'a, Message> {
     line(title, label_size, color)
         .width(Length::Fill)
         .font(iced::Font {
@@ -309,9 +299,10 @@ fn labeled_header<'a>(
     label_size: f32,
     gap: f32,
 ) -> Element<'a, Message> {
-    row![icon.into(), header(title, label_size, |theme| {
-        Tokens::of(theme).foreground
-    })]
+    row![
+        icon.into(),
+        header(title, label_size, |theme| { Tokens::of(theme).foreground })
+    ]
     .spacing(gap)
     .align_y(Alignment::Center)
     .width(Length::Fill)
@@ -448,8 +439,8 @@ fn view(app: &App) -> Element<'_, Message> {
         true,
         &[
             (
-                "What is GPUI Kit?",
-                "A Rust desktop application framework built on GPUI, with styled \
+                "What is Iced?",
+                "A Rust desktop application framework built on iced, with styled \
                  components inspired by macOS and Windows controls.",
             ),
             (
@@ -628,9 +619,12 @@ fn view(app: &App) -> Element<'_, Message> {
             ],
         ),
         Accordion::new([
-            Section::new(disabled_header("Disabled section", label_size(ControlSize::Medium)))
-                .open(false)
-                .content(line("Content.", theme::FONT_SIZE_SM, muted)),
+            Section::new(disabled_header(
+                "Disabled section",
+                label_size(ControlSize::Medium)
+            ))
+            .open(false)
+            .content(line("Content.", theme::FONT_SIZE_SM, muted)),
             Section::new(disabled_header(
                 "Another disabled section",
                 label_size(ControlSize::Medium),
@@ -649,10 +643,7 @@ fn view(app: &App) -> Element<'_, Message> {
         false,
         ControlSize::Medium,
         true,
-        &[
-            ("Section 1", "Content 1"),
-            ("Section 2", "Content 2"),
-        ],
+        &[("Section 1", "Content 1"), ("Section 2", "Content 2")],
     );
 
     // section: Handle Toggle Events
@@ -713,16 +704,14 @@ fn view(app: &App) -> Element<'_, Message> {
     ])
     .size(ControlSize::Small);
 
-    let nested = Accordion::new([
-        Section::new(header(
-            "Parent section",
-            label_size(ControlSize::Medium),
-            |theme| Tokens::of(theme).foreground,
-        ))
-        .on_toggle(toggle(app, OUTER, 0, "Parent section", false))
-        .open(is_open(app, OUTER, 0))
-        .content(inner),
-    ])
+    let nested = Accordion::new([Section::new(header(
+        "Parent section",
+        label_size(ControlSize::Medium),
+        |theme| Tokens::of(theme).foreground,
+    ))
+    .on_toggle(toggle(app, OUTER, 0, "Parent section", false))
+    .open(is_open(app, OUTER, 0))
+    .content(inner)])
     .size(ControlSize::Medium);
 
     // section: end
