@@ -475,7 +475,9 @@ both themes is named plainly rather than ticked.
       and each widget guards its own `cursor.is_over`. Five commits, one per file, and
       the shared popover change was re-checked against the tooltip, whose closed hash
       returned byte-identical. `dropdown_button` still has no leave path of its own, so
-      its caller cannot clear a hover through the new report.
+      its caller cannot clear a hover through the new report. The deferred consolidation now has a concrete
+      instance: `message_scroller.rs` carries its own private `BubbleVariant`/`RowStyle` copy of
+      the bubble surface, and `bubble.rs` is the component that should own it.
 
 #### Four legibility cases, and the one gap behind them
 
@@ -871,6 +873,15 @@ each to the same handful of traps. What works:
   `18:45` was intended, and `Input.insertText` was ignored outright — the reliable sequence
   is a click on the segment, `End` to move the caret to the end, then the keystrokes.
 
+#### A `Fill` child inside a `Shrink` cross axis lays out at zero
+
+The bubble's first build drew blank boxes: a `Length::Fill` child inside a `Shrink` column or
+container is laid out in flex's second pass against a cross size of **0**, so the whole surface
+came out zero-width. `Text` survives it because `Limits::resolve` falls back to intrinsic — which
+is why `message_scroller` works — and a `Column` does not. The fix is to keep the inner column and
+the body text `Shrink` and let `max_width` resolve the wrapping. Same family as the `Stack` note:
+a size that is invisible in the type signature and looks like a broken paint.
+
 #### What iced 0.14 cannot do on wasm at all
 
 Two platform limits have been confirmed here rather than assumed, and both look like component
@@ -886,10 +897,13 @@ bugs until you check:
 
 #### A demo's `// section:` titles match the page's `###` examples
 
-Every brief in this family said `## `, and every agent corrected it: the headings a demo matches
-are the **`###` sample headings**, which is what makes the sidebar count and the card's
-code-icon scroll agree. Worth stating once, since the mistake is in the instructions rather than
-in the work.
+Most demos match the page's **`###` sample headings** rather than its `##` sections, which is
+what makes the sidebar count and the card's code-icon scroll agree — but it is not a rule.
+`bubble.md` documents every behaviour as an `##` section, and naming the demo's markers after the
+Slint GroupBoxes there would have made the plugin append fresh `###` headings at the end of the
+page instead of cutting panels under the documented ones. So the instruction is: **match the
+heading the page actually documents that sample under, and check it with `icedSections`** rather
+than assuming a depth.
 
 #### A `Stack` sizes itself from its first child
 
