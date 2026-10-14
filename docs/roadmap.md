@@ -504,6 +504,12 @@ The theme has no text-safe variant of these pairs, which is why each component r
 and why the fix is a theme decision rather than four component patches. The `check.sh`
 theme-parity step means any such change moves the Slint theme with it.
 
+A sixth pair is worth separating from those four, because it is *subtle* rather than wrong:
+**`accent` on a sidebar-like surface** is `#f5f5f5` on `#fafafa`, five levels. Two components
+have now met it — the sidebar's current row reads as "visible but subtle", and the status bar's
+pressed tint could not be read from a screenshot at all, though the press itself is proven by
+the message it sends. Same root cause, lesser severity, and the same single fix.
+
 One more trap is worth noting beside them because it bit the same component: **an SVG keeps
 its own black** unless the style closure colours it, so an un-coloured icon vanishes in the
 dark theme. The toolbar sets every icon from `button::ink` for that reason.
