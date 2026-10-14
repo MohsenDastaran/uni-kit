@@ -972,6 +972,27 @@ rendered as a tiny rectangle until both stacks were given `Width::Fill`/`Height:
 Nobody reads that from the type signature, and it cost a screenshot to notice, which is
 the third time in this family that looking at a picture beat reading the code.
 
+#### What "missing" means, now that it is implemented
+
+Two defects in that contract are fixed (`b5f363df`, `6122e4fc`), and the first one settles a
+question the wording had left open.
+
+- **A heading is marked missing only for a framework whose *whole section* has no sample for it.**
+  Before, a heading with prose between it and its code was marked `gpui slint` for the iced-only
+  group standing above it, and the CSS then hid the entire section in both other views — five
+  headings across `list`, `table` and `virtual-list`. The walk now intersects the group's absent
+  frameworks with what the section actually samples, so `table`'s Column widths and Without Border
+  are visible under GPUI and iced and correctly stay hidden under **Slint**, whose example has
+  nothing for them. Hidden means "this framework has nothing here", not "some framework does".
+- **A repeated sample gets its own heading and scroll target.** A later section sharing a title
+  takes a created heading placed at the *end* of the shared section — so panels keep demo order —
+  which repeats the shared title as its text and adds a subtitle (`— 2 of 2`), plus a
+  `data-gallery-index` that the scroll lookup prefers over a title-only match. That is the
+  subtitle rule above, implemented the first time a page needed it: accordion's custom-icon
+  example has no heading of its own on `accordion.md`, so two sections share one. The gallery
+  *card* still shows the bare shared title — a card subtitle needs `crates/iced-component` — so
+  disambiguation travels by index instead.
+
 ### Every card scrolls to its own sample
 
 A card's code icon scrolls the page to that card's copyable sample, and the sample
