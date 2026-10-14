@@ -22417,6 +22417,18 @@
           "module": "theme"
         }
       ],
+      "chart": [
+        {
+          "src": "crates/iced-component/src/components/chart.rs",
+          "target": "chart.rs",
+          "module": "chart"
+        },
+        {
+          "src": "crates/iced-component/src/components/theme.rs",
+          "target": "theme.rs",
+          "module": "theme"
+        }
+      ],
       "checkbox": [
         {
           "src": "crates/iced-component/src/components/checkbox.rs",
@@ -22630,6 +22642,18 @@
           "src": "crates/iced-component/src/components/dialog.rs",
           "target": "dialog.rs",
           "module": "dialog"
+        },
+        {
+          "src": "crates/iced-component/src/components/theme.rs",
+          "target": "theme.rs",
+          "module": "theme"
+        }
+      ],
+      "dock": [
+        {
+          "src": "crates/iced-component/src/components/dock.rs",
+          "target": "dock.rs",
+          "module": "dock"
         },
         {
           "src": "crates/iced-component/src/components/theme.rs",
@@ -23524,6 +23548,23 @@
           "src": "crates/iced-component/src/components/tree.rs",
           "target": "tree.rs",
           "module": "tree"
+        },
+        {
+          "src": "crates/iced-component/src/components/theme.rs",
+          "target": "theme.rs",
+          "module": "theme"
+        }
+      ],
+      "virtual-list": [
+        {
+          "src": "crates/iced-component/src/components/scrollable.rs",
+          "target": "scrollable.rs",
+          "module": "scrollable"
+        },
+        {
+          "src": "crates/iced-component/src/components/virtual_list.rs",
+          "target": "virtual_list.rs",
+          "module": "virtual_list"
         },
         {
           "src": "crates/iced-component/src/components/theme.rs",

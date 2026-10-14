@@ -17,6 +17,7 @@ pub mod button;
 pub mod calendar;
 pub mod card;
 pub mod carousel;
+pub mod chart;
 pub mod checkbox;
 pub mod clipboard;
 pub mod collapsible;
@@ -27,6 +28,7 @@ pub mod data_table;
 pub mod date_picker;
 pub mod description_list;
 pub mod dialog;
+pub mod dock;
 pub mod dropdown_button;
 pub mod editor;
 pub mod empty;
@@ -79,6 +81,7 @@ pub mod toggle;
 pub mod toolbar;
 pub mod tooltip;
 pub mod tree;
+pub mod virtual_list;
 
 mod index;
 
@@ -96,6 +99,7 @@ pub const STORIES: &[&str] = &[
     "calendar",
     "card",
     "carousel",
+    "chart",
     "checkbox",
     "clipboard",
     "collapsible",
@@ -106,6 +110,7 @@ pub const STORIES: &[&str] = &[
     "date-picker",
     "description-list",
     "dialog",
+    "dock",
     "dropdown-button",
     "editor",
     "empty",
@@ -158,6 +163,7 @@ pub const STORIES: &[&str] = &[
     "toolbar",
     "tooltip",
     "tree",
+    "virtual-list",
 ];
 
 /// Run the demo a story names, with the theme the page asked for.
@@ -178,6 +184,7 @@ pub fn run(story: &str, theme: iced::Theme) -> iced::Result {
         "calendar" => calendar::run(theme),
         "card" => card::run(theme),
         "carousel" => carousel::run(theme),
+        "chart" => chart::run(theme),
         "checkbox" => checkbox::run(theme),
         "clipboard" => clipboard::run(theme),
         "collapsible" => collapsible::run(theme),
@@ -188,6 +195,7 @@ pub fn run(story: &str, theme: iced::Theme) -> iced::Result {
         "date-picker" => date_picker::run(theme),
         "description-list" => description_list::run(theme),
         "dialog" => dialog::run(theme),
+        "dock" => dock::run(theme),
         "dropdown-button" => dropdown_button::run(theme),
         "editor" => editor::run(theme),
         "empty" => empty::run(theme),
@@ -240,6 +248,7 @@ pub fn run(story: &str, theme: iced::Theme) -> iced::Result {
         "toolbar" => toolbar::run(theme),
         "tooltip" => tooltip::run(theme),
         "tree" => tree::run(theme),
+        "virtual-list" => virtual_list::run(theme),
         other => index::run(theme, other.to_string()),
     }
 }

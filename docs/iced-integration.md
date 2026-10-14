@@ -362,7 +362,7 @@ scripts/check.sh               # theme parity, feature agreement, manifest, chec
 | `calendar` | `calendar.rs` | yes | yes | yes | 507 | yes | yes |
 | `card` | `card.rs` | yes | yes | yes | 198 | yes | yes |
 | `carousel` | `carousel.rs` | yes | yes | yes | 529 | yes | yes |
-| `chart` | `chart.rs` | yes | yes | — | — | — | — |
+| `chart` | `chart.rs` | yes | yes | yes | 1258 | yes | yes |
 | `checkbox` | `checkbox.rs` | yes | yes | yes | 269 | yes | yes |
 | `clipboard` | `clipboard.rs` | yes | yes | yes | 127 | yes | yes |
 | `collapsible` | `collapsible.rs` | yes | yes | yes | 192 | yes | yes |
@@ -373,7 +373,7 @@ scripts/check.sh               # theme parity, feature agreement, manifest, chec
 | `date-picker` | `date_picker.rs` | yes | yes | yes | 539 | yes | yes |
 | `description-list` | `description_list.rs` | yes | yes | yes | 441 | yes | yes |
 | `dialog` | `dialog.rs` | yes | yes | yes | 620 | yes | yes |
-| `dock` | `dock.rs` | yes | yes | — | — | — | — |
+| `dock` | `dock.rs` | yes | yes | yes | 1520 | yes | yes |
 | `dropdown_button` | `dropdown_button.rs` | yes | yes | yes | 357 | yes | — |
 | `editor` | `editor.rs` | yes | yes | yes | 514 | yes | yes |
 | `empty` | `empty.rs` | yes | yes | yes | 330 | yes | yes |
@@ -429,9 +429,9 @@ scripts/check.sh               # theme parity, feature agreement, manifest, chec
 | `toolbar` | `toolbar.rs` | yes | yes | yes | 328 | yes | yes |
 | `tooltip` | `tooltip.rs` | yes | yes | yes | 718 | yes | yes |
 | `tree` | `tree.rs` | yes | yes | yes | 352 | yes | yes |
-| `virtual-list` | `virtual_list.rs` | yes | yes | — | — | — | — |
+| `virtual-list` | `virtual_list.rs` | yes | yes | yes | 265 | yes | yes |
 
-**72 / 79** components have an iced source, an example and a registry entry.
+**75 / 79** components have an iced source, an example and a registry entry.
 
-Still to do: `chart`, `dock`, `dropdown_button`, `root`, `theme`, `title-bar`, `virtual-list`.
+Still to do: `dropdown_button`, `root`, `theme`, `title-bar`.
 <!-- iced-checklist:end -->
