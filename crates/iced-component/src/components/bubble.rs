@@ -32,9 +32,10 @@
 //!   `super::avatar::Avatar` — exactly as GPUI leaves the avatar to `Message`.
 //!   The example never switches `show-avatar` on, so nothing in the reference
 //!   exercises it.
-//! - **The maximum width is a fixed 480 pixels.** Slint caps a regular bubble at
-//!   `min(480px, viewport * 0.8)`; iced 0.14 has no relative maximum width, so
-//!   the viewport half of that is dropped and named here.
+//! - **The maximum width is a fixed 480 pixels by default.** Slint caps a
+//!   regular bubble at `min(480px, viewport * 0.8)`; iced 0.14 has no relative
+//!   maximum width, so the viewport half of that is dropped and named here, and
+//!   [`Bubble::max_width`] replaces the fixed cap when a caller needs another.
 //! - **A reaction region is a sibling, not an overlay.** GPUI positions
 //!   `BubbleReactions` absolutely over the bubble edge; Slint stacks it in a
 //!   `VerticalLayout` with a 6-pixel gap, and this follows Slint, so iced's
@@ -63,8 +64,9 @@ use iced::{
 
 use super::theme::{self, Tokens};
 
-/// The widest a regular bubble grows: Slint's `min(480px, viewport * 0.8)`,
-/// with the viewport term dropped because iced 0.14 has no relative maximum.
+/// The widest a regular bubble grows by default: Slint's
+/// `min(480px, viewport * 0.8)`, with the viewport term dropped because iced
+/// 0.14 has no relative maximum. [`Bubble::max_width`] replaces it.
 pub const MAX_WIDTH: f32 = 480.0;
 
 /// The vertical padding inside a regular surface, `py_2` in the GPUI original.
@@ -359,6 +361,7 @@ pub struct Bubble<'a, Message> {
     text: String,
     content: Content<'a, Message>,
     time: String,
+    max_width: f32,
     avatar: Option<Element<'a, Message>>,
     reactions: Option<Reactions<'a, Message>>,
 }
@@ -373,6 +376,7 @@ impl<'a, Message> Bubble<'a, Message> {
             text: String::new(),
             content: Content::new(),
             time: String::new(),
+            max_width: MAX_WIDTH,
             avatar: None,
             reactions: None,
         }
@@ -389,6 +393,13 @@ impl<'a, Message> Bubble<'a, Message> {
     /// Select the surface treatment.
     pub fn variant(mut self, variant: Variant) -> Self {
         self.variant = variant;
+        self
+    }
+
+    /// The widest a regular surface grows, replacing [`MAX_WIDTH`]. A ghost
+    /// stretches to the row instead, so the cap does not apply to it.
+    pub fn max_width(mut self, width: f32) -> Self {
+        self.max_width = width.max(0.0);
         self
     }
 
@@ -506,7 +517,7 @@ where
         if surface.is_ghost() {
             surface_container = surface_container.width(Length::Fill);
         } else {
-            surface_container = surface_container.max_width(MAX_WIDTH);
+            surface_container = surface_container.max_width(control.max_width);
         }
 
         body = body.push(surface_container);
