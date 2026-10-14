@@ -37,8 +37,11 @@
 //!   caller that wants it narrower sets [`MessageScroller::max_bubble_width`].
 //! - Slint tests for the end of the list with
 //!   `viewport-y == viewport-height - height`, an exact comparison because it
-//!   owns both numbers. iced reports the viewport as a fraction, so the same
-//!   question is whether that fraction has reached `1.0`.
+//!   owns both numbers. iced reports the viewport as a fraction, and the region
+//!   is anchored to its end, so the fraction runs from 0 at the newest turn to 1
+//!   at the top of the transcript: leaving the tail is that fraction leaving 0,
+//!   and [`jump_to_end`] is the same fraction back at 0 rather than iced's
+//!   `snap_to_end`, which under this anchor is the *top*.
 //! - The jump control's circle is drawn by the button's own style rather than by
 //!   a wrapper around a ghost button: a wrapper's surface would sit behind the
 //!   button's hover fill instead of under it.
@@ -70,7 +73,7 @@ use std::f32::consts::PI;
 use std::rc::Rc;
 
 use iced::widget::container::Style as ContainerStyle;
-use iced::widget::operation::snap_to_end;
+use iced::widget::operation::{RelativeOffset, snap_to};
 use iced::widget::scrollable::{Direction, Scrollbar, Viewport};
 use iced::widget::{Id, Space, button, column, container, rule, scrollable, svg, text};
 use iced::{Background, Border, Element, Gradient, Length, Radians, Task, Theme, gradient::Linear};
@@ -486,11 +489,14 @@ impl TailCrossing {
     /// first event: the list has not reported anything yet, and the viewport
     /// starts wherever iced put it.
     fn crossed(&self, viewport: Viewport) -> Option<bool> {
-        // Slint compares the flickable's offset with
+        // The region is anchored to its end (`.anchor_bottom()`), so iced's
+        // viewport fraction is measured from the newest turn: 0 is the tail and 1
+        // is the top of the transcript. Slint compares its flickable's offset with
         // `viewport-height - height` exactly, because it owns both numbers; iced
-        // hands over the viewport as a fraction, so the same question is whether
-        // that fraction has reached the end.
-        let scrolled_up = viewport.relative_offset().y < 1.0;
+        // hands over the fraction, so leaving the tail is that fraction leaving 0.
+        // A transcript shorter than the viewport reports a `NaN` fraction, which
+        // is not greater than 0 and reads as the tail.
+        let scrolled_up = viewport.relative_offset().y > 0.0;
         let changed = self.last.get() != Some(scrolled_up);
         self.last.set(Some(scrolled_up));
 
@@ -595,5 +601,14 @@ where
 /// iced owns the scroll position, so the component reports that the jump was
 /// asked for and the application decides what the viewport does.
 pub fn jump_to_end<Message>(id: impl Into<Id>) -> Task<Message> {
-    snap_to_end(id)
+    // The region is anchored to its end, so the offset is measured from the
+    // bottom: `RelativeOffset` 0 is the newest turn and 1 is the top of the
+    // transcript. `snap_to_end` would therefore jump to the *top* here.
+    snap_to(
+        id,
+        RelativeOffset {
+            x: None,
+            y: Some(0.0),
+        },
+    )
 }
