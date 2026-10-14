@@ -873,6 +873,16 @@ each to the same handful of traps. What works:
   `18:45` was intended, and `Input.insertText` was ignored outright — the reliable sequence
   is a click on the segment, `End` to move the caret to the end, then the keystrokes.
 
+#### A `Canvas` can silently draw nothing
+
+`speech`'s first waveform was a `Canvas`, and inside a field's suffix — and in the first body box
+— it drew nothing at all, while the identical program drew fine in a later section on the same
+page. Layout had resolved the correct 96x16 bounds; `draw` simply produced no visible geometry. A
+red `fill_rectangle` diagnostic proved it: the red appeared in the second section's canvas and
+nowhere else. The meter is a custom `Widget` drawing `fill_quad`s instead, which renders in both
+places. Worth knowing before reaching for `Canvas` inside a form or an input suffix — it fails
+silently, and only in some positions.
+
 #### A `Fill` child inside a `Shrink` cross axis lays out at zero
 
 The bubble's first build drew blank boxes: a `Length::Fill` child inside a `Shrink` column or
