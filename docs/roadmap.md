@@ -734,6 +734,13 @@ already paid for.
 - [ ] Seen in light **and** dark, by looking at a screenshot, not by reading tokens
 - [ ] One commit per component
 
+**`check-one.sh` is superseded, and misleading.** It copies only the demo's direct imports,
+so it cannot build a *composed* component — `date_picker`, `toolbar` and `sidebar` have each
+spent a paragraph reporting it broken, and it fails for reasons that have nothing to do with
+the work. `check.sh --install` now installs all fifty-nine components through the real registry
+closure with a check that has been proven able to fail, so `check-one.sh` earns nothing and
+costs a false alarm per composed component. Delete it, or rename it to say what it is for.
+
 **The gates check the install, and the check has been shown to fail.** `check.sh --install`
 installs **every** component the manifest lists — not a hand-picked five — each into its own
 scratch crate so no sibling can be silently supplied, sharing the crate's target dir and
