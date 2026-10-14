@@ -177,8 +177,13 @@ impl Style {
     pub fn resolve(&self, tokens: Tokens) -> container::Style {
         let tone = self.status.tone();
         let ink = self.status.color(tokens);
+        // The status colour is a tint of 4% over the page, which is the
+        // authored pair: the fill keeps 0.96 of the page and the ink is the
+        // full status colour. `mix` weights its second colour, so the page is
+        // the first argument — `ink` first is the status colour *at 96%*, a
+        // saturated bar whose text is the same hue, at 1.03:1.
         let fill = match tone {
-            Some(_) => theme::mix(ink, tokens.background, 0.04),
+            Some(_) => theme::mix(tokens.background, ink, 0.04),
             None => tokens.background,
         };
         let edge = match tone {
