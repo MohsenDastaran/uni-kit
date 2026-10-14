@@ -407,18 +407,39 @@ pub fn header_target<'a, Message: Clone + 'a>(
 /// The fill a header row draws under itself, resolved inside the closure that
 /// asked for it — a colour read when the element is built is the light theme's
 /// colour in both themes.
-#[derive(Debug, Clone, Copy)]
+///
+/// The fields stay private and are read through [`Self::color`] and
+/// [`Self::radius`], which is what lets a third field arrive later without
+/// breaking a caller that built one.
+#[derive(Debug, Clone, Copy, Default)]
 pub struct BackgroundStyle {
-    pub color: Color,
-    pub radius: f32,
+    color: Color,
+    radius: f32,
 }
 
-impl Default for BackgroundStyle {
-    fn default() -> Self {
+impl BackgroundStyle {
+    /// A fill of `color`, square unless [`Self::with_radius`] says otherwise.
+    pub fn new(color: Color) -> Self {
         Self {
-            color: Color::TRANSPARENT,
+            color,
             radius: 0.0,
         }
+    }
+
+    /// The same fill with rounded corners.
+    pub fn with_radius(mut self, radius: f32) -> Self {
+        self.radius = radius;
+        self
+    }
+
+    /// The colour to fill with.
+    pub fn color(&self) -> Color {
+        self.color
+    }
+
+    /// The corner radius, `0.0` for a square fill.
+    pub fn radius(&self) -> f32 {
+        self.radius
     }
 }
 
@@ -644,12 +665,12 @@ where
                 renderer::Quad {
                     bounds: layout.bounds(),
                     border: Border {
-                        radius: fill.radius.into(),
+                        radius: fill.radius().into(),
                         ..Border::default()
                     },
                     ..renderer::Quad::default()
                 },
-                fill.color,
+                fill.color(),
             );
         }
 
@@ -757,10 +778,15 @@ impl<'a, Message: Clone + 'a> From<Accordion<'a, Message>> for Element<'a, Messa
                     12.0,
                     on_toggle,
                     move |theme: &Theme, hovered, pressed| {
-                        Some(BackgroundStyle {
-                            color: header_fill(Tokens::of(theme), enabled, hovered, pressed),
-                            radius: theme::RADIUS_SM,
-                        })
+                        Some(
+                            BackgroundStyle::new(header_fill(
+                                Tokens::of(theme),
+                                enabled,
+                                hovered,
+                                pressed,
+                            ))
+                            .with_radius(theme::RADIUS_SM),
+                        )
                     },
                 ),
                 None => row![title.padding(header_padding(pad_x, pad_y, pad_x)), lane]
