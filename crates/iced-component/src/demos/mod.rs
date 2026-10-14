@@ -16,6 +16,7 @@ pub mod button;
 pub mod calendar;
 pub mod card;
 pub mod checkbox;
+pub mod collapsible;
 pub mod color_picker;
 pub mod combobox;
 pub mod command;
@@ -60,6 +61,7 @@ pub mod status_bar;
 pub mod stepper;
 pub mod switch;
 pub mod table;
+pub mod tabs;
 pub mod tag;
 pub mod text_view;
 pub mod textarea;
@@ -84,6 +86,7 @@ pub const STORIES: &[&str] = &[
     "calendar",
     "card",
     "checkbox",
+    "collapsible",
     "color-picker",
     "combobox",
     "command",
@@ -128,6 +131,7 @@ pub const STORIES: &[&str] = &[
     "stepper",
     "switch",
     "table",
+    "tabs",
     "tag",
     "text-view",
     "textarea",
@@ -155,6 +159,7 @@ pub fn run(story: &str, theme: iced::Theme) -> iced::Result {
         "calendar" => calendar::run(theme),
         "card" => card::run(theme),
         "checkbox" => checkbox::run(theme),
+        "collapsible" => collapsible::run(theme),
         "color-picker" => color_picker::run(theme),
         "combobox" => combobox::run(theme),
         "command" => command::run(theme),
@@ -199,6 +204,7 @@ pub fn run(story: &str, theme: iced::Theme) -> iced::Result {
         "stepper" => stepper::run(theme),
         "switch" => switch::run(theme),
         "table" => table::run(theme),
+        "tabs" => tabs::run(theme),
         "tag" => tag::run(theme),
         "text-view" => text_view::run(theme),
         "textarea" => textarea::run(theme),

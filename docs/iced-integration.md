@@ -365,7 +365,7 @@ scripts/check.sh               # theme parity, feature agreement, manifest, chec
 | `chart` | `chart.rs` | yes | yes | — | — | — | — |
 | `checkbox` | `checkbox.rs` | yes | yes | yes | 269 | yes | yes |
 | `clipboard` | `clipboard.rs` | yes | yes | — | — | — | — |
-| `collapsible` | `collapsible.rs` | yes | yes | yes | 192 | — | yes |
+| `collapsible` | `collapsible.rs` | yes | yes | yes | 192 | yes | yes |
 | `color-picker` | `color_picker.rs` | yes | yes | yes | 936 | yes | yes |
 | `combobox` | `combobox.rs` | yes | yes | yes | 738 | yes | yes |
 | `command` | `command.rs` | yes | yes | yes | 990 | yes | yes |
@@ -418,7 +418,7 @@ scripts/check.sh               # theme parity, feature agreement, manifest, chec
 | `stepper` | `stepper.rs` | yes | yes | yes | 642 | yes | yes |
 | `switch` | `switch.rs` | yes | yes | yes | 235 | yes | yes |
 | `table` | `table.rs` | yes | yes | yes | 753 | yes | yes |
-| `tabs` | `tabs.rs` | yes | yes | yes | 300 | — | yes |
+| `tabs` | `tabs.rs` | yes | yes | yes | 323 | yes | yes |
 | `tag` | `tag.rs` | yes | yes | yes | 257 | yes | yes |
 | `text-view` | `text_view.rs` | yes | yes | yes | 919 | yes | yes |
 | `textarea` | `textarea.rs` | yes | yes | yes | 399 | yes | yes |
@@ -431,7 +431,7 @@ scripts/check.sh               # theme parity, feature agreement, manifest, chec
 | `tree` | `tree.rs` | yes | yes | yes | 352 | yes | yes |
 | `virtual-list` | `virtual_list.rs` | yes | yes | — | — | — | — |
 
-**61 / 79** components have an iced source, an example and a registry entry.
+**63 / 79** components have an iced source, an example and a registry entry.
 
-Still to do: `bubble`, `carousel`, `chart`, `clipboard`, `collapsible`, `dock`, `dropdown_button`, `editor`, `focus-trap`, `message`, `resizable`, `root`, `settings`, `speech`, `tabs`, `theme`, `title-bar`, `virtual-list`.
+Still to do: `bubble`, `carousel`, `chart`, `clipboard`, `dock`, `dropdown_button`, `editor`, `focus-trap`, `message`, `resizable`, `root`, `settings`, `speech`, `theme`, `title-bar`, `virtual-list`.
 <!-- iced-checklist:end -->
