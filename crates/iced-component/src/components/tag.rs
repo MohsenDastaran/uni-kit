@@ -11,8 +11,10 @@
 //!
 //! iced has no icon set of its own and the application owns its assets, so the
 //! leading icon is an element the caller passes. The close control is drawn as
-//! a ghost button in the same shape as [`super::button`], with the Slint "x"
-//! glyph as its label.
+//! a ghost button in the same shape as [`super::button`], with the embedded
+//! Lucide `x` as its mark: the `×` character carries its own side bearings in
+//! its em box, so it sat against the control's leading edge rather than at its
+//! centre.
 
 // An application installs the components it uses, so the parts of this file it
 // does not call are not dead code in the way the compiler means — the file is a
@@ -20,7 +22,7 @@
 // gets a warning for each one it does not want.
 #![allow(dead_code)]
 
-use iced::widget::{button, container, row, text};
+use iced::widget::{button, container, row, svg, text};
 use iced::{Border, Color, Element, Length, Theme};
 
 use super::theme::{self, ControlSize, Status, Tokens};
@@ -207,33 +209,49 @@ where
         );
 
         if let Some(message) = control.on_close {
-            let close = button(text("×").size(12.0))
-                .padding(0.0)
-                .width(Length::Fixed(14.0))
-                .height(Length::Fixed(14.0))
-                .style(move |theme: &Theme, status| {
-                    let tokens = Tokens::of(theme);
-                    // The close control is never a status-coloured surface, so
-                    // its glyph is the muted foreground rather than the chip's
-                    // ink.
-                    let ink = tokens.muted_foreground;
-                    button::Style {
-                        background: match status {
-                            button::Status::Hovered | button::Status::Pressed => {
-                                Some(theme::alpha(tokens.foreground, 0.1).into())
-                            }
-                            _ => None,
-                        },
-                        text_color: ink,
-                        border: Border {
-                            radius: theme::RADIUS_SM.into(),
-                            ..Border::default()
-                        },
-                        shadow: iced::Shadow::default(),
-                        snap: false,
-                    }
-                })
-                .on_press(message);
+            // The mark is the embedded `x`, not the `×` character: a text child
+            // is laid out at its box's leading edge, so the glyph sat a pixel
+            // from the left of a 14x14 box and a third of the way down when
+            // measured. The container centres the mark on both axes. The ink is
+            // resolved inside the closure because an SVG tinted once at build
+            // time keeps the light theme's colour in the dark.
+            let mark = svg(svg::Handle::from_memory(CLOSE_XML))
+                .width(CLOSE_SIZE)
+                .height(CLOSE_SIZE)
+                .style(|theme: &Theme, _status| svg::Style {
+                    color: Some(Tokens::of(theme).muted_foreground),
+                });
+
+            let close = button(
+                container(mark)
+                    .center_x(Length::Fill)
+                    .center_y(Length::Fill),
+            )
+            .padding(0.0)
+            .width(Length::Fixed(CLOSE_SIZE))
+            .height(Length::Fixed(CLOSE_SIZE))
+            .style(|theme: &Theme, status| {
+                let tokens = Tokens::of(theme);
+                // The close control is never a status-coloured surface, so its
+                // glyph is the muted foreground rather than the chip's ink.
+                let ink = tokens.muted_foreground;
+                button::Style {
+                    background: match status {
+                        button::Status::Hovered | button::Status::Pressed => {
+                            Some(theme::alpha(tokens.foreground, 0.1).into())
+                        }
+                        _ => None,
+                    },
+                    text_color: ink,
+                    border: Border {
+                        radius: theme::RADIUS_SM.into(),
+                        ..Border::default()
+                    },
+                    shadow: iced::Shadow::default(),
+                    snap: false,
+                }
+            })
+            .on_press(message);
 
             content = content.push(close);
         }
@@ -255,3 +273,12 @@ where
             .into()
     }
 }
+
+/// The close control's box and the size its mark is drawn at: the 14px square
+/// the unfixed control already kept, which is the tag's own inline size.
+const CLOSE_SIZE: f32 = 14.0;
+
+/// The Lucide `x` from `crates/slint-component/ui/icons/x.svg` (Lucide, ISC):
+/// the mark the Slint close control names, in the same one-line form the
+/// crate's other embedded icons use.
+const CLOSE_XML: &[u8] = br#"<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg>"#;
