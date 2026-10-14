@@ -246,6 +246,13 @@ fn caption<'a>(value: &'a str) -> Element<'a, Message> {
 /// the shape the Single, Multiple, Sizes, Borderless, With Borders and Handle
 /// Toggle Events samples share; they differ only in size, border and whether
 /// opening one section closes the others.
+///
+/// The header reports through [`Section::on_toggle`] rather than carrying the
+/// press itself, because the header row owns the whole target: `accordion::
+/// text_header` draws the title, the component draws the chevron lane, and
+/// [`accordion::header_target`] makes both of them toggle — which is the Slint
+/// `TouchArea` over the row, and is what the one mark that says "this opens"
+/// needs to be worth clicking.
 fn panel<'a>(
     app: &App,
     group: u8,
@@ -261,13 +268,12 @@ fn panel<'a>(
         .map(|(index, (title, body))| {
             let index = index as u8;
             let open = is_open(app, group, index);
-            Section::new(accordion::text_header(
-                *title,
-                size_label,
-                toggle(app, group, index, title, exclusive),
-            ))
+            Section::new(header(title, size_label, |theme| {
+                Tokens::of(theme).foreground
+            }))
+            .on_toggle(toggle(app, group, index, title, exclusive))
             .open(open)
-            .content(line(*body, size_label, muted))
+            .content(line(body, size_label, muted))
         })
         .collect();
 
@@ -275,6 +281,41 @@ fn panel<'a>(
         .size(size)
         .bordered(bordered)
         .into()
+}
+
+/// The header *content* of a section: the title alone. The chrome around it —
+/// the row's padding, the chevron lane and the hit area that covers both — is
+/// the component's, mounted by `Section::on_toggle`; this is the piece the
+/// click's message is built from.
+fn header<'a>(
+    title: &'a str,
+    label_size: f32,
+    color: fn(&Theme) -> Color,
+) -> Element<'a, Message> {
+    line(title, label_size, color)
+        .width(Length::Fill)
+        .font(iced::Font {
+            weight: iced::font::Weight::Medium,
+            ..iced::Font::DEFAULT
+        })
+        .into()
+}
+
+/// The same, with a leading icon beside the title — the two-piece header the
+/// Slint `AccordionItem` draws when its `icon` is set.
+fn labeled_header<'a>(
+    icon: impl Into<Element<'a, Message>>,
+    title: &'a str,
+    label_size: f32,
+    gap: f32,
+) -> Element<'a, Message> {
+    row![icon.into(), header(title, label_size, |theme| {
+        Tokens::of(theme).foreground
+    })]
+    .spacing(gap)
+    .align_y(Alignment::Center)
+    .width(Length::Fill)
+    .into()
 }
 
 /// A section whose disclosure is the caller's own mark rather than the
@@ -290,11 +331,10 @@ fn arrow_section<'a>(
     body: &'static str,
 ) -> Section<'a, Message> {
     let open = is_open(app, group, index);
-    Section::new(accordion::text_header(
-        title,
-        label_size(ControlSize::Medium),
-        toggle(app, group, index, title, false),
-    ))
+    Section::new(header(title, label_size(ControlSize::Medium), |theme| {
+        Tokens::of(theme).foreground
+    }))
+    .on_toggle(toggle(app, group, index, title, false))
     .open(open)
     .disclosure(mark(
         if open { ARROW_DOWN } else { ARROW_RIGHT },
@@ -460,13 +500,13 @@ fn view(app: &App) -> Element<'_, Message> {
         format!("{} unread notifications.", app.notifications)
     };
     let icons = Accordion::new([
-        Section::new(accordion::labeled_header(
+        Section::new(labeled_header(
             mark(BELL, 14.0, muted),
             "Notifications",
             theme::FONT_SIZE_SM,
             8.0,
-            toggle(app, ICONS, 0, "Notifications", false),
         ))
+        .on_toggle(toggle(app, ICONS, 0, "Notifications", false))
         .open(is_open(app, ICONS, 0))
         .content(column![
             text(unread)
@@ -488,13 +528,13 @@ fn view(app: &App) -> Element<'_, Message> {
             ]
             .spacing(8.0),
         ]),
-        Section::new(accordion::labeled_header(
+        Section::new(labeled_header(
             mark(SETTINGS, 14.0, muted),
             "Settings",
             theme::FONT_SIZE_SM,
             8.0,
-            toggle(app, ICONS, 1, "Settings", false),
         ))
+        .on_toggle(toggle(app, ICONS, 1, "Settings", false))
         .open(is_open(app, ICONS, 1))
         .content(line(
             "Preferences for appearance, keyboard shortcuts, and updates.",
@@ -646,22 +686,24 @@ fn view(app: &App) -> Element<'_, Message> {
     // A section's content is the caller's, so it can be another accordion; the
     // inner one reveals inside the outer one's reveal.
     let inner = Accordion::new([
-        Section::new(accordion::text_header(
+        Section::new(header(
             "Child section 1",
             label_size(ControlSize::Small),
-            toggle(app, INNER, 0, "Child section 1", true),
+            |theme| Tokens::of(theme).foreground,
         ))
+        .on_toggle(toggle(app, INNER, 0, "Child section 1", true))
         .open(is_open(app, INNER, 0))
         .content(line(
             "Content of the first child section.",
             theme::FONT_SIZE_SM,
             muted,
         )),
-        Section::new(accordion::text_header(
+        Section::new(header(
             "Child section 2",
             label_size(ControlSize::Small),
-            toggle(app, INNER, 1, "Child section 2", true),
+            |theme| Tokens::of(theme).foreground,
         ))
+        .on_toggle(toggle(app, INNER, 1, "Child section 2", true))
         .open(is_open(app, INNER, 1))
         .content(line(
             "Content of the second child section.",
@@ -672,11 +714,12 @@ fn view(app: &App) -> Element<'_, Message> {
     .size(ControlSize::Small);
 
     let nested = Accordion::new([
-        Section::new(accordion::text_header(
+        Section::new(header(
             "Parent section",
             label_size(ControlSize::Medium),
-            toggle(app, OUTER, 0, "Parent section", false),
+            |theme| Tokens::of(theme).foreground,
         ))
+        .on_toggle(toggle(app, OUTER, 0, "Parent section", false))
         .open(is_open(app, OUTER, 0))
         .content(inner),
     ])
