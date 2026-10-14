@@ -775,6 +775,13 @@ It caught it immediately and recovered correctly (`git reset --soft HEAD~1`, the
 path, preserving the sibling's content and staged state), but the safe form in a shared tree is
 `git commit --amend -- <your path>`, or no amend at all.
 
+**Disable smooth scrolling before verifying icon clicks.** The description-list sweep failed on
+odd indices until it emulated `prefers-reduced-motion` and waited for `scrollY` to return to 0 between
+clicks: the page animates the heading into place, so a read taken immediately after the click can
+still see the previous scroll position and look exactly like a card landing on the wrong sample. The
+alert agent's "first click after navigation is swallowed" is probably the same race seen from the
+other end. Neither is a component bug, and both cost a round.
+
 **Never `git checkout --` a path you do not own.** One agent ran `cargo fmt` on the crate, which
 reformatted a dozen sibling files, and reverted them with `git checkout --` — the same command that
 destroyed the popover's arrow extension earlier. It happened to be safe because every sibling had
