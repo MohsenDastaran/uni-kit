@@ -36,7 +36,10 @@
 //! Two things the composition does not carry. The chevron is drawn in its end
 //! state: iced 0.14 has no rotation transition for an arbitrary widget, so
 //! Slint's `animate transform-rotation { duration: 150ms; easing: ease-out; }`
-//! has no counterpart here and the reveal alone carries the motion. And the
+//! has no counterpart here and the reveal alone carries the motion. The
+//! chevron itself is Lucide's `chevron-down` while closed and `chevron-up`
+//! while open — the two ends of the 180° turn Slint animates — embedded here
+//! because iced ships no icon set, and swapped rather than turned. And the
 //! Slint accordion writes `easing: ease-out` on its height while the collapsible
 //! authority names no easing — linear — so the shared reveal is a straight line;
 //! the duration matches, the curve is the collapsible's.
@@ -52,7 +55,7 @@
 // gets a warning for each one it does not want.
 #![allow(dead_code)]
 
-use iced::widget::{button, column, container, row, text};
+use iced::widget::{button, column, container, row, svg, text};
 use iced::widget::container::Style as ContainerStyle;
 use iced::{Alignment, Background, Border, Color, Element, Length, Theme};
 
@@ -65,6 +68,7 @@ pub struct Section<'a, Message> {
     content: Vec<Element<'a, Message>>,
     open: bool,
     chevron: bool,
+    disclosure: Option<Element<'a, Message>>,
 }
 
 impl<'a, Message> Section<'a, Message> {
@@ -76,6 +80,7 @@ impl<'a, Message> Section<'a, Message> {
             content: Vec::new(),
             open: false,
             chevron: true,
+            disclosure: None,
         }
     }
 
@@ -95,6 +100,15 @@ impl<'a, Message> Section<'a, Message> {
     /// Draws the chevron in its end state, down when closed and up when open.
     pub fn chevron(mut self, chevron: bool) -> Self {
         self.chevron = chevron;
+        self
+    }
+
+    /// The caller's own disclosure, drawn in the chevron lane instead of the
+    /// default arrow. The icon set belongs to the caller — the component only
+    /// carries Lucide's two chevrons as a fallback — so pass the mark the open
+    /// state wants: this element is drawn as it is handed over.
+    pub fn disclosure(mut self, disclosure: impl Into<Element<'a, Message>>) -> Self {
+        self.disclosure = Some(disclosure.into());
         self
     }
 }
@@ -287,23 +301,24 @@ pub fn labeled_header<'a, Message: Clone + 'a>(
         .into()
 }
 
-/// The chevron's end state: a short rule under the open state and a short rule
-/// at the top under the closed one, drawn from the tokens because iced ships no
-/// icon set. A caller with assets passes its own element in the header instead.
+/// The default disclosure: Lucide's `chevron-down` while closed and
+/// `chevron-up` while open, in the muted foreground — the two ends of the 180°
+/// turn Slint's accordion animates on one `chevron-down`. Swapped, not turned,
+/// because iced 0.14 has no rotation transition for an arbitrary widget. A
+/// caller with its own icon set passes the element through
+/// [`Section::disclosure`] instead.
 pub fn chevron<'a, Message: 'a>(open: bool, size: f32) -> Element<'a, Message> {
-    let (width, height) = if open {
-        (size * 0.5, 1.0)
+    svg(svg::Handle::from_memory(if open {
+        CHEVRON_UP
     } else {
-        (size, 1.0)
-    };
-    container(iced::widget::Space::new())
-        .width(Length::Fixed(width))
-        .height(Length::Fixed(height))
-        .style(|theme: &Theme| ContainerStyle {
-            background: Some(Tokens::of(theme).muted_foreground.into()),
-            ..ContainerStyle::default()
-        })
-        .into()
+        CHEVRON_DOWN
+    }))
+    .width(Length::Fixed(size))
+    .height(Length::Fixed(size))
+    .style(|theme: &Theme, _status| svg::Style {
+        color: Some(Tokens::of(theme).muted_foreground),
+    })
+    .into()
 }
 
 impl<'a, Message: 'a> From<Accordion<'a, Message>> for Element<'a, Message> {
@@ -331,7 +346,9 @@ impl<'a, Message: 'a> From<Accordion<'a, Message>> for Element<'a, Message> {
                         left: pad_x,
                     }),
             );
-            if section.chevron {
+            if let Some(disclosure) = section.disclosure {
+                header = header.push(container(disclosure).center_y(chevron_size));
+            } else if section.chevron {
                 header = header.push(container(chevron(open, chevron_size)).center_y(chevron_size));
             }
             sections = sections.push(header);
@@ -391,3 +408,14 @@ impl<'a, Message: 'a> From<Accordion<'a, Message>> for Element<'a, Message> {
             .into()
     }
 }
+
+// The default disclosure's artwork, taken from the icon set this repository
+// ships (`crates/slint-component/ui/icons`, Lucide, ISC), so the two galleries
+// draw the same marks rather than two lookalikes. Slint's accordion draws
+// `chevron-down` and turns it 180° on open; these are its two ends.
+
+/// Lucide's `chevron-down`, the closed disclosure.
+const CHEVRON_DOWN: &[u8] = br#"<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m6 9 6 6 6-6"/></svg>"#;
+
+/// Lucide's `chevron-up`, the open disclosure.
+const CHEVRON_UP: &[u8] = br#"<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m18 15-6-6-6 6"/></svg>"#;
