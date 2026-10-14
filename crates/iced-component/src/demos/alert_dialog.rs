@@ -413,23 +413,13 @@ fn view(app: &App) -> Element<'_, Message> {
                 .spacing(8.0),
             )
             .footer(
-                column![
-                    Button::new("Allow")
-                        .variant(button::Variant::Primary)
-                        .width(Length::Fill)
-                        .on_press(Message::Opened {
-                            slot: slot::ICON,
-                            open: false,
-                        }),
-                    Button::new("Deny")
-                        .outline()
-                        .width(Length::Fill)
-                        .on_press(Message::Opened {
-                            slot: slot::ICON,
-                            open: false,
-                        }),
-                ]
-                .spacing(8.0),
+                DialogFooter::new()
+                    .centered(true)
+                    .child(close_button("Cancel", slot::DELETE))
+                    .child(Button::new("Delete").on_press(Message::Opened {
+                        slot: slot::DELETE,
+                        open: false,
+                    })),
             )
             .on_open_change(|open| Message::Opened {
                 slot: slot::ICON,
