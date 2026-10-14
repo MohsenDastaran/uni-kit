@@ -768,6 +768,13 @@ It was proven able to fail by feeding a doctored manifest through the CLI's
 57. That matters more than the coverage number: the earlier version of this check was
 vacuous for a while, and a gate nobody has seen fail is a gate nobody can trust.
 
+**`git commit --amend` sweeps whatever is staged.** One agent amended a commit to fold in a
+formatting change and carried a *sibling's* staged file into its own component commit — the shared
+index in a different disguise, and the one that looks safest because the commit is already yours.
+It caught it immediately and recovered correctly (`git reset --soft HEAD~1`, then re-cut for its own
+path, preserving the sibling's content and staged state), but the safe form in a shared tree is
+`git commit --amend -- <your path>`, or no amend at all.
+
 **Never `git checkout --` a path you do not own.** One agent ran `cargo fmt` on the crate, which
 reformatted a dozen sibling files, and reverted them with `git checkout --` — the same command that
 destroyed the popover's arrow extension earlier. It happened to be safe because every sibling had
