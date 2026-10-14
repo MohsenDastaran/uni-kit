@@ -475,8 +475,16 @@ where
     ) -> layout::Node {
         // The two children are laid out against the same limits rather than one
         // after the other — a `Row` would have to shrink the second for the
-        // first — and then placed side by side. The content takes what is left
-        // of the row, so the lane stays at the row's trailing edge.
+        // first — and the result is then resolved against the row's own width.
+        // The content is what stretches: it takes the row minus the lane and the
+        // spacing, so the lane sits at the row's trailing edge however wide the
+        // row is, and a title that says `Fill` gets the whole of the rest.
+        //
+        // Reporting the content's intrinsic width instead is the trap here: a
+        // `Fill` child lays out at zero against loose limits, so the row would
+        // come out as wide as its title and the lane would land beside the title
+        // rather than at the row's edge — the whole row left-aligned in a card
+        // that is full width.
         let [content_state, disclosure_state] = &mut tree.children[..] else {
             unreachable!("a header row has exactly the content and the lane")
         };
@@ -491,14 +499,29 @@ where
             renderer,
             &limits.loose(),
         );
+
         let lane_width = lane.size().width;
-        let width = (content.size().width + self.spacing + lane_width).max(0.0);
+        let lane_height = lane.size().height;
+        let inner = content.size().height.max(lane_height);
+        let (width, height) = match self.size().width {
+            Length::Fill | Length::FillPortion(_) if !limits.compression().width => (
+                limits.max().width,
+                limits.max().height.min(inner),
+            ),
+            _ => (
+                (content.size().width + self.spacing + lane_width).min(limits.max().width),
+                inner,
+            ),
+        };
 
         layout::Node::with_children(
-            Size::new(width, content.size().height.max(lane.size().height)),
+            Size::new(width, height),
             vec![
                 content.move_to(iced::Point::new(0.0, 0.0)),
-                lane.move_to(iced::Point::new(width - lane_width, 0.0)),
+                lane.move_to(iced::Point::new(
+                    width - lane_width,
+                    ((height - lane_height) / 2.0).max(0.0),
+                )),
             ],
         )
     }
