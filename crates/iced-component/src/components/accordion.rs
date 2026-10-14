@@ -226,9 +226,10 @@ pub fn ink(tokens: Tokens, enabled: bool) -> Color {
 /// at `padding-y`.
 ///
 /// A row-wide target hands the trailing lane its right inset on its own side —
-/// `lane_inset` — because a chevron sits flush against the row's own edge only
-/// while the target is the caller's element; the row inside a target keeps the
-/// lane's pixel off the card instead.
+/// `lane_inset` — because the lane is pinned to the row's trailing edge, so the
+/// field the row pads its content by is not the space the mark wants beyond it.
+/// The Trigger's `padding-x` alone leaves a chevron reading as if it were part
+/// of the card's edge; `LANE_INSET` is the extra space that sets it off.
 fn header_padding(pad_x: f32, pad_y: f32, lane_inset: f32) -> iced::Padding {
     iced::Padding {
         top: pad_y,
@@ -773,7 +774,7 @@ impl<'a, Message: Clone + 'a> From<Accordion<'a, Message>> for Element<'a, Messa
             // that already wired its header keeps the tree it had.
             let header: Element<'a, Message> = match section.on_toggle {
                 Some(on_toggle) => header_target(
-                    title.padding(header_padding(pad_x, pad_y, 0.0)),
+                    title.padding(header_padding(pad_x, pad_y, LANE_INSET)),
                     lane,
                     12.0,
                     on_toggle,
@@ -851,6 +852,10 @@ impl<'a, Message: Clone + 'a> From<Accordion<'a, Message>> for Element<'a, Messa
 // ships (`crates/slint-component/ui/icons`, Lucide, ISC), so the two galleries
 // draw the same marks rather than two lookalikes. Slint's accordion draws
 // `chevron-down` and turns it 180° on open; these are its two ends.
+
+/// The space between the trailing disclosure's lane and the row's own right
+/// inset, so the mark is set off from the card's edge instead of flush with it.
+const LANE_INSET: f32 = 6.0;
 
 /// Lucide's `chevron-down`, the closed disclosure.
 const CHEVRON_DOWN: &[u8] = br#"<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m6 9 6 6 6-6"/></svg>"#;
