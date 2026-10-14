@@ -14,13 +14,13 @@
 //! runs here. Keep them, one per section, in order, and keep the closing
 //! `// section: end` after the last one.
 //!
-//! The eight sections are the Slint example's `GroupBox` headings, in its order:
-//! the titled trigger, the row that is itself the trigger, the bottom-edge
-//! trigger, and the panels a trigger beside or above a card opens. The page's
-//! **Animated reveal** has no iced counterpart and is left without a sample:
-//! iced has no built-in animation driver, so this component shows or hides its
-//! panel outright and draws the chevron in its end state, as its own module
-//! documents. That is named here rather than faked with a still panel.
+//! The sections are the Slint example's `GroupBox` headings, in its order: the
+//! titled trigger, the row that is itself the trigger, the bottom-edge trigger,
+//! and the panels a trigger beside or above a card opens. **Animated reveal**
+//! comes first and is the page's own section rather than a Slint GroupBox: it is
+//! the one place the panel is built with `animated(true)`, so the expansion the
+//! component documents can be watched rather than read about. The others stay
+//! immediate, which is what a caller gets by default.
 
 use iced::widget::{
     Space, button as raw_button, column, container, mouse_area, row, scrollable, svg, text,
@@ -51,6 +51,9 @@ struct App {
     /// One flag per panel, because an iced control carries no state: the caller
     /// holds `open` and takes every toggle back as a message.
     basic_open: bool,
+    /// The one panel built with `animated(true)`, so the reveal it shows is the
+    /// component's animation rather than a still.
+    animated_open: bool,
     row_open: bool,
     usage_open: bool,
     settings_open: bool,
@@ -73,6 +76,7 @@ struct App {
 #[derive(Debug, Clone)]
 enum Message {
     ToggleBasic,
+    ToggleAnimated,
     ToggleRow,
     ToggleUsage,
     ToggleSettings,
@@ -109,6 +113,7 @@ fn boot() -> App {
 fn update(app: &mut App, message: Message) -> Task<Message> {
     match message {
         Message::ToggleBasic => app.basic_open = !app.basic_open,
+        Message::ToggleAnimated => app.animated_open = !app.animated_open,
         Message::ToggleRow => app.row_open = !app.row_open,
         Message::ToggleUsage => app.usage_open = !app.usage_open,
         Message::ToggleSettings => app.settings_open = !app.settings_open,
@@ -469,6 +474,38 @@ fn body_box<'a>(body: impl Into<Element<'a, Message>>) -> Element<'a, Message> {
 // --------------------------------------------------------------------- view
 
 fn view(app: &App) -> Element<'_, Message> {
+    // section: Animated reveal
+    // `animated(true)` measures the panel and moves it from nothing to its full
+    // height over 150ms — the duration the Slint component gives `animate
+    // height`. The content stays mounted while closed, so pressing the trigger
+    // again mid-flight reverses the reveal from the height it has already
+    // reached instead of restarting it.
+    let animated = Collapsible::new()
+        .trigger(collapsible::trigger(
+            "Advanced options",
+            app.animated_open,
+            Message::ToggleAnimated,
+        ))
+        .open(app.animated_open)
+        .animated(true)
+        .content(
+            column![
+                line(
+                    "The panel is measured from its content, then clipped to \
+                     however far the reveal has come.",
+                    theme::FONT_SIZE_SM,
+                    muted,
+                ),
+                line(
+                    "Toggle it again while it moves and it turns around from \
+                     where it is.",
+                    theme::FONT_SIZE_SM,
+                    muted,
+                ),
+            ]
+            .spacing(8.0),
+        );
+
     // section: Basic
     // The trigger sits beside the title and the summary stays visible: the ghost
     // chevron button is the panel's trigger, and the status row never moves.
@@ -760,21 +797,23 @@ fn view(app: &App) -> Element<'_, Message> {
     });
 
     let gallery = column![
-        heading(app, 0, "Basic"),
+        heading(app, 0, "Animated reveal"),
+        body_box(animated),
+        heading(app, 1, "Basic"),
         body_box(basic),
-        heading(app, 1, "Row trigger"),
+        heading(app, 2, "Row trigger"),
         body_box(row_trigger),
-        heading(app, 2, "Bottom trigger"),
+        heading(app, 3, "Bottom trigger"),
         body_box(bottom),
-        heading(app, 3, "Settings"),
+        heading(app, 4, "Settings"),
         body_box(settings),
-        heading(app, 4, "Row actions"),
+        heading(app, 5, "Row actions"),
         body_box(keys),
-        heading(app, 5, "Nested"),
+        heading(app, 6, "Nested"),
         body_box(nested),
-        heading(app, 6, "Profile"),
+        heading(app, 7, "Profile"),
         body_box(profile),
-        heading(app, 7, "Details"),
+        heading(app, 8, "Details"),
         body_box(details),
         status,
     ]
