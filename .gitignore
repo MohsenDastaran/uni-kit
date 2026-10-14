@@ -36,6 +36,7 @@ crates/iced-component/www/dist/
 crates/slint-component/target/
 crates/slint-component/check/target/
 crates/slint-component/.tmp/
+crates/iced-component/.tmp/
 .worktrees
 __pycache__/
 
