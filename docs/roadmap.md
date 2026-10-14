@@ -917,6 +917,20 @@ child to the bottom of a taller one. The message scroller's floating jump contro
 **top** of the scroll region instead of 8px above its bottom. Same family as the `Fill`-in-a-`Shrink`
 trap: a size that reads like an alignment and behaves like a dimension.
 
+#### `theme::mix(a, b, t)` weights its **second** argument
+
+The alert's fill was written `mix(ink, tokens.background, 0.04)`, which is the status colour at
+**96%** — a saturated bar — while its title, message and icon were that same ink at 100%. Ink
+against its own fill measured **1.03:1 in light and 1.08:1 in dark**, in both built-in themes and
+under a site palette alike, so the text was invisible everywhere and looked like a palette fault.
+
+Three sources agree it should be a 4% tint over the page: the Slint authority writes
+`tone.mix(Theme.background, 0.04)`, GPUI's `mix_oklab(transparent_white(), 0.04)` weights the
+receiver, and the iced file's *own module doc* says "the fill is the status colour at 4% over the
+page". The code was the transcription error, and a comment claiming `mix` read "the way Slint's
+`mix` reads" was the seed of it. Worth remembering that a two-argument mix is exactly the shape of
+call that no compiler and no screenshot of a *single* theme will catch.
+
 #### Text alignment does nothing on a single line
 
 iced's `iced_graphics::text::align` only calls `line.set_align` for **multi-line** paragraphs, so
