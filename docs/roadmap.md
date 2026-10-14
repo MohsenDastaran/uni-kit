@@ -864,6 +864,26 @@ each to the same handful of traps. What works:
   `18:45` was intended, and `Input.insertText` was ignored outright — the reliable sequence
   is a click on the segment, `End` to move the caret to the end, then the keystrokes.
 
+#### What iced 0.14 cannot do on wasm at all
+
+Two platform limits have been confirmed here rather than assumed, and both look like component
+bugs until you check:
+
+- **The clipboard write is a no-op.** `iced::clipboard::write` reaches `window_clipboard`, whose
+  cfg falls through to a dummy provider on wasm and returns `Unimplemented`; a CDP read-back
+  after a copy returned `""`. So a copy control can show its own feedback and cannot promise the
+  write landed — the clipboard demo says exactly that rather than claiming success.
+- **No interval subscription under this crate's runtime.** `iced::time::every` exists only with
+  the `tokio`/`smol` backends and the crate resolves `thread-pool`, so a component cannot own a
+  timed reset or an animated spin; `icon.rs` names the same gap for its spinner.
+
+#### A demo's `// section:` titles match the page's `###` examples
+
+Every brief in this family said `## `, and every agent corrected it: the headings a demo matches
+are the **`###` sample headings**, which is what makes the sidebar count and the card's
+code-icon scroll agree. Worth stating once, since the mistake is in the instructions rather than
+in the work.
+
 #### A `Stack` sizes itself from its first child
 
 iced's `Stack` defaults to `Shrink` and takes its size from the first child, so a layer
