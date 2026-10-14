@@ -856,6 +856,11 @@ each to the same handful of traps. What works:
 - **Expect three caches.** The page stamp in `component-loader.ts`, Astro's
   `node_modules/.astro/data-store.json`, and a long-running dev server's own HTML. A
   change that "isn't showing" is usually one of them — restart with `--force`.
+- **`/tmp` is a small tmpfs, and filling it looks like a full disk.** It is 7.3 GB and every
+  agent's screenshots and driver scripts land there; at 100% the harness cannot write its own
+  command-output temp files, so *every* command fails with `ENOSPC` while `/` has hundreds of
+  gigabytes free. Clear your own artifacts as you go, and if space runs short, say so rather
+  than truncating a file to make room — three agents were stalled by this at once.
 - **Do not `pkill -f` a pattern that matches your own command line.** It has killed
   this session's shell three times; bracket a character or kill by PID.
 - **Click the canvas before sending keys.** Keyboard-driven state needs the headless
