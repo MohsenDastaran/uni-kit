@@ -71,12 +71,12 @@
 // gets a warning for each one it does not want.
 #![allow(dead_code)]
 
-use iced::widget::{button, column, container, row, svg, text};
-use iced::widget::container::Style as ContainerStyle;
-use iced::advanced::layout::{self, Layout};
-use iced::advanced::widget::{tree, Tree, Widget};
 use iced::advanced::Renderer as _;
-use iced::advanced::{mouse, overlay, renderer, Clipboard, Shell};
+use iced::advanced::layout::{self, Layout};
+use iced::advanced::widget::{Tree, Widget, tree};
+use iced::advanced::{Clipboard, Shell, mouse, overlay, renderer};
+use iced::widget::container::Style as ContainerStyle;
+use iced::widget::{button, column, container, row, svg, text};
 use iced::{Alignment, Background, Border, Color, Element, Event, Length, Rectangle, Size, Theme};
 
 use super::collapsible;
@@ -282,10 +282,7 @@ pub fn text_header<'a, Message: Clone + 'a>(
         .padding(0.0)
         .style(|theme: &Theme, status| {
             let tokens = Tokens::of(theme);
-            let hovered = matches!(
-                status,
-                button::Status::Hovered | button::Status::Pressed
-            );
+            let hovered = matches!(status, button::Status::Hovered | button::Status::Pressed);
             button::Style {
                 background: Some(Background::Color(if hovered {
                     theme::alpha(tokens.accent, 0.5)
@@ -334,10 +331,7 @@ pub fn labeled_header<'a, Message: Clone + 'a>(
         .padding(0.0)
         .style(|theme: &Theme, status| {
             let tokens = Tokens::of(theme);
-            let hovered = matches!(
-                status,
-                button::Status::Hovered | button::Status::Pressed
-            );
+            let hovered = matches!(status, button::Status::Hovered | button::Status::Pressed);
             button::Style {
                 background: Some(Background::Color(if hovered {
                     theme::alpha(tokens.accent, 0.5)
@@ -421,10 +415,7 @@ pub struct BackgroundStyle {
 impl BackgroundStyle {
     /// A fill of `color`, square unless [`Self::with_radius`] says otherwise.
     pub fn new(color: Color) -> Self {
-        Self {
-            color,
-            radius: 0.0,
-        }
+        Self { color, radius: 0.0 }
     }
 
     /// The same fill with rounded corners.
@@ -511,25 +502,22 @@ where
             unreachable!("a header row has exactly the content and the lane")
         };
 
-        let content = self.content.as_widget_mut().layout(
-            content_state,
-            renderer,
-            &limits.loose(),
-        );
-        let lane = self.disclosure.as_widget_mut().layout(
-            disclosure_state,
-            renderer,
-            &limits.loose(),
-        );
+        let content = self
+            .content
+            .as_widget_mut()
+            .layout(content_state, renderer, &limits.loose());
+        let lane =
+            self.disclosure
+                .as_widget_mut()
+                .layout(disclosure_state, renderer, &limits.loose());
 
         let lane_width = lane.size().width;
         let lane_height = lane.size().height;
         let inner = content.size().height.max(lane_height);
         let (width, height) = match self.size().width {
-            Length::Fill | Length::FillPortion(_) if !limits.compression().width => (
-                limits.max().width,
-                limits.max().height.min(inner),
-            ),
+            Length::Fill | Length::FillPortion(_) if !limits.compression().width => {
+                (limits.max().width, limits.max().height.min(inner))
+            }
             _ => (
                 (content.size().width + self.spacing + lane_width).min(limits.max().width),
                 inner,
@@ -675,10 +663,7 @@ where
             );
         }
 
-        for (index, child) in [&self.content, &self.disclosure]
-            .into_iter()
-            .enumerate()
-        {
+        for (index, child) in [&self.content, &self.disclosure].into_iter().enumerate() {
             child.as_widget().draw(
                 &tree.children[index],
                 renderer,
@@ -755,14 +740,12 @@ impl<'a, Message: Clone + 'a> From<Accordion<'a, Message>> for Element<'a, Messa
 
             let lane: Element<'a, Message> = match section.disclosure {
                 Some(disclosure) => container(disclosure).center_y(chevron_size).into(),
-                None if section.chevron => {
-                    container(chevron(open, chevron_size)).center_y(chevron_size).into()
-                }
-                None => {
-                    container(iced::widget::Space::new())
-                        .width(Length::Fixed(0.0))
-                        .into()
-                }
+                None if section.chevron => container(chevron(open, chevron_size))
+                    .center_y(chevron_size)
+                    .into(),
+                None => container(iced::widget::Space::new())
+                    .width(Length::Fixed(0.0))
+                    .into(),
             };
 
             let title = container(section.header).width(Length::Fill);
@@ -855,7 +838,7 @@ impl<'a, Message: Clone + 'a> From<Accordion<'a, Message>> for Element<'a, Messa
 
 /// The space between the trailing disclosure's lane and the row's own right
 /// inset, so the mark is set off from the card's edge instead of flush with it.
-const LANE_INSET: f32 = 14.0;
+const LANE_INSET: f32 = 24.0;
 
 /// Lucide's `chevron-down`, the closed disclosure.
 const CHEVRON_DOWN: &[u8] = br#"<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m6 9 6 6 6-6"/></svg>"#;
