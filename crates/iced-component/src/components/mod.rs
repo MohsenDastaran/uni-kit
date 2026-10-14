@@ -35,6 +35,7 @@ pub mod hover_card;
 pub mod icon;
 pub mod image;
 pub mod input;
+pub mod input_group;
 pub mod kbd;
 pub mod label;
 pub mod list;

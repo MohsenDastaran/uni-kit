@@ -31,6 +31,7 @@ pub mod hover_card;
 pub mod icon;
 pub mod image;
 pub mod input;
+pub mod input_group;
 pub mod kbd;
 pub mod label;
 pub mod list;
@@ -98,6 +99,7 @@ pub const STORIES: &[&str] = &[
     "icon",
     "image",
     "input",
+    "input-group",
     "kbd",
     "label",
     "list",
@@ -168,6 +170,7 @@ pub fn run(story: &str, theme: iced::Theme) -> iced::Result {
         "icon" => icon::run(theme),
         "image" => image::run(theme),
         "input" => input::run(theme),
+        "input-group" => input_group::run(theme),
         "kbd" => kbd::run(theme),
         "label" => label::run(theme),
         "list" => list::run(theme),

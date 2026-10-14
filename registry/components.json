@@ -22717,6 +22717,23 @@
           "module": "theme"
         }
       ],
+      "input-group": [
+        {
+          "src": "crates/iced-component/src/components/input.rs",
+          "target": "input.rs",
+          "module": "input"
+        },
+        {
+          "src": "crates/iced-component/src/components/input_group.rs",
+          "target": "input_group.rs",
+          "module": "input_group"
+        },
+        {
+          "src": "crates/iced-component/src/components/theme.rs",
+          "target": "theme.rs",
+          "module": "theme"
+        }
+      ],
       "kbd": [
         {
           "src": "crates/iced-component/src/components/kbd.rs",

@@ -384,7 +384,7 @@ scripts/check.sh               # theme parity, feature agreement, manifest, chec
 | `icon` | `icon.rs` | yes | yes | yes | 214 | yes | yes |
 | `image` | `image.rs` | yes | yes | yes | 196 | yes | yes |
 | `input` | `input.rs` | yes | yes | yes | 373 | yes | yes |
-| `input-group` | `input_group.rs` | yes | yes | — | — | — | — |
+| `input-group` | `input_group.rs` | yes | yes | yes | 294 | yes | yes |
 | `kbd` | `kbd.rs` | yes | yes | yes | 141 | yes | yes |
 | `label` | `label.rs` | yes | yes | yes | 122 | yes | yes |
 | `list` | `list.rs` | yes | yes | yes | 241 | yes | yes |
@@ -431,7 +431,7 @@ scripts/check.sh               # theme parity, feature agreement, manifest, chec
 | `tree` | `tree.rs` | yes | yes | yes | 352 | yes | yes |
 | `virtual-list` | `virtual_list.rs` | yes | yes | — | — | — | — |
 
-**60 / 79** components have an iced source, an example and a registry entry.
+**61 / 79** components have an iced source, an example and a registry entry.
 
-Still to do: `bubble`, `carousel`, `chart`, `clipboard`, `collapsible`, `dock`, `dropdown_button`, `editor`, `focus-trap`, `input-group`, `message`, `resizable`, `root`, `settings`, `speech`, `tabs`, `theme`, `title-bar`, `virtual-list`.
+Still to do: `bubble`, `carousel`, `chart`, `clipboard`, `collapsible`, `dock`, `dropdown_button`, `editor`, `focus-trap`, `message`, `resizable`, `root`, `settings`, `speech`, `tabs`, `theme`, `title-bar`, `virtual-list`.
 <!-- iced-checklist:end -->
