@@ -113,13 +113,9 @@ fn muted<'a>(value: impl Into<String>) -> Element<'a, Message> {
 /// The Slint card draws it above the header; this one has no slot there, so the
 /// sample passes it as the body instead.
 fn cover<'a>(caption: &'static str) -> Element<'a, Message> {
-    container(
-        text(caption)
-            .size(11.0)
-            .style(|theme: &Theme| text::Style {
-                color: Some(Tokens::of(theme).muted_foreground),
-            }),
-    )
+    container(text(caption).size(11.0).style(|theme: &Theme| text::Style {
+        color: Some(Tokens::of(theme).muted_foreground),
+    }))
     .width(Length::Fill)
     .height(160.0)
     .align_x(Alignment::Center)
@@ -267,7 +263,7 @@ fn view(app: &App) -> Element<'_, Message> {
                         .on_press(Message::Nothing),
                     Button::new("Login")
                         .variant(Variant::Primary)
-                        .width(Length::Fill)
+                        // .width(Length::Fill)
                         .on_press(Message::Saved),
                 ]
                 .spacing(theme::SPACING_MD),
