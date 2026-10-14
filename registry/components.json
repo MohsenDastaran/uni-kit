@@ -22944,6 +22944,11 @@
       ],
       "message-scroller": [
         {
+          "src": "crates/iced-component/src/components/bubble.rs",
+          "target": "bubble.rs",
+          "module": "bubble"
+        },
+        {
           "src": "crates/iced-component/src/components/message_scroller.rs",
           "target": "message_scroller.rs",
           "module": "message_scroller"

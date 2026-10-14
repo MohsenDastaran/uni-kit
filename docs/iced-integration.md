@@ -351,20 +351,20 @@ scripts/check.sh               # theme parity, feature agreement, manifest, chec
 <!-- iced-checklist:start -->
 | Component | iced file | GPUI ref | Slint ref | iced source | lines | example | registry |
 | --- | --- | --- | --- | --- | --- | --- | --- |
-| `accordion` | `accordion.rs` | yes | yes | yes | 393 | yes | yes |
+| `accordion` | `accordion.rs` | yes | yes | yes | 421 | yes | yes |
 | `alert` | `alert.rs` | yes | yes | yes | 319 | yes | yes |
 | `alert-dialog` | `alert_dialog.rs` | yes | yes | yes | 242 | yes | yes |
 | `attachment` | `attachment.rs` | yes | yes | yes | 1169 | yes | yes |
 | `avatar` | `avatar.rs` | yes | yes | yes | 320 | yes | yes |
 | `badge` | `badge.rs` | yes | yes | yes | 237 | yes | yes |
-| `bubble` | `bubble.rs` | yes | yes | yes | 712 | yes | yes |
+| `bubble` | `bubble.rs` | yes | yes | yes | 723 | yes | yes |
 | `button` | `button.rs` | yes | yes | yes | 586 | yes | yes |
 | `calendar` | `calendar.rs` | yes | yes | yes | 507 | yes | yes |
 | `card` | `card.rs` | yes | yes | yes | 198 | yes | yes |
 | `carousel` | `carousel.rs` | yes | yes | yes | 529 | yes | yes |
 | `chart` | `chart.rs` | yes | yes | yes | 1258 | yes | yes |
 | `checkbox` | `checkbox.rs` | yes | yes | yes | 269 | yes | yes |
-| `clipboard` | `clipboard.rs` | yes | yes | yes | 127 | yes | yes |
+| `clipboard` | `clipboard.rs` | yes | yes | yes | 368 | yes | yes |
 | `collapsible` | `collapsible.rs` | yes | yes | yes | 567 | yes | yes |
 | `color-picker` | `color_picker.rs` | yes | yes | yes | 936 | yes | yes |
 | `combobox` | `combobox.rs` | yes | yes | yes | 738 | yes | yes |
@@ -381,7 +381,7 @@ scripts/check.sh               # theme parity, feature agreement, manifest, chec
 | `form` | `form.rs` | yes | yes | yes | 593 | yes | yes |
 | `group-box` | `group_box.rs` | yes | yes | yes | 227 | yes | yes |
 | `hover-card` | `hover_card.rs` | yes | yes | yes | 177 | yes | yes |
-| `icon` | `icon.rs` | yes | yes | yes | 214 | yes | yes |
+| `icon` | `icon.rs` | yes | yes | yes | 368 | yes | yes |
 | `image` | `image.rs` | yes | yes | yes | 196 | yes | yes |
 | `input` | `input.rs` | yes | yes | yes | 373 | yes | yes |
 | `input-group` | `input_group.rs` | yes | yes | yes | 294 | yes | yes |
@@ -392,13 +392,13 @@ scripts/check.sh               # theme parity, feature agreement, manifest, chec
 | `menu` | `menu.rs` | yes | yes | yes | 670 | yes | yes |
 | `message` | `message.rs` | yes | yes | yes | 490 | yes | yes |
 | `message-role` | `message_role.rs` | yes | yes | yes | 235 | yes | yes |
-| `message-scroller` | `message_scroller.rs` | yes | yes | yes | 676 | yes | yes |
+| `message-scroller` | `message_scroller.rs` | yes | yes | yes | 584 | yes | yes |
 | `notification` | `notification.rs` | yes | yes | yes | 418 | yes | yes |
 | `number-input` | `number_input.rs` | yes | yes | yes | 524 | yes | yes |
 | `otp-input` | `otp_input.rs` | yes | yes | yes | 522 | yes | yes |
 | `pagination` | `pagination.rs` | yes | yes | yes | 276 | yes | yes |
 | `popover` | `popover.rs` | yes | yes | yes | 1117 | yes | yes |
-| `progress` | `progress.rs` | yes | yes | yes | 413 | yes | yes |
+| `progress` | `progress.rs` | yes | yes | yes | 511 | yes | yes |
 | `questionnaire` | `questionnaire.rs` | yes | yes | yes | 538 | yes | yes |
 | `radio` | `radio.rs` | yes | yes | yes | 387 | yes | yes |
 | `rating` | `rating.rs` | yes | yes | yes | 197 | yes | yes |
