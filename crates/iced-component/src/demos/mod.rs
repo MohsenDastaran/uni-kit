@@ -12,6 +12,7 @@ pub mod alert_dialog;
 pub mod attachment;
 pub mod avatar;
 pub mod badge;
+pub mod bubble;
 pub mod button;
 pub mod calendar;
 pub mod card;
@@ -26,6 +27,7 @@ pub mod date_picker;
 pub mod description_list;
 pub mod dialog;
 pub mod dropdown_button;
+pub mod editor;
 pub mod empty;
 pub mod focus_trap;
 pub mod form;
@@ -85,6 +87,7 @@ pub const STORIES: &[&str] = &[
     "attachment",
     "avatar",
     "badge",
+    "bubble",
     "button",
     "calendar",
     "card",
@@ -99,6 +102,7 @@ pub const STORIES: &[&str] = &[
     "description-list",
     "dialog",
     "dropdown-button",
+    "editor",
     "empty",
     "focus-trap",
     "form",
@@ -161,6 +165,7 @@ pub fn run(story: &str, theme: iced::Theme) -> iced::Result {
         "attachment" => attachment::run(theme),
         "avatar" => avatar::run(theme),
         "badge" => badge::run(theme),
+        "bubble" => bubble::run(theme),
         "button" => button::run(theme),
         "calendar" => calendar::run(theme),
         "card" => card::run(theme),
@@ -175,6 +180,7 @@ pub fn run(story: &str, theme: iced::Theme) -> iced::Result {
         "description-list" => description_list::run(theme),
         "dialog" => dialog::run(theme),
         "dropdown-button" => dropdown_button::run(theme),
+        "editor" => editor::run(theme),
         "empty" => empty::run(theme),
         "focus-trap" => focus_trap::run(theme),
         "form" => form::run(theme),

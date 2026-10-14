@@ -357,7 +357,7 @@ scripts/check.sh               # theme parity, feature agreement, manifest, chec
 | `attachment` | `attachment.rs` | yes | yes | yes | 1169 | yes | yes |
 | `avatar` | `avatar.rs` | yes | yes | yes | 320 | yes | yes |
 | `badge` | `badge.rs` | yes | yes | yes | 237 | yes | yes |
-| `bubble` | `bubble.rs` | yes | yes | — | — | — | — |
+| `bubble` | `bubble.rs` | yes | yes | yes | 712 | yes | yes |
 | `button` | `button.rs` | yes | yes | yes | 586 | yes | yes |
 | `calendar` | `calendar.rs` | yes | yes | yes | 507 | yes | yes |
 | `card` | `card.rs` | yes | yes | yes | 198 | yes | yes |
@@ -375,7 +375,7 @@ scripts/check.sh               # theme parity, feature agreement, manifest, chec
 | `dialog` | `dialog.rs` | yes | yes | yes | 620 | yes | yes |
 | `dock` | `dock.rs` | yes | yes | — | — | — | — |
 | `dropdown_button` | `dropdown_button.rs` | yes | yes | yes | 357 | yes | — |
-| `editor` | `editor.rs` | yes | yes | — | — | — | — |
+| `editor` | `editor.rs` | yes | yes | yes | 514 | yes | yes |
 | `empty` | `empty.rs` | yes | yes | yes | 330 | yes | yes |
 | `focus-trap` | `focus_trap.rs` | yes | yes | yes | 217 | yes | yes |
 | `form` | `form.rs` | yes | yes | yes | 593 | yes | yes |
@@ -421,7 +421,7 @@ scripts/check.sh               # theme parity, feature agreement, manifest, chec
 | `tabs` | `tabs.rs` | yes | yes | yes | 323 | yes | yes |
 | `tag` | `tag.rs` | yes | yes | yes | 257 | yes | yes |
 | `text-view` | `text_view.rs` | yes | yes | yes | 919 | yes | yes |
-| `textarea` | `textarea.rs` | yes | yes | yes | 399 | yes | yes |
+| `textarea` | `textarea.rs` | yes | yes | yes | 425 | yes | yes |
 | `theme` | `theme.rs` | yes | yes | yes | 455 | — | — |
 | `time-field` | `time_field.rs` | yes | yes | yes | 608 | yes | yes |
 | `title-bar` | `title_bar.rs` | yes | yes | — | — | — | — |
@@ -431,7 +431,7 @@ scripts/check.sh               # theme parity, feature agreement, manifest, chec
 | `tree` | `tree.rs` | yes | yes | yes | 352 | yes | yes |
 | `virtual-list` | `virtual_list.rs` | yes | yes | — | — | — | — |
 
-**66 / 79** components have an iced source, an example and a registry entry.
+**68 / 79** components have an iced source, an example and a registry entry.
 
-Still to do: `bubble`, `carousel`, `chart`, `dock`, `dropdown_button`, `editor`, `message`, `resizable`, `root`, `speech`, `theme`, `title-bar`, `virtual-list`.
+Still to do: `carousel`, `chart`, `dock`, `dropdown_button`, `message`, `resizable`, `root`, `speech`, `theme`, `title-bar`, `virtual-list`.
 <!-- iced-checklist:end -->

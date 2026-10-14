@@ -22352,6 +22352,18 @@
           "module": "theme"
         }
       ],
+      "bubble": [
+        {
+          "src": "crates/iced-component/src/components/bubble.rs",
+          "target": "bubble.rs",
+          "module": "bubble"
+        },
+        {
+          "src": "crates/iced-component/src/components/theme.rs",
+          "target": "theme.rs",
+          "module": "theme"
+        }
+      ],
       "button": [
         {
           "src": "crates/iced-component/src/components/button.rs",
@@ -22628,6 +22640,23 @@
           "src": "crates/iced-component/src/components/popover.rs",
           "target": "popover.rs",
           "module": "popover"
+        },
+        {
+          "src": "crates/iced-component/src/components/theme.rs",
+          "target": "theme.rs",
+          "module": "theme"
+        }
+      ],
+      "editor": [
+        {
+          "src": "crates/iced-component/src/components/editor.rs",
+          "target": "editor.rs",
+          "module": "editor"
+        },
+        {
+          "src": "crates/iced-component/src/components/textarea.rs",
+          "target": "textarea.rs",
+          "module": "textarea"
         },
         {
           "src": "crates/iced-component/src/components/theme.rs",
