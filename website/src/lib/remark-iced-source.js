@@ -190,6 +190,15 @@ function tagIcedHeading(node, title) {
   props[key] = current.join('|');
 }
 
+/** The gallery also posts the section's index. Several sections can share a
+ *  title — the accordion documents two examples under one heading — so the
+ *  index is what tells their headings apart when the title cannot. */
+function tagIcedIndex(node, index) {
+  const data = (node.data ??= {});
+  const props = (data.hProperties ??= {});
+  props['data-gallery-index'] = String(index);
+}
+
 // The heading's readable text, with the literal nodes kept. A title the demo
 // writes with backticks — `content` — is an `inlineCode` node, not text, so
 // reading only `text` children dropped the word and the heading never matched
@@ -224,6 +233,31 @@ function icedOnlyHeading(title) {
   props['data-framework-only'] = 'iced';
   tagIcedHeading(node, title);
   return node;
+}
+
+/**
+ * The second heading for a title the page already has. The card keeps the type
+ * as its title — the same text the gallery card posts — and the subtitle is
+ * what tells this repeated sample from the one above it. The index is what the
+ * page's lookup uses when both headings carry the same title.
+ */
+function icedDuplicateHeading(title, subtitle, index) {
+  const node = icedOnlyHeading(title);
+  node.children.push({ type: 'text', value: ` — ${subtitle}` });
+  tagIcedIndex(node, index);
+  return node;
+}
+
+/** Where the heading's section ends: the next heading of the same or shallower
+ *  depth. Used to put a repeated sample after the page's own sample instead of
+ *  in front of it. */
+function sectionEnd(children, heading) {
+  const depth = heading.depth ?? 0;
+  for (let at = children.indexOf(heading) + 1; at < children.length; at += 1) {
+    const node = children[at];
+    if (node.type === 'heading' && node.depth <= depth) return at;
+  }
+  return children.length;
 }
 
 /**
@@ -286,13 +320,31 @@ export function remarkIcedSource() {
     }
 
     let anchor = null;
-    for (const section of sections) {
+    // Which page heading each repeated title has already claimed, and the last
+    // heading the plugin wrote for it, so several sections under one title stay
+    // in the demo's order rather than stacking back to front.
+    const claims = new Map();
+    for (const [index, section] of sections.entries()) {
       const heading = [...byTitle].find(([title]) => sameIcedTitle(title, section.title))?.[1];
-      if (heading) {
+      if (heading && !claims.has(heading)) {
+        claims.set(heading, { count: 1, tail: null });
         tagIcedHeading(heading, section.title);
+        tagIcedIndex(heading, index);
         const at = children.indexOf(heading) + 1;
         children.splice(at, 0, icedCode(section.code));
         anchor = children[at];
+        continue;
+      }
+      if (heading) {
+        // The page heading is taken. The repeated sample gets a heading of its
+        // own, after the page's own sample so the panels read in demo order.
+        const claim = claims.get(heading);
+        claim.count += 1;
+        const total = sections.filter((item) => sameIcedTitle(item.title, section.title)).length;
+        const created = icedDuplicateHeading(section.title, `${claim.count} of ${total}`, index);
+        const from = claim.tail ?? heading;
+        children.splice(sectionEnd(children, from), 0, created, icedCode(section.code));
+        claim.tail = created;
         continue;
       }
       const at = anchor ? children.indexOf(anchor) + 1 : usageEnd(children);
@@ -301,6 +353,7 @@ export function remarkIcedSource() {
       // heading the page already had does, so the card's code icon has the
       // sample as a target of its own.
       const created = icedOnlyHeading(section.title);
+      tagIcedIndex(created, index);
       const nodes = [created, icedCode(section.code)];
       children.splice(at, 0, ...nodes);
       anchor = nodes[1];

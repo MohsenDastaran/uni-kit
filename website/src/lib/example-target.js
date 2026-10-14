@@ -33,11 +33,12 @@ export function gallerySourceTitle(title, _period, _note, subtitle) {
 }
 
 /**
- * @param {{ text: string, titles?: string, visible?: boolean, only?: string }[]} headings
+ * @param {{ text: string, titles?: string, visible?: boolean, only?: string, index?: number }[]} headings
  * @param {string} title
  * @param {string} [framework] The framework in force, as `html[data-framework]` names it.
+ * @param {number} [index] The section index the gallery posted.
  */
-export function findExampleHeading(headings, title, framework) {
+export function findExampleHeading(headings, title, framework, index) {
   const wanted = exampleWords(title);
   if (!wanted) return undefined;
   // The page shows one framework at a time, and a heading the framework in
@@ -48,6 +49,16 @@ export function findExampleHeading(headings, title, framework) {
   const shown = headings.filter((heading) => heading.visible !== false);
   const carries = (heading) =>
     galleryTitlesOf(heading.titles).some((item) => exampleWords(item) === wanted);
+  // Several cards can share a title — the accordion documents two samples under
+  // one heading. The gallery posts the section index with the title, and the
+  // sample's heading keeps it, so the index picks the card's own sample when
+  // the title alone would land both of them on the first.
+  if (typeof index === 'number') {
+    const own = shown.find(
+      (heading) => heading.index === index && (carries(heading) || exampleWords(heading.text) === wanted),
+    );
+    if (own) return own;
+  }
   // A heading whose section holds one framework's sample alone belongs to that
   // framework, and its title is its own. A shared heading can carry another
   // framework's alias for the same word — iced's `Progress` is also the Slint

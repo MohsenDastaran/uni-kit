@@ -746,7 +746,7 @@ function scrollToSource(destination: HTMLElement) {
   }
 }
 
-function showExample(title: string) {
+function showExample(title: string, index?: number | null) {
   const headings = exampleHeadings();
   const described = headings.map((heading) => ({
     text: plainHeading(heading),
@@ -760,8 +760,11 @@ function showExample(title: string) {
     // reads it to tell its own sample from a heading it shares with another
     // framework that happens to carry the same title.
     only: heading.dataset.frameworkOnly,
+    // The section index the iced plugin kept on the heading, so two samples
+    // under one title can still be told apart.
+    index: heading.dataset.galleryIndex ? Number(heading.dataset.galleryIndex) : undefined,
   }));
-  const match = findExampleHeading(described, title, framework.value);
+  const match = findExampleHeading(described, title, framework.value, index);
   const heading = match ? headings[described.indexOf(match)] : undefined;
   if (!heading) return;
   const code = codeAfter(heading);
