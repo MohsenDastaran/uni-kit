@@ -855,7 +855,7 @@ impl<'a, Message: Clone + 'a> From<Accordion<'a, Message>> for Element<'a, Messa
 
 /// The space between the trailing disclosure's lane and the row's own right
 /// inset, so the mark is set off from the card's edge instead of flush with it.
-const LANE_INSET: f32 = 6.0;
+const LANE_INSET: f32 = 14.0;
 
 /// Lucide's `chevron-down`, the closed disclosure.
 const CHEVRON_DOWN: &[u8] = br#"<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m6 9 6 6 6-6"/></svg>"#;
