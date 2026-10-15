@@ -1018,6 +1018,17 @@ nowhere else. The meter is a custom `Widget` drawing `fill_quad`s instead, which
 places. Worth knowing before reaching for `Canvas` inside a form or an input suffix — it fails
 silently, and only in some positions.
 
+#### The inverse: a `Shrink` row in a `Fixed` frame sits at the top
+
+Both halves of this bit the same catalogue. The trigger fields were built as
+`container(row![...].align_y(Center)).height(Length::Fixed(h))`; with a **`Shrink`** row, that
+`align_y(Center)` only centres the children inside the row's own content height — the row itself
+sits at the frame's top. The colour picker's swatch and text rode **6px high** with perfectly
+symmetric padding, which reads as a padding bug and is not one. `.height(Length::Fill)` on the row
+is the fix; `input`, `input_group` and `time_field` already had it, and the four copies of that same
+trigger source (`color_picker`, `select`, `combobox`, `date_picker`) had all dropped it. Field height
+is unchanged by the fix, so measure the content centre against the box centre, not the padding.
+
 #### A `Fill` child inside a `Shrink` cross axis lays out at zero
 
 The bubble's first build drew blank boxes: a `Length::Fill` child inside a `Shrink` column or
