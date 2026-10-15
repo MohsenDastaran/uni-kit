@@ -285,11 +285,7 @@ fn view(app: &App) -> Element<'_, Message> {
             .media_slot(mark(BELL, 16.0))
             .title("No notifications")
             .description("You're all caught up. New notifications will appear here.")
-            .secondary_action(
-                Button::new("Refresh")
-                    .outline()
-                    .on_press(Message::Nothing),
-            ),
+            .secondary_action(Button::new("Refresh").outline().on_press(Message::Nothing)),
     );
 
     // section: Avatar
@@ -337,7 +333,9 @@ fn view(app: &App) -> Element<'_, Message> {
         Empty::new()
             .media(Media::None)
             .title("Looking for a project?")
-            .description("The page you're looking for doesn't exist. Try searching for another page.")
+            .description(
+                "The page you're looking for doesn't exist. Try searching for another page.",
+            )
             .action(
                 column![
                     Input::new("empty-search")
