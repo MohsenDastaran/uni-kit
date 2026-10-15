@@ -22,11 +22,10 @@
 //! which has no glyph for either mark, so `⌘E` painted as `E`. The marks the face
 //! does have (`⇧`, `⌫`) are kept, because they render.
 //!
-//! One thing iced 0.14 cannot express is named rather than hidden: the two
-//! halves cannot share one outline. Slint joins them with `spacing: -1px` and
-//! squares the meeting edges; iced has no negative spacing and this crate's
-//! `Button` rounds all four of its own corners, so the halves sit flush and each
-//! keeps its own radius. Nothing here fakes the join with a painted divider.
+//! The caret is the component's own Lucide `chevron-down`, the mark the Slint
+//! trigger hardcodes, so no control below supplies one. The two halves square the
+//! corners that meet and share one outline: a primary split joins into the single
+//! button the reference shows, and a bordered one keeps the edge between them.
 
 use iced::widget::{column, container, mouse_area, row, scrollable, svg, text};
 use iced::{Alignment, Element, Length, Task, Theme};
@@ -252,14 +251,16 @@ fn view(app: &App) -> Element<'_, Message> {
     let usage: Element<Message> = Element::from(wired!(
         app,
         0,
-        DropdownButton::new("Export").items([
-            Item::new("Export all rows (.csv)")
-                .icon(DOWNLOAD)
-                .shortcut("Cmd E"),
-            Item::new("Download report (.pdf)").icon(FILE_TEXT),
-            Item::separator(),
-            Item::new("Copy as Markdown").icon(COPY),
-        ])
+        DropdownButton::new("Export")
+            .variant(Variant::Primary)
+            .items([
+                Item::new("Export all rows (.csv)")
+                    .icon(DOWNLOAD)
+                    .shortcut("Cmd E"),
+                Item::new("Download report (.pdf)").icon(FILE_TEXT),
+                Item::separator(),
+                Item::new("Copy as Markdown").icon(COPY),
+            ])
     ));
 
     let usage_section = column![
@@ -270,14 +271,18 @@ fn view(app: &App) -> Element<'_, Message> {
 
     // section: Basic split
     // The leading half runs its own action; the trailing half opens the menu, so
-    // the label is never a way to open the menu by accident.
+    // the label is never a way to open the menu by accident. The primary variant
+    // is the reference's ordinary shape: the two fills join into one button with
+    // a trailing chevron.
     let basic: Element<Message> = Element::from(wired!(
         app,
         1,
-        DropdownButton::new("Export").items([
-            Item::new("Export all rows (.csv)").shortcut("Cmd E"),
-            Item::new("Download report (.pdf)"),
-        ])
+        DropdownButton::new("Export")
+            .variant(Variant::Primary)
+            .items([
+                Item::new("Export all rows (.csv)").shortcut("Cmd E"),
+                Item::new("Download report (.pdf)"),
+            ])
     ));
 
     let basic_section = column![
@@ -351,15 +356,20 @@ fn view(app: &App) -> Element<'_, Message> {
 
     // section: Inner button options
     // The leading half owns its icon, its loading state and whether it answers at
-    // all; the whole control owns the variant and the size.
+    // all; the whole control owns the variant and the size. The muted `Save` is
+    // the reference's own split: its border draws the edge between the halves,
+    // where the primary `Export` above joins into one button.
     let inner: Element<Message> = layout_row(row![
         wired!(
             app,
             7,
-            DropdownButton::new("Save").icon(|| icon(DOWNLOAD)).items([
-                Item::new("Save as new file…").icon(FILE).shortcut("Cmd S"),
-                Item::new("Save as template…").icon(COPY),
-            ])
+            DropdownButton::new("Save")
+                .variant(Variant::Default)
+                .icon(|| icon(DOWNLOAD))
+                .items([
+                    Item::new("Save as new file…").icon(FILE).shortcut("Cmd S"),
+                    Item::new("Save as template…").icon(COPY),
+                ])
         ),
         wired!(
             app,
@@ -384,16 +394,16 @@ fn view(app: &App) -> Element<'_, Message> {
     let inner_section = body_box(inner);
 
     // section: With custom anchor
-    // A control whose label is only an icon, with the caret drawn explicitly, and
-    // a menu wider than its button. The menu hangs from the trailing edge, which
-    // is where the popover's bottom placement and the control's own width put it.
+    // A control whose label is only an icon, with the caret the component draws
+    // itself, and a menu wider than its button. The menu hangs from the trailing
+    // edge, which is where the popover's bottom placement and the control's own
+    // width put it.
     let anchors: Element<Message> = layout_row(row![
         wired!(
             app,
             10,
             DropdownButton::new("")
                 .icon(|| icon(PLAY))
-                .caret(|| icon(CHEVRON_DOWN))
                 .variant(Variant::Secondary)
                 .size(ControlSize::Small)
                 .menu_width(240.0)
@@ -484,9 +494,8 @@ fn icon(bytes: &'static [u8]) -> Element<'static, Message> {
 
 // The marks the Slint example asks for by name, taken from the icon set this
 // repository already ships (`crates/slint-component/ui/icons`, Lucide, ISC), so
-// the two galleries draw the same glyphs rather than two lookalikes.
-
-const CHEVRON_DOWN: &[u8] = br#"<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m6 9 6 6 6-6"/></svg>"#;
+// the two galleries draw the same glyphs rather than two lookalikes. The
+// caret is not among them: the component draws its own `chevron-down`.
 
 const DOWNLOAD: &[u8] = br#"<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><path d="m7 10 5 5 5-5"/><path d="M12 15V3"/></svg>"#;
 
