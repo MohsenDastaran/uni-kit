@@ -1018,6 +1018,19 @@ nowhere else. The meter is a custom `Widget` drawing `fill_quad`s instead, which
 places. Worth knowing before reaching for `Canvas` inside a form or an input suffix — it fails
 silently, and only in some positions.
 
+#### An overlay's window position is `layout.position() + translation`
+
+`translation` is the window offset of the coordinate space a layout position is already in — a
+`scrollable` passes `translation - offset` and paints under `with_translation(-offset)`. So the window
+position of a widget is `position + translation`, and subtracting it instead put the popover's panel
+**twice the scroll offset** below its trigger: measured **+383px** at a 189px scroll on a 32px row,
+where iced's clamp then pinned the panel to the floor and it read as "opens somewhere else".
+
+iced's own `pick_list.rs:733` adds it, and this crate's `tooltip.rs:643` already did; the popover was
+the odd one out. `Popover::overlay` is the single placement implementation, so `select`, `combobox`,
+`date-picker`, `color-picker`, `dropdown-button` and the popover/menu/toolbar demos all detached when
+scrolled — select measured +409px and date-picker +141px on the same test. One sign, five components.
+
 #### The inverse: a `Shrink` row in a `Fixed` frame sits at the top
 
 Both halves of this bit the same catalogue. The trigger fields were built as
