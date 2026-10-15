@@ -25,7 +25,14 @@ const doc = path.join(root, 'docs/iced-integration.md');
 
 const registry = JSON.parse(fs.readFileSync(path.join(root, 'registry/components.json'), 'utf8'));
 const inventory = Object.keys(registry.slint.components).sort();
-const wired = new Set(Object.keys(registry.iced?.components ?? {}));
+// The registry key is the site's slug and may hold a hyphen; the file and the
+// module cannot, so the key is the module with underscores back to hyphens.
+const moduleOf = (name) => name.replace(/-/g, '_');
+// Both sides are read through that mapping: the Slint inventory spells its key
+// `dropdown_button` where the iced registry spells the same component
+// `dropdown-button`, and comparing the raw names would leave a landed component
+// reading as outstanding forever.
+const wired = new Set(Object.keys(registry.iced?.components ?? {}).map(moduleOf));
 
 const exists = (file) => fs.existsSync(file);
 const read = (file) => (exists(file) ? fs.readFileSync(file, 'utf8') : '');
@@ -59,10 +66,6 @@ function implemented(file, kind) {
   return /pub fn/.test(text) && buildsElement;
 }
 
-// The registry key is the site's slug and may hold a hyphen; the file and the
-// module cannot, so the key is the module with underscores back to hyphens.
-const moduleOf = (name) => name.replace(/-/g, '_');
-
 const rows = inventory.map((name) => {
   const source = path.join(ui, `${moduleOf(name)}.rs`);
   const example = path.join(examples, `${moduleOf(name)}.rs`);
@@ -77,7 +80,7 @@ const rows = inventory.map((name) => {
     source: implemented(source, 'component'),
     lines: size,
     example: implemented(example, 'example'),
-    wired: wired.has(name),
+    wired: wired.has(moduleOf(name)),
   };
 });
 
