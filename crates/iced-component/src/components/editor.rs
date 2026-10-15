@@ -275,9 +275,14 @@ fn header<'a, Message: 'a>(
     dirty: bool,
     icon: Option<Element<'a, Message>>,
 ) -> Element<'a, Message> {
+    // `align_y(Center)` centres the children inside the row's own content
+    // height; a `Shrink` row inside this fixed-height frame would then sit at
+    // the frame's top. The row has to fill the bar for the alignment to mean
+    // what it says.
     let mut bar = row![]
         .spacing(theme::SPACING_SM)
         .align_y(Alignment::Center)
+        .height(Length::Fill)
         .padding([0.0, theme::SPACING_MD]);
 
     if let Some(icon) = icon {
@@ -387,9 +392,12 @@ fn status<'a, Message: 'a>(
         if line_count == 1 { "" } else { "s" }
     );
 
+    // Same shape as the header: a `Shrink` row would sit at the top of the
+    // fixed-height frame, so the row fills it and its own centring applies.
     let mut bar = row![]
         .spacing(14.0)
         .align_y(Alignment::Center)
+        .height(Length::Fill)
         .padding([0.0, theme::SPACING_MD]);
 
     if !language.is_empty() {
