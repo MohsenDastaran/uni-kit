@@ -1075,6 +1075,16 @@ The trap also cannot occur where a row is **intrinsic** rather than inside a fix
 exempt by construction, and why `menu` items at −2.0 are not defects. Say which components are exempt
 and why, beside the ones you measured.
 
+#### A `FillPortion` row is not a grid
+
+Equal fractions give equal columns only while every row has the same cell count. A field spanning
+*n* columns has to be *n* column widths **plus the `n-1` gaps inside it**, and a fill share cannot
+carry a fixed width — so `row.spacing(gap)` fixes the gutter and breaks the spans. The form now lays
+each row out itself: `column = (W - gap*(columns-1))/columns`, cell `i` at `span*column + (span-1)*gap`.
+That is what makes column edges agree row to row, and it is measurable: widths 189/188/189 →
+**178/178/178**, gutters 6px (input borders only) → **22px**, and a full-width row's edges against the
+three columns went from −2/+2 to **0/0**, at two iframe widths.
+
 #### A third shape: a `button`'s content starts at its padding origin
 
 The dock's collapse controls rode 5.5-6px high while the tab strip's row beside them was already
