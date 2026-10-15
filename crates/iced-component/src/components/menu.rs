@@ -473,9 +473,17 @@ where
     // Every row keeps the same four columns — a leading icon slot, the label,
     // the shortcut, and a trailing check slot — so a row that leaves one empty
     // still occupies it and the columns line up down the menu.
+    //
+    // The row has to fill the 32px frame: a `Shrink` row is aligned to the top
+    // of a fixed-height container, so `align_y` would centre the icon, the label
+    // and the check against the row's own content height and the whole line
+    // would ride high. This is the same trap the four field triggers
+    // (`color_picker`, `select`, `combobox`, `date_picker`) each dropped, and
+    // `.height(Length::Fill)` is the same fix; the row height is unchanged.
     let mut line = row![]
         .spacing(theme::SPACING_SM)
-        .align_y(iced::Alignment::Center);
+        .align_y(iced::Alignment::Center)
+        .height(Length::Fill);
 
     line = line.push(match item.icon {
         Some(icon) => container(glyph::<Message>(icon, danger, disabled))
