@@ -16,6 +16,33 @@
 //! [`Field::separator`] are the two block rows, Slint's `FormSection` and
 //! `FormSeparator`.
 //!
+//! **The grid is exact.** GPUI's `Form` is a CSS grid — `grid_cols(columns)`
+//! with equal `1fr` columns and a gap — and Slint's `FormGrid` is a `GridLayout`
+//! with the same equal cells and one `spacing` between them. A plain `row` of
+//! `Length::FillPortion` cells cannot hold that once a row mixes spans: a field
+//! spanning `n` columns must be `n` column widths plus the `n - 1` gaps *inside*
+//! it, and a fill share has no way to add that fixed width. So each row is a
+//! [`GridRow`], which reads the width its parent offers and lays every cell out
+//! at the grid's own geometry — the measurement iced's own `Grid` makes for
+//! uniform cells, with a per-cell span on top. Column edges therefore agree from
+//! row to row, and the form's `gap` separates columns as well as rows, which is
+//! Slint's single `FormGrid` `spacing` (GPUI keeps a wider `gap_x`).
+//!
+//! **Where a label sits is the shared choice [`LabelLayout`] makes.** `Above` is
+//! Slint's `FormField` and GPUI's `Axis::Vertical`, so the label leads its own
+//! cell; `Beside` is Slint's `FormRow` and GPUI's `Axis::Horizontal` with a fixed
+//! `label_width`, so a single-column form's labels share one edge. A grid cell
+//! carries its own field, label included — GPUI's grid does the same — so in a
+//! multi-column form a label follows its column rather than a spine across the
+//! whole form.
+//!
+//! **The column count is the caller's.** Neither reference derives it from the
+//! viewport: GPUI's `Form::columns` and the page's Responsive Layout sample
+//! choose it in the application, and Slint's `FormGrid` takes rows and columns
+//! from its children. iced offers no viewport token, so this form follows the
+//! caller's `columns` alone — the same limitation the description-list port
+//! records.
+//!
 //! [`Field::error`] is what the reference keeps apart from a description: while
 //! an error is set it takes the message line in the danger colour and the
 //! description steps aside, exactly as Slint's `FormField` does with
@@ -25,15 +52,9 @@
 //! gallery shows both together. The error is the application's state: the field
 //! only places it.
 //!
-//! **Three reference behaviours have no iced 0.14 counterpart, and none is
+//! **Two reference behaviours have no iced 0.14 counterpart, and neither is
 //! faked:**
 //!
-//! - **A column span is proportional, not an exact multiple of the column
-//!   width.** iced lays a row out as a `row` of `Length::FillPortion` weights,
-//!   so a field spanning `n` columns takes `n` shares of the row rather than
-//!   `n` cells plus the gaps between them; a field that spans *all* the columns,
-//!   or any row of single-column fields, is exact. GPUI's `grid_cols`/`col_span`
-//!   and Slint's `GridLayout` know the cell geometry and can do the exact one.
 //! - **`label_fn` and `description_fn` are the caller's.** A GPUI field can hold
 //!   a closure that builds its label or description per frame; an iced element is
 //!   a value built from the caller's current state, so a dynamic description is
@@ -49,9 +70,12 @@
 // gets a warning for each one it does not want.
 #![allow(dead_code)]
 
+use iced::advanced::layout::{self, Limits};
+use iced::advanced::widget::Tree;
+use iced::advanced::{Clipboard, Layout, Shell, Widget, mouse, overlay, renderer};
 use iced::widget::rule as iced_rule;
 use iced::widget::{Space, column, container, row, text};
-use iced::{Alignment, Element, Length, Theme};
+use iced::{Alignment, Element, Event, Length, Rectangle, Size, Theme, Vector};
 
 use super::label::Label;
 use super::theme::{self, ControlSize, Tokens};
@@ -197,14 +221,14 @@ impl<'a, Message> Form<'a, Message> {
             // A section or a separator owns its own row and spans the grid, which
             // is the row a `FormSection` or `FormSeparator` always takes in Slint.
             if field.full_width {
-                close_row(&mut rows, &mut cells, &mut col, columns);
+                close_row(&mut rows, &mut cells, &mut col, columns, gap);
                 rows.push(field.render_element(label_layout, label_width, size));
                 continue;
             }
 
             if let Some(start) = field.col_start {
                 if start < col {
-                    close_row(&mut rows, &mut cells, &mut col, columns);
+                    close_row(&mut rows, &mut cells, &mut col, columns, gap);
                 }
                 if start > col {
                     cells.push((filler(), (start - col) as u16));
@@ -213,17 +237,17 @@ impl<'a, Message> Form<'a, Message> {
             }
 
             if col + span as usize > columns {
-                close_row(&mut rows, &mut cells, &mut col, columns);
+                close_row(&mut rows, &mut cells, &mut col, columns, gap);
             }
 
             cells.push((field.render_element(label_layout, label_width, size), span));
             col += span as usize;
             if col >= columns {
-                close_row(&mut rows, &mut cells, &mut col, columns);
+                close_row(&mut rows, &mut cells, &mut col, columns, gap);
             }
         }
 
-        close_row(&mut rows, &mut cells, &mut col, columns);
+        close_row(&mut rows, &mut cells, &mut col, columns, gap);
 
         let mut grid = column(rows).spacing(gap).width(Length::Fill);
 
@@ -246,6 +270,7 @@ fn close_row<'a, Message: Clone + 'a>(
     cells: &mut Vec<(Element<'a, Message>, u16)>,
     col: &mut usize,
     columns: usize,
+    gap: f32,
 ) {
     if cells.is_empty() {
         return;
@@ -253,7 +278,7 @@ fn close_row<'a, Message: Clone + 'a>(
     if *col < columns {
         cells.push((filler(), (columns - *col) as u16));
     }
-    rows.push(row_of(std::mem::take(cells)));
+    rows.push(row_of(std::mem::take(cells), columns, gap));
     *col = 0;
 }
 
@@ -262,13 +287,257 @@ fn filler<'a, Message: 'a>() -> Element<'a, Message> {
     Space::new().width(Length::Fill).into()
 }
 
-/// A row of weighted cells: each element takes its span's share of the width.
-fn row_of<'a, Message: 'a>(cells: Vec<(Element<'a, Message>, u16)>) -> Element<'a, Message> {
-    row(cells
-        .into_iter()
-        .map(|(cell, span)| Element::from(container(cell).width(Length::FillPortion(span)))))
-    .width(Length::Fill)
-    .into()
+/// One row of the grid: cells with a column span, laid out at the grid's own
+/// geometry. See [`GridRow`].
+fn row_of<'a, Message: Clone + 'a>(
+    cells: Vec<(Element<'a, Message>, u16)>,
+    columns: usize,
+    gap: f32,
+) -> Element<'a, Message> {
+    GridRow::new(cells, columns, gap).into()
+}
+
+/// A row of the form's grid, with a span on every cell.
+///
+/// The form's rows have to place their cells at the same x positions in every
+/// row, and a `row` of `Length::FillPortion` cells cannot: iced gives a fill cell
+/// a share of the width left *after* the row's own `spacing`, so a row mixing a
+/// one-column and a two-column cell gets widths that do not add the fixed gap
+/// inside the span. This row instead reads the width its parent offers and lays
+/// each cell out at `span` column widths plus the `span - 1` gaps inside it —
+/// the same arithmetic iced's own `Grid` does for uniform cells, with a span on
+/// top. That is what makes a spanning field exactly as wide as the columns it
+/// covers, so the edges line up across rows.
+struct GridRow<'a, Message> {
+    cells: Vec<Element<'a, Message>>,
+    /// The column span of each cell, parallel to `cells`.
+    spans: Vec<u16>,
+    columns: u16,
+    gap: f32,
+}
+
+impl<'a, Message> GridRow<'a, Message> {
+    fn new(cells: Vec<(Element<'a, Message>, u16)>, columns: usize, gap: f32) -> Self {
+        let (cells, spans) = cells.into_iter().unzip();
+        Self {
+            cells,
+            spans,
+            columns: columns.max(1) as u16,
+            gap,
+        }
+    }
+}
+
+impl<Message> Widget<Message, Theme, iced::Renderer> for GridRow<'_, Message>
+where
+    Message: Clone,
+{
+    fn children(&self) -> Vec<Tree> {
+        self.cells.iter().map(Tree::new).collect()
+    }
+
+    fn diff(&self, tree: &mut Tree) {
+        tree.diff_children(&self.cells);
+    }
+
+    fn size(&self) -> Size<Length> {
+        Size {
+            width: Length::Fill,
+            height: Length::Shrink,
+        }
+    }
+
+    fn layout(
+        &mut self,
+        tree: &mut Tree,
+        renderer: &iced::Renderer,
+        limits: &Limits,
+    ) -> layout::Node {
+        let size = self.size();
+        let limits = limits.width(size.width).height(size.height);
+        let available = limits.max();
+        let columns = self.columns.max(1) as f32;
+        let gap = self.gap.max(0.0);
+
+        // A grid needs the width its parent offers, which a `Fill` child inside a
+        // growing row has. An unbounded parent (a horizontal scrollable) is the
+        // one case that cannot answer, so there the cells fall back to their own
+        // intrinsic widths rather than every column collapsing to zero.
+        if !available.width.is_finite() {
+            let mut nodes = Vec::with_capacity(self.cells.len());
+            let mut x: f32 = 0.0;
+            let mut height: f32 = 0.0;
+            for (cell, state) in self.cells.iter_mut().zip(&mut tree.children) {
+                let node = cell
+                    .as_widget_mut()
+                    .layout(state, renderer, &limits)
+                    .move_to((x, 0.0));
+                x += node.size().width + gap;
+                height = height.max(node.size().height);
+                nodes.push(node);
+            }
+            let width = (x - gap).max(0.0);
+            return layout::Node::with_children(Size::new(width, height), nodes);
+        }
+
+        // Equal columns: the whole width minus the gaps the columns leave, split
+        // evenly. A cell then takes its span's worth of columns and the gaps
+        // between them, which is the only way a spanning cell can be exactly as
+        // wide as the columns it covers.
+        let column = ((available.width - gap * (columns - 1.0)) / columns).max(0.0);
+
+        let mut nodes = Vec::with_capacity(self.cells.len());
+        let mut x: f32 = 0.0;
+        let mut height: f32 = 0.0;
+        for ((cell, span), state) in self
+            .cells
+            .iter_mut()
+            .zip(&self.spans)
+            .zip(&mut tree.children)
+        {
+            let span = (*span).max(1) as f32;
+            let cell_width = (span * column + (span - 1.0) * gap).max(0.0);
+            let cell_limits = Limits::new(
+                Size::new(cell_width, 0.0),
+                Size::new(cell_width, available.height),
+            );
+            let node = cell
+                .as_widget_mut()
+                .layout(state, renderer, &cell_limits)
+                .move_to((x, 0.0));
+            height = height.max(node.size().height);
+            x += cell_width + gap;
+            nodes.push(node);
+        }
+
+        layout::Node::with_children(Size::new(available.width, height), nodes)
+    }
+
+    fn update(
+        &mut self,
+        tree: &mut Tree,
+        event: &Event,
+        layout: Layout<'_>,
+        cursor: mouse::Cursor,
+        renderer: &iced::Renderer,
+        clipboard: &mut dyn Clipboard,
+        shell: &mut Shell<'_, Message>,
+        viewport: &Rectangle,
+    ) {
+        for ((cell, state), child_layout) in self
+            .cells
+            .iter_mut()
+            .zip(&mut tree.children)
+            .zip(layout.children())
+        {
+            cell.as_widget_mut().update(
+                state,
+                event,
+                child_layout,
+                cursor,
+                renderer,
+                clipboard,
+                shell,
+                viewport,
+            );
+        }
+    }
+
+    fn mouse_interaction(
+        &self,
+        tree: &Tree,
+        layout: Layout<'_>,
+        cursor: mouse::Cursor,
+        viewport: &Rectangle,
+        renderer: &iced::Renderer,
+    ) -> mouse::Interaction {
+        self.cells
+            .iter()
+            .zip(&tree.children)
+            .zip(layout.children())
+            .map(|((cell, state), child_layout)| {
+                cell.as_widget()
+                    .mouse_interaction(state, child_layout, cursor, viewport, renderer)
+            })
+            .max()
+            .unwrap_or_default()
+    }
+
+    fn draw(
+        &self,
+        tree: &Tree,
+        renderer: &mut iced::Renderer,
+        theme: &Theme,
+        style: &renderer::Style,
+        layout: Layout<'_>,
+        cursor: mouse::Cursor,
+        viewport: &Rectangle,
+    ) {
+        if let Some(viewport) = layout.bounds().intersection(viewport) {
+            for ((cell, state), child_layout) in self
+                .cells
+                .iter()
+                .zip(&tree.children)
+                .zip(layout.children())
+                .filter(|(_, child_layout)| child_layout.bounds().intersects(&viewport))
+            {
+                cell.as_widget().draw(
+                    state,
+                    renderer,
+                    theme,
+                    style,
+                    child_layout,
+                    cursor,
+                    &viewport,
+                );
+            }
+        }
+    }
+
+    fn operate(
+        &mut self,
+        tree: &mut Tree,
+        layout: Layout<'_>,
+        renderer: &iced::Renderer,
+        operation: &mut dyn iced::advanced::widget::Operation,
+    ) {
+        operation.container(None, layout.bounds());
+        operation.traverse(&mut |operation| {
+            for ((cell, state), child_layout) in self
+                .cells
+                .iter_mut()
+                .zip(&mut tree.children)
+                .zip(layout.children())
+            {
+                cell.as_widget_mut()
+                    .operate(state, child_layout, renderer, operation);
+            }
+        });
+    }
+
+    fn overlay<'b>(
+        &'b mut self,
+        tree: &'b mut Tree,
+        layout: Layout<'b>,
+        renderer: &iced::Renderer,
+        viewport: &Rectangle,
+        translation: Vector,
+    ) -> Option<overlay::Element<'b, Message, Theme, iced::Renderer>> {
+        overlay::from_children(
+            &mut self.cells,
+            tree,
+            layout,
+            renderer,
+            viewport,
+            translation,
+        )
+    }
+}
+
+impl<'a, Message: Clone + 'a> From<GridRow<'a, Message>> for Element<'a, Message> {
+    fn from(grid_row: GridRow<'a, Message>) -> Self {
+        Element::new(grid_row)
+    }
 }
 
 impl<'a, Message> Default for Form<'a, Message> {
