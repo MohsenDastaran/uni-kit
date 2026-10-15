@@ -1031,6 +1031,20 @@ the odd one out. `Popover::overlay` is the single placement implementation, so `
 `date-picker`, `color-picker`, `dropdown-button` and the popover/menu/toolbar demos all detached when
 scrolled — select measured +409px and date-picker +141px on the same test. One sign, five components.
 
+#### A third shape: a `button`'s content starts at its padding origin
+
+The dock's collapse controls rode 5.5-6px high while the tab strip's row beside them was already
+correct, because a `button` lays its content out at the padding origin — a bare text child in a fixed
+26x30 box sits at the top however the box is aligned. Same family as the two above, different place to
+look: give the content the box (a filling container) rather than a bare child. The tab close, already
+an SVG inside a filling container, measured 0.0 before and after, which is what isolated it.
+
+Two probe notes from the same fix. A mark that is a **text glyph** cannot be centred honestly — it
+carries its own side bearings — and the dock's arrows were `<-`, `->`, `v` before becoming embedded
+Lucide `panel-left`/`panel-right`/`panel-bottom`. And the **first captured frame after a wasm load can
+differ by a pixel** as the canvas settles, so compare the second cycle of a toggle rather than the
+first.
+
 #### The inverse: a `Shrink` row in a `Fixed` frame sits at the top
 
 Both halves of this bit the same catalogue. The trigger fields were built as
