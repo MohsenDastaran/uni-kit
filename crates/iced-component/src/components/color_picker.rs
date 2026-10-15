@@ -865,6 +865,12 @@ where
                 ]
                 .spacing(theme::SPACING_SM)
                 .align_y(Alignment::Center)
+                // The row has to fill the field's height: a `Shrink` row is
+                // aligned to the top of the fixed-height frame, so `align_y`
+                // would centre the swatch, value and caret against the row's own
+                // top edge and the whole row would ride high. `input.rs` and
+                // `time_field.rs` fill their rows for the same reason.
+                .height(Length::Fill)
                 .width(Length::Fill),
             )
             .padding([0.0, size.control_padding()])
