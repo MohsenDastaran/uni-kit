@@ -18,9 +18,10 @@
 //! titled trigger, the row that is itself the trigger, the bottom-edge trigger,
 //! and the panels a trigger beside or above a card opens. **Animated reveal**
 //! comes first and is the page's own section rather than a Slint GroupBox: it is
-//! the one place the panel is built with `animated(true)`, so the expansion the
-//! component documents can be watched rather than read about. The others stay
-//! immediate, which is what a caller gets by default.
+//! where the expansion the component documents can be watched rather than read
+//! about. The bottom trigger is built the same way, because the mark that turns
+//! over that panel should move with it; the others stay immediate, which is what
+//! a caller gets by default.
 
 use iced::widget::{
     Space, button as raw_button, column, container, mouse_area, row, scrollable, svg, text,
@@ -32,6 +33,7 @@ use crate::components::button::{self, Button, Variant};
 use crate::components::checkbox::Checkbox;
 use crate::components::collapsible::{self, Collapsible};
 use crate::components::group_box::{self, GroupBox};
+use crate::components::icon::Icon;
 use crate::components::progress::Progress;
 use crate::components::tag::{Tag, Variant as TagVariant};
 use crate::components::theme::{self, ControlSize, Status, Tokens};
@@ -278,6 +280,21 @@ fn icon_button<'a>(markup: &'static [u8], message: Message) -> Button<'a, Messag
 /// sliding panels in the example draw it.
 fn chevron<'a>(open: bool) -> Element<'a, Message> {
     mark(if open { CHEVRON_DOWN } else { CHEVRON_RIGHT }, 14.0, muted)
+}
+
+/// The bottom trigger's mark: one `chevron-down` turned half a revolution to
+/// point up while the panel above the button is open. `turn_to` counts a full
+/// turn as `1.0`, so the 180° between the two ends is `0.5`. The Slint example
+/// swaps `chevron-down` / `chevron-up` there; those are one glyph's two ends, so
+/// the turn between them is a rotation about the mark's centre rather than a
+/// change of artwork. It is an [`Icon`] and not the `mark` helper for exactly
+/// that reason: only `icon` can turn, and the ink it resolves on its own is the
+/// foreground the Slint button tints its icon with.
+fn turning_chevron<'a>(open: bool) -> Element<'a, Message> {
+    Icon::new(svg::Handle::from_memory(CHEVRON_DOWN))
+        .size(14.0)
+        .turn_to(if open { 0.5 } else { 0.0 })
+        .into()
 }
 
 /// A row that is the whole trigger, with its chevron leading the label.
@@ -583,36 +600,43 @@ fn view(app: &App) -> Element<'_, Message> {
 
     // section: Bottom trigger
     // The trigger sits on the bottom edge of the card it opens, so the panel's
-    // content is the breakdown above it and the button below reopens it.
-    let usage = Collapsible::new().open(app.usage_open).content(
-        column![
-            row![
-                line("Requests", theme::FONT_SIZE_XS, muted).width(Length::Fill),
-                line("$210.84", theme::FONT_SIZE_XS, |theme| Tokens::of(theme)
-                    .foreground),
+    // content is the breakdown above it and the button below reopens it. The
+    // button's mark is one chevron that turns half a turn to point up as the
+    // panel arrives, and the panel is animated so the turn and the reveal are
+    // one motion. The other triggers draw their two end glyphs and swap, which
+    // is what the Slint example does with theirs.
+    let usage = Collapsible::new()
+        .open(app.usage_open)
+        .animated(true)
+        .content(
+            column![
+                row![
+                    line("Requests", theme::FONT_SIZE_XS, muted).width(Length::Fill),
+                    line("$210.84", theme::FONT_SIZE_XS, |theme| Tokens::of(theme)
+                        .foreground),
+                ]
+                .spacing(8.0),
+                row![
+                    line("Active CPU", theme::FONT_SIZE_XS, muted).width(Length::Fill),
+                    line("$21.95", theme::FONT_SIZE_XS, |theme| Tokens::of(theme)
+                        .foreground),
+                ]
+                .spacing(8.0),
+                row![
+                    line("Events", theme::FONT_SIZE_XS, muted).width(Length::Fill),
+                    line("$21.20", theme::FONT_SIZE_XS, |theme| Tokens::of(theme)
+                        .foreground),
+                ]
+                .spacing(8.0),
+                row![
+                    line("Storage", theme::FONT_SIZE_XS, muted).width(Length::Fill),
+                    line("$20.45", theme::FONT_SIZE_XS, |theme| Tokens::of(theme)
+                        .foreground),
+                ]
+                .spacing(8.0),
             ]
             .spacing(8.0),
-            row![
-                line("Active CPU", theme::FONT_SIZE_XS, muted).width(Length::Fill),
-                line("$21.95", theme::FONT_SIZE_XS, |theme| Tokens::of(theme)
-                    .foreground),
-            ]
-            .spacing(8.0),
-            row![
-                line("Events", theme::FONT_SIZE_XS, muted).width(Length::Fill),
-                line("$21.20", theme::FONT_SIZE_XS, |theme| Tokens::of(theme)
-                    .foreground),
-            ]
-            .spacing(8.0),
-            row![
-                line("Storage", theme::FONT_SIZE_XS, muted).width(Length::Fill),
-                line("$20.45", theme::FONT_SIZE_XS, |theme| Tokens::of(theme)
-                    .foreground),
-            ]
-            .spacing(8.0),
-        ]
-        .spacing(8.0),
-    );
+        );
 
     let usage_card = card(
         column![
@@ -654,7 +678,7 @@ fn view(app: &App) -> Element<'_, Message> {
             Button::new("")
                 .outline()
                 .size(ControlSize::XSmall)
-                .icon(chevron(app.usage_open))
+                .icon(turning_chevron(app.usage_open))
                 .on_press(Message::ToggleUsage),
         )
         .width(Length::Fill)
