@@ -1063,6 +1063,18 @@ the odd one out. `Popover::overlay` is the single placement implementation, so `
 `date-picker`, `color-picker`, `dropdown-button` and the popover/menu/toolbar demos all detached when
 scrolled — select measured +409px and date-picker +141px on the same test. One sign, five components.
 
+#### A sweep of this family needs a calibration, and an exemption list
+
+Across the whole catalogue, offsets of **+/-2px** are text sitting above its line box's centre —
+typography, not layout. Only larger ones are defects: the editor's bars measured −10.0 and −6.0, the
+combobox search row −1.0 in a 36px frame (worth fixing, at the boundary), and every other bar and row
+measured inside 2px and correct. Without the threshold a sweep table reads as though everything failed.
+
+The trap also cannot occur where a row is **intrinsic** rather than inside a fixed bar, which is why
+`tabs`, `card`, `sheet`, `notification`, the dialog and alert-dialog title rows, and `carousel` are
+exempt by construction, and why `menu` items at −2.0 are not defects. Say which components are exempt
+and why, beside the ones you measured.
+
 #### A third shape: a `button`'s content starts at its padding origin
 
 The dock's collapse controls rode 5.5-6px high while the tab strip's row beside them was already
