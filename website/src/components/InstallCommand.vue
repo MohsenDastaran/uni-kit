@@ -49,7 +49,9 @@ const PACKAGE = "@dastaran/uni-kit@latest";
 // installs every name its framework needs (see `slugs`).
 const pageNames = ref<string[]>([]);
 const targets = computed(() =>
-  fromBlock.value ? (props.slugs?.[framework.value] ?? []) : pageNames.value,
+  (fromBlock.value ? (props.slugs?.[framework.value] ?? []) : pageNames.value).map(
+    registryName,
+  ),
 );
 const manager = ref<Manager>("npx");
 const framework = ref<Framework>("slint");
@@ -86,6 +88,23 @@ const runner = computed(() =>
 
 const namesFor = (name: string) =>
   (catalog as Record<string, string[]>)[name] ?? [];
+
+/**
+ * The registry name a page slug installs under.
+ *
+ * A component page's slug is the page's own name, while the manifest names a
+ * component after its Rust module, with underscores written as hyphens: the page
+ * `dropdown_button` installs for iced as `dropdown-button`. A name the framework
+ * already lists wins first, because Slint's own key is the underscored
+ * `dropdown_button` and must keep installing under the spelling the CLI's
+ * `add slint` entry uses.
+ */
+const registryName = (name: string) => {
+  const names = namesFor(framework.value);
+  if (names.includes(name)) return name;
+  const hyphenated = name.replace(/_/g, "-");
+  return names.includes(hyphenated) ? hyphenated : name;
+};
 
 /** A registry entry copies files into the app. uni-kit itself is the crate. */
 const packaged = computed(

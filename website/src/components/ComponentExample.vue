@@ -75,6 +75,16 @@ const titleCase = (value: string) =>
     .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
     .join("");
 
+/**
+ * The iced registry key for a page slug.
+ *
+ * A page's slug is the page's own name, while the manifest names an iced
+ * component with its Rust module's underscores written as hyphens, so the page
+ * `dropdown_button` is the story `dropdown-button`. A slug that is already
+ * hyphenated — every other page — is unchanged.
+ */
+const icedRegistryKey = (slug: string) => slug.replace(/_/g, "-");
+
 const storyName = computed(() =>
   component.value
     ? (storyNames[component.value] ?? titleCase(component.value))
@@ -133,8 +143,9 @@ const frameworkList: Record<string, Framework> = {
       // One module answers for every component, like the GPUI gallery, and it
       // dispatches on the registry key — the same name the manifest lists and
       // the CLI installs under. So `message-role` is asked for as
-      // `message-role`, where GPUI has a gallery story name of its own.
-      return `${base}/iced-gallery?story=${encodeURIComponent(component.value)}`;
+      // `message-role`, where GPUI has a gallery story name of its own, and
+      // `dropdown_button` is asked for as `dropdown-button`.
+      return `${base}/iced-gallery?story=${encodeURIComponent(icedRegistryKey(component.value))}`;
     },
   },
 };
