@@ -1018,6 +1018,19 @@ nowhere else. The meter is a custom `Widget` drawing `fill_quad`s instead, which
 places. Worth knowing before reaching for `Canvas` inside a form or an input suffix — it fails
 silently, and only in some positions.
 
+#### A section marker can cut code that does not compile
+
+The dock page's first Usage panel showed `fn view(app: &App) -> Element<'_, Message> {` with its
+`// section: end` **before the function closed** and no tail expression — a sample that cannot
+compile, while the running demo beside it was fine. The marker had been placed on the function
+signature and closed early, so the site printed an incomplete function.
+
+A brace-balance sweep over every iced demo's sections (driven through the site's own `icedSections`)
+found that one at **+1**; all 76 demos' other sections balance at 0, including the same demo's six
+others. Worth keeping as a check beside the icon-target sweep: the code a page prints has to compile
+as printed, not merely match a range of the file. The fix was to move the workspace construction into
+a complete function *inside* the section, and the gallery rendered byte-identically afterwards.
+
 #### An overlay's window position is `layout.position() + translation`
 
 `translation` is the window offset of the coordinate space a layout position is already in — a
