@@ -1,22 +1,25 @@
 //! `chart` — the plot surface, shown the way the Slint example shows it: a
-//! line, a bar chart, the shared axes, and the hover tooltip.
+//! line, a bar chart, an area, a pie, a radar, a candlestick, the shared axes,
+//! and the hover tooltip with its fade.
 //!
 //! Run it with `cargo run --example chart`, or in the browser as
 //! `?story=chart` in the gallery the website embeds.
 //!
 //! The section titles below are the page's own headings — `LineChart`,
-//! `Axes and Guides`, `BarChart` and `Hover and Tooltips` — which are the
-//! headings `website/component/chart.md` documents these samples under. The
-//! plugin's own `icedSections` reads these markers, so the code on the page is
-//! the code that runs here, and each panel lands under the heading that names
-//! it.
+//! `Axes and Guides`, `BarChart`, `AreaChart`, `PieChart`, `RadarChart`,
+//! `CandlestickChart` and `Hover and Tooltips` — which are the headings
+//! `website/component/chart.md` documents these samples under. The plugin's own
+//! `icedSections` reads these markers, so the code on the page is the code that
+//! runs here, and each panel lands under the heading that names it.
 //!
-//! The Slint example wraps forty-odd cards in `ChartCard`s; this is the smaller
-//! surface the component behind them actually owns — one line and one bar kind
-//! — and the module docs in [`crate::components::chart`] name what was not
-//! ported.
+//! The Slint example wraps forty-odd cards in `ChartCard`s; this is the surface
+//! the component behind them actually owns — six kinds — and the module docs in
+//! [`crate::components::chart`] name what was not ported.
 
-use crate::components::chart::{BarChart, ChartLegend, Interpolation, LineChart, Point};
+use crate::components::chart::{
+    AreaChart, BarChart, Candle, CandlestickChart, ChartLegend, Interpolation, LineChart, PieChart,
+    Point, RadarChart, RadarPoint,
+};
 use crate::components::group_box::{self, GroupBox};
 use crate::components::theme::{self, Tokens};
 use iced::widget::{column, container, mouse_area, row, scrollable, svg, text};
@@ -228,6 +231,56 @@ fn visitors() -> Vec<Point> {
     .collect()
 }
 
+/// Share of traffic by channel, which the pie colours one tone per slice.
+fn traffic() -> Vec<Point> {
+    [
+        ("Direct", 38.0),
+        ("Organic Search", 27.0),
+        ("Social", 18.0),
+        ("Referral", 11.0),
+        ("Email", 6.0),
+    ]
+    .into_iter()
+    .map(Point::from)
+    .collect()
+}
+
+/// Six review dimensions, scored out of 100, the Slint example's `scores`.
+fn scores() -> Vec<RadarPoint> {
+    [
+        ("Usability", 88.0, 72.0),
+        ("Reliability", 74.0, 91.0),
+        ("Performance", 81.0, 77.0),
+        ("Support", 69.0, 86.0),
+        ("Design", 92.0, 70.0),
+        ("Value", 78.0, 80.0),
+    ]
+    .into_iter()
+    .map(|(label, alpha, beta)| RadarPoint::new(label, alpha, beta))
+    .collect()
+}
+
+/// Twelve sessions of open, high, low and close, the Slint example's `candles`.
+fn candles() -> Vec<Candle> {
+    [
+        ("Mar 3", 102.0, 108.0, 100.0, 106.0),
+        ("Mar 4", 106.0, 110.0, 103.0, 104.0),
+        ("Mar 5", 104.0, 107.0, 98.0, 99.0),
+        ("Mar 6", 99.0, 105.0, 97.0, 103.0),
+        ("Mar 7", 103.0, 112.0, 102.0, 111.0),
+        ("Mar 10", 111.0, 114.0, 107.0, 109.0),
+        ("Mar 11", 109.0, 118.0, 108.0, 116.0),
+        ("Mar 12", 116.0, 119.0, 111.0, 113.0),
+        ("Mar 13", 113.0, 117.0, 109.0, 110.0),
+        ("Mar 14", 110.0, 121.0, 108.0, 120.0),
+        ("Mar 17", 120.0, 124.0, 115.0, 118.0),
+        ("Mar 18", 118.0, 126.0, 117.0, 125.0),
+    ]
+    .into_iter()
+    .map(|(label, open, high, low, close)| Candle::new(label, open, high, low, close))
+    .collect()
+}
+
 fn view(app: &App) -> Element<'_, Message> {
     // section: LineChart
     // A line joins its points in the order given. `Linear` is the default and
@@ -272,11 +325,59 @@ fn view(app: &App) -> Element<'_, Message> {
     ]
     .spacing(theme::SPACING_SM);
 
+    // section: AreaChart
+    // An area fills the region between its line and the baseline at 35% of the
+    // series tone. It takes the same joins and the same pinned axis as a line,
+    // so a series still in progress holds room for the points still to come.
+    let areas = column![
+        AreaChart::new(visitors()).tone(1),
+        AreaChart::new(intraday())
+            .interpolation(Interpolation::Step)
+            .tone(3)
+            .max_value(130.0),
+    ]
+    .spacing(theme::SPACING_MD);
+
+    // section: PieChart
+    // A pie sweeps clockwise from the top, one palette tone per slice. `donut`
+    // leaves a hole, `pad_angle` opens a gap between slices, and `show_labels`
+    // names each slice at the ring's midpoint.
+    let pies = row![
+        PieChart::new(traffic()).donut(true).pad_angle(0.02),
+        PieChart::new(regions())
+            .show_labels(true)
+            .outer_radius(38.0),
+    ]
+    .spacing(theme::SPACING_LG);
+
+    // section: RadarChart
+    // A radar closes a polygon around one vertex per dimension. `multiple`
+    // draws the second series, `dots` marks the first series' vertices, and
+    // `lines_only` drops the fill so only the ring grid and the outline remain.
+    let radars = row![
+        RadarChart::new(scores()).multiple(true).dots(true),
+        RadarChart::new(scores())
+            .lines_only(true)
+            .grid_levels(5)
+            .tone(3),
+    ]
+    .spacing(theme::SPACING_LG);
+
+    // section: CandlestickChart
+    // Each candle is a wick from the session's low to its high and a body from
+    // its open to its close, coloured by whether the close beat the open, over
+    // a price range the caller can pin with `min_price` and `max_price`.
+    let candle_chart = CandlestickChart::new(candles())
+        .min_price(90.0)
+        .max_price(130.0)
+        .tick_margin(2);
+
     // section: Hover and Tooltips
     // Nothing opts in: a chart hit-tests the pointer, draws the guide and a mark
     // on the datum under it, and shows that datum's name and value in a tooltip
-    // that flips toward the centre near an edge. The state lives in the widget
-    // tree, so the element itself stays stateless.
+    // that flips toward the centre near an edge. The tooltip fades in and out,
+    // and every series draws in over one second on the first paint. The state
+    // lives in the widget tree, so the element itself stays stateless.
     let hover = column![
         LineChart::new(visitors()).dots(true).tone(0),
         BarChart::new(regions()).mixed(true).rounded(true),
@@ -291,7 +392,15 @@ fn view(app: &App) -> Element<'_, Message> {
         body_box(axes),
         heading(app, 2, "BarChart"),
         body_box(bars),
-        heading(app, 3, "Hover and Tooltips"),
+        heading(app, 3, "AreaChart"),
+        body_box(areas),
+        heading(app, 4, "PieChart"),
+        body_box(pies),
+        heading(app, 5, "RadarChart"),
+        body_box(radars),
+        heading(app, 6, "CandlestickChart"),
+        body_box(candle_chart),
+        heading(app, 7, "Hover and Tooltips"),
         body_box(hover),
         owned_muted(
             "Hover a plot to see the guide and the tooltip.".to_string(),
