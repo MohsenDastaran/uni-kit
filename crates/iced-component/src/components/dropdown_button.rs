@@ -4,13 +4,22 @@
 //!
 //! # One control, two halves
 //!
-//! Slint joins the halves with `spacing: -1px` and lets each square the edge
-//! that meets the other, so the pair reads as one outline. iced 0.14 has no
-//! negative spacing and this crate's [`Button`](super::button::Button) draws its
-//! own radius on all four corners, so the two halves sit flush at zero spacing
-//! with the seam the two edges make between them. That is the one place this
-//! port is visibly not the reference, and it is named rather than faked with a
-//! painted divider.
+//! The halves share one outline: the leading half squares the corners that meet
+//! the trailing one and the trailing half squares its leading corners, which is
+//! the Slint control's `group-start`/`group-end` pair. The variant decides
+//! whether the join shows — a `Primary` split carries no border, so its two
+//! fills read as the one button the reference draws, while a bordered variant
+//! draws the 1px divider the reference's muted split has. iced has no negative
+//! spacing and each half paints its own background, so the primary join keeps a
+//! one-pixel seam where the two antialiased edges meet; Slint's `-1px` overlap
+//! has no iced spelling.
+//!
+//! The trailing half's mark is built in. Slint writes `icon: "chevron-down"` on
+//! the trigger and GPUI's `Button::dropdown_caret(true)` draws a `Caret`, so
+//! neither asks the caller for one — and a control whose disclosure mark is
+//! optional is a control that ships as an empty box. [`DropdownButton::caret`]
+//! replaces the mark for a caller with its own icon set; it is no longer the
+//! only way to get one.
 //!
 //! The variant and the size are the whole control's, which is Slint's
 //! `variant`/`size` and GPUI's `effective_variant`/`effective_size`: one value
@@ -58,20 +67,23 @@
 
 use std::rc::Rc;
 
-use iced::widget::row;
-use iced::{Alignment, Element};
+use iced::widget::{row, svg};
+use iced::{Alignment, Element, Theme};
 
-use super::button::{Button, Variant};
-use super::menu::{Item, Menu};
+use super::button::{self, Button, Variant};
+use super::menu::{self, Item, Menu};
 use super::popover::{Placement, Popover};
-use super::theme::ControlSize;
+use super::theme::{ControlSize, Tokens};
 
-/// The menu panel's width when the caller names none. It is a little wider than
-/// the medium control, so a menu of ordinary labels does not wrap, and it is
-/// closer to the Slint panel's own 280px than to the button's width, because
-/// iced's popover panel is a fixed width and Slint's `menu-width: 0px` means
-/// "the menu's own".
-pub const DEFAULT_MENU_WIDTH: f32 = 240.0;
+/// The menu panel's width when the caller names none. Slint's `menu-width: 0px`
+/// means "the menu's own width", and in iced the menu's own width is
+/// [`menu::PANEL_WIDTH`] — the fixed panel a standalone [`Menu`] is given, and
+/// the width [`select`](super::select) and [`combobox`](super::combobox) already
+/// pass their popovers. The dropdown draws the same `Menu` body, so it takes the
+/// same width rather than a second number that would drift from it. The Slint
+/// authority authors 280px and the iced menu grew to 320 so its labels stop
+/// wrapping, which is the same reason this control's menu needs the wider panel.
+pub const DEFAULT_MENU_WIDTH: f32 = menu::PANEL_WIDTH;
 
 /// Which half of a split button reported.
 ///
@@ -95,8 +107,8 @@ pub enum DropdownAction {
 pub struct DropdownButton<'a, Message> {
     label: String,
     icon: Option<Rc<dyn Fn() -> Element<'a, Message> + 'a>>,
-    /// The caret glyph. The bytes belong to the application, as every icon in
-    /// this crate does; a caller that leaves it out gets an empty caret half.
+    /// The caret glyph, or `None` for the built-in Lucide `chevron-down` the
+    /// authority hardcodes on the trigger.
     caret: Option<Rc<dyn Fn() -> Element<'a, Message> + 'a>>,
     variant: Variant,
     size: ControlSize,
@@ -111,7 +123,7 @@ pub struct DropdownButton<'a, Message> {
     menu_width: f32,
     on_chosen: Option<Rc<dyn Fn(usize, DropdownAction) -> Message + 'a>>,
     on_highlight: Option<Rc<dyn Fn(usize) -> Message + 'a>>,
-    on_open_change: Option<Box<dyn Fn(bool) -> Message + 'a>>,
+    on_open_change: Option<Rc<dyn Fn(bool) -> Message + 'a>>,
 }
 
 impl<'a, Message: Clone + 'static> DropdownButton<'a, Message> {
@@ -121,7 +133,7 @@ impl<'a, Message: Clone + 'static> DropdownButton<'a, Message> {
             label: label.into(),
             icon: None,
             caret: None,
-            variant: Variant::Primary,
+            variant: Variant::default(),
             size: ControlSize::Medium,
             outline: false,
             loading: false,
@@ -137,8 +149,11 @@ impl<'a, Message: Clone + 'static> DropdownButton<'a, Message> {
         }
     }
 
-    /// The variant both halves are drawn in. [`Variant::Primary`] is the
-    /// default, which is the Slint component's.
+    /// The variant both halves are drawn in. [`Variant::Default`] is the
+    /// default, which is the Slint control's `ButtonVariant.default` and GPUI's
+    /// `ButtonVariant::default()`. A caller that wants the solid primary split
+    /// asks for it, the way the Slint example's `variant: ButtonVariant.primary`
+    /// does.
     pub fn variant(mut self, variant: Variant) -> Self {
         self.variant = variant;
         self
@@ -165,10 +180,10 @@ impl<'a, Message: Clone + 'static> DropdownButton<'a, Message> {
         self
     }
 
-    /// The caret the trailing half draws, as [`icon`](Self::icon) does. The
-    /// glyph belongs to the application: the icon set is not this crate's to
-    /// resolve, which is why the Slint control's `icon: "chevron-down"` has no
-    /// counterpart here.
+    /// The caret the trailing half draws, replacing the built-in
+    /// `chevron-down`. The glyph belongs to the application, as every
+    /// overridable icon in this crate does; the default is the authority's own
+    /// mark, so a caller that says nothing still gets a disclosure.
     pub fn caret(mut self, caret: impl Fn() -> Element<'a, Message> + 'a) -> Self {
         self.caret = Some(Rc::new(caret));
         self
@@ -247,7 +262,7 @@ impl<'a, Message: Clone + 'static> DropdownButton<'a, Message> {
     /// `true`, an outside click or Escape wants `false` — the way
     /// [`Popover::on_open_change`] does.
     pub fn on_open_change(mut self, on_open_change: impl Fn(bool) -> Message + 'a) -> Self {
-        self.on_open_change = Some(Box::new(on_open_change));
+        self.on_open_change = Some(Rc::new(on_open_change));
         self
     }
 
@@ -259,7 +274,10 @@ impl<'a, Message: Clone + 'static> DropdownButton<'a, Message> {
             .variant(self.variant)
             .size(self.size)
             .loading(self.loading)
-            .selected(self.selected);
+            .selected(self.selected)
+            // The leading half owns the join's edge: its trailing corners are
+            // square, so the two fills meet without a notch between them.
+            .group_end(true);
         if self.outline {
             button = button.outline();
         }
@@ -285,12 +303,47 @@ impl<'a, Message: Clone + 'static> DropdownButton<'a, Message> {
         let mut button = Button::new("")
             .variant(self.variant)
             .size(self.size)
-            .selected(self.selected || self.open);
+            .selected(self.selected || self.open)
+            // The trailing half squares the corners that meet the leading one,
+            // so the pair reads as one control.
+            .group_start(true);
         if self.outline {
             button = button.outline();
         }
-        if let Some(caret) = &self.caret {
-            button = button.icon(caret());
+
+        // The mark. The authority hardcodes `chevron-down` on the trigger, so
+        // the built-in case draws it; the ink is read inside the style closure
+        // because a colour sampled while the element is built is the light
+        // theme's in the dark one.
+        let ink_variant = self.variant;
+        let ink_outline = self.outline;
+        let ink_disabled = self.disabled;
+        let caret: Element<'a, Message> = match &self.caret {
+            Some(caret) => caret(),
+            None => svg(svg::Handle::from_memory(CHEVRON_DOWN))
+                .width(self.size.icon_size())
+                .height(self.size.icon_size())
+                .style(move |theme: &Theme, _status| svg::Style {
+                    color: Some(if ink_disabled {
+                        Tokens::of(theme).muted_foreground
+                    } else {
+                        button::ink(Tokens::of(theme), ink_variant, ink_outline)
+                    }),
+                })
+                .into(),
+        };
+        button = button.icon(caret);
+
+        // iced draws a `button` with no message as `Status::Disabled`, and the
+        // press that opens the panel belongs to the [`Popover`] around this
+        // half. Carrying the same request as the half's own message keeps the
+        // half in the control's enabled fill and gives it the hover and press
+        // states the leading half has; the popover publishes the identical
+        // request on the same press, so the state moves once.
+        if !self.disabled
+            && let Some(on_open_change) = &self.on_open_change
+        {
+            button = button.on_press(on_open_change(true));
         }
         button.into()
     }
@@ -335,9 +388,9 @@ impl<'a, Message: Clone + 'static> DropdownButton<'a, Message> {
             .open(self.open && !self.disabled);
 
         if !self.disabled
-            && let Some(on_open_change) = self.on_open_change
+            && let Some(on_open_change) = self.on_open_change.clone()
         {
-            popover = popover.on_open_change(on_open_change);
+            popover = popover.on_open_change(move |open| on_open_change(open));
         }
 
         row![main, popover]
@@ -355,3 +408,10 @@ where
         button.into_element()
     }
 }
+
+/// The disclosure mark the authority hardcodes on the trigger, taken from the
+/// icon set this repository already ships
+/// (`crates/slint-component/ui/icons/chevron-down.svg`, Lucide, ISC). The
+/// application owns its assets, but a select draws its own disclosure for the
+/// same reason: a control whose mark is optional ships as an empty box.
+const CHEVRON_DOWN: &[u8] = br#"<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m6 9 6 6 6-6"/></svg>"#;

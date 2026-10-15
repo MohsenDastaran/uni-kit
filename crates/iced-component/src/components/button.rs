@@ -66,6 +66,8 @@ pub struct Button<'a, Message> {
     suffix_icon: Option<Element<'a, Message>>,
     on_press: Option<Message>,
     width: Length,
+    group_start: bool,
+    group_end: bool,
 }
 
 impl<'a, Message> Button<'a, Message> {
@@ -81,6 +83,8 @@ impl<'a, Message> Button<'a, Message> {
             suffix_icon: None,
             on_press: None,
             width: Length::Shrink,
+            group_start: false,
+            group_end: false,
         }
     }
 
@@ -97,6 +101,23 @@ impl<'a, Message> Button<'a, Message> {
     /// Draws the border and keeps the fill, the shape GPUI calls outlined.
     pub fn outline(mut self) -> Self {
         self.outline = true;
+        self
+    }
+
+    /// Squares the leading corners so this button can sit flush against the
+    /// button before it and share one outline — the Slint `Button`
+    /// `group-start`, which the split button sets on its trailing half. GPUI
+    /// spells the same thing `border_corners`.
+    pub fn group_start(mut self, group_start: bool) -> Self {
+        self.group_start = group_start;
+        self
+    }
+
+    /// Squares the trailing corners, the Slint `Button` `group-end`. A split
+    /// button sets it on its leading half so the pair reads as one control
+    /// rather than two rounded buttons with a notch between them.
+    pub fn group_end(mut self, group_end: bool) -> Self {
+        self.group_end = group_end;
         self
     }
 
@@ -455,6 +476,8 @@ impl Style {
             suffix_icon: None,
             on_press: None,
             width: Length::Shrink,
+            group_start: false,
+            group_end: false,
         }
     }
 
@@ -507,6 +530,8 @@ where
         let height = control.height();
         let padding = control.padding();
         let width = control.width;
+        let group_start = control.group_start;
+        let group_end = control.group_end;
         // Read before the name is shadowed by the widget below.
         let icon_only = control.icon_only();
         let disabled = control.on_press.is_none() || control.loading;
@@ -529,7 +554,21 @@ where
             .height(Length::Fixed(height))
             .padding([0.0, padding])
             .style(move |theme: &Theme, status| {
-                style.resolve(Tokens::of(theme), status)
+                let mut resolved = style.resolve(Tokens::of(theme), status);
+                // A grouped button squares only the corners that meet its
+                // neighbour; the outer corners stay rounded. Nothing else about
+                // the resolved style moves, so a grouped button is the same
+                // control it was, joined.
+                let radius = &mut resolved.border.radius;
+                if group_start {
+                    radius.top_left = 0.0;
+                    radius.bottom_left = 0.0;
+                }
+                if group_end {
+                    radius.top_right = 0.0;
+                    radius.bottom_right = 0.0;
+                }
+                resolved
             });
 
         if width != Length::Shrink {
