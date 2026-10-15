@@ -59,9 +59,14 @@
 //! `scrollable` has already translated into the content coordinates its
 //! `Cursor` is in (it adds the scroll offset to the cursor before dispatching,
 //! `scrollable.rs:800`), and `overlay` places the panel at
-//! `layout.position() - translation`, the offset the runtime passes there for
-//! the same reason. iced's own `pick_list` takes its trigger hit test from
-//! `cursor.is_over(layout.bounds())` in exactly the same way.
+//! `layout.position() + translation`, the offset the runtime passes there for
+//! the same reason. iced's own overlays do exactly that — `pick_list` builds its
+//! menu from `layout.position() + translation` (`pick_list.rs:733`), and this
+//! crate's [`Tooltip`](super::tooltip) builds its trigger rectangle the same way
+//! — and the sign is the whole of the bug this once was: `scrollable` passes
+//! `translation - offset`, so a laid-out widget's window position is
+//! `position + translation`, and `position - translation` put the panel a
+//! further scroll offset *below* the trigger for every pixel the page scrolled.
 //!
 //! # Focus
 //!
@@ -1002,17 +1007,13 @@ where
         // must reach the trigger, and the press that closes it must not.
         //
         // The hit test is against the bounds the runtime laid this widget out
-        // with, which are in window coordinates — a widget's `position` is
-        // relative to the scroll area's content, and in this gallery the trigger
-        // reports y = 1399 there while the window shows it at y ~ 146.
-        // The hit test is against the bounds the runtime laid this widget out
-        // with. Inside a scroll area those are content coordinates, not window
-        // ones — this gallery's trigger reports y = 1399 while the window shows
-        // it at y ~ 146 — so a press only matches once the trigger is near the
-        // top of the scrollable, where the two agree. The overlay below is
-        // corrected with `translation`, which the runtime passes to `overlay`
-        // for exactly that; `update` is handed no such offset, so this is the
-        // one place the port is approximate. See the module comment.
+        // with, which inside a scroll area are the scroll content's coordinates,
+        // not the window's — this gallery's trigger reports y = 1399 there while
+        // the window shows it at y ~ 146. That is the same space the cursor is
+        // in: `scrollable` adds its offset to the cursor before dispatching
+        // (`scrollable.rs:800`), so `cursor.is_over(layout.bounds())` is exact
+        // at any scroll position, which is iced's own `pick_list` hit test too.
+        // See the module comment.
         let trigger = layout.bounds();
         if let Event::Mouse(mouse::Event::ButtonPressed(mouse::Button::Left))
         | Event::Touch(iced::touch::Event::FingerPressed { .. }) = event
@@ -1086,9 +1087,16 @@ where
         state.panel.diff(content.as_widget());
         // The overlay is laid out against the window, so the trigger has to be
         // in window coordinates: its layout position is in the scroll area's
-        // content coordinates and `translation` is the offset between the two.
+        // content coordinates and `translation` is the window offset of that
+        // coordinate space, which the runtime hands `overlay` for exactly this.
+        // It is added, not subtracted — iced's own overlays do the same
+        // (`pick_list.rs:733`) — because `scrollable` passes `translation -
+        // offset`, so the window position of a laid-out widget is
+        // `position + translation`. The sign was wrong here once, and a panel
+        // inside a scrolled page rode one further scroll offset below its
+        // trigger; the module comment has the full account.
         let trigger = Rectangle::new(
-            layout.position() - translation,
+            layout.position() + translation,
             layout.bounds().size(),
         );
         Some(overlay::Element::new(Box::new(Panel {
