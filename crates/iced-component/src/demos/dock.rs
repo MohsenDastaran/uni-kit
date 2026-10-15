@@ -224,7 +224,10 @@ const DEFAULT_SIZES: [f32; 4] = [
 ];
 
 // section: Create a dock area
-fn view(app: &App) -> Element<'_, Message> {
+/// The workspace: the panels read into a [`Dock`], in the box the page gives it.
+/// Every change comes back as a message, and `update` writes it into this demo's
+/// own state.
+fn workspace(app: &App) -> Element<'_, Message> {
     // The panels, which one is active in each region, which edge docks are
     // collapsed, and each region's size. Every change comes back as a message
     // and this demo writes it into its own state.
@@ -247,10 +250,15 @@ fn view(app: &App) -> Element<'_, Message> {
 
     // The dock fills what it is given; the page fixes the height so the
     // workspace reads as one screen.
-    let workspace = container(dock)
+    container(dock)
         .width(Length::Fill)
-        .height(Length::Fixed(460.0));
-    // section: end
+        .height(Length::Fixed(460.0))
+        .into()
+}
+// section: end
+
+fn view(app: &App) -> Element<'_, Message> {
+    let workspace = workspace(app);
 
     let gallery = column![
         heading(app, 0, "Create a dock area"),
