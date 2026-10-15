@@ -775,6 +775,17 @@ It caught it immediately and recovered correctly (`git reset --soft HEAD~1`, the
 path, preserving the sibling's content and staged state), but the safe form in a shared tree is
 `git commit --amend -- <your path>`, or no amend at all.
 
+**A row-wide target gives its content first refusal.** iced's `MouseArea::update` updates its
+content first and bails when `shell.is_event_captured()`, so wrapping a row in a `mouse_area` answers
+only the presses the content left unhandled — it never steals an inner control's own click. The
+accordion's `header_target` and the checkbox's label fix both rest on this, and it is what makes "the
+whole row toggles" safe beside a button inside the row.
+
+The checkbox itself failed because it draws its label as a sibling column instead of passing iced a
+label slot, so the renderer's hit area stopped at the box: clicking the box worked and clicking the
+words did nothing. `radio`, `switch` and `toggle` were fine for the opposite reason — they route the
+whole row through `button::handle`.
+
 **Catching a short transition needs a small viewport.** At 1440x1200 the swiftshader renderer takes
 about 300ms a frame, so the chart's 120ms tooltip fade falls entirely between two frames and its
 mid-state cannot be captured at all; at 520x760 the same page runs near 35fps and four frames land
