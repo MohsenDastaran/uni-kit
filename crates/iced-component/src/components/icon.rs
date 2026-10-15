@@ -13,9 +13,13 @@
 //! `animation-tick()`; [`Icon::spinning`] is that flag, and the turn is sampled
 //! from the frame's own instant. [`Icon::spin`] stays for the determinate case:
 //! an explicit turn in `0.0..=1.0` the caller sets, the same value
-//! [`Spinner`](super::spinner)'s `progress` is. The icon is drawn at
-//! `turn * 2π` radians about its centre, and the rotation does not move the box,
-//! so a spinning icon never shifts its neighbours.
+//! [`Spinner`](super::spinner)'s `progress` is. [`Icon::turn_to`] is the middle
+//! case, and the one a disclosure's mark wants: the caller names only where the
+//! mark should end up, and the icon owns the leg — [`TURN_DURATION`], the
+//! collapsible reveal's duration — sampling the frame's own instant and
+//! retargeting from the angle on screen if the caller changes its mind part way.
+//! The icon is drawn at `turn * 2π` radians about its centre, and the rotation
+//! does not move the box, so a spinning icon never shifts its neighbours.
 //!
 //! iced has no interval subscription under this crate's runtime, so the motion
 //! is kept in the widget tree instead: while `spinning` is set, every frame asks
@@ -49,6 +53,11 @@ use super::theme::{ControlSize, Tokens};
 /// How long one full turn takes, Slint's `800ms`: the component writes
 /// `mod(animation-tick(), 800ms) / 800ms * 360deg`.
 pub const SPIN_DURATION: Duration = Duration::from_millis(800);
+
+/// How long [`Icon::turn_to`] takes to reach a new target, Slint's `150ms`:
+/// the duration the collapsible gives its reveal, so a mark that turns to say
+/// "expanded" moves with the panel it announces rather than beside it.
+pub const TURN_DURATION: Duration = Duration::from_millis(150);
 
 /// How big the icon's square box is.
 #[derive(Debug, Clone, Copy, PartialEq, Default)]
@@ -105,6 +114,7 @@ pub struct Icon<Message> {
     size: Size,
     color: Option<Color>,
     spin: Option<f32>,
+    turn: Option<f32>,
     spinning: bool,
     _message: std::marker::PhantomData<Message>,
 }
@@ -118,6 +128,7 @@ impl<Message> Icon<Message> {
             size: Size::default(),
             color: None,
             spin: None,
+            turn: None,
             spinning: false,
             _message: std::marker::PhantomData,
         }
@@ -142,6 +153,19 @@ impl<Message> Icon<Message> {
     /// default, holds the icon still unless [`Icon::spinning`] turns it.
     pub fn spin(mut self, progress: f32) -> Self {
         self.spin = Some(progress);
+        self
+    }
+
+    /// Turns the icon to `turn`, in `0.0..=1.0`, about its centre. This is the
+    /// animated form of [`Icon::spin`]: the caller names only where the mark
+    /// should point, and the icon owns the clock — the widget tree remembers the
+    /// leg and every frame samples its own instant, the route
+    /// [`Icon::spinning`] takes. The turn takes [`TURN_DURATION`], and a target
+    /// that changes mid-turn is picked up from the angle on screen, so a
+    /// reversal is continuous. `None`, the default, holds the icon still unless
+    /// [`Icon::spinning`] turns it.
+    pub fn turn_to(mut self, turn: f32) -> Self {
+        self.turn = Some(turn);
         self
     }
 
@@ -170,6 +194,8 @@ pub struct Style {
     pub color: Option<Color>,
     /// The caller's explicit turn, `0.0..=1.0`.
     pub spin: Option<f32>,
+    /// The caller's target turn for the animated leg, `0.0..=1.0`.
+    pub turn: Option<f32>,
     /// Whether the icon's own clock is running.
     pub spinning: bool,
 }
@@ -180,6 +206,7 @@ impl Style {
             size,
             color: None,
             spin: None,
+            turn: None,
             spinning: false,
         }
     }
@@ -191,6 +218,11 @@ impl Style {
 
     pub fn spin(mut self, progress: f32) -> Self {
         self.spin = Some(progress);
+        self
+    }
+
+    pub fn turn_to(mut self, turn: f32) -> Self {
+        self.turn = Some(turn);
         self
     }
 
@@ -227,13 +259,28 @@ struct Spin {
     started: Instant,
     /// The turn sampled for the frame being drawn, `0.0..=1.0`.
     turn: f32,
+    /// The target the animated leg is heading for, and the angle it started
+    /// from. A target that has not changed leaves the leg alone.
+    target: f32,
+    from: f32,
+    /// When the animated leg started, sampled from the frame's own instant the
+    /// way a continuous turn is.
+    turned_at: Instant,
+    /// Whether the animated leg still has distance to cover.
+    moving: bool,
 }
 
 impl Spin {
-    fn new() -> Self {
+    /// A turn sitting at its target: a mark that has just mounted points where
+    /// the caller asked, it does not sweep there from zero.
+    fn new(target: f32) -> Self {
         Self {
             started: Instant::now(),
-            turn: 0.0,
+            turn: target,
+            target,
+            from: target,
+            turned_at: Instant::now(),
+            moving: false,
         }
     }
 
@@ -241,6 +288,33 @@ impl Spin {
     fn sample(&mut self, now: Instant) {
         let elapsed = now.duration_since(self.started);
         self.turn = (elapsed.as_secs_f32() / SPIN_DURATION.as_secs_f32()).fract();
+    }
+
+    /// Points the animated leg at `target`, from the angle on screen. A target
+    /// that has not changed leaves a leg already in flight alone.
+    fn retarget(&mut self, target: f32, now: Instant) {
+        if self.target == target {
+            return;
+        }
+        self.from = self.turn;
+        self.target = target;
+        self.turned_at = now;
+        self.moving = true;
+    }
+
+    /// Samples the animated leg at `now`, and answers whether there is more of
+    /// it to come. The curve is linear, the same straight line the collapsible
+    /// reveal draws.
+    fn sample_turn(&mut self, now: Instant, duration: Duration) -> bool {
+        let elapsed = now.duration_since(self.turned_at);
+        if duration.is_zero() || elapsed >= duration {
+            self.turn = self.target;
+            self.moving = false;
+            return false;
+        }
+        let t = elapsed.as_secs_f32() / duration.as_secs_f32();
+        self.turn = self.from + (self.target - self.from) * t;
+        true
     }
 }
 
@@ -258,7 +332,7 @@ impl<Message> Widget<Message, Theme, iced::Renderer> for Turning {
     }
 
     fn state(&self) -> widget::tree::State {
-        widget::tree::State::new(Spin::new())
+        widget::tree::State::new(Spin::new(self.style.turn.unwrap_or(0.0)))
     }
 
     fn size(&self) -> BoxSize<Length> {
@@ -293,18 +367,41 @@ impl<Message> Widget<Message, Theme, iced::Renderer> for Turning {
         shell: &mut Shell<'_, Message>,
         _viewport: &Rectangle,
     ) {
-        if !self.style.spinning {
-            return;
-        }
         // The frame carries its own instant, so the angle drawn and the angle
         // sampled are the same frame's.
-        if let Event::Window(iced::window::Event::RedrawRequested(at)) = event {
-            tree.state.downcast_mut::<Spin>().sample(*at);
+        let frame = match event {
+            Event::Window(iced::window::Event::RedrawRequested(at)) => Some(*at),
+            _ => None,
+        };
+
+        if self.style.spinning {
+            if let Some(at) = frame {
+                tree.state.downcast_mut::<Spin>().sample(at);
+            }
+            // A spinner's motion never ends while it is active, so every frame
+            // asks for the next one. This is the reveal's `request_redraw`, with
+            // the compositor's next frame as the target.
+            shell.request_redraw();
+            return;
         }
-        // A spinner's motion never ends while it is active, so every frame asks
-        // for the next one. This is the reveal's `request_redraw`, with the
-        // compositor's next frame as the target.
-        shell.request_redraw();
+
+        let Some(target) = self.style.turn else {
+            return;
+        };
+        let now = frame.unwrap_or_else(Instant::now);
+        let moving = {
+            let spin = tree.state.downcast_mut::<Spin>();
+            spin.retarget(target, now);
+            match frame {
+                Some(at) => spin.sample_turn(at, TURN_DURATION),
+                // Without a frame there is nothing to sample against; the
+                // request below is what turns one into a look at the leg.
+                None => spin.moving,
+            }
+        };
+        if moving {
+            shell.request_redraw();
+        }
     }
 
     fn draw(
@@ -317,7 +414,7 @@ impl<Message> Widget<Message, Theme, iced::Renderer> for Turning {
         _cursor: mouse::Cursor,
         _viewport: &Rectangle,
     ) {
-        let turn = if self.style.spinning {
+        let turn = if self.style.spinning || self.style.turn.is_some() {
             tree.state.downcast_ref::<Spin>().turn
         } else {
             self.style.spin.unwrap_or(0.0)
@@ -361,6 +458,7 @@ where
                 size: control.size,
                 color: control.color,
                 spin: control.spin,
+                turn: control.turn,
                 spinning: control.spinning,
             },
         })
