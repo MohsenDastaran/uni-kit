@@ -24,6 +24,16 @@
 //! one is drawn at the disabled fill and ink. Slint draws the whole control at
 //! half opacity; iced's `Disabled` treatment is the lower-contrast fill, which
 //! is the same intent.
+//!
+//! **The whole row is the target, the label included.** iced's checkbox takes a
+//! label of its own, but this component draws the label and the description
+//! itself and leaves that slot empty, so the renderer's hit area stops at the
+//! box. Left there, the only visible thing that says "click me" — the words
+//! beside the box — would be the one place a click did nothing. A `mouse_area`
+//! therefore covers the box and the lines together, exactly as the Slint
+//! `TouchArea` overlays its `Rectangle`, and reports the same value the box
+//! would. A press the box itself takes is captured by the checkbox first, so a
+//! click on the box is answered once, by the box's own `on_toggle`.
 
 // An application installs the components it uses, so the parts of this file it
 // does not call are not dead code in the way the compiler means — the file is a
@@ -31,7 +41,7 @@
 // gets a warning for each one it does not want.
 #![allow(dead_code)]
 
-use iced::widget::{checkbox, column, row, text};
+use iced::widget::{checkbox, column, mouse_area, row, text};
 use iced::{Border, Color, Element, Theme};
 
 use super::theme::{self, ControlSize, Tokens};
@@ -212,6 +222,10 @@ where
         let on_toggle = control.on_toggle;
         let disabled = on_toggle.is_none();
 
+        // The value a press anywhere on the row reports. iced's box toggles
+        // `!on` when it takes the press, so the row reports the same one.
+        let row_press = on_toggle.as_ref().map(|on_toggle| on_toggle(!on));
+
         let mut box_control = checkbox(on)
             .size(box_size)
             .spacing(0.0)
@@ -261,9 +275,13 @@ where
             );
         }
 
-        row![box_control, lines]
+        let row = row![box_control, lines]
             .spacing(theme::SPACING_SM)
-            .align_y(iced::Alignment::Center)
-            .into()
+            .align_y(iced::Alignment::Center);
+
+        match row_press {
+            Some(message) => mouse_area(row).on_press(message).into(),
+            None => row.into(),
+        }
     }
 }
