@@ -33,17 +33,21 @@ use super::theme::{self, Tokens};
 
 /// What the media slot draws.
 ///
-/// Slint has a third treatment, `plain`, which draws the icon bare at 32px.
-/// iced has no icon set to size that way, so the caller's element already
-/// arrives at whatever size it wants and the plain form is the element itself.
+/// Slint has three treatments, `icon`, `plain` and `none`, and all three are
+/// here: `icon` frames the media, `plain` draws the caller's element bare at
+/// its own size, and `none` drops it. The bare form is what an avatar or a
+/// group of them uses, because iced has no icon set to size them against.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
 pub enum Media {
     /// A muted, rounded 32px frame around the media — GPUI's
     /// `EmptyMediaVariant::Icon`.
     #[default]
     Icon,
-    /// No frame, and no media at all: the slot is skipped even when it is
-    /// given.
+    /// No frame: the caller's element at its own size, which is how an avatar
+    /// or a group of them fills the slot — GPUI's `EmptyMediaVariant::Default`
+    /// and Slint's `plain`.
+    Plain,
+    /// No media at all: the slot is skipped even when it is given.
     None,
 }
 
