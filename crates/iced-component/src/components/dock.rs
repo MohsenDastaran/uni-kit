@@ -113,10 +113,20 @@ const TAB_PADDING: f32 = 12.0;
 const TAB_CLOSE_PADDING: f32 = 8.0;
 /// A close control's box, Slint's 16x16 glyph.
 const CLOSE_SIZE: f32 = 16.0;
+/// A header control's mark, Slint's 14px `Icon` in `DockHeader`, `DockRail` and
+/// the collapsed bottom bar.
+const MARK_SIZE: f32 = 14.0;
 /// The Lucide `x` from `crates/slint-component/ui/icons/x.svg` (Lucide, ISC):
 /// the tab close mark, in the same one-line form the crate's other embedded
 /// icons use.
 const CLOSE_XML: &[u8] = br#"<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg>"#;
+/// The Lucide marks the Slint `DockHeader` and `DockRail` name, one line each
+/// (`panel-left`, `panel-right`, `panel-bottom` and `chevron-up`; Lucide, ISC),
+/// so the embedded artwork is the same the Slint gallery draws.
+const PANEL_LEFT_XML: &[u8] = br#"<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="18" height="18" x="3" y="3" rx="2"/><path d="M9 3v18"/></svg>"#;
+const PANEL_RIGHT_XML: &[u8] = br#"<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="18" height="18" x="3" y="3" rx="2"/><path d="M15 3v18"/></svg>"#;
+const PANEL_BOTTOM_XML: &[u8] = br#"<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="18" height="18" x="3" y="3" rx="2"/><path d="M3 15h18"/></svg>"#;
+const CHEVRON_UP_XML: &[u8] = br#"<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m18 15-6-6-6 6"/></svg>"#;
 /// The active tab's underline, Slint's two-pixel primary rule inset ten pixels.
 const UNDERLINE_HEIGHT: f32 = 2.0;
 const UNDERLINE_INSET: f32 = 10.0;
@@ -1183,25 +1193,52 @@ fn pane<'a, Message: Clone + 'a>(
     .into()
 }
 
+/// One control mark from the vendored Lucide set, at `size`, in the ink `ink`
+/// names.
+///
+/// The colour is read inside the style closure, because the appearance is only
+/// known when iced draws. An SVG tinted while the element was built keeps the
+/// light theme's colour in the dark.
+fn mark<'a, Message: 'a>(
+    artwork: &'static [u8],
+    size: f32,
+    ink: impl Fn(&Tokens) -> iced::Color + 'a,
+) -> Element<'a, Message> {
+    svg(svg::Handle::from_memory(artwork))
+        .width(size)
+        .height(size)
+        .style(move |theme: &Theme, _status| svg::Style {
+            color: Some(ink(&Tokens::of(theme))),
+        })
+        .into()
+}
+
 /// The collapse control a pane's header carries: Slint's 26px `Panel` icon
-/// button, as a flat arrow in the muted ink.
+/// button, as a flat panel mark in the muted ink.
 fn collapse_control<'a, Message: Clone + 'a>(
     region: Region,
     on_toggle: Rc<dyn Fn(Region) -> Message + 'a>,
 ) -> Element<'a, Message> {
-    let arrow = match region {
-        Region::Left => "←",
-        Region::Right => "→",
-        Region::Bottom => "↓",
-        Region::Center => "×",
+    // Slint's `DockHeader` marks: `panel-left`, `panel-right`, `panel-bottom`.
+    // The centre arm is unreachable — `pane` only pushes a control for an edge
+    // dock — and is present so the match stays exhaustive.
+    let artwork = match region {
+        Region::Left => PANEL_LEFT_XML,
+        Region::Right => PANEL_RIGHT_XML,
+        Region::Bottom => PANEL_BOTTOM_XML,
+        Region::Center => PANEL_LEFT_XML,
     };
 
+    // The filling container is what centres the mark. `button` lays its content
+    // out at the padding origin, so a bare child in a fixed 26x30 box sits at
+    // the top: the `←`/`→`/`↓` text glyphs rode 5.5-6px above the box centre in
+    // both themes, and a character carries its own side bearings besides. The
+    // container fills the button's content box and centres the mark on both
+    // axes; the button's own height is unchanged.
     button(
-        text(arrow)
-            .size(theme::FONT_SIZE_SM)
-            .style(|theme: &Theme| text::Style {
-                color: Some(Tokens::of(theme).muted_foreground),
-            }),
+        container(mark(artwork, MARK_SIZE, |tokens| tokens.muted_foreground))
+            .center_x(Length::Fill)
+            .center_y(Length::Fill),
     )
     .width(TOGGLE_WIDTH)
     .height(Length::Fixed(HEADER_HEIGHT))
@@ -1229,26 +1266,25 @@ fn rail<'a, Message: Clone + 'a>(
     active: Option<PanelId>,
     on_select: Option<&Rc<dyn Fn(PanelId) -> Message + 'a>>,
 ) -> Element<'a, Message> {
-    let arrow = if region == Region::Right { "→" } else { "←" };
+    // Slint's `DockRail` mark: `panel-right` for the right dock, `panel-left`
+    // for the left, at the header's 14px.
+    let artwork = if region == Region::Right {
+        PANEL_RIGHT_XML
+    } else {
+        PANEL_LEFT_XML
+    };
     let mut items = column![].spacing(0.0).width(Length::Fill);
 
     for panel in panels {
         let id = panel.id;
         let selected = active == Some(id);
-        let content = container(
-            text(arrow.to_string())
-                .size(theme::FONT_SIZE_SM)
-                .style(move |theme: &Theme| {
-                    let tokens = Tokens::of(theme);
-                    text::Style {
-                        color: Some(if selected {
-                            tokens.foreground
-                        } else {
-                            tokens.muted_foreground
-                        }),
-                    }
-                }),
-        )
+        let content = container(mark(artwork, MARK_SIZE, move |tokens| {
+            if selected {
+                tokens.foreground
+            } else {
+                tokens.muted_foreground
+            }
+        }))
         .width(Length::Fill)
         .height(Length::Fixed(RAIL_WIDTH))
         .center_x(Length::Fill)
@@ -1476,11 +1512,7 @@ fn expand_bar<'a, Message: Clone + 'a>(
     on_toggle: Option<&Rc<dyn Fn(Region) -> Message + 'a>>,
 ) -> Element<'a, Message> {
     let label = row![
-        text("↑")
-            .size(theme::FONT_SIZE_SM)
-            .style(|theme: &Theme| text::Style {
-                color: Some(Tokens::of(theme).muted_foreground),
-            }),
+        mark(CHEVRON_UP_XML, MARK_SIZE, |tokens| tokens.muted_foreground),
         text(title)
             .size(theme::FONT_SIZE_XS)
             .style(|theme: &Theme| text::Style {
