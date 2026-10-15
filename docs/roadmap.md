@@ -1018,6 +1018,25 @@ nowhere else. The meter is a custom `Widget` drawing `fill_quad`s instead, which
 places. Worth knowing before reaching for `Canvas` inside a form or an input suffix — it fails
 silently, and only in some positions.
 
+#### The `dropdown_button` page must not be renamed
+
+An earlier note here recommended renaming `website/component/dropdown_button.md` to
+`dropdown-button.md` so it matched every other slug. **That is wrong**, and it is worth leaving the
+correction where the advice was.
+
+The page slug really is the catalog's only underscored one, and the iced registry key really is
+`dropdown-button`. But the **Slint** side keys on that slug in four places —
+`remark-slint-source`'s `hasSlintExample`/`usageBoxes`, `example-counts.countSlint`, the sidebar's
+`pageFrameworks`, and the per-framework install slug — and the Slint gallery's page folder is the
+`.slint` stem, so renaming the page fixes iced by breaking Slint.
+
+The fix that works normalises the two **iced-facing** lookups instead: the page's iced gallery story
+is the slug with `_`→`-` (`/iced-gallery?story=dropdown-button`), and `status.mjs` reads both the
+Slint inventory and the iced wired keys through its existing `moduleOf` mapping. Afterwards the route
+renders both frameworks' panels and both install commands (`add iced dropdown-button`, `add slint
+dropdown_button`), and the checklist counted the component for the first time — **75 → 76**, leaving
+only `root`, `theme` and `title-bar`.
+
 #### A section marker can cut code that does not compile
 
 The dock page's first Usage panel showed `fn view(app: &App) -> Element<'_, Message> {` with its
