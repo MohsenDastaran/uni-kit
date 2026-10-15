@@ -5,8 +5,8 @@
 //!
 //! The Slint `Menu` is the whole panel: `preferred-width: 280px`, a popover
 //! fill, a one-pixel border, `radius-lg` and a 4px inset around its rows. This
-//! file is that body — the rows, their 32px height, the separator's 9px with a
-//! one-pixel rule, the columns that stay put when a row has no icon. The
+//! file is that body — the rows, their 32px height floor, the separator's 9px
+//! with a one-pixel rule, the columns that stay put when a row has no icon. The
 //! floating is [`Popover`](super::popover::Popover)'s job, because a menu with
 //! no anchor is not a control: every card in the Slint example puts one inside
 //! a `PopupWindow`.
@@ -80,16 +80,24 @@ use iced::{Border, Color, Element, Length, Padding, Theme};
 
 use super::theme::{self, Tokens};
 
-/// The rows' height, `32px` in the Slint component.
+/// The rows' height **floor**, `32px` in the Slint component. A one-line row is
+/// exactly this; a label long enough to wrap adds a line box and the row grows
+/// past it, which the fixed height this replaces could not do.
 pub const ROW_HEIGHT: f32 = 32.0;
+/// The vertical breathing room every row keeps above and below its content, so
+/// a two-line label reads as one row rather than touching the accent fill. The
+/// leading slot carries `ROW_HEIGHT - 2 * ROW_PADDING_Y`, which is what holds a
+/// one-line row at [`ROW_HEIGHT`] and lets a wrapped one outgrow it.
+const ROW_PADDING_Y: f32 = 6.0;
 /// The height a separator occupies, `9px` in the Slint component: 4px, the
 /// rule, and 4px again.
 pub const SEPARATOR_HEIGHT: f32 = 9.0;
 /// The inset around the rows, `padding: 4px` in the Slint component.
 pub const PANEL_PADDING: f32 = 4.0;
-/// The panel's preferred width, `preferred-width: 280px`, which is
-/// [`Popover::panel_width`](super::popover::Popover::panel_width)'s default too.
-pub const PANEL_WIDTH: f32 = 280.0;
+/// The panel's preferred width. The Slint component authors `preferred-width:
+/// 280px`, but the labels this catalogue now shows beside their shortcuts
+/// ("Export all rows (.csv)") wrapped there, so the panel is wider here.
+pub const PANEL_WIDTH: f32 = 320.0;
 /// The width of the leading icon slot, `width: 16px` in the Slint component.
 const ICON_SLOT: f32 = 16.0;
 /// The width of the trailing shortcut column, `width: 48px`.
@@ -435,6 +443,30 @@ fn empty_slot<'a, Message: 'a>(width: f32) -> Element<'a, Message> {
     Space::new().width(width).height(Length::Shrink).into()
 }
 
+/// The leading `ICON_SLOT`-wide column, which also carries the row's height
+/// floor. A `Row` is as tall as its tallest child, so the slot's fixed
+/// `ROW_HEIGHT - 2 * ROW_PADDING_Y` makes a one-line row exactly
+/// [`ROW_HEIGHT`] tall while a label that wraps to a second line grows the row
+/// past it. The slot stays centred in the taller row, so the icon, the label
+/// and the check keep one centre line.
+fn leading_slot<'a, Message>(
+    icon: Option<&'static [u8]>,
+    danger: bool,
+    disabled: bool,
+) -> Element<'a, Message>
+where
+    Message: 'a,
+{
+    let content: Element<'a, Message> = match icon {
+        Some(icon) => glyph(icon, danger, disabled),
+        None => Space::new().into(),
+    };
+    container(content)
+        .height(ROW_HEIGHT - 2.0 * ROW_PADDING_Y)
+        .center_x(ICON_SLOT)
+        .into()
+}
+
 /// The ink a row's label, icon and check mark are drawn in.
 fn row_ink(tokens: Tokens, danger: bool, disabled: bool) -> Color {
     if disabled {
@@ -474,24 +506,17 @@ where
     // the shortcut, and a trailing check slot — so a row that leaves one empty
     // still occupies it and the columns line up down the menu.
     //
-    // The row has to fill the 32px frame: a `Shrink` row is aligned to the top
-    // of a fixed-height container, so `align_y` would centre the icon, the label
-    // and the check against the row's own content height and the whole line
-    // would ride high. This is the same trap the four field triggers
-    // (`color_picker`, `select`, `combobox`, `date_picker`) each dropped, and
-    // `.height(Length::Fill)` is the same fix; the row height is unchanged.
+    // The row is as tall as its tallest child and the label is the one that can
+    // wrap, so a two-line label grows the row instead of being clipped by a
+    // fixed 32px frame. The leading slot carries the floor (see
+    // [`leading_slot`]) and the row itself stays `Shrink`: a `Fill` child inside
+    // a `Shrink` cross axis lays out against a zero cross size, and a `Shrink`
+    // row inside a fixed frame rides at the top — this row is neither.
     let mut line = row![]
         .spacing(theme::SPACING_SM)
-        .align_y(iced::Alignment::Center)
-        .height(Length::Fill);
+        .align_y(iced::Alignment::Center);
 
-    line = line.push(match item.icon {
-        Some(icon) => container(glyph::<Message>(icon, danger, disabled))
-            .width(ICON_SLOT)
-            .center_x(ICON_SLOT)
-            .into(),
-        None => empty_slot(ICON_SLOT),
-    });
+    line = line.push(leading_slot(item.icon, danger, disabled));
 
     line = line.push(
         text(item.label.clone())
@@ -505,17 +530,19 @@ where
     line = line.push(if item.shortcut.is_empty() {
         empty_slot(SHORTCUT_SLOT)
     } else {
+        // A fixed 48px column, as the Slint row has: the label owns everything
+        // left of it. `Length::Fill` here shared the leftover width with the
+        // label and wrapped labels that had room to spare.
         container(
             text(item.shortcut.clone())
                 .size(theme::FONT_SIZE_XS)
                 .font(theme::MONO)
-                .align_x(iced::Alignment::End)
                 .style(|theme: &Theme| text::Style {
                     color: Some(Tokens::of(theme).muted_foreground),
                 }),
         )
         .width(SHORTCUT_SLOT)
-        .align_right(Length::Fill)
+        .align_right(SHORTCUT_SLOT)
         .into()
     });
 
@@ -529,12 +556,12 @@ where
     });
 
     container(line)
-        .height(ROW_HEIGHT)
+        .height(Length::Shrink)
         .width(Length::Fill)
         .padding(Padding {
-            top: 0.0,
+            top: ROW_PADDING_Y,
             right: theme::SPACING_SM,
-            bottom: 0.0,
+            bottom: ROW_PADDING_Y,
             left: theme::SPACING_SM,
         })
         .style(move |theme: &Theme| {
