@@ -3,7 +3,8 @@
 //! basic, horizontal, multi-column, registration and settings forms, the
 //! container and its label layouts, required fields with an error and a
 //! description, submission and its action row, groups of related and conditional
-//! fields, and the grid with its spans and positioning.
+//! fields, and the grid with its spans, positioning and responsive column
+//! choice.
 //!
 //! Run it with `cargo run --example form`, or in the browser as `?story=form` in
 //! the gallery the website embeds.
@@ -55,11 +56,25 @@ const PAGE: f32 = 24.0;
 /// the application's check and the application's messages.
 const MIN_PASSWORD: usize = 8;
 
+/// Where the responsive sample stacks its two columns. The column count is the
+/// application's choice in both references — GPUI's page calls the same idea
+/// `is_mobile` — because iced offers no viewport token for the form to read.
+const NARROW: f32 = 720.0;
+
 pub fn run(theme: iced::Theme) -> iced::Result {
     iced::application(boot, update, view)
         .title("uni-kit — form")
         .theme(theme)
+        .subscription(subscription)
         .run()
+}
+
+/// Watch the window's width so the responsive sample can choose its columns,
+/// which is the one thing on this page the component does not decide for the
+/// caller.
+fn subscription(_app: &App) -> iced::Subscription<Message> {
+    iced::window::resize_events()
+        .map(|(_id, size): (iced::window::Id, iced::Size)| Message::Resized(size.width < NARROW))
 }
 
 #[derive(Default)]
@@ -118,6 +133,12 @@ struct App {
     grid_full: String,
     grid_positioned: String,
 
+    /// The responsive sample: its two values, and the window width that decides
+    /// whether it draws one column or two.
+    resp_name: String,
+    resp_email: String,
+    narrow: bool,
+
     /// Which select's panel is open, which row is chosen, and the row under the
     /// pointer — the select owns none of them.
     select_open: bool,
@@ -171,6 +192,11 @@ enum Message {
     GridC(String),
     GridFull(String),
     GridPositioned(String),
+
+    RespName(String),
+    RespEmail(String),
+    /// The window was resized: is it narrower than the responsive breakpoint?
+    Resized(bool),
 
     ComposeSave,
     ComposeCancel,
@@ -307,6 +333,10 @@ fn update(app: &mut App, message: Message) -> Task<Message> {
         Message::GridC(value) => app.grid_c = value,
         Message::GridFull(value) => app.grid_full = value,
         Message::GridPositioned(value) => app.grid_positioned = value,
+
+        Message::RespName(value) => app.resp_name = value,
+        Message::RespEmail(value) => app.resp_email = value,
+        Message::Resized(narrow) => app.narrow = narrow,
 
         Message::SelectOpen(open) => app.select_open = open,
         Message::ComposeSave => {
@@ -971,7 +1001,38 @@ fn view(app: &App) -> Element<'_, Message> {
                 ),
         );
 
-    let grid = column![spanning, positioning].spacing(20.0);
+    // The page's Responsive Layout sample: the application chooses the column
+    // count from the window, and the component clamps the Bio field's span to
+    // whatever the count is, exactly as the page's `.when(!is_mobile, …)` does.
+    let responsive = Form::vertical()
+        .columns(if app.narrow { 1 } else { 2 })
+        .child(
+            Field::new().label("Name").child(
+                Input::new("resp-name")
+                    .value(app.resp_name.clone())
+                    .placeholder("Ada Lovelace")
+                    .on_input(Message::RespName),
+            ),
+        )
+        .child(
+            Field::new().label("Email").child(
+                Input::new("resp-email")
+                    .value(app.resp_email.clone())
+                    .placeholder("ada@example.com")
+                    .on_input(Message::RespEmail),
+            ),
+        )
+        .child(
+            Field::new().label("Bio").col_span(2).child(
+                Textarea::new(&app.bio)
+                    .rows(3)
+                    .placeholder("Tell us about yourself")
+                    .id("resp-bio")
+                    .on_action(Message::Bio),
+            ),
+        );
+
+    let grid = column![spanning, positioning, responsive].spacing(20.0);
 
     // section: end
     let status =
