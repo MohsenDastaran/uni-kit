@@ -417,6 +417,12 @@ impl<'a, Message: Clone + 'static> Select<'a, Message> {
             ]
             .spacing(theme::SPACING_SM)
             .align_y(Alignment::Center)
+            // The row has to fill the trigger's height: a `Shrink` row is
+            // aligned to the top of the fixed-height frame, so `align_y` would
+            // centre the label and the caret against the row's own top edge and
+            // the row would ride high. `input.rs` fills its row for the same
+            // reason.
+            .height(Length::Fill)
             .width(Length::Fill),
         )
         .padding([0.0, size.input_padding_x()])
