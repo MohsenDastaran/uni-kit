@@ -713,6 +713,12 @@ fn search_row<'a, Message: Clone + 'a>(
         row![glyph, field]
             .spacing(theme::SPACING_SM)
             .align_y(Alignment::Center)
+            // The row has to fill the search frame's height: a `Shrink` row is
+            // aligned to the top of the fixed-height frame, so the glyph and
+            // the field ride high. The field's line box is two pixels shorter
+            // than the frame, which is exactly what put the row's own centre a
+            // pixel above the frame's.
+            .height(Length::Fill)
             .width(Length::Fill),
     )
     .height(Length::Fixed(SEARCH_HEIGHT))
