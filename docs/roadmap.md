@@ -775,6 +775,16 @@ It caught it immediately and recovered correctly (`git reset --soft HEAD~1`, the
 path, preserving the sibling's content and staged state), but the safe form in a shared tree is
 `git commit --amend -- <your path>`, or no amend at all.
 
+**Catching a short transition needs a small viewport.** At 1440x1200 the swiftshader renderer takes
+about 300ms a frame, so the chart's 120ms tooltip fade falls entirely between two frames and its
+mid-state cannot be captured at all; at 520x760 the same page runs near 35fps and four frames land
+inside the fade. A mid-transition frame is the only proof an animation exists, so the viewport is
+part of the instrument.
+
+Two smaller ones from the same sweep: a screenshot clip **larger than the viewport silently pads
+white**, so raise the viewport rather than the clip; and a run detector scanning the icon column must
+keep only grey runs of about 18-40px, because chart marks in that column are coloured.
+
 **`Input.insertText` never reaches iced.** Typing into an iced field over CDP needs real
 `keydown` events carrying the text (per character), not `Input.insertText` — that call is ignored, so
 the field sits unchanged and the harness looks like a broken component. The card demo's login field
