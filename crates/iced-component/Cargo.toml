@@ -39,18 +39,28 @@ iced = { version = "0.14", features = ["svg", "canvas", "image-without-codecs", 
 # learns which components these are from `registry/build-manifest.mjs`, which
 # reads the sources rather than trusting a list kept by hand.
 iced_core = "0.14"
+# The `image` demo shows real files rather than generated pixels, and iced's
+# `image-without-codecs` feature ships no decoder. Naming the `image` crate here
+# with only the two codecs a browser raster needs turns iced's decoder on by
+# feature unification without pulling the default set — AVIF and `rav1e` — that
+# fails a `wasm32` build. No component uses it; the demo is the consumer.
+image = { version = "0.25", default-features = false, features = ["jpeg", "png"] }
 
 [target.'cfg(target_arch = "wasm32")'.dependencies]
 # The browser entry point in `src/wasm.rs`. iced brings its own web backend, but
 # the page has to be able to call into the module, and that is wasm-bindgen's job.
 wasm-bindgen = "0.2"
+# The image demo's one online source is fetched with the browser's own `fetch`
+# and decoded once it arrives, so the wasm face needs the JS promise bridge.
+wasm-bindgen-futures = "0.4"
+js-sys = "0.3"
 # The bridge posts the clicked sample to the page that embeds the gallery, which
 # is a `postMessage` on the parent window, so the gallery needs the browser
 # bindings the way the Slint and GPUI galleries do. The palette read in
 # `src/wasm.rs` also needs the parent document and its computed theme tokens —
 # the same read the Slint gallery makes. Native builds do not compile this at
-# all.
-web-sys = { version = "0.3", features = ["CssStyleDeclaration", "Document", "DomTokenList", "Element", "Location", "Window"] }
+# all. `Response` is what the image demo's fetch answers with.
+web-sys = { version = "0.3", features = ["CssStyleDeclaration", "Document", "DomTokenList", "Element", "Location", "Response", "Window"] }
 
 [profile.release]
 # The browser has to compile this module before it shows anything, so the profile

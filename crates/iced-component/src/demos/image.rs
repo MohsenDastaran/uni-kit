@@ -15,11 +15,14 @@
 //! `// section: end` after the last one.
 //!
 //! The four titles are the page's headings, which are also the Slint example's
-//! GroupBox titles. iced ships no image codecs here and the example fetches
-//! nothing, so the pictures are RGBA bytes this file generates at startup — the
-//! same `Handle` an application gets from a decoded file. The placeholder icon
-//! is an inline SVG, and its colour comes from the style closure, because an
-//! SVG keeps its own black otherwise and disappears in the dark theme.
+//! GroupBox titles. The pictures are real: a PNG the repository already tracks,
+//! embedded in the module and decoded once, and a photograph fetched from a URL
+//! at startup. The online frame is the loading and failure path an application
+//! has to design for — while the fetch is in flight, and when it fails because
+//! the reader is offline, the frame keeps its size and centres the same
+//! placeholder a frame with no source draws. The placeholder icon is an inline
+//! SVG, and its colour comes from the style closure, because an SVG keeps its
+//! own black otherwise and disappears in the dark theme.
 
 use iced::widget::{column, container, image, mouse_area, row, scrollable, svg, text};
 use iced::{Alignment, Element, Length, Task, Theme};
@@ -47,6 +50,44 @@ struct App {
     /// code icon can draw the two states the Slint heading animates to.
     hovered_section: Option<&'static str>,
     pressed_source: Option<&'static str>,
+    /// The picture the crate ships, decoded once at startup: a real PNG, not
+    /// pixels generated per frame.
+    local: image::Handle,
+    /// The photograph this demo fetches, and what became of it.
+    online: Online,
+}
+
+/// The online sample's three states. `Loading` and `Failed` both paint the
+/// placeholder, so a slow or failed fetch looks like a frame with no source
+/// rather than a blank box.
+#[derive(Debug)]
+enum Online {
+    Loading,
+    Loaded(image::Handle),
+    Failed(String),
+}
+
+impl Online {
+    /// The source to paint, or `None` while the frame should centre its
+    /// placeholder.
+    fn source(&self) -> Option<image::Handle> {
+        match self {
+            Self::Loaded(handle) => Some(handle.clone()),
+            Self::Loading | Self::Failed(_) => None,
+        }
+    }
+
+    /// The caption under the frame, so the state is legible from the page and
+    /// from a screenshot rather than inferred from the picture.
+    fn caption(&self) -> String {
+        match self {
+            Self::Loading => "From a URL — loading…".to_owned(),
+            Self::Loaded(_) => "From a URL — a photograph, fetched over the network".to_owned(),
+            Self::Failed(reason) => {
+                format!("From a URL — unavailable ({reason}); the placeholder holds the frame")
+            }
+        }
+    }
 }
 
 #[derive(Debug, Clone)]
@@ -60,14 +101,21 @@ enum Message {
         index: usize,
         title: &'static str,
     },
+    /// The online fetch finished, with the picture or the reason it did not.
+    Online(Result<image::Handle, String>),
 }
 
-fn boot() -> App {
-    App {
+fn boot() -> (App, Task<Message>) {
+    let app = App {
         selected: 0,
         hovered_section: None,
         pressed_source: None,
-    }
+        local: local_image(),
+        online: Online::Loading,
+    };
+    // The fetch is the one piece of this demo that cannot be ready at boot, so
+    // the frame starts on its placeholder and is swapped when the bytes arrive.
+    (app, Task::perform(load_online(), Message::Online))
 }
 
 fn update(app: &mut App, message: Message) -> Task<Message> {
@@ -79,6 +127,12 @@ fn update(app: &mut App, message: Message) -> Task<Message> {
             app.pressed_source = None;
             // The page scrolls to the sample; natively this does nothing.
             crate::bridge::show(index, title);
+        }
+        Message::Online(result) => {
+            app.online = match result {
+                Ok(handle) => Online::Loaded(handle),
+                Err(reason) => Online::Failed(reason),
+            };
         }
     }
     Task::none()
@@ -192,11 +246,14 @@ fn view(app: &App) -> Element<'_, Message> {
     // section: Start with a working image
     // A source paints the frame; no source keeps the frame and centres the
     // placeholder, so a missing asset never leaves an empty hole in a layout.
+    // The third frame is fetched from a URL at startup: it shows the same
+    // placeholder while the fetch is in flight and after one fails, which is
+    // the state a reader offline sees.
     let working = row![
         labelled(
             "With a source",
             ImageView::new()
-                .source(wide())
+                .source(app.local.clone())
                 .fit(ImageFit::Contain)
                 .height(Length::Fixed(140.0)),
         ),
@@ -206,31 +263,47 @@ fn view(app: &App) -> Element<'_, Message> {
                 .height(Length::Fixed(140.0))
                 .placeholder(placeholder_icon()),
         ),
+        labelled(
+            &app.online.caption(),
+            match app.online.source() {
+                Some(source) => ImageView::new()
+                    .source(source)
+                    .fit(ImageFit::Contain)
+                    .height(Length::Fixed(140.0)),
+                None => ImageView::new()
+                    .fit(ImageFit::Contain)
+                    .height(Length::Fixed(140.0))
+                    .placeholder(placeholder_icon()),
+            },
+        ),
     ]
     .spacing(theme::SPACING_LG);
 
     // section: Common patterns
     // `fit` decides how a source fills its frame: cover crops the overflow,
-    // contain letterboxes it over the frame's fill, fill stretches it.
+    // contain letterboxes it over the frame's fill, fill stretches it. The
+    // source is a real square picture, so a wide frame makes the three
+    // visibly different — a circle stays a circle, gains bars, or becomes an
+    // ellipse.
     let fits = row![
         labelled(
             "cover — crops the overflow",
             ImageView::new()
-                .source(wide())
+                .source(app.local.clone())
                 .fit(ImageFit::Cover)
                 .height(Length::Fixed(120.0)),
         ),
         labelled(
             "contain — letterboxes",
             ImageView::new()
-                .source(wide())
+                .source(app.local.clone())
                 .fit(ImageFit::Contain)
                 .height(Length::Fixed(120.0)),
         ),
         labelled(
             "fill — stretches",
             ImageView::new()
-                .source(wide())
+                .source(app.local.clone())
                 .fit(ImageFit::Fill)
                 .height(Length::Fixed(120.0)),
         ),
@@ -243,7 +316,7 @@ fn view(app: &App) -> Element<'_, Message> {
         labelled(
             "radius 3",
             ImageView::new()
-                .source(square(HUE[0]))
+                .source(app.local.clone())
                 .fit(ImageFit::Cover)
                 .radius(theme::RADIUS_SM)
                 .width(Length::Fixed(72.0))
@@ -252,7 +325,7 @@ fn view(app: &App) -> Element<'_, Message> {
         labelled(
             "radius 8",
             ImageView::new()
-                .source(square(HUE[1]))
+                .source(app.local.clone())
                 .fit(ImageFit::Cover)
                 .radius(theme::RADIUS_LG)
                 .width(Length::Fixed(72.0))
@@ -261,7 +334,7 @@ fn view(app: &App) -> Element<'_, Message> {
         labelled(
             "a full circle",
             ImageView::new()
-                .source(square(HUE[2]))
+                .source(app.local.clone())
                 .fit(ImageFit::Cover)
                 .radius(36.0)
                 .width(Length::Fixed(72.0))
@@ -270,7 +343,7 @@ fn view(app: &App) -> Element<'_, Message> {
         labelled(
             "the default",
             ImageView::new()
-                .source(square(HUE[3]))
+                .source(app.local.clone())
                 .fit(ImageFit::Cover)
                 .width(Length::Fixed(72.0))
                 .height(Length::Fixed(72.0)),
@@ -286,8 +359,8 @@ fn view(app: &App) -> Element<'_, Message> {
     // `ImageView` reads as selection without recolouring the picture. Pressing a
     // cell moves the ring, which is the one interaction this demo drives.
     let mut gallery = row![].spacing(theme::SPACING_SM);
-    for (index, hue) in HUE.iter().enumerate() {
-        gallery = gallery.push(thumbnail(square(*hue), index, app.selected == index));
+    for index in 0..6 {
+        gallery = gallery.push(thumbnail(app.local.clone(), index, app.selected == index));
     }
 
     // section: Accessibility
@@ -296,7 +369,7 @@ fn view(app: &App) -> Element<'_, Message> {
     let accessibility = column![
         row![
             ImageView::new()
-                .source(square(HUE[4]))
+                .source(app.local.clone())
                 .fit(ImageFit::Contain)
                 .width(Length::Fixed(48.0))
                 .height(Length::Fixed(48.0)),
@@ -310,7 +383,7 @@ fn view(app: &App) -> Element<'_, Message> {
         .align_y(Alignment::Center),
         row![
             ImageView::new()
-                .source(square(HUE[5]))
+                .source(app.local.clone())
                 .fit(ImageFit::Contain)
                 .width(Length::Fixed(48.0))
                 .height(Length::Fixed(48.0)),
@@ -329,7 +402,7 @@ fn view(app: &App) -> Element<'_, Message> {
     let status = text(format!(
         "Selected {} of {} — pressing a cell moves the ring, not the picture.",
         app.selected + 1,
-        HUE.len()
+        6
     ))
     .size(theme::FONT_SIZE_SM)
     .style(|theme: &Theme| text::Style {
@@ -389,51 +462,83 @@ fn thumbnail(handle: image::Handle, index: usize, selected: bool) -> Element<'st
     .into()
 }
 
-/// The six hues the gallery and the radius row draw from, so no two cells are
-/// the same picture.
-const HUE: [(u8, u8, u8); 6] = [
-    (0x25, 0x63, 0xeb),
-    (0x7c, 0x3a, 0xed),
-    (0xdb, 0x27, 0x77),
-    (0xf5, 0x9e, 0x0b),
-    (0x10, 0xb9, 0x81),
-    (0x0e, 0x9a, 0xa8),
-];
+/// The picture the crate ships: a PNG the repository already tracks under the
+/// site's `public/`, embedded in the module at compile time so the browser
+/// gallery needs no asset request and the file is reachable by construction.
+/// 144x144 and 7.8 KB.
+const LOCAL_PNG: &[u8] = include_bytes!("../../../../website/public/bun.png");
 
-/// A wide picture, 320 by 180, so `cover`, `contain` and `fill` do visibly
-/// different things in a frame of another shape. This is the `Handle` an
-/// application would get from a decoded file.
-fn wide() -> image::Handle {
-    gradient(320, 180, (0x1e, 0x3a, 0x8a), (0x9d, 0x4e, 0xd8))
+/// The one online source: a real photograph (a cat) from Wikimedia Commons,
+/// 1280x960 JPEG. Its response allows cross-origin reads, so the browser can
+/// fetch it; it is also a request that can fail, which is the other half of
+/// what section one shows.
+const ONLINE_URL: &str =
+    "https://upload.wikimedia.org/wikipedia/commons/thumb/3/3a/Cat03.jpg/1280px-Cat03.jpg";
+
+/// The embedded PNG, decoded once. `Handle::from_rgba` is what an application
+/// gets after decoding a file, so the component is handed real pixels.
+fn local_image() -> image::Handle {
+    decode(LOCAL_PNG).expect("the shipped PNG decodes with the crate's PNG codec")
 }
 
-/// A square picture at one hue, for the thumbnails and the radius row.
-fn square(hue: (u8, u8, u8)) -> image::Handle {
-    gradient(96, 96, mix(hue, (0xff, 0xff, 0xff), 0.35), hue)
+/// Fetches [`ONLINE_URL`] and decodes it into the same kind of handle.
+async fn load_online() -> Result<image::Handle, String> {
+    let bytes = fetch(ONLINE_URL).await?;
+    decode(&bytes).ok_or_else(|| "the response was not a decodable PNG or JPEG".to_owned())
 }
 
-/// RGBA bytes as a handle: a diagonal wash from `from` to `to`, generated once
-/// per picture. No file, no codec and no network — `image-without-codecs` is the
-/// feature this crate enables.
-fn gradient(width: u32, height: u32, from: (u8, u8, u8), to: (u8, u8, u8)) -> image::Handle {
-    let mut pixels = Vec::with_capacity((width * height * 4) as usize);
-    for y in 0..height {
-        for x in 0..width {
-            let t = (x + y) as f32 / (width + height - 2) as f32;
-            let (r, g, b) = mix(from, to, t);
-            pixels.extend_from_slice(&[r, g, b, 0xff]);
-        }
+/// Encoded bytes to a decoded handle, the conversion an application does when it
+/// reads its own files. `None` when the bytes are not an image this build can
+/// decode, which the frame answers with its placeholder.
+fn decode(bytes: &[u8]) -> Option<image::Handle> {
+    let decoded = ::image::load_from_memory(bytes).ok()?.into_rgba8();
+    let (width, height) = decoded.dimensions();
+    Some(image::Handle::from_rgba(width, height, decoded.into_raw()))
+}
+
+/// The bytes at `url`. The browser fetches them; the native example has no HTTP
+/// client and reports the same failure an offline browser does, because that
+/// failure is part of the demo rather than an accident of the platform.
+#[cfg(target_arch = "wasm32")]
+async fn fetch(url: &str) -> Result<Vec<u8>, String> {
+    use wasm_bindgen::JsCast;
+    use wasm_bindgen_futures::JsFuture;
+
+    let window = web_sys::window().ok_or_else(|| "no browser window".to_owned())?;
+    let response = JsFuture::from(window.fetch_with_str(url))
+        .await
+        .map_err(describe)?;
+    let response: web_sys::Response = response
+        .dyn_into()
+        .map_err(|_| "the fetch did not answer with a Response".to_owned())?;
+    if !response.ok() {
+        return Err(format!("the server answered HTTP {}", response.status()));
     }
-    image::Handle::from_rgba(width, height, pixels)
+    let buffer = JsFuture::from(response.array_buffer().map_err(describe)?)
+        .await
+        .map_err(describe)?;
+    Ok(js_sys::Uint8Array::new(&buffer).to_vec())
 }
 
-/// Two colours blended by `t` in `0.0..=1.0`.
-fn mix(a: (u8, u8, u8), b: (u8, u8, u8), t: f32) -> (u8, u8, u8) {
-    (
-        (a.0 as f32 + (b.0 as f32 - a.0 as f32) * t) as u8,
-        (a.1 as f32 + (b.1 as f32 - a.1 as f32) * t) as u8,
-        (a.2 as f32 + (b.2 as f32 - a.2 as f32) * t) as u8,
-    )
+/// A failed fetch arrives as a JS value. The message on the error object is the
+/// useful part — a browser's `TypeError: Failed to fetch` — and `Debug` on the
+/// whole object prints a stack that reads as noise under the frame.
+#[cfg(target_arch = "wasm32")]
+fn describe(error: wasm_bindgen::JsValue) -> String {
+    use wasm_bindgen::JsCast;
+
+    if let Some(text) = error.as_string() {
+        return text;
+    }
+    if let Some(error) = error.dyn_ref::<js_sys::Error>() {
+        return format!("{}: {}", error.name(), error.message());
+    }
+    "the request failed".to_owned()
+}
+
+#[cfg(not(target_arch = "wasm32"))]
+async fn fetch(_url: &str) -> Result<Vec<u8>, String> {
+    Err("the native example has no HTTP client".to_owned())
 }
 
 const CODE_XML: &[u8] = br#"<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m18 16 4-4-4-4"/><path d="m6 8-4 4 4 4"/><path d="m14.5 4-5 16"/></svg>"#;
