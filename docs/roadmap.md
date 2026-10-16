@@ -1120,6 +1120,12 @@ inside half a row. Levels carry their own weight independently of the active sta
 children at 400, active 700 plus the full-colour label, dot and rail), so the outline's structure reads
 without standing in it.
 
+A third instance arrived the same day from the other direction: the framework-only marker's pattern
+matches `gpui|slint`, so `<!-- framework: iced -->` before a callout does nothing — no mark, no warning,
+no visible difference. Same shape as the footer's `key in NAMES && key in toggleLogos` guard that dropped
+every framework without a logo. **When a set gains a member, the check over that set is what needs
+changing, not only the data** — an `in`-style test against a fixed list fails silently by construction.
+
 A second lesson from the same footer section: **"data-driven" is a claim about the filters, not the
 markup.** The framework tiles already looped over a list, but a `key in NAMES && key in toggleLogos`
 guard silently dropped any framework without a logo — which is precisely the state a new framework
