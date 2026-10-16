@@ -34,6 +34,19 @@
 //! `on_open_change` cannot move its own state, because it has none; it still
 //! renders open whenever the caller says open.
 //!
+//! # The panel consumes the pointer events that land on it
+//!
+//! A press or release while the pointer is over the panel stops at the panel and
+//! does not also reach the tree behind it — the content is updated first, so the
+//! row, the button or the field under the pointer still acts, and then the
+//! overlay captures the event. Two gaps made this necessary: the panel's inset
+//! and its separator rows are not pointer targets, so a press on one fell
+//! through to the page under the panel; and a row that closed the panel on its
+//! press was gone by the release, which then landed on whatever the caller had
+//! layered behind the menu. The menu's rows now report a choice on the release
+//! (see [`Menu`](super::menu)), which keeps the panel under the pointer for that
+//! event and lets this capture it.
+//!
 //! # What Slint has that this does not
 //!
 //! - **The arrow.** GPUI's `Popover` has `.arrow(true)` and draws a triangle
@@ -777,6 +790,26 @@ impl<Message> Panel<'_, '_, Message> {
     }
 }
 
+/// Whether `event` is the press or release half of a pointer button — the
+/// events a panel consumes so they do not reach the tree behind it. Motion and
+/// the wheel are deliberately not here: the panel does not scroll-lock, and a
+/// pointer that moves over the panel still moves the page's cursor with it.
+fn is_pointer_button(event: &Event) -> bool {
+    matches!(
+        event,
+        Event::Mouse(
+            mouse::Event::ButtonPressed(
+                mouse::Button::Left | mouse::Button::Right | mouse::Button::Middle
+            ) | mouse::Event::ButtonReleased(
+                mouse::Button::Left | mouse::Button::Right | mouse::Button::Middle
+            )
+        ) | Event::Touch(
+            iced::touch::Event::FingerPressed { .. }
+                | iced::touch::Event::FingerLifted { .. }
+        )
+    )
+}
+
 impl<Message> overlay::Overlay<Message, Theme, iced::Renderer> for Panel<'_, '_, Message> {
     fn layout(&mut self, renderer: &iced::Renderer, bounds: Size) -> layout::Node {
         // The panel is a fixed width, and the content is laid out inside it at
@@ -865,6 +898,20 @@ impl<Message> overlay::Overlay<Message, Theme, iced::Renderer> for Panel<'_, '_,
             shell,
             &bounds,
         );
+
+        // The content has had its turn; now consume the event if it landed on
+        // the panel, because the panel is the topmost surface and the tree
+        // behind it must not also answer. A row or a field captures the press it
+        // takes, but the panel's inset and its rules capture nothing, and the
+        // release half of a click captures nothing at all — so a press on a rule
+        // reached the page under the panel, and a row that closed the panel on
+        // its press left the release to land on whatever was behind it. Both
+        // were real: a menu's bottom inset opened a second menu through the
+        // button under it. Consuming here, after the content, is what lets the
+        // content still act while the event stops at the panel.
+        if inside && is_pointer_button(event) {
+            shell.capture_event();
+        }
     }
 
     fn mouse_interaction(
