@@ -116,6 +116,9 @@ const dotVel = ref(0);
 const dot = ref({ x: RAIL_X, y: props.rowHeight / 2 });
 let rafId: number | undefined;
 let lastTime = 0;
+// A short beat between the active change and the dot's departure.
+const START_DELAY_MS = 140;
+let startTimer: number | undefined;
 
 const reduceMotion = () =>
   typeof window !== 'undefined' && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
@@ -158,11 +161,21 @@ function resume() {
     return;
   }
   if (rafId !== undefined) return;
-  lastTime = 0;
-  rafId = requestAnimationFrame(frame);
+  // A short beat before the dot departs, so a burst of scroll updates settles
+  // on one row instead of the glide chasing every change.
+  if (startTimer !== undefined) window.clearTimeout(startTimer);
+  startTimer = window.setTimeout(() => {
+    startTimer = undefined;
+    lastTime = 0;
+    rafId = requestAnimationFrame(frame);
+  }, START_DELAY_MS);
 }
 
 function pause() {
+  if (startTimer !== undefined) {
+    window.clearTimeout(startTimer);
+    startTimer = undefined;
+  }
   if (rafId === undefined) return;
   cancelAnimationFrame(rafId);
   rafId = undefined;

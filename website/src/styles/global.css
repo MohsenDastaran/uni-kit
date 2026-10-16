@@ -132,7 +132,7 @@ html.dark .alignment-dark {
   /* Layout */
   --nav-height: 56px;
   --sidebar-width: 248px;
-  --toc-width: 390px;
+  --toc-width: 300px;
   --layout-max-width: 1280px;
 }
 
@@ -1798,16 +1798,15 @@ html[lang^="ja"] .sidebar-subgroup-title {
   color: color-mix(in srgb, var(--foreground) 80%, transparent);
 }
 
-/* The column holds the outline's own longest names — a top-level trailing
-   section ("See this component in other frameworks") and the deepest prose `h2`
-   a component page nests under Usage ("Virtualization, accessibility, and
-   application boundaries", at depth 1 on a page whose mark has no `## Usage`).
-   A name longer than that truncates inside its row
-   instead of wrapping: the rows are a fixed 28px, so a second line would spill
-   into the next row rather than growing it. `white-space: nowrap` is what keeps
-   it to one line, and the ellipsis is the visual mark; the full name stays in
-   the DOM as the link's text, with the `title` attribute carrying it as the
-   recovery path the guides require for a truncating label. */
+/* The 300px column is narrower than the outline's longest names — the trailing
+   "See this component in other frameworks" and the prose `h2`s a component page
+   nests under Usage ("Virtualization, accessibility, and application
+   boundaries"). Those truncate inside their row instead of wrapping: the rows
+   are a fixed 28px, so a second line would spill into the next row rather than
+   growing it. `white-space: nowrap` is what keeps it to one line, and the
+   ellipsis is the visual mark; the full name stays in the DOM as the link's
+   text, with the `title` attribute carrying it as the recovery path the guides
+   require for a truncating label. */
 .toc--animated .toc__entry-label {
   min-width: 0;
   overflow: hidden;
@@ -1840,16 +1839,11 @@ html[lang^="ja"] .sidebar-subgroup-title {
   font-weight: 700;
 }
 
-/* Below this the three columns stop fitting inside the content box: widening
-   the rail to fit its labels spends the article's measure, so the rail gives up
-   its place first. The column widened 300 -> 390 so the deepest prose `h2`
-   ("Virtualization, accessibility, and application boundaries", ~342px, one
-   indent step under Usage) fits again; the hide point moved 1280 -> 1370 by the
-   same 90px so the rail only appears once the viewport has paid for it. The
-   layout's own 1280px cap means the width still comes out of the article: once
-   the layout is capped the prose box is 530px rather than the 572px it held at
-   the old breakpoint. */
-@media (max-width: 1370px) {
+/* Below this the three columns stop fitting inside the content box: the rail
+   keeps its 300px and gives up its place first, so the article never pays for
+   it. A name longer than the column truncates inside its row, with the full
+   name in the row's `title`. */
+@media (max-width: 1280px) {
   .toc {
     display: none;
   }
