@@ -1079,6 +1079,19 @@ The trap also cannot occur where a row is **intrinsic** rather than inside a fix
 exempt by construction, and why `menu` items at −2.0 are not defects. Say which components are exempt
 and why, beside the ones you measured.
 
+#### A `line_height` the height of the frame draws the caret flush to both borders
+
+iced draws the caret at the **text bounds**, so a single-line field that padded horizontally only
+(`padding([0.0, x])`) and set `line_height(height - 2)` — a hack to make the click target fill the frame —
+got a caret running the field's full inside height, touching the top and bottom rules. The family's
+authored inset is all sides (`textarea.slint`'s `input-padding-x`); with it the caret lands inset, the
+field's outer height is unchanged, and the text stays centred. Measured on a 32px medium field: caret
+30 tall at inset 1/1 → **12 tall at inset 10/10**, centre still equal to the field's.
+
+Six components carried a copy of that frame and two more inherited it through their composed `Input`, so
+the symptom — "the cursor has no y padding on most inputs" — was one line of geometry repeated eight
+times.
+
 #### iced draws a container's border *on* its bounds, reserving no room
 
 A child that fills such a container covers the border. The input group's row was the frame's **outer**
