@@ -1079,6 +1079,23 @@ The trap also cannot occur where a row is **intrinsic** rather than inside a fix
 exempt by construction, and why `menu` items at −2.0 are not defects. Say which components are exempt
 and why, beside the ones you measured.
 
+#### Five capabilities were reported impossible; all five were missing primitives
+
+Worth stating once, because each was written into a module doc as a platform limit and each turned out to
+be a builder or an assumption:
+
+| reported | actually |
+|---|---|
+| no animation clock | sample the frame's own instant and request a redraw while moving |
+| no drag delta | widget-tree state plus `CursorMoved` with the button down |
+| no focus-trap API | a focusable operation run from a `Task`, with `Outcome::Chain` |
+| the hover card is bottom-only | a hard-coded `Side::Bottom` and no builder |
+| circular buttons are impossible | `Button` always resolved `RADIUS_MD` and `container::clip` is rectangular |
+
+So a component doc saying iced "cannot" do something is a **hypothesis to test**, not a fact to relay —
+and the cheapest test is a small change in a scratch copy, before designing around the limitation.
+Repeatedly, the design that gave up on the feature was worse than the one that checked.
+
 #### The source-heading chip is a copied literal, in seventy files
 
 Slint's `ui/examples/bridge.slint` `SourceHeading` draws the `</>` code button as fill `0.12` with a
