@@ -133,7 +133,9 @@ html.dark .alignment-dark {
   --nav-height: 56px;
   --sidebar-width: 248px;
   --toc-width: 390px;
-  --layout-max-width: 1280px;
+  /* Wide enough that the 390px outline column is paid for by the layout, not by
+     the article: at 1280 the article lost the 90px the column had grown by. */
+  --layout-max-width: 1370px;
 }
 
 .dark {
@@ -1798,15 +1800,15 @@ html[lang^="ja"] .sidebar-subgroup-title {
   color: color-mix(in srgb, var(--foreground) 80%, transparent);
 }
 
-/* The 300px column is narrower than the outline's longest names — the trailing
-   "See this component in other frameworks" and the prose `h2`s a component page
-   nests under Usage ("Virtualization, accessibility, and application
-   boundaries"). Those truncate inside their row instead of wrapping: the rows
-   are a fixed 28px, so a second line would spill into the next row rather than
-   growing it. `white-space: nowrap` is what keeps it to one line, and the
-   ellipsis is the visual mark; the full name stays in the DOM as the link's
-   text, with the `title` attribute carrying it as the recovery path the guides
-   require for a truncating label. */
+/* The 390px column holds the outline's longest names — the trailing "See this
+   component in other frameworks" and the prose `h2`s a component page nests
+   under Usage ("Virtualization, accessibility, and application boundaries").
+   A name longer than the column truncates inside its row instead of wrapping:
+   the rows are a fixed 28px, so a second line would spill into the next row
+   rather than growing it. `white-space: nowrap` is what keeps it to one line,
+   and the ellipsis is the visual mark; the full name stays in the DOM as the
+   link's text, with the `title` attribute carrying it as the recovery path the
+   guides require for a truncating label. */
 .toc--animated .toc__entry-label {
   min-width: 0;
   overflow: hidden;
@@ -1839,10 +1841,9 @@ html[lang^="ja"] .sidebar-subgroup-title {
   font-weight: 700;
 }
 
-/* Below this the three columns stop fitting inside the content box: the rail
-   keeps its 300px and gives up its place first, so the article never pays for
-   it. A name longer than the column truncates inside its row, with the full
-   name in the row's `title`. */
+/* The hide point tracks the layout cap: at 1370 the three columns still fit, so
+   the rail only gives up its place once the content box can no longer pay for
+   it. Below this the article keeps its measure instead. */
 @media (max-width: 1370px) {
   .toc {
     display: none;
