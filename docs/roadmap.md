@@ -1079,6 +1079,20 @@ The trap also cannot occur where a row is **intrinsic** rather than inside a fix
 exempt by construction, and why `menu` items at −2.0 are not defects. Say which components are exempt
 and why, beside the ones you measured.
 
+#### An indent has a floor set by its corner radius
+
+The ToC's rail draws one S-bend per depth change as **two quarter-arcs**, so together they advance
+`2 x CORNER` horizontally and a clean bend needs `step >= 2 x CORNER`. With `CORNER = 12` that floor
+was *exactly* the old step of 24, so tightening the indent to 16 only worked by scaling the corner to
+8 with it — at `s16/c12` the arcs visibly pinch. The indent is arithmetic, not taste, and the next
+person to trim it will break the curves without this note.
+
+A second lesson from the same footer section: **"data-driven" is a claim about the filters, not the
+markup.** The framework tiles already looped over a list, but a `key in NAMES && key in toggleLogos`
+guard silently dropped any framework without a logo — which is precisely the state a new framework
+arrives in. Making it dynamic meant deleting that guard and giving the mark a lettermark fallback, not
+rewriting the loop.
+
 #### A shared column width is measured by laying the body out twice
 
 The form's label column has to be the widest label **in the form**, and no single child knows that
