@@ -1079,6 +1079,17 @@ The trap also cannot occur where a row is **intrinsic** rather than inside a fix
 exempt by construction, and why `menu` items at −2.0 are not defects. Say which components are exempt
 and why, beside the ones you measured.
 
+#### `border` equals `muted` in the dark table, so a token hairline vanishes there
+
+A one-pixel edge drawn with the `border` token reads in light and **disappears in dark**, because the
+dark palette sets `border == muted` (#262626). The kbd keycap needed `alpha(foreground, 0.22)` instead,
+which is an edge in both themes; `button.rs` already carried the same fix, so the precedent was in the
+repository.
+
+The token is right for a **divider between two surfaces**. For the outline of a control that sits *on*
+`muted` — a keycap, a chip, a badge — a proportion of the foreground is what stays visible in both
+palettes. Worth checking before adding any new bordered control.
+
 #### The caret *is* the text bounds, so derive the vertical inset from the line
 
 iced sets `text_bounds.height = min(requested line_height, limits.max)` and draws the caret at exactly
