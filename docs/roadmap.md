@@ -1079,6 +1079,17 @@ The trap also cannot occur where a row is **intrinsic** rather than inside a fix
 exempt by construction, and why `menu` items at −2.0 are not defects. Say which components are exempt
 and why, beside the ones you measured.
 
+#### `keyboard::listen` sees only *ignored* events
+
+A focused `text_input` handles Escape — it leaves the field — and swallows the key, so a subscription
+built on `keyboard::listen` never fires for exactly the keys a text component cares about: Escape, and
+any shortcut pressed while a field has focus. The working pattern is `event::listen_with`, which sees the
+event regardless of who handled it, which is what the focus trap uses to route `Tab`.
+
+Two agents lost a round to this — the focus trap's Tab and the number input's Escape — and in both cases
+the symptom looked like a missing feature rather than a wrong listener. If a key binding "does nothing",
+check which listener it is on before concluding iced cannot do it.
+
 #### A bitmap needs a decoder, and the decoder must not pull the wasm-breaking defaults
 
 The crate ships iced as `image-without-codecs`, so a demo that reads a PNG or JPEG has **no decoder at
