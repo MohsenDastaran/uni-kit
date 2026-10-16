@@ -19,7 +19,7 @@ export async function getStaticPaths() {
 }
 
 const { entry } = Astro.props;
-const { Content, headings } = await render(entry);
+const { Content } = await render(entry);
 const slug = entry.id.replace(/\.md$/, '');
 const frameworks = [
   ...(hasSlintExample(slug) ? ['slint'] : []),
@@ -61,7 +61,6 @@ const contentData = {
 <DocsLayout
   title={seoTitle}
   description={entry.data.description}
-  headings={headings}
   sidebar={enComponentSidebar}
   contentClass={slug === 'index' ? 'doc-content--component-index' : undefined}
   contentData={contentData}

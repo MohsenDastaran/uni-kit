@@ -1734,49 +1734,74 @@ html[lang^="ja"] .sidebar-subgroup-title {
   text-transform: uppercase;
 }
 
-/* A rail down the list gives the entries a shared edge and somewhere for the
-   current one to be marked — the segment lights up in place rather than the
-   text colour changing alone, so the reader's position is visible without
-   reading the labels. */
-.toc ul {
+/* The outline's own rule is a single SVG rail that snakes through the
+   indentation levels, with a dot gliding along it to the current entry and the
+   traveled portion darkening behind it. The rail replaces the list border, so
+   the list draws none. */
+.toc--animated .toc__body {
+  display: flex;
+}
+
+.toc--animated .toc__rail-svg {
+  flex-shrink: 0;
+}
+
+.toc--animated .toc__rail,
+.toc--animated .toc__rail-traveled {
+  fill: none;
+  stroke-width: 2;
+  stroke-linecap: round;
+}
+
+.toc--animated .toc__rail {
+  stroke: var(--border);
+}
+
+.toc--animated .toc__rail-traveled {
+  stroke: color-mix(in srgb, var(--foreground) 60%, transparent);
+}
+
+.toc--animated .toc__dot {
+  fill: var(--foreground);
+}
+
+.toc--animated .toc__list {
+  flex: 1;
+  min-width: 0;
   margin: 0;
   padding: 0;
-  border-left: 1px solid var(--border);
+  border-left: 0;
   list-style: none;
 }
 
-/* Installation and Live Example sit above the heading list. The gap is the
-   seam between that pair and the rest of the outline. */
-.toc__item--pin + .toc__item:not(.toc__item--pin) {
-  margin-top: 0.65rem;
-}
-
-.toc__item a {
-  display: block;
-  margin-left: -1px;
-  padding: 0.2rem 0 0.2rem 0.75rem;
-  border-left: 1px solid transparent;
+.toc--animated .toc__entry {
+  display: flex;
+  align-items: center;
+  height: 100%;
+  cursor: pointer;
   color: var(--muted-foreground);
-  line-height: 1.4;
+  font-size: 0.8125rem;
+  line-height: 1.3;
   text-decoration: none;
-  transition:
-    color 140ms ease,
-    border-color 140ms ease;
+  transition: color 300ms ease;
 }
 
-.toc__item a:hover {
-  border-left-color: var(--border-hover);
+.toc--animated .toc__entry:hover {
+  color: color-mix(in srgb, var(--foreground) 80%, transparent);
+}
+
+/* The outline column is narrow, so a long section name wraps inside its row
+   rather than running past the column edge. */
+.toc--animated .toc__entry-label {
+  min-width: 0;
+  overflow-wrap: break-word;
+}
+
+/* The dot and the rail mark the current entry as well; the label keeps a
+   second, non-colour cue so the position survives a monochrome reading. */
+.toc--animated .toc__entry--active {
   color: var(--foreground);
-}
-
-.toc__item a.is-current {
-  border-left-color: var(--brand);
-  color: var(--brand);
-}
-
-.toc__item--sub a {
-  padding-left: 1.5rem;
-  font-size: 0.78rem;
+  font-weight: 620;
 }
 
 /* Below this the three columns stop fitting inside the content box. */
