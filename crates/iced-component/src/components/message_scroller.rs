@@ -49,8 +49,12 @@
 //!   `svg::Handle` rather than a call into the catalog's `Icon`, because a
 //!   component here reads `theme` and nothing else of the crate's — copy this
 //!   file on its own and it still compiles. [`MessageScroller::jump_icon`] takes
-//!   the application's artwork, and [`ARROW_DOWN`] is the Lucide glyph the Slint
-//!   button names.
+//!   the application's artwork, and [`CHEVRONS_DOWN`] is the default: two
+//!   chevrons read as "go to the end of the list" at the control's 16-pixel icon
+//!   box, where a single `arrow-down` is a bare, heavy stem. The ink is the
+//!   theme's `foreground`, resolved inside the glyph's style closure like every
+//!   other mark in the catalogue; an uncoloured SVG keeps its own black and
+//!   disappears on the dark page.
 //!
 //! The jump control floats eight pixels above the frame's bottom edge, and it is
 //! placed there by a `Fill` container with `align_y(End)` and an eight-pixel
@@ -117,10 +121,18 @@ pub const MAX_BUBBLE_WIDTH: f32 = 480.0;
 /// The glyph's box on the jump control: the icon catalog's `Medium` step.
 pub const JUMP_ICON_EDGE: f32 = 16.0;
 
-/// The Lucide `arrow-down` glyph, the artwork the Slint button names. The icon
-/// set belongs to the application and [`MessageScroller::jump_icon`] replaces
-/// this; a component that has to draw a control with no glyph at all can still
-/// draw the one the design asks for.
+/// The default artwork on the jump control: the Lucide `chevrons-down` glyph.
+/// Two chevrons say "go to the end of the list" at [`JUMP_ICON_EDGE`], where the
+/// single `arrow-down` reads as a bare stem with a wide head. The icon set
+/// belongs to the application and [`MessageScroller::jump_icon`] replaces this;
+/// a component that has to draw a control with no glyph at all can still draw
+/// the one the design asks for.
+pub const CHEVRONS_DOWN: &[u8] = br#"<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m7 6 5 5 5-5"/><path d="m7 13 5 5 5-5"/></svg>"#;
+
+/// The Lucide `arrow-down` glyph, the Slint button's artwork and this control's
+/// previous default. Kept as a named glyph so a caller that asks for the plain
+/// arrow through [`MessageScroller::jump_icon`] does not have to carry its own
+/// copy.
 pub const ARROW_DOWN: &[u8] = br#"<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14"/><path d="m19 12-7 7-7-7"/></svg>"#;
 
 // ------------------------------------------------------------------ the turns
@@ -229,7 +241,7 @@ impl<'a, Message> MessageScroller<'a, Message> {
             scrollbar: true,
             padding: LIST_PADDING,
             max_bubble_width: MAX_BUBBLE_WIDTH,
-            jump_icon: svg::Handle::from_memory(ARROW_DOWN),
+            jump_icon: svg::Handle::from_memory(CHEVRONS_DOWN),
             on_scroll: None,
             on_jump: None,
         }
@@ -277,7 +289,7 @@ impl<'a, Message> MessageScroller<'a, Message> {
     }
 
     /// The artwork on the jump control, since the icon set belongs to the
-    /// application. The default is [`ARROW_DOWN`].
+    /// application. The default is [`CHEVRONS_DOWN`].
     pub fn jump_icon(mut self, handle: impl Into<svg::Handle>) -> Self {
         self.jump_icon = handle.into();
         self
@@ -446,15 +458,22 @@ where
         .into()
 }
 
-/// The jump control: a 32-pixel circle, a one-pixel border, and the arrow-down
-/// glyph, centred over the list.
+/// The jump control: a 32-pixel circle, a one-pixel border, and the
+/// chevrons-down glyph, centred over the list.
 fn jump_button<'a, Message>(icon: svg::Handle, on_jump: Option<Message>) -> Element<'a, Message>
 where
     Message: Clone + 'a,
 {
     let glyph = svg(icon)
         .width(Length::Fixed(JUMP_ICON_EDGE))
-        .height(Length::Fixed(JUMP_ICON_EDGE));
+        .height(Length::Fixed(JUMP_ICON_EDGE))
+        // iced does not tint an SVG from the button's `text_color`, and an
+        // uncoloured `currentColor` is black: on the dark page the arrow read as
+        // a black mark on a black circle. The ink is read inside the closure so
+        // a theme switch moves it, the same rule every other mark here follows.
+        .style(|theme: &Theme, _status| svg::Style {
+            color: Some(Tokens::of(theme).foreground),
+        });
 
     let control = button(glyph)
         .width(Length::Fixed(JUMP_BUTTON_EDGE))
