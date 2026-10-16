@@ -20,6 +20,16 @@
 // `data-toc-trailing` (`trailing` here), which ends the region the same way the
 // API reference does, so they read as top-level rows rather than as more
 // children of Usage.
+//
+// Some component pages never wrote a `## Usage` heading — their samples sit
+// under prose `h2`s ("Anatomy and basic usage", "Create state and choose the
+// starting position"). The region is still marked: the layout injects the live
+// example only on a page that shows one, so the pin says this is a component
+// page whose whole content is the usage region, and the API reference or the
+// trailing sections still end it. When the mark has no `## Usage` heading, the
+// category is synthesised as a label row (no heading to link to) and every
+// heading in the region is nested under it. A guide or the component index has
+// no live example, so it keeps its own tag depth and is unchanged.
 
 export interface TocHeading {
   id: string;
@@ -38,7 +48,9 @@ export interface TocHeading {
 export interface TocItem {
   id: string;
   label: string;
-  href: string;
+  /** The section the row links to. A synthesised category names a region the
+   *  mark has no heading for, so it is a label row with no `href`. */
+  href?: string;
   depth: number;
 }
 
@@ -48,6 +60,12 @@ export const TOC_PINS = [
   { id: 'framework-bar', label: 'Installation' },
   { id: 'live-example', label: 'Live Example' },
 ] as const;
+
+/** The row that names the usage region on a component page whose mark has no
+ *  `## Usage` heading. The id is stable but deliberately not a page anchor:
+ *  there is no section to scroll to, only a region to name. */
+const USAGE_CATEGORY_ID = 'toc-usage-category';
+const USAGE_LABEL = 'Usage';
 
 const PIN_IDS = new Set<string>(TOC_PINS.map((pin) => pin.id));
 const USAGE = /^usage$/i;
@@ -62,10 +80,10 @@ export function tocItems(headings: TocHeading[]): TocItem[] {
   const content = visible.filter((heading) => !PIN_IDS.has(heading.id));
 
   // The how-to-use region runs from the first content heading to the API
-  // reference. `## Usage` names that region; without one (the component index,
-  // the guides) the headings keep their own tag depth. A closing section ends
-  // the region as well, so a component page with no API reference still ends
-  // its nesting at the two sections that close the page.
+  // reference. `## Usage` names that region; where the mark has no such heading
+  // the category is synthesised below, so the same nesting still applies. A
+  // closing section ends the region as well, so a component page with no API
+  // reference still ends its nesting at the two sections that close the page.
   const usageAt = content.findIndex((heading) => heading.level === 2 && USAGE.test(heading.label));
   const apiAt = content.findIndex((heading) => heading.level === 2 && API_REFERENCE.test(heading.label));
   const trailingAt = content.findIndex((heading) => heading.trailing === true);
@@ -74,16 +92,24 @@ export function tocItems(headings: TocHeading[]): TocItem[] {
     trailingAt >= 0 ? trailingAt : content.length,
   );
 
+  // The live example is injected by the layout only where the page shows one,
+  // so the pin marks a component page — whose content, from the first heading to
+  // the API reference or the closing sections, is the usage region. Where that
+  // region's `## Usage` heading was never written, the category is synthesised
+  // so its samples still read as its children rather than as top-level rows.
+  const hasLiveExample = pins.some((heading) => heading.id === 'live-example');
+  const synthesiseUsage = usageAt < 0 && hasLiveExample && regionEnd > 0;
+
   // A stack of the depth last used at each heading level, so a child sits one
-  // deeper than the nearest heading above it — except under `## Usage`, whose
-  // direct `h3` children belong to the category itself rather than to a nested
-  // `h2` section.
+  // deeper than the nearest heading above it — except under the Usage category,
+  // whose direct `h3` children belong to the category itself rather than to a
+  // nested `h2` section.
   const stack: number[] = [];
   const depths = content.map((heading, index) => {
     const level = Math.min(Math.max(heading.level, 2), 6);
     stack.length = Math.min(stack.length, level - 2);
     let depth: number;
-    if (usageAt < 0 || index >= regionEnd) {
+    if (index >= regionEnd || (usageAt < 0 && !synthesiseUsage)) {
       depth = level - 2;
     } else if (level === 2) {
       depth = index === usageAt ? 0 : 1;
@@ -125,8 +151,15 @@ export function tocItems(headings: TocHeading[]): TocItem[] {
     .map((heading, index) => ({ heading, depth: depths[index] }))
     .slice(regionEnd);
 
+  // A synthesised category has no heading of its own to anchor, so it is a label
+  // row; it still leads the region it names.
+  const category: TocItem | null = synthesiseUsage
+    ? { id: USAGE_CATEGORY_ID, label: USAGE_LABEL, depth: 0 }
+    : null;
+
   return [
     ...pins.map((heading) => item(heading, 0)),
+    ...(category ? [category] : []),
     ...[...region, ...after].map(({ heading, depth }) => item(heading, depth)),
   ];
 }

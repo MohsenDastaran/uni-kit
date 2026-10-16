@@ -98,7 +98,7 @@ test('closing sections follow the API reference at the same top level', () => {
   );
 });
 
-test('a page without a Usage heading keeps its own tag depth', () => {  const items = tocItems([
+test('a guide or the index — no live example — keeps its own tag depth', () => {  const items = tocItems([
     heading({ id: 'getting-started' }),
     heading({ id: 'install', level: 3 }),
     heading({ id: 'manual', level: 4 }),
@@ -109,6 +109,61 @@ test('a page without a Usage heading keeps its own tag depth', () => {  const it
       ['getting-started', 0],
       ['install', 1],
       ['manual', 2],
+    ],
+  );
+});
+
+// A component page whose mark has no `## Usage` still has a usage region: the
+// live example is injected by the layout only where one is shown, so the pin
+// says so. The category is synthesised as a label row (no heading to link to),
+// and every heading up to the API reference or the closing sections nests under
+// it — the defect the owner saw was these samples sitting at depth 0 beside a
+// Usage that only existed on the pages that happened to write the heading.
+test('a component page with no Usage heading gets a synthesised category', () => {
+  const items = tocItems([
+    heading({ id: 'framework-bar', label: 'Installation' }),
+    heading({ id: 'live-example', label: 'Live Example' }),
+    heading({ id: 'import', label: 'Import' }),
+    heading({ id: 'anatomy', label: 'Anatomy and basic usage' }),
+    heading({ id: 'variants', label: 'Variants', level: 3 }),
+    heading({ id: 'nested', label: 'Nested', level: 4 }),
+    heading({ id: 'other-frameworks', label: 'See this component in other frameworks', trailing: true }),
+  ]);
+  assert.deepEqual(
+    items.map(({ id, depth }) => [id, depth]),
+    [
+      ['framework-bar', 0],
+      ['live-example', 0],
+      ['toc-usage-category', 0],
+      ['import', 1],
+      ['anatomy', 1],
+      ['variants', 2],
+      ['nested', 3],
+      ['other-frameworks', 0],
+    ],
+  );
+  const category = items.find((item) => item.id === 'toc-usage-category');
+  assert.equal(category?.label, 'Usage');
+  assert.equal(category?.href, undefined);
+});
+
+test('the synthesised category ends at the API reference', () => {
+  const items = tocItems([
+    heading({ id: 'framework-bar', label: 'Installation' }),
+    heading({ id: 'live-example', label: 'Live Example' }),
+    heading({ id: 'anatomy', label: 'Anatomy and basic usage' }),
+    heading({ id: 'api-reference', label: 'API Reference' }),
+    heading({ id: 'attachment', label: 'Attachment', level: 3 }),
+  ]);
+  assert.deepEqual(
+    items.map(({ id, depth }) => [id, depth]),
+    [
+      ['framework-bar', 0],
+      ['live-example', 0],
+      ['toc-usage-category', 0],
+      ['anatomy', 1],
+      ['api-reference', 0],
+      ['attachment', 1],
     ],
   );
 });

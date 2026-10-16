@@ -41,10 +41,11 @@ const RAIL_X = 8;
 const CORNER = 6;
 // The entries share the rail's origin, so this is the rail's own x plus the
 // gap that keeps the dot off the label; depth adds the same indent to both.
-// The gap is `sm` (8), which still clears the rail's widest S-bend: a bend
-// reaches `CORNER` (6) from the rail's x, and the bend's horizontal run sits on
+// The gap is `md` (12): a bend reaches `CORNER` (6) from the rail's x, so the
+// label clears its outermost arc by 6 rather than the 2 the old `sm` gap left,
+// which read as the text touching the line. The bend's horizontal run sits on
 // the row boundary, where the line box has already given up its leading.
-const TEXT_X = RAIL_X + 8;
+const TEXT_X = RAIL_X + 12;
 
 const xOf = (i: number) => RAIL_X + (items.value[i]?.depth ?? 0) * props.indent;
 const yOf = (i: number) => i * props.rowHeight + props.rowHeight / 2;
@@ -420,20 +421,26 @@ watch([active, rowLens], () => resume(), { flush: 'post' });
           :key="item.id"
           :style="{ height: `${rowHeight}px` }"
         >
-          <a
+          <!-- Every row but the synthesised Usage category is a link to its
+               heading. The category names a region the mark has no heading for,
+               so it is a label: a `span`, not an anchor that goes nowhere. -->
+          <component
+            :is="item.href ? 'a' : 'span'"
             :href="item.href"
             class="toc__entry"
             :class="{
               'toc__entry--active': i === active,
               'toc__entry--top': item.depth === 0,
               'toc__entry--child': item.depth > 0,
+              'toc__entry--category': !item.href,
             }"
             :style="{ paddingLeft: `${TEXT_X + item.depth * indent}px` }"
+            :title="item.label"
             :aria-current="i === active ? 'true' : undefined"
-            @click="onSelect($event, i)"
+            @click="item.href ? onSelect($event, i) : undefined"
           >
             <span class="toc__entry-label">{{ item.label }}</span>
-          </a>
+          </component>
         </li>
       </ul>
     </div>

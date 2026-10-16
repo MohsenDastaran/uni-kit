@@ -262,13 +262,25 @@ function sectionEnd(children, heading) {
 
 /**
  * Where a section the page has no heading for goes: inside `## Usage`, at the end
- * of it, so an added section still reads as part of the examples.
+ * of it, so an added section still reads as part of the examples. A page whose
+ * mark has no `## Usage` heading still has the region — it ends at the
+ * `## API Reference` — so the fallback stops there rather than at the end of the
+ * tree, which would put the sample after the API reference and outside the
+ * region the outline nests under Usage.
  */
 function usageEnd(children) {
   const start = children.findIndex(
     (node) => node.type === 'heading' && /^usage$/i.test(headingText(node)),
   );
-  if (start === -1) return children.length;
+  if (start === -1) {
+    const api = children.findIndex(
+      (node) =>
+        node.type === 'heading' &&
+        node.depth === 2 &&
+        /^api reference\b/i.test(headingText(node)),
+    );
+    return api === -1 ? children.length : api;
+  }
   for (let i = start + 1; i < children.length; i += 1) {
     const node = children[i];
     if (node.type === 'heading' && node.depth <= 2) return i;
