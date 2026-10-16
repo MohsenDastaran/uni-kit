@@ -1739,11 +1739,19 @@ html[lang^="ja"] .sidebar-subgroup-title {
    traveled portion darkening behind it. The rail replaces the list border, so
    the list draws none. */
 .toc--animated .toc__body {
+  position: relative;
   display: flex;
 }
 
+/* The rail shares the list's origin rather than sitting beside it in a flex
+   column: reserving its width would spend the column's measure on the deepest
+   indent, which left an `h4` row about forty pixels of text. Overlaid, the
+   rail keeps its own coordinates and the entries keep the column. */
 .toc--animated .toc__rail-svg {
-  flex-shrink: 0;
+  position: absolute;
+  top: 0;
+  left: 0;
+  pointer-events: none;
 }
 
 .toc--animated .toc__rail,

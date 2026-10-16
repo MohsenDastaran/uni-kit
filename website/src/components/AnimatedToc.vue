@@ -34,6 +34,9 @@ const listEl = ref<HTMLUListElement | null>(null);
 
 const RAIL_X = 8;
 const CORNER = 12;
+// The entries share the rail's origin, so this is the rail's own x plus the
+// gap that keeps the dot off the label; depth adds the same indent to both.
+const TEXT_X = RAIL_X + 24;
 
 const xOf = (i: number) => RAIL_X + (items.value[i]?.depth ?? 0) * props.indent;
 const yOf = (i: number) => i * props.rowHeight + props.rowHeight / 2;
@@ -178,14 +181,16 @@ function buildHeadings(): TocHeading[] {
   if (!root) return [];
   const headings: TocHeading[] = [];
   for (const pin of TOC_PINS) {
+    // The pins read as top-level sections, so they carry the level an `h2`
+    // would; `tocItems` is what nests everything else under the Usage category.
     const el = document.getElementById(pin.id);
-    headings.push({ id: pin.id, label: pin.label, depth: 0, visible: isVisible(el) });
+    headings.push({ id: pin.id, label: pin.label, level: 2, visible: isVisible(el) });
   }
-  for (const el of root.querySelectorAll<HTMLElement>('h2[id], h3[id]')) {
+  for (const el of root.querySelectorAll<HTMLElement>('h2[id], h3[id], h4[id]')) {
     headings.push({
       id: el.id,
       label: headingLabel(el),
-      depth: Number(el.tagName[1]) - 2,
+      level: Number(el.tagName[1]),
       visible: isVisible(el),
     });
   }
@@ -230,10 +235,25 @@ function track() {
         if (entry.isIntersecting) seen.add(i);
         else seen.delete(i);
       }
-      // Document order, so the topmost visible heading wins.
+      // The topmost heading in the *document* wins. That is not the lowest
+      // outline index once the Usage category leads its own first child (the
+      // page's `## Import` sits above `## Usage` in the mark), so the winner is
+      // read from layout rather than from the row number.
       if (seen.size > 0) {
-        setActive(Math.min(...seen));
-        return;
+        let top = -1;
+        let topEdge = Number.POSITIVE_INFINITY;
+        for (const i of seen) {
+          const el = document.getElementById(list[i].id);
+          const edge = el?.getBoundingClientRect().top;
+          if (edge !== undefined && edge < topEdge) {
+            topEdge = edge;
+            top = i;
+          }
+        }
+        if (top >= 0) {
+          setActive(top);
+          return;
+        }
       }
       // Nothing in the band — near the foot of the page, or inside a section
       // longer than the viewport. Fall back to the last heading passed.
@@ -393,7 +413,7 @@ watch([active, rowLens], () => resume(), { flush: 'post' });
             :href="item.href"
             class="toc__entry"
             :class="{ 'toc__entry--active': i === active }"
-            :style="{ paddingLeft: `${16 + item.depth * indent}px` }"
+            :style="{ paddingLeft: `${TEXT_X + item.depth * indent}px` }"
             :aria-current="i === active ? 'true' : undefined"
             @click="onSelect($event, i)"
           >

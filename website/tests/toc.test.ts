@@ -2,64 +2,98 @@ import assert from 'node:assert/strict';
 import test from 'node:test';
 import { TOC_PINS, sameTocItems, tocItems, type TocHeading } from '../src/lib/toc.js';
 
-// The outline is built from what the active framework lays out. These cases
-// pin the rule the defect report named: a heading the framework hides is not an
-// entry, and every entry that survives points at a visible heading.
+// The outline is built from what the active framework lays out, and its depth
+// is derived from the page's regions rather than from the heading tags alone.
+// These cases pin the two rules the defect report named: a heading the
+// framework hides is not an entry, and the how-to-use region reads as children
+// of one Usage category so the rail has levels to bend between.
 
 function heading(overrides: Partial<TocHeading> & { id: string }): TocHeading {
-  return { label: overrides.id, depth: 0, visible: true, ...overrides };
+  return { label: overrides.id, level: 2, visible: true, ...overrides };
 }
 
 test('a heading the framework hides is left out of the outline', () => {
   const items = tocItems([
-    heading({ id: 'import', label: 'Import', depth: 0 }),
-    heading({ id: 'calendar-sizes', label: 'Calendar Sizes', depth: 1, visible: false }),
-    heading({ id: 'usage', label: 'Usage', depth: 0 }),
+    heading({ id: 'import', label: 'Import' }),
+    heading({ id: 'calendar-sizes', label: 'Calendar Sizes', level: 3, visible: false }),
+    heading({ id: 'usage', label: 'Usage' }),
   ]);
   assert.deepEqual(
     items.map((item) => item.id),
-    ['import', 'usage'],
+    ['usage', 'import'],
   );
 });
 
-test('depth keeps the indentation level and href resolves to the heading id', () => {
+test('the Usage category leads Import and owns the samples and their h4 subsections', () => {
   const items = tocItems([
-    heading({ id: 'usage', depth: 0 }),
-    heading({ id: 'two-columns', depth: 1 }),
+    heading({ id: 'import', label: 'Import' }),
+    heading({ id: 'usage', label: 'Usage' }),
+    heading({ id: 'variants', label: 'Variants', level: 3 }),
+    heading({ id: 'icon-types', label: 'Icon Types', level: 4 }),
+    heading({ id: 'date-restrictions', label: 'Date Restrictions' }),
+    heading({ id: 'disabled-weekends', label: 'Disabled Weekends', level: 3 }),
+    heading({ id: 'api-reference', label: 'API Reference' }),
+    heading({ id: 'calendar-state', label: 'CalendarState', level: 3 }),
   ]);
-  assert.deepEqual(items, [
-    { id: 'usage', label: 'usage', href: '#usage', depth: 0 },
-    { id: 'two-columns', label: 'two-columns', href: '#two-columns', depth: 1 },
+  assert.deepEqual(
+    items.map(({ id, depth }) => [id, depth]),
+    [
+      ['usage', 0],
+      ['import', 1],
+      ['variants', 1],
+      ['icon-types', 2],
+      ['date-restrictions', 1],
+      ['disabled-weekends', 2],
+      ['api-reference', 0],
+      ['calendar-state', 1],
+    ],
+  );
+  assert.deepEqual(items[1], { id: 'import', label: 'Import', href: '#import', depth: 1 });
+});
+
+test('a page without a Usage heading keeps its own tag depth', () => {
+  const items = tocItems([
+    heading({ id: 'getting-started' }),
+    heading({ id: 'install', level: 3 }),
+    heading({ id: 'manual', level: 4 }),
   ]);
+  assert.deepEqual(
+    items.map(({ id, depth }) => [id, depth]),
+    [
+      ['getting-started', 0],
+      ['install', 1],
+      ['manual', 2],
+    ],
+  );
 });
 
 test('the install bar and live example lead the outline, and only when shown', () => {
   assert.equal(TOC_PINS[0].id, 'framework-bar');
   assert.equal(TOC_PINS[1].id, 'live-example');
   const items = tocItems([
-    heading({ id: 'framework-bar', label: 'Installation', depth: 0 }),
+    heading({ id: 'framework-bar', label: 'Installation' }),
     // The live example has not mounted yet: no entry, not a dead anchor.
-    heading({ id: 'live-example', label: 'Live Example', depth: 0, visible: false }),
-    heading({ id: 'import', label: 'Import', depth: 0 }),
+    heading({ id: 'live-example', label: 'Live Example', visible: false }),
+    heading({ id: 'import', label: 'Import' }),
   ]);
   assert.deepEqual(
-    items.map((item) => item.id),
-    ['framework-bar', 'import'],
+    items.map(({ id, depth }) => [id, depth]),
+    [
+      ['framework-bar', 0],
+      ['import', 0],
+    ],
   );
 });
 
 test('a framework with nothing visible yields no entries, so no empty rail', () => {
   assert.deepEqual(tocItems([heading({ id: 'a', visible: false })]), []);
-});
-
-test('a heading with no id cannot become an entry', () => {
   assert.deepEqual(tocItems([heading({ id: '' })]), []);
 });
 
-test('sameTocItems reports a changed visible set', () => {
-  const base = tocItems([heading({ id: 'a' }), heading({ id: 'b', depth: 1 })]);
-  assert.equal(sameTocItems(base, tocItems([heading({ id: 'a' }), heading({ id: 'b', depth: 1 })])), true);
+test('sameTocItems reports a changed visible set or a changed depth', () => {
+  const base = tocItems([heading({ id: 'a' }), heading({ id: 'b', level: 3 })]);
+  assert.equal(sameTocItems(base, tocItems([heading({ id: 'a' }), heading({ id: 'b', level: 3 })])), true);
   assert.equal(sameTocItems(base, tocItems([heading({ id: 'a' })])), false);
-  assert.equal(sameTocItems(base, tocItems([heading({ id: 'a' }), heading({ id: 'b', depth: 0 })])), false);
-  assert.equal(sameTocItems(base, tocItems([heading({ id: 'a' }), heading({ id: 'c', depth: 1 })])), false);
+  assert.equal(sameTocItems(base, tocItems([heading({ id: 'a' }), heading({ id: 'b' })])), false);
+  assert.equal(sameTocItems(base, tocItems([heading({ id: 'a' }), heading({ id: 'c', level: 3 })])), false);
 });
