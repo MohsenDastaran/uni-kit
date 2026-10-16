@@ -181,10 +181,10 @@ impl Operation<Option<Id>> for FindFocused {
         _bounds: Rectangle,
         state: &mut dyn Focusable,
     ) {
-        if state.is_focused() {
-            if let Some(id) = id {
-                self.focused = Some(id.clone());
-            }
+        if state.is_focused()
+            && let Some(id) = id
+        {
+            self.focused = Some(id.clone());
         }
     }
 
@@ -260,10 +260,10 @@ impl Operation<()> for Tab {
         _bounds: Rectangle,
         state: &mut dyn Focusable,
     ) {
-        if state.is_focused() {
-            if let Some(id) = id {
-                self.focused = Some(id.clone());
-            }
+        if state.is_focused()
+            && let Some(id) = id
+        {
+            self.focused = Some(id.clone());
         }
     }
 
