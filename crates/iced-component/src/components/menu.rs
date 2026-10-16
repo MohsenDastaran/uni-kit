@@ -58,6 +58,20 @@
 //! one index loses the key's row when the pointer leaves. The demo's "Keyboard
 //! Shortcuts" card shows the arrangement.
 //!
+//! # A choice is made on the release
+//!
+//! [`Menu::on_chosen`] reports on the pointer's **release**, not its press. A
+//! menu closes on choose, and the press is the last event the panel is
+//! guaranteed to still be under: report the choice there and the panel is gone
+//! by the release, which then reaches whatever the caller layered behind the
+//! menu — the click-through a popover overlay could not stop once its panel had
+//! closed. Reporting on the release keeps the panel open for it, and
+//! [`Popover`](super::popover::Popover)'s overlay consumes the release while the
+//! panel is still there. GPUI's `MenuItem` writes the same rule from the other
+//! side: it stops the mouse-down and acts on the click. The row answers a
+//! release even when the press began on another row of the same panel; a menu
+//! has no drag that would be disturbed by that.
+//!
 //! # What is not here
 //!
 //! iced 0.14 has no focus trap and no menu role, so the traversal keys are not
@@ -278,12 +292,14 @@ impl<'a, Message> Menu<'a, Message> {
         }
     }
 
-    /// Report the row that was chosen, by index, on a click.
+    /// Report the row that was chosen, by index, on the pointer's release.
     ///
     /// This is the whole contract with `select`: the caller owns the items and
     /// asks itself what index 2 means. iced's `combo_box` reports `on_select`
     /// the same way, and the Slint component's `chosen(index: int)` is the same
-    /// number.
+    /// number. The release and not the press is what makes a menu that closes on
+    /// choose safe to layer over a page; the module comment has the full
+    /// account.
     pub fn on_chosen(mut self, on_chosen: impl Fn(usize) -> Message + 'a) -> Self {
         self.on_chosen = Some(std::rc::Rc::new(on_chosen));
         self
@@ -394,7 +410,19 @@ impl<'a, Message> Menu<'a, Message> {
         }
         if let Some(on_chosen) = &self.on_chosen {
             let on_chosen = on_chosen.clone();
-            area = area.on_press(on_chosen(index));
+            // A choice is made on the pointer's **release**, not its press, and
+            // that is what keeps the row's own click out of the page behind it.
+            // A menu closes on choose, so the press is the last event the panel
+            // is guaranteed to still be under: report there and the panel is
+            // already gone by the release, which then lands on whatever the
+            // caller layered behind the menu — the press-through one layer down.
+            // Waiting for the release keeps the panel alive for it, and the
+            // popover's overlay consumes the release while it is. GPUI's
+            // `MenuItem` does the same from the other side: it stops the
+            // mouse-down and acts on the click. The row answers the release even
+            // when the press began elsewhere in the panel; a menu has no drag
+            // gesture for that to disturb.
+            area = area.on_release(on_chosen(index));
         }
         area.into()
     }
