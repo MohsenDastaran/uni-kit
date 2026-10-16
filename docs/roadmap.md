@@ -1079,6 +1079,17 @@ The trap also cannot occur where a row is **intrinsic** rather than inside a fix
 exempt by construction, and why `menu` items at −2.0 are not defects. Say which components are exempt
 and why, beside the ones you measured.
 
+#### When a module doc and its code disagree, the doc states intent — and the gap is a bug
+
+Two of these surfaced in one session, and both read correctly while behaving wrongly. The alert's fill was
+documented as "the status colour at 4% over the page" while the code passed its arguments to `mix` the
+other way round, making it 96% ink against ink at **1.03:1**. The menu's selected row was documented as
+taking `accent_foreground` ink over the accent fill while the code changed only the fill.
+
+So a doc sentence that states a **value**, a **direction** or a **colour rule** is worth diffing against the
+code beneath it. It is one of the few cheap checks available, since the prose came from someone who knew
+what the component was supposed to do.
+
 #### `currentColor` resolves to black: a button's `text_color` never reaches an SVG
 
 This is the mechanism behind a trap this catalogue hit six times — a mark drawn as an SVG inside a
