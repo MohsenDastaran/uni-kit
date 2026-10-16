@@ -8,14 +8,17 @@
 //! Run it with `cargo run --example icon`, or in the browser as
 //! `?story=icon` in the gallery the website embeds.
 //!
-//! Each section carries a heading the component page has. The `// section:
-//! <title>` comments below are the contract the website reads to cut this file
-//! into the usage panels a component page shows, so the code on the page is the
-//! code that runs here. Keep them, one per section, in order, and keep the
-//! closing `// section: end` after the last one.
+//! Each section carries a heading the component page has — the title, and the
+//! code icon that asks the embedding page to scroll to that sample. Both are the
+//! button, as in Slint's `SourceHeading`, and a click posts the section's index
+//! and title through [`crate::bridge`], the same bridge the Slint and GPUI
+//! galleries use. The `// section: <title>` comments below are the contract the
+//! website reads to cut this file into the usage panels a component page shows,
+//! so the code on the page is the code that runs here. Keep them, one per
+//! section, in order, and keep the closing `// section: end` after the last one.
 
 use iced::widget::svg;
-use iced::widget::{column, container, row, text};
+use iced::widget::{column, container, mouse_area, row, text};
 use iced::{Background, Border, Color, Element, Length, Task, Theme};
 
 use crate::components::button::{Button, Variant};
@@ -31,9 +34,9 @@ fn tokens(app: &App) -> Tokens {
 
 pub fn run(theme: iced::Theme) -> iced::Result {
     // The passed theme decides the boot appearance, so the demo's own flag and
-    // the window's tokens are the same set from the first frame; the toggle
-    // below then swaps both together. A demo that only toggled its own flag
-    // would name light tokens on a dark window.
+    // the window's tokens are the same set from the first frame. The demo owns
+    // no theme switch: embedded, the page passes the theme it is shown in, and a
+    // change reloads the frame, so both are rebuilt together.
     let dark = theme.extended_palette().is_dark;
     iced::application(move || boot(dark), update, view)
         .title("uni-kit — icon")
@@ -64,6 +67,21 @@ const TRIANGLE_ALERT: &[u8] = br#"<svg xmlns="http://www.w3.org/2000/svg" viewBo
 /// A cross in a ring, the Lucide `circle-x` glyph.
 const CIRCLE_X: &[u8] = br#"<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="m15 9-6 6"/><path d="m9 9 6 6"/></svg>"#;
 
+/// The Lucide `code` glyph the section heading carries, the same 28px box the
+/// other galleries draw.
+const CODE_XML: &[u8] = br#"<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m18 16 4-4-4-4"/><path d="m6 8-4 4 4 4"/><path d="m14.5 4-5 16"/></svg>"#;
+
+/// The section headings, in the order the demo and the component page's `###`
+/// headings have them. The index is what the page is asked to scroll to.
+const SECTIONS: [&str; 6] = [
+    "Basic Icon",
+    "Icon with Custom Size",
+    "Icon with Custom Color",
+    "Animated Loading Icon",
+    "Status Icons",
+    "Icon in Button",
+];
+
 #[derive(Debug, Clone)]
 struct App {
     /// Whether the loading icons run their own clock. `true` at boot, so the
@@ -71,7 +89,13 @@ struct App {
     spinning: bool,
     /// The last control pressed, drawn under the sections.
     pressed: Option<&'static str>,
+    /// The palette the application started with, which `tokens` names the
+    /// explicit colours from.
     dark: bool,
+    /// Which section heading the pointer is over, and which was pressed, so the
+    /// code icon can draw the two states the Slint heading animates to.
+    hovered: Option<&'static str>,
+    pressed_source: Option<&'static str>,
 }
 
 #[derive(Debug, Clone)]
@@ -79,7 +103,13 @@ enum Message {
     /// Start or stop the loading icons' turn.
     ToggleSpin,
     Pressed(&'static str),
-    ToggleTheme,
+    HoverSource(Option<&'static str>),
+    PressSource(Option<&'static str>),
+    /// A section heading was released: ask the page for that sample.
+    ShowSource {
+        index: usize,
+        title: &'static str,
+    },
 }
 
 fn boot(dark: bool) -> App {
@@ -87,6 +117,8 @@ fn boot(dark: bool) -> App {
         spinning: true,
         pressed: None,
         dark,
+        hovered: None,
+        pressed_source: None,
     }
 }
 
@@ -94,7 +126,13 @@ fn update(app: &mut App, message: Message) -> Task<Message> {
     match message {
         Message::ToggleSpin => app.spinning = !app.spinning,
         Message::Pressed(label) => app.pressed = Some(label),
-        Message::ToggleTheme => app.dark = !app.dark,
+        Message::HoverSource(title) => app.hovered = title,
+        Message::PressSource(title) => app.pressed_source = title,
+        Message::ShowSource { index, title } => {
+            app.pressed_source = None;
+            // The page scrolls to the sample; natively this does nothing.
+            crate::bridge::show(index, title);
+        }
     }
     Task::none()
 }
@@ -113,8 +151,79 @@ fn sample<'a>(label: &'a str, icon: Icon<Message>) -> Element<'a, Message> {
     .into()
 }
 
-fn section<'a>(title: &'a str, body: impl Into<Element<'a, Message>>) -> Element<'a, Message> {
-    column![text(title).size(14.0), body.into()]
+/// A section heading: the title, and the code icon that asks the page for this
+/// sample. Either one is the button, as in Slint's `SourceHeading`, and the icon
+/// is the same 28px box — `primary` at 0.12 with a 0.35 border at rest, 0.22 and
+/// 0.55 on hover, 0.34 and 0.7 while pressed.
+fn heading<'a>(app: &App, index: usize, title: &'static str) -> Element<'a, Message> {
+    let hovered = app.hovered == Some(title);
+    let pressed = app.pressed_source == Some(title);
+
+    let label = mouse_area(
+        container(text(title).size(theme::FONT_SIZE_SM).font(iced::Font {
+            weight: iced::font::Weight::Medium,
+            ..iced::Font::DEFAULT
+        }))
+        .width(Length::Fill)
+        .center_x(Length::Fill)
+        .style(|theme: &Theme| container::Style {
+            text_color: Some(Tokens::of(theme).muted_foreground),
+            ..container::Style::default()
+        }),
+    )
+    .on_press(Message::PressSource(Some(title)))
+    .on_release(Message::ShowSource { index, title });
+
+    let icon = mouse_area(
+        container(
+            svg(svg::Handle::from_memory(CODE_XML))
+                .width(16.0)
+                .height(16.0)
+                .style(|theme: &Theme, _status| svg::Style {
+                    color: Some(Tokens::of(theme).primary),
+                }),
+        )
+        .width(28.0)
+        .height(28.0)
+        .center_x(28.0)
+        .center_y(28.0)
+        .style(move |theme: &Theme| {
+            let primary = Tokens::of(theme).primary;
+            let (fill, line) = if pressed {
+                (0.34, 0.7)
+            } else if hovered {
+                (0.22, 0.55)
+            } else {
+                (0.12, 0.35)
+            };
+            container::Style {
+                background: Some(primary.scale_alpha(fill).into()),
+                border: iced::border::rounded(theme::RADIUS_LG)
+                    .color(primary.scale_alpha(line))
+                    .width(1.0),
+                ..container::Style::default()
+            }
+        }),
+    )
+    .on_enter(Message::HoverSource(Some(title)))
+    .on_exit(Message::HoverSource(None))
+    .on_press(Message::PressSource(Some(title)))
+    .on_release(Message::ShowSource { index, title });
+
+    row![label, icon]
+        .spacing(8.0)
+        .align_y(iced::Alignment::Center)
+        .into()
+}
+
+/// A titled section: the heading row, then the sample it names.
+fn section<'a>(
+    app: &App,
+    index: usize,
+    title: &'static str,
+    body: impl Into<Element<'a, Message>>,
+) -> Element<'a, Message> {
+    column![heading(app, index, title), body.into()]
         .spacing(8)
         .into()
 }
@@ -123,8 +232,8 @@ fn view(app: &App) -> Element<'_, Message> {
     let heart = || Icon::<Message>::new(svg::Handle::from_memory(HEART));
     let star = || Icon::<Message>::new(svg::Handle::from_memory(STAR));
     // The colours: a transparent `.color(..)` follows the theme, and an
-    // explicit token is the caller's own choice, which is why the theme switch
-    // repaints the first and not the second.
+    // explicit token is the caller's own choice, so a theme change repaints the
+    // first and not the second.
     let ink = tokens(app);
 
     // section: Basic Icon
@@ -220,19 +329,16 @@ fn view(app: &App) -> Element<'_, Message> {
     .align_y(iced::Alignment::Center);
 
     // section: end
+    // The one control the demo still owns: the loading icons' clock, which the
+    // spinner section demonstrates. The theme is the application's, so there is
+    // no switch for it here.
     let controls = row![
         iced::widget::button(if app.spinning {
             "Stop the turn"
         } else {
             "Start the turn"
         })
-        .on_press(Message::ToggleSpin),
-        iced::widget::button(if app.dark {
-            "Light theme"
-        } else {
-            "Dark theme"
-        })
-        .on_press(Message::ToggleTheme),
+        .on_press(Message::ToggleSpin)
     ]
     .spacing(8);
 
@@ -251,12 +357,12 @@ fn view(app: &App) -> Element<'_, Message> {
     });
 
     let body = column![
-        section("Basic Icon", basic),
-        section("Icon with Custom Size", sizes),
-        section("Icon with Custom Color", colors),
-        section("Animated Loading Icon", loading),
-        section("Status Icons", status),
-        section("Icon in Button", in_button),
+        section(app, 0, SECTIONS[0], basic),
+        section(app, 1, SECTIONS[1], sizes),
+        section(app, 2, SECTIONS[2], colors),
+        section(app, 3, SECTIONS[3], loading),
+        section(app, 4, SECTIONS[4], status),
+        section(app, 5, SECTIONS[5], in_button),
         controls,
         status_line,
     ]
