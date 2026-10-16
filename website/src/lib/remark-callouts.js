@@ -67,9 +67,15 @@ export function remarkCallouts() {
         if (opener) {
           open = opener;
           const title = opener.title ? `<p class="callout__title">${titleToHtml(opener.title)}</p>` : '';
+          // `remarkFrameworkOnly` marks the opener paragraph when a
+          // `<!-- framework: X -->` line names this container. The mark belongs
+          // on the callout the reader sees, not on the paragraph it is parsed
+          // from, so it moves to the `<aside>` as it is written.
+          const only = node.data?.hProperties?.['data-framework-only'];
+          const framework = only ? ` data-framework-only="${only}"` : '';
           out.push({
             type: 'html',
-            value: `<aside class="callout callout--${opener.type}">${title}`,
+            value: `<aside class="callout callout--${opener.type}"${framework}>${title}`,
           });
           // `:::tip` alone on its line leaves the paragraph empty.
           if (isEmpty(node)) continue;

@@ -162,8 +162,8 @@ function isMdBlank(node) {
 }
 
 // `<!-- framework: gpui -->` before a heading keeps that section on one
-// framework. The marker is removed; the heading and the blocks under it carry
-// `data-framework-only`.
+// framework, and before any other block keeps just that block. The marker is
+// removed; the section — or the one block — carries `data-framework-only`.
 export function remarkFrameworkOnly() {
   return (tree) => {
     const visitNode = (node) => {
@@ -183,7 +183,17 @@ export function remarkFrameworkOnly() {
         let heading = index + 1;
         while (heading < children.length && isMdBlank(children[heading])) heading += 1;
         const head = children[heading];
-        if (!head || head.type !== 'heading') continue;
+        if (!head) continue;
+        if (head.type !== 'heading') {
+          // Not a section: the marker names the one block that follows it. A
+          // callout container is still markdown here — `remarkCallouts` runs
+          // after this plugin — so a note takes the mark on its opener
+          // paragraph, and that plugin moves it onto the `<aside>` it writes.
+          const data = (head.data ??= {});
+          const props = (data.hProperties ??= {});
+          props['data-framework-only'] = framework;
+          continue;
+        }
         let end = heading + 1;
         while (end < children.length) {
           const next = children[end];
