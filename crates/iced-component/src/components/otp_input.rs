@@ -395,6 +395,12 @@ where
         let disabled = disabled || on_edit.is_none();
         let cell = cell_size(size);
         let font_size = size.control_font_size();
+        // The cell's frame is the field itself, so the inset is vertical only —
+        // the horizontal room is the digit's. `Theme.input-padding-x(size)` is
+        // the family's authored inset (`textarea.slint` gives its frame the
+        // value on all four sides); the line box is shortened by the same amount
+        // so the cell's outer height, and the border drawn on it, do not grow.
+        let cell_padding = size.input_padding_x();
 
         let mut cells = row![].spacing(theme::SPACING_SM).align_y(Alignment::Center);
 
@@ -410,14 +416,19 @@ where
             let mut field = text_input("", &shown)
                 .id(cell_id(&id, index))
                 // The cell is the field's own frame, so the field draws text and
-                // border on the whole cell and no padding is spent on a frame
-                // that would hold it. The line box is the cell for the same
-                // reason: the border is drawn on the edge of that box, and a
-                // shorter one would sit inside a cell beside it.
-                .padding(Padding::ZERO)
+                // border on the whole cell and no horizontal padding is spent on
+                // a frame that would hold it. The vertical padding insets the
+                // caret from the cell's top and bottom edge, and the line box is
+                // the cell less that padding, so the border stays on the edge of
+                // the box and the cell beside it does not move.
+                .padding(Padding {
+                    top: cell_padding,
+                    bottom: cell_padding,
+                    ..Padding::ZERO
+                })
                 .width(Length::Fixed(cell))
                 .size(font_size)
-                .line_height(Pixels(cell))
+                .line_height(Pixels(cell - 2.0 * cell_padding))
                 .align_x(Alignment::Center)
                 .secure(masked)
                 .font(Font {
