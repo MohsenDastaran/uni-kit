@@ -450,6 +450,15 @@ where
                 }),
             });
 
+        // The frame is the field's, so its padding is the field's rule: the
+        // horizontal inset is the trigger's own ladder, and the vertical is what
+        // the label's line leaves of the frame (`input::field_inset_y`). Padding
+        // all four sides with `control_padding` left 8px of every trigger height
+        // for a 14-16px label, and iced clipped the label against it at every
+        // size.
+        let inset_x = size.control_padding();
+        let inset_y = input::field_inset_y(size.control_height(), size.control_font_size(), inset_x);
+
         let trigger = container(
             row![
                 text(label)
@@ -470,7 +479,7 @@ where
             .height(Length::Fill)
             .width(Length::Fill),
         )
-        .padding(size.control_padding())
+        .padding([inset_y, inset_x])
         .height(Length::Fixed(size.control_height()))
         .width(width)
         .style(move |theme: &Theme| {
