@@ -1079,6 +1079,23 @@ The trap also cannot occur where a row is **intrinsic** rather than inside a fix
 exempt by construction, and why `menu` items at −2.0 are not defects. Say which components are exempt
 and why, beside the ones you measured.
 
+#### The caret *is* the text bounds, so derive the vertical inset from the line
+
+iced sets `text_bounds.height = min(requested line_height, limits.max)` and draws the caret at exactly
+that height, while the paragraph keeps its own line box and is **clipped to the text bounds**. So a field
+whose padding is too deep does not merely squeeze the caret — it cuts the glyphs. At `small` the family
+had 8px of bounds for a 14px line: letters cut top and bottom, caret 8.
+
+The inset therefore has to be derived, not chosen: the vertical inset is what a line (`font * 1.25`,
+GPUI's `LINE_HEIGHT`) leaves of the frame, floored to whole pixels and capped at the authored horizontal
+inset, and `line_height(height - 2 * inset_y)` then equals the padded inside exactly so iced never
+clamps it. The horizontal inset keeps the authority's value; only the vertical is traded down, and the
+trade is worth naming — a 24px field cannot give 8px above and below and still hold an 18px line.
+
+This is the same knob as the note above from the other side: that one described a caret with no inset,
+this one an inset with no room for the line. Both come from treating the vertical inset as a taste
+decision when it is arithmetic.
+
 #### A `line_height` the height of the frame draws the caret flush to both borders
 
 iced draws the caret at the **text bounds**, so a single-line field that padded horizontally only
