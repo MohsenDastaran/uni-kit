@@ -1,7 +1,8 @@
-//! `message_scroller` — the gallery the page documents: the scroller created and
-//! started at its tail, its rows and the application's own empty state,
-//! appending and follow-tail, prepending earlier history, the unread rule, the
-//! built-in jump control, and the style slots a host can take over.
+//! `message_scroller` — the gallery the page documents: the conversation shell
+//! the reference leads with, the scroller created and started at its tail, its
+//! rows and the application's own empty state, appending and follow-tail,
+//! prepending earlier history, the unread rule, the built-in jump control, and
+//! the style slots a host can take over.
 //!
 //! Run it with `cargo run --example message_scroller`, or in the browser as
 //! `?story=message-scroller` in the gallery the website embeds.
@@ -22,7 +23,9 @@
 //! the composer as an application control placed outside the list. The shell has
 //! no sample heading of its own; the Slint example folds its frame into "create
 //! state" because that is the `GroupBox` the frame sits in, and GPUI does the
-//! same through the page's `SHARED` table.
+//! same through the page's `SHARED` table. It is the demo's first section: the
+//! panel order here is the gallery's, not the page's, and the one example that
+//! shows the whole surface a reader is buying belongs at the top.
 //!
 //! Each section carries a heading the page has — the title, and the code icon
 //! that asks the embedding page to scroll to that sample. Clicking either one
@@ -410,6 +413,139 @@ fn view(app: &App) -> Element<'_, Message> {
     // index; the toggle moves it.
     let unread_index = app.unread.then_some(app.turns.len() / 2);
 
+    // section: Virtualization, accessibility, and application boundaries
+    // The first example is the one the reference leads with: the whole
+    // conversation shell. The scroller owns the transcript band and nothing
+    // else. The shell around it — the header with its circular restart, and the
+    // composer with its circular send — is the application's, which is the
+    // boundary this heading documents when it places the composer outside the
+    // list. The rows the scroller draws are unchanged: a sent turn is the muted
+    // bubble at the trailing edge and a received turn is the ghost variant,
+    // which is plain text on the surface with no fill, border, radius or
+    // padding.
+    let restart = Button::new("")
+        .outline()
+        .icon(icon(
+            REFRESH_CW,
+            ControlSize::Medium.icon_size(),
+            |tokens| tokens.foreground,
+        ))
+        .rounded(CIRCLE_RADIUS)
+        .on_press(Message::Restart);
+
+    let header = container(
+        row![
+            column![
+                text("New Chat").size(theme::FONT_SIZE_SM).font(iced::Font {
+                    weight: iced::font::Weight::Semibold,
+                    ..iced::Font::DEFAULT
+                }),
+                line("How can I help you today?", theme::FONT_SIZE_XS, |tokens| {
+                    tokens.muted_foreground
+                }),
+            ]
+            .spacing(theme::SPACING_XS)
+            .width(Length::Fill),
+            restart,
+        ]
+        .spacing(theme::SPACING_SM)
+        .align_y(Axis::Center),
+    )
+    .width(Length::Fill)
+    .padding(SHELL_PADDING);
+
+    let send = Button::new("")
+        .variant(ButtonVariant::Primary)
+        .icon(icon(ARROW_UP, ControlSize::Medium.icon_size(), |tokens| {
+            tokens.primary_foreground
+        }))
+        .rounded(CIRCLE_RADIUS)
+        .on_press(Message::Send);
+
+    // The composer is a borderless field on the muted surface, with the send
+    // control on the trailing edge — GPUI's `Input.appearance(false)` inside a
+    // `rounded_xl()` `bg(muted)` column, and the Slint example's composer.
+    let composer = container(
+        column![
+            Input::new("composer")
+                .value(app.composer.clone())
+                .placeholder("Write a message…")
+                .appearance(false)
+                .on_input(Message::ComposerChanged)
+                .on_submit(Message::Send),
+            container(send).width(Length::Fill).align_x(Axis::End),
+        ]
+        .spacing(theme::SPACING_XS),
+    )
+    .width(Length::Fill)
+    .padding(theme::SPACING_SM)
+    .style(|theme: &Theme| {
+        let tokens = Tokens::of(theme);
+        container::Style {
+            background: Some(tokens.muted.into()),
+            text_color: Some(tokens.foreground),
+            border: iced::border::rounded(theme::RADIUS_XL),
+            ..container::Style::default()
+        }
+    });
+
+    let shell = container(
+        column![
+            header,
+            hairline(),
+            MessageScroller::new(Id::new("shell"), app.turns.clone())
+                .unread_index(unread_index)
+                .scrolled_up(scrolled_up)
+                .on_scroll({
+                    let flag = app.scrolled_up.clone();
+                    move |scrolled_up| {
+                        flag.set(scrolled_up);
+                        Message::Scrolled(scrolled_up)
+                    }
+                })
+                .on_jump(Message::JumpTo("shell")),
+            container(composer).width(Length::Fill).padding(Padding {
+                top: 0.0,
+                right: SHELL_PADDING,
+                bottom: SHELL_PADDING,
+                left: SHELL_PADDING,
+            }),
+        ]
+        // The column owns the frame's height so the transcript band, a `Fill`
+        // child, receives the space the header and composer leave.
+        .height(Length::Fill),
+    )
+    .width(SHELL_WIDTH)
+    .height(SHELL_HEIGHT)
+    .clip(true)
+    .style(|theme: &Theme| {
+        let tokens = Tokens::of(theme);
+        container::Style {
+            background: Some(tokens.background.into()),
+            text_color: Some(tokens.foreground),
+            border: iced::border::rounded(theme::RADIUS_XL)
+                .color(tokens.border)
+                .width(1.0),
+            ..container::Style::default()
+        }
+    });
+
+    let boundaries = column![
+        row![
+            Button::new("Append").on_press(Message::Received),
+            Button::new("Prepend history").on_press(Message::Prepend),
+        ]
+        .spacing(theme::SPACING_SM),
+        line(
+            "the scroller owns the transcript band; the header, the composer and \
+             their controls are the application's",
+            theme::FONT_SIZE_XS,
+            |tokens| tokens.muted_foreground,
+        ),
+        shell,
+    ]
+    .spacing(theme::SPACING_MD);
+
     // section: Create state and choose the starting position
     // iced has no separate state entity: the id names the region, so a caller's
     // own jump control can pass it to `jump_to_end`, and the turns are the
@@ -563,137 +699,6 @@ fn view(app: &App) -> Element<'_, Message> {
         .on_press(Message::JumpTo("slots"));
     let styled = column![slots, latest].spacing(theme::SPACING_SM);
 
-    // section: Virtualization, accessibility, and application boundaries
-    // The scroller owns the transcript band and nothing else. The shell around
-    // it — the header with its circular restart, and the composer with its
-    // circular send — is the application's, which is the boundary this heading
-    // documents when it places the composer outside the list. The rows the
-    // scroller draws are unchanged: a sent turn is the muted bubble at the
-    // trailing edge and a received turn is the ghost variant, which is plain
-    // text on the surface with no fill, border, radius or padding.
-    let restart = Button::new("")
-        .outline()
-        .icon(icon(
-            REFRESH_CW,
-            ControlSize::Medium.icon_size(),
-            |tokens| tokens.foreground,
-        ))
-        .rounded(CIRCLE_RADIUS)
-        .on_press(Message::Restart);
-
-    let header = container(
-        row![
-            column![
-                text("New Chat").size(theme::FONT_SIZE_SM).font(iced::Font {
-                    weight: iced::font::Weight::Semibold,
-                    ..iced::Font::DEFAULT
-                }),
-                line("How can I help you today?", theme::FONT_SIZE_XS, |tokens| {
-                    tokens.muted_foreground
-                }),
-            ]
-            .spacing(theme::SPACING_XS)
-            .width(Length::Fill),
-            restart,
-        ]
-        .spacing(theme::SPACING_SM)
-        .align_y(Axis::Center),
-    )
-    .width(Length::Fill)
-    .padding(SHELL_PADDING);
-
-    let send = Button::new("")
-        .variant(ButtonVariant::Primary)
-        .icon(icon(ARROW_UP, ControlSize::Medium.icon_size(), |tokens| {
-            tokens.primary_foreground
-        }))
-        .rounded(CIRCLE_RADIUS)
-        .on_press(Message::Send);
-
-    // The composer is a borderless field on the muted surface, with the send
-    // control on the trailing edge — GPUI's `Input.appearance(false)` inside a
-    // `rounded_xl()` `bg(muted)` column, and the Slint example's composer.
-    let composer = container(
-        column![
-            Input::new("composer")
-                .value(app.composer.clone())
-                .placeholder("Write a message…")
-                .appearance(false)
-                .on_input(Message::ComposerChanged)
-                .on_submit(Message::Send),
-            container(send).width(Length::Fill).align_x(Axis::End),
-        ]
-        .spacing(theme::SPACING_XS),
-    )
-    .width(Length::Fill)
-    .padding(theme::SPACING_SM)
-    .style(|theme: &Theme| {
-        let tokens = Tokens::of(theme);
-        container::Style {
-            background: Some(tokens.muted.into()),
-            text_color: Some(tokens.foreground),
-            border: iced::border::rounded(theme::RADIUS_XL),
-            ..container::Style::default()
-        }
-    });
-
-    let shell = container(
-        column![
-            header,
-            hairline(),
-            MessageScroller::new(Id::new("shell"), app.turns.clone())
-                .unread_index(unread_index)
-                .scrolled_up(scrolled_up)
-                .on_scroll({
-                    let flag = app.scrolled_up.clone();
-                    move |scrolled_up| {
-                        flag.set(scrolled_up);
-                        Message::Scrolled(scrolled_up)
-                    }
-                })
-                .on_jump(Message::JumpTo("shell")),
-            container(composer).width(Length::Fill).padding(Padding {
-                top: 0.0,
-                right: SHELL_PADDING,
-                bottom: SHELL_PADDING,
-                left: SHELL_PADDING,
-            }),
-        ]
-        // The column owns the frame's height so the transcript band, a `Fill`
-        // child, receives the space the header and composer leave.
-        .height(Length::Fill),
-    )
-    .width(SHELL_WIDTH)
-    .height(SHELL_HEIGHT)
-    .clip(true)
-    .style(|theme: &Theme| {
-        let tokens = Tokens::of(theme);
-        container::Style {
-            background: Some(tokens.background.into()),
-            text_color: Some(tokens.foreground),
-            border: iced::border::rounded(theme::RADIUS_XL)
-                .color(tokens.border)
-                .width(1.0),
-            ..container::Style::default()
-        }
-    });
-
-    let boundaries = column![
-        row![
-            Button::new("Append").on_press(Message::Received),
-            Button::new("Prepend history").on_press(Message::Prepend),
-        ]
-        .spacing(theme::SPACING_SM),
-        line(
-            "the scroller owns the transcript band; the header, the composer and \
-             their controls are the application's",
-            theme::FONT_SIZE_XS,
-            |tokens| tokens.muted_foreground,
-        ),
-        shell,
-    ]
-    .spacing(theme::SPACING_MD);
-
     // section: end
     let status = text(format!(
         "{} turns · {} appended · {} prepended · scrolled up: {}",
@@ -708,26 +713,26 @@ fn view(app: &App) -> Element<'_, Message> {
     });
 
     let gallery = column![
-        heading(app, 0, "Create state and choose the starting position"),
-        starting,
-        heading(app, 1, "Render rows and an empty state"),
-        render,
-        heading(app, 2, "Append, streaming, and follow-tail behavior"),
-        tail,
-        heading(app, 3, "Prepend earlier history"),
-        prepend,
-        heading(app, 4, "Unread and arbitrary navigation"),
-        navigating,
-        heading(app, 5, "Jump-to-latest controls"),
-        jumping,
-        heading(app, 6, "Scrollbar and style slots"),
-        styled,
         heading(
             app,
-            7,
+            0,
             "Virtualization, accessibility, and application boundaries"
         ),
         boundaries,
+        heading(app, 1, "Create state and choose the starting position"),
+        starting,
+        heading(app, 2, "Render rows and an empty state"),
+        render,
+        heading(app, 3, "Append, streaming, and follow-tail behavior"),
+        tail,
+        heading(app, 4, "Prepend earlier history"),
+        prepend,
+        heading(app, 5, "Unread and arbitrary navigation"),
+        navigating,
+        heading(app, 6, "Jump-to-latest controls"),
+        jumping,
+        heading(app, 7, "Scrollbar and style slots"),
+        styled,
         status,
     ]
     .spacing(PAGE)
