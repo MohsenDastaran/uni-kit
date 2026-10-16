@@ -180,6 +180,15 @@ impl<'a, Message> Input<'a, Message> {
         }
     }
 
+    /// The frame's vertical inset at this size, from [`field_inset_y`].
+    fn inset_y(&self) -> f32 {
+        field_inset_y(
+            self.height(),
+            self.size.input_font_size(),
+            self.size.input_padding_x(),
+        )
+    }
+
     /// The gap between the slots: `spacing-xs` at the two small sizes and
     /// `spacing-sm` above them, as the Slint layout sets it.
     fn gap(&self) -> f32 {
@@ -290,6 +299,28 @@ impl Default for Style {
     }
 }
 
+/// The frame's vertical inset for a field-shaped control.
+///
+/// The field's frame gives the text its padding and iced draws the caret at the
+/// text bounds, so the padding is part of the caret's geometry: the line box is
+/// the frame less this inset on both sides, and the caret is the line box. A
+/// field has to spend its height on the text before it spends it on padding — a
+/// 24px field cannot hold an 18px line between two 8px insets — so the vertical
+/// inset is what the line leaves of `height`, floored to a whole pixel and
+/// capped at the authored horizontal inset `inset_x`. The horizontal inset stays
+/// the authority's at every size (`Theme.input-padding-x`); only the vertical
+/// one is traded down, and only where the line needs the room.
+///
+/// `input.rs` is the field's authority, so the rule lives here: `select`,
+/// `combobox`, `date_picker` and `otp_input` build the same frame from their
+/// own size ladders, and each passes its height, its font and its horizontal
+/// inset rather than a copy of the arithmetic.
+pub(crate) fn field_inset_y(height: f32, font_size: f32, inset_x: f32) -> f32 {
+    // GPUI's `LINE_HEIGHT`, `Rems(1.25)`, rounded up to a whole pixel.
+    let line = (font_size * 1.25).ceil();
+    ((height - line) / 2.0).floor().min(inset_x).max(0.0)
+}
+
 impl<'a, Message> From<Input<'a, Message>> for Element<'a, Message>
 where
     Message: Clone + 'a,
@@ -297,6 +328,7 @@ where
     fn from(control: Input<'a, Message>) -> Self {
         let height = control.height();
         let inset = control.size.input_padding_x();
+        let inset_y = control.inset_y();
         let gap = control.gap();
         let font_size = control.size.input_font_size();
         let width = control.width;
@@ -311,16 +343,17 @@ where
             // text and selection inside them.
             .padding(Padding::ZERO)
             .size(font_size)
-            // A line box as tall as the control: iced sizes a text input from its
-            // line height, and the default would leave the click target one line
-            // tall in the middle of the frame. The unit matters — a bare `f32` is
-            // a *multiple* of the font size, so `30.0` is a thirty-line box and
-            // the text is drawn outside the field. `Pixels` is the absolute
-            // height, which is what the size ladder means. It is deliberately
-            // taller than the frame's padded inside, so iced clamps it to that
-            // inside and the caret comes out inset by the frame's padding instead
-            // of running the frame's full height.
-            .line_height(Pixels(height - 2.0))
+            // A line box as tall as the frame's padded inside, so the field is
+            // the whole click target. iced sizes a text input from its line
+            // height, and the default would leave the target one line tall in the
+            // middle of the frame. The unit matters — a bare `f32` is a
+            // *multiple* of the font size, so `30.0` is a thirty-line box and the
+            // text is drawn outside the field. `Pixels` is the absolute height,
+            // which is what the size ladder means. It equals the inside exactly,
+            // so iced never clamps it: the caret is the line box, already inset
+            // by the frame's vertical padding rather than running its full
+            // height, and no line box is taller than the text box it sits in.
+            .line_height(Pixels(height - 2.0 * inset_y))
             .secure(secure)
             .align_x(align_x)
             .style(move |theme: &Theme, status| {
@@ -367,16 +400,17 @@ where
         }
 
         container(contents)
-            // The padding is all four sides, `Theme.input-padding-x(size)`, the
-            // same inset `textarea.slint` gives its frame — the horizontal inset
-            // and the vertical inset are one value in the family's authority.
-            // The field's line box below is a line taller than the inside, so
-            // iced clamps it to the padded content box: the caret is inset from
-            // the frame's edge by this padding instead of running its full
-            // height, and the row is still `Fill` and centred, so the text and
-            // the placeholder do not move. The outer height is `Fixed` and does
-            // not change.
-            .padding(inset)
+            // The horizontal inset is the authority's, `Theme.input-padding-x`
+            // for the size. The vertical one is what the text line leaves of the
+            // frame, capped at the horizontal value — see [`field_inset_y`]. It
+            // is smaller than the horizontal at every size, and smallest at
+            // `small`, where a 24px frame has only 18px to give the text; padding
+            // all four sides with `input_padding_x` there left 8px for a 14px
+            // linebox, which is the clipped text and shrunken caret this ladder
+            // replaces. The field's line box is the inside less the same inset,
+            // so the caret is inset from the frame's edge, the row is `Fill` and
+            // centred, and the outer height is `Fixed` and does not change.
+            .padding([inset_y, inset])
             .height(Length::Fixed(height))
             .width(width)
             .style(move |theme: &Theme| style.resolve(Tokens::of(theme)))
