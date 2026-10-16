@@ -21,12 +21,12 @@
 //! those gaps in its own module rather than faking them here.
 
 use iced::time::Duration;
-use iced::widget::{column, container, row, scrollable, svg, text, Space};
-use iced::{Alignment, Element, Length, Task, Theme};
+use iced::widget::{column, container, row, scrollable, svg, text};
+use iced::{Alignment, Element, Length, Padding, Task, Theme};
 
 use crate::components::button::{Button, Variant};
 use crate::components::group_box::{self, GroupBox};
-use crate::components::hover_card::HoverCard;
+use crate::components::hover_card::{HoverCard, Side};
 use crate::components::theme::{self, Tokens};
 
 /// The page padding and the gap between sections, as the Slint example sets them.
@@ -155,6 +155,18 @@ fn trigger<'a>(label: &'static str) -> Button<'a, Message> {
     Button::new(label).variant(Variant::Link)
 }
 
+/// One cell of the positioning cluster: a trigger centred in a fixed box, so
+/// the four sit on a known grid and each card has room on its own side.
+fn cell<'a>(card: HoverCard<'a, Message>) -> Element<'a, Message> {
+    const CELL: (f32, f32) = (240.0, 120.0);
+    container(card)
+        .width(Length::Fixed(CELL.0))
+        .height(Length::Fixed(CELL.1))
+        .align_x(Alignment::Center)
+        .align_y(Alignment::Center)
+        .into()
+}
+
 fn view(app: &App) -> Element<'_, Message> {
     // section: Hover
     // The whole component: a trigger, a title and a description. The card opens
@@ -195,19 +207,53 @@ fn view(app: &App) -> Element<'_, Message> {
     .align_x(Alignment::Start);
 
     // section: Positioning
-    // The card follows its host. The shared placement rule puts it under the
-    // trigger and flips it above when the frame has no room below.
-    let positioning = row![
-        HoverCard::new(trigger("Left"))
-            .title("Start")
-            .description("Anchored to this trigger."),
-        Space::new().width(Length::Fill),
-        HoverCard::new(trigger("Right"))
-            .title("End")
-            .description("Anchored to the trailing trigger."),
-    ]
+    // The four sides, top, right, left and bottom, in a centred cluster with
+    // room on every side. Each card prefers the side it is given and only flips
+    // to the opposite one when the frame has no room for it, so the cluster
+    // leaves enough space around each trigger for its card to open where it says.
+    let positioning = container(
+        column![
+            row![
+                cell(
+                    HoverCard::new(trigger("Top"))
+                        .placement(Side::Top)
+                        .title("Above")
+                        .description("Prefers the side above.")
+                ),
+                cell(
+                    HoverCard::new(trigger("Right"))
+                        .placement(Side::Right)
+                        .title("Right")
+                        .description("Prefers the side to the right.")
+                ),
+            ]
+            .spacing(theme::SPACING_XXL),
+            row![
+                cell(
+                    HoverCard::new(trigger("Left"))
+                        .placement(Side::Left)
+                        .title("Left")
+                        .description("Prefers the side to the left.")
+                ),
+                cell(
+                    HoverCard::new(trigger("Bottom"))
+                        .placement(Side::Bottom)
+                        .title("Below")
+                        .description("Prefers the side below.")
+                ),
+            ]
+            .spacing(theme::SPACING_XXL),
+        ]
+        .spacing(theme::SPACING_LG),
+    )
     .width(Length::Fill)
-    .align_y(Alignment::Center);
+    .align_x(Alignment::Center)
+    .padding(Padding {
+        top: 48.0,
+        bottom: 48.0,
+        left: 0.0,
+        right: 0.0,
+    });
 
     // section: end
     let status = text("Press a heading or its code icon — the page scrolls to that sample.");
