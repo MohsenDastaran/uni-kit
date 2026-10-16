@@ -2303,6 +2303,12 @@ html:not([data-framework="gpui"])
   object-fit: contain;
 }
 
+.framework-switch__logo--pnpm {
+  width: 1.15rem;
+  height: 0.85rem;
+  object-fit: contain;
+}
+
 html.dark .framework-switch__logo-accent {
   fill: #419cff;
 }

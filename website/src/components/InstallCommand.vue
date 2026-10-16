@@ -339,11 +339,19 @@ async function copy() {
           :tabindex="manager === name ? 0 : -1"
           @click="select(name)"
         >
-          <!-- Bun's mark is the mascot, so it is an image rather than a path. -->
+          <!-- Bun's mark is the mascot, and pnpm ships a wordmark of its own:
+               each is an image rather than a path. -->
           <img
             v-if="name === 'bun'"
             class="framework-switch__logo framework-switch__logo--bun"
             :src="`${baseUrl}bun.png`"
+            alt=""
+            aria-hidden="true"
+          />
+          <img
+            v-else-if="name === 'pnpm'"
+            class="framework-switch__logo framework-switch__logo--pnpm"
+            :src="`${baseUrl}pnpm.svg`"
             alt=""
             aria-hidden="true"
           />
