@@ -1,5 +1,5 @@
-//! The framed region a modal surface puts its controls in, and the place where
-//! the region's behaviour would live. Mirrors GPUI Component's `FocusTrap`
+//! The framed region a modal surface puts its controls in, and the trap that
+//! keeps `Tab` inside it. Mirrors GPUI Component's `FocusTrap`
 //! (`FocusTrapContainer` / `FocusTrapElement`, with `FocusTrapManager`
 //! installed by `focus_trap::init`) and the Slint `focus-trap.slint` beside it.
 //!
@@ -21,35 +21,36 @@
 //! component is the panel inside it. The gallery's "Custom Modal with Focus
 //! Trap" section is that shape.
 //!
-//! # What iced 0.14 has no way to express
+//! # The trap
 //!
-//! The name says what this file would be in GPUI, and the honest thing is to say
-//! that the trapped half is missing rather than draw a flag that does nothing:
+//! iced 0.14 binds no key to focus movement: nothing but `combo_box` names
+//! `Tab`, and there is no focus scope a container can hold. What it does have
+//! is a `focusable` *operation* — `focusable::find_focused`, `focus` and the
+//! rest — run from a [`Task`], and a widget `update` that is handed **every**
+//! runtime event, not only the keys a focused control passes on: the runtime
+//! walks the whole tree for each event, and `text_input` gates on its own
+//! `is_focused` rather than on delivery. [`tab`] uses both — it reads the
+//! focused id, steps through the region that holds it, and focuses the result,
+//! all in one `Task`. The application's whole part is routing `Tab`/`Shift+Tab`
+//! to it from a subscription, because iced leaves those keys unbound.
 //!
-//! - **No focus scope, and no Tab at all.** GPUI's `FocusTrapContainer` registers
-//!   a container with a global manager and `Root` intercepts Tab/Shift-Tab,
-//!   cycling within the container. iced has a `focusable` *operation*
-//!   (`operation::focusable::focus_next`) but no focus handle a widget can hold,
-//!   no way to scope an operation to a subtree, and no runtime key that moves
-//!   focus: nothing in iced 0.14 names `Tab` except `combo_box`, which is why
-//!   its list closes on one. So a trap cannot be written here, and the
-//!   application cannot write one either over this region: a `Stack` layer is
-//!   still an ordinary widget, and Tab reaches the page behind it. Focus is not
-//!   moved into the region and is not returned to the trigger when it closes.
-//! - **No `enabled` flag.** Slint's `enabled` gates the `FocusScope`; there is no
-//!   scope to gate. A property that drew the same region either way would be
-//!   pretending.
-//! - **No `escaped` callback.** The Slint `FocusScope` catches Escape and calls
-//!   it. An in-flow widget is handed a key only by a focused control, and iced's
-//!   field consumes the keys it handles without bubbling them out, so the
-//!   component would never hear the key. Escape stays the application's
-//!   subscription, exactly as [`dialog`](super::dialog) and `date_picker` say
-//!   for the keys their layers cannot take.
+//! [`FocusTrap::focusable`] names the region's members in reading order, and
+//! [`tab`] wraps at the ends, so focus cannot walk out of the region. Two
+//! regions are passed together and the one holding focus wins, which keeps side
+//! by side traps independent. [`enter`] is the move the region makes when it
+//! opens; [`focused`] reports what to return focus to when it closes.
 //!
-//! The result is the frame without the trap. Where a caller needs containment
-//! today, iced's own `text_input` is the only focusable that cycles at all, and a
-//! single-field surface is the one case Tab cannot leave; the component page
-//! names the gap rather than showing a sample that would mislead.
+//! What is still missing, and named rather than faked:
+//!
+//! - **No focus ring.** iced 0.14 draws none, so a move is proved by typing:
+//!   the text lands in the field that took focus.
+//! - **No `escaped` callback.** A widget's `update` cannot publish a focus
+//!   operation, only messages and redraw requests, so Escape stays the
+//!   application's subscription, exactly as [`dialog`](super::dialog) and
+//!   `date_picker` say for the keys their layers cannot take.
+//! - **No `enabled` flag.** Slint's `enabled` gates the `FocusScope`; here the
+//!   application chooses whether to route `Tab` at all, and a property that drew
+//!   the same region either way would be pretending.
 
 // An application installs the components it uses, so the parts of this file it
 // does not call are not dead code in the way the compiler means — the file is a
@@ -57,8 +58,9 @@
 // gets a warning for each one it does not want.
 #![allow(dead_code)]
 
-use iced::widget::{column, container};
-use iced::{Border, Color, Element, Length, Shadow, Theme};
+use iced::advanced::widget::operation::{Focusable, Operation, Outcome};
+use iced::widget::{Id, column, container, operation};
+use iced::{Border, Color, Element, Length, Rectangle, Shadow, Task, Theme};
 
 use super::theme::{self, Tokens};
 
@@ -69,13 +71,14 @@ const PADDING: f32 = 16.0;
 /// spacing.
 const SPACING: f32 = 12.0;
 
-/// The region a focus trap would guard, built with the methods below.
+/// The region a focus trap guards, built with the methods below.
 ///
 /// It becomes an [`Element`] through `From`, and what it becomes is the framed
 /// column: every child stacked at the reference's 12px gap, inside its 16px
 /// inset and one-pixel `border` edge.
 pub struct FocusTrap<'a, Message> {
     children: Vec<Element<'a, Message>>,
+    focusables: Vec<Id>,
     style: Box<dyn Fn(&Theme) -> Style + 'a>,
 }
 
@@ -84,6 +87,7 @@ impl<'a, Message: 'a> FocusTrap<'a, Message> {
     pub fn new() -> Self {
         Self {
             children: Vec::new(),
+            focusables: Vec::new(),
             style: Box::new(|theme: &Theme| Style::resolve(Tokens::of(theme))),
         }
     }
@@ -94,6 +98,21 @@ impl<'a, Message: 'a> FocusTrap<'a, Message> {
     pub fn child(mut self, child: impl Into<Element<'a, Message>>) -> Self {
         self.children.push(child.into());
         self
+    }
+
+    /// Name one focusable child, in reading order. [`tab`] walks these ids and
+    /// wraps at the end, so the region's membership is declared beside its
+    /// children. A child whose `Id` is not named here is drawn but is not part
+    /// of the trap, and a button is not focusable in iced 0.14 at all.
+    pub fn focusable(mut self, id: impl Into<Id>) -> Self {
+        self.focusables.push(id.into());
+        self
+    }
+
+    /// The focusables this region traps, in the order
+    /// [`focusable`](Self::focusable) named them.
+    pub fn focusables(&self) -> &[Id] {
+        &self.focusables
     }
 
     /// The region's surface and edge. `Style::resolve` is the default, so a
@@ -110,7 +129,9 @@ impl<'a, Message: 'a> FocusTrap<'a, Message> {
 
     /// The region, ready to place — over a page, or centered on a modal layer.
     fn into_element(self) -> Element<'a, Message> {
-        let Self { children, style } = self;
+        let Self {
+            children, style, ..
+        } = self;
 
         let body = column(children).spacing(SPACING).width(Length::Fill);
 
@@ -131,6 +152,143 @@ impl<'a, Message: 'a> Default for FocusTrap<'a, Message> {
 impl<'a, Message: 'a> From<FocusTrap<'a, Message>> for Element<'a, Message> {
     fn from(trap: FocusTrap<'a, Message>) -> Self {
         trap.into_element()
+    }
+}
+
+/// The id of the focusable that currently holds focus, or `None`.
+///
+/// iced's own `find_focused` finishes with nothing when no widget is focused,
+/// which a caller cannot tell apart from a query that never ran; this operation
+/// always reports, so a trap can open on a page where nothing was focused and
+/// still know there is nothing to return to.
+pub fn focused() -> Task<Option<Id>> {
+    iced::advanced::widget::operate(FindFocused { focused: None })
+}
+
+/// The [`focused`] query: reports the focused id even when it is `None`.
+struct FindFocused {
+    focused: Option<Id>,
+}
+
+impl Operation<Option<Id>> for FindFocused {
+    fn traverse(&mut self, operate: &mut dyn FnMut(&mut dyn Operation<Option<Id>>)) {
+        operate(self);
+    }
+
+    fn focusable(
+        &mut self,
+        id: Option<&Id>,
+        _bounds: Rectangle,
+        state: &mut dyn Focusable,
+    ) {
+        if state.is_focused() {
+            if let Some(id) = id {
+                self.focused = Some(id.clone());
+            }
+        }
+    }
+
+    fn finish(&self) -> Outcome<Option<Id>> {
+        Outcome::Some(self.focused.clone())
+    }
+}
+
+/// The id `Tab` moves to inside one region, or `None` for an empty region.
+///
+/// `focused` is the id that currently holds focus. An id that is not in
+/// `focusables` enters the region at its first focusable — or its last, when
+/// `backwards` is `Shift+Tab` — and at either end the walk wraps. That wrap is
+/// the whole of the containment.
+pub fn step(focusables: &[Id], focused: Option<&Id>, backwards: bool) -> Option<Id> {
+    if focusables.is_empty() {
+        return None;
+    }
+
+    let index = focused
+        .and_then(|focused| focusables.iter().position(|id| id == focused));
+
+    let next = match index {
+        None if backwards => focusables.len() - 1,
+        None => 0,
+        Some(0) if backwards => focusables.len() - 1,
+        Some(index) if backwards => index - 1,
+        Some(index) if index + 1 == focusables.len() => 0,
+        Some(index) => index + 1,
+    };
+
+    Some(focusables[next].clone())
+}
+
+/// The whole `Tab` handler: read the focused id from the widget tree, step
+/// through the region that holds it, and focus the result.
+///
+/// The read and the move are one widget operation, so the application keeps no
+/// focus state of its own and needs no message round trip — it returns this
+/// from `update` when `Tab` (or `Shift+Tab`) arrives. `regions` is every active
+/// trap in reading order: the region holding the focused id wins, so two traps
+/// side by side stay independent, and a focused id in no region enters the
+/// first region. One region is the ordinary case.
+///
+/// iced 0.14 binds no key to focus movement, so the key itself is the
+/// application's subscription; what lives here is the trap.
+pub fn tab<Message: Send + 'static>(regions: &[&[Id]], backwards: bool) -> Task<Message> {
+    iced::advanced::widget::operate(Tab {
+        regions: regions.iter().map(|region| region.to_vec()).collect(),
+        backwards,
+        focused: None,
+    })
+    .discard()
+}
+
+/// The [`tab`] operation: collects the focused id, then chains the focus move
+/// that [`step`] chooses. It reports no output of its own, which is why `Tab`
+/// is one tree walk rather than a query and a second round trip.
+struct Tab {
+    regions: Vec<Vec<Id>>,
+    backwards: bool,
+    focused: Option<Id>,
+}
+
+impl Operation<()> for Tab {
+    fn traverse(&mut self, operate: &mut dyn FnMut(&mut dyn Operation<()>)) {
+        operate(self);
+    }
+
+    fn focusable(
+        &mut self,
+        id: Option<&Id>,
+        _bounds: Rectangle,
+        state: &mut dyn Focusable,
+    ) {
+        if state.is_focused() {
+            if let Some(id) = id {
+                self.focused = Some(id.clone());
+            }
+        }
+    }
+
+    fn finish(&self) -> Outcome<()> {
+        let region = self
+            .regions
+            .iter()
+            .find(|region| self.focused.as_ref().is_some_and(|id| region.contains(id)))
+            .or_else(|| self.regions.first());
+
+        match region.and_then(|region| step(region, self.focused.as_ref(), self.backwards)) {
+            Some(id) => Outcome::Chain(Box::new(
+                iced::advanced::widget::operation::focusable::focus(id),
+            )),
+            None => Outcome::None,
+        }
+    }
+}
+
+/// Focus the first focusable of `focusables` — the move a trap makes when its
+/// region opens, so the next `Tab` is already inside it.
+pub fn enter<Message: 'static>(focusables: &[Id]) -> Task<Message> {
+    match focusables.first() {
+        Some(id) => operation::focus(id.clone()),
+        None => Task::none(),
     }
 }
 
