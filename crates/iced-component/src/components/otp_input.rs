@@ -396,11 +396,12 @@ where
         let cell = cell_size(size);
         let font_size = size.control_font_size();
         // The cell's frame is the field itself, so the inset is vertical only —
-        // the horizontal room is the digit's. `Theme.input-padding-x(size)` is
-        // the family's authored inset (`textarea.slint` gives its frame the
-        // value on all four sides); the line box is shortened by the same amount
-        // so the cell's outer height, and the border drawn on it, do not grow.
-        let cell_padding = size.input_padding_x();
+        // the horizontal room is the digit's. The vertical inset is the field's
+        // own rule, `input::field_inset_y`: what the digit's line leaves of the
+        // cell, floored and capped at the authored `Theme.input-padding-x(size)`.
+        // Padding the cell with that value on both sides left 8px of a 24px
+        // `small` cell for a 14px line, and iced clipped the digit against it.
+        let cell_padding = input::field_inset_y(cell, font_size, size.input_padding_x());
 
         let mut cells = row![].spacing(theme::SPACING_SM).align_y(Alignment::Center);
 
