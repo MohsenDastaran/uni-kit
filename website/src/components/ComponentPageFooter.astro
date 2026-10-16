@@ -20,10 +20,18 @@ interface Props {
 
 const { frameworks, previous, next } = Astro.props;
 
+// The two lookups are data, not markup: a framework added to the page's
+// `frameworkAvailable` renders a tile from its key alone. The name is known for
+// the frameworks the site ships and title-cased from the key otherwise; the mark
+// falls back to a lettermark, so an unknown key still gets a whole tile instead
+// of a hole or a crash.
 const NAMES: Record<string, string> = { gpui: 'GPUI', slint: 'Slint', iced: 'Iced' };
-const supported = frameworks
-  .split(/\s+/)
-  .filter((key) => key in NAMES && key in toggleLogos);
+const MARKS = toggleLogos as Record<
+  string,
+  { viewBox: string; paths: { d: string; fill: string; accent?: boolean }[] }
+>;
+const nameOf = (key: string) => NAMES[key] ?? `${key.charAt(0).toUpperCase()}${key.slice(1)}`;
+const supported = frameworks.split(/\s+/).filter(Boolean);
 ---
 
 <div class="component-page-footer" data-pagefind-ignore>
@@ -32,49 +40,57 @@ const supported = frameworks
 
     {supported.length > 1 ? (
       <ul class="framework-support">
-        {supported.map((key) => (
-          <li class="framework-support__item" data-framework-support={key}>
-            {/* A query-only link: it is already the same component, and the
-                framework switch's URL sync only rewrites `a[href^="/"]`, so
-                this one keeps the framework it names instead of being given
-                the one in force. */}
-            <a class="framework-support__link" href={`?framework=${key}`}>
-              <svg
-                class="framework-support__logo"
-                viewBox={toggleLogos[key].viewBox}
-                aria-hidden="true"
-              >
-                {toggleLogos[key].paths.map((path) => (
-                  <path
-                    d={path.d}
-                    fill={path.fill}
-                    class={path.accent ? 'framework-switch__logo-accent' : undefined}
-                  />
-                ))}
-              </svg>
-              <span class="sr-only">Open this component in </span>
-              <span class="framework-support__name">{NAMES[key]}</span>
-              <svg
-                class="framework-support__arrow"
-                width="14"
-                height="14"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                stroke-width="2"
-                stroke-linecap="round"
-                stroke-linejoin="round"
-                aria-hidden="true"
-              >
-                <path d="M5 12h14M13 6l6 6-6 6"></path>
-              </svg>
-            </a>
-          </li>
-        ))}
+        {supported.map((key) => {
+          const mark = MARKS[key];
+          const name = nameOf(key);
+          return (
+            <li class="framework-support__item" data-framework-support={key}>
+              {/* A query-only link: it is already the same component, and the
+                  framework switch's URL sync only rewrites `a[href^="/"]`, so
+                  this one keeps the framework it names instead of being given
+                  the one in force. */}
+              <a class="framework-support__link" href={`?framework=${key}`}>
+                <span class="framework-support__mark" aria-hidden="true">
+                  {mark ? (
+                    <svg class="framework-support__logo" viewBox={mark.viewBox}>
+                      {mark.paths.map((path) => (
+                        <path
+                          d={path.d}
+                          fill={path.fill}
+                          class={path.accent ? 'framework-switch__logo-accent' : undefined}
+                        />
+                      ))}
+                    </svg>
+                  ) : (
+                    <span class="framework-support__initial">{name.charAt(0)}</span>
+                  )}
+                </span>
+                <span class="framework-support__text">
+                  <span class="sr-only">Open this component in </span>
+                  <span class="framework-support__name">{name}</span>
+                </span>
+                <span class="framework-support__arrow" aria-hidden="true">
+                  <svg
+                    width="14"
+                    height="14"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="2"
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                  >
+                    <path d="M5 12h14M13 6l6 6-6 6"></path>
+                  </svg>
+                </span>
+              </a>
+            </li>
+          );
+        })}
       </ul>
     ) : supported.length === 1 ? (
       <p class="framework-support__solo">
-        {NAMES[supported[0]]} is the only framework with this component.
+        {nameOf(supported[0])} is the only framework with this component.
       </p>
     ) : null}
   </section>
@@ -147,18 +163,26 @@ const supported = frameworks
     display: block;
   }
 
+  /* One tile per framework the component has a page in. The list is data — a
+     framework added to `frameworkAvailable` adds a tile — so the row wraps and
+     each tile keeps a card measure rather than being stretched by the count. */
   .framework-support {
     display: flex;
     flex-wrap: wrap;
-    gap: 0.5rem;
+    gap: 0.75rem;
     max-width: none;
     margin: 0.9rem 0 0;
     padding: 0;
     list-style: none;
   }
 
+  /* The tile shares the previous/next card's measure, so the two closing
+     sections keep one column rhythm however many frameworks there are. */
   .framework-support__item {
     display: list-item;
+    flex: 1 1 15rem;
+    min-width: 0;
+    max-width: 22rem;
   }
 
   /* The framework on show is the page the reader is already on: it is left
@@ -169,45 +193,113 @@ const supported = frameworks
     display: none;
   }
 
+  /* Rest is a quiet card: border, page fill, the mark and the name. It lifts
+     one pixel and its fill moves toward the page under the pointer, so the
+     whole tile is the affordance and not just the arrow. */
   .framework-support__link {
-    display: inline-flex;
+    display: flex;
     align-items: center;
-    gap: 0.55rem;
-    padding: 0.5rem 0.7rem 0.5rem 0.65rem;
+    gap: 0.75rem;
+    height: 100%;
+    padding: 0.7rem 0.75rem;
     border: 1px solid var(--border);
     border-radius: var(--radius-card);
     background: var(--card);
     color: var(--foreground);
-    font-size: 0.875rem;
-    font-weight: 560;
-    line-height: 1;
     text-decoration: none;
     transition:
-      background 140ms ease,
-      border-color 140ms ease;
+      background 160ms ease,
+      border-color 160ms ease,
+      box-shadow 160ms ease,
+      transform 160ms ease;
   }
 
   .framework-support__link:hover {
     border-color: var(--border-hover);
     background: var(--secondary);
+    box-shadow: var(--shadow-raise);
     text-decoration: none;
+    transform: translateY(-1px);
+  }
+
+  .framework-support__link:focus-visible {
+    outline: 2px solid var(--brand);
+    outline-offset: 2px;
+  }
+
+  /* The mark sits in its own inset surface, so it reads as the framework's
+     badge rather than a loose glyph, and stays a distinct surface when the
+     tile's fill moves beneath it. */
+  .framework-support__mark {
+    display: inline-flex;
+    flex: none;
+    align-items: center;
+    justify-content: center;
+    width: 2.5rem;
+    height: 2.5rem;
+    border: 1px solid var(--border);
+    border-radius: var(--radius-control);
+    background: var(--secondary);
+    transition:
+      background 160ms ease,
+      border-color 160ms ease;
+  }
+
+  .framework-support__link:hover .framework-support__mark {
+    border-color: var(--border-hover);
+    background: var(--background);
   }
 
   .framework-support__logo {
-    flex: none;
-    width: 1.05rem;
-    height: 1.05rem;
+    width: 1.15rem;
+    height: 1.15rem;
   }
 
+  /* A framework the site does not carry yet still gets its tile: the name's
+     first letter stands in where the lookup has no mark. */
+  .framework-support__initial {
+    color: var(--muted-foreground);
+    font: 620 0.95rem/1 var(--font-mono);
+    text-transform: uppercase;
+  }
+
+  .framework-support__text {
+    display: flex;
+    flex: 1;
+    min-width: 0;
+  }
+
+  .framework-support__name {
+    min-width: 0;
+    font-size: 0.95rem;
+    font-weight: 620;
+    letter-spacing: -0.012em;
+    overflow-wrap: anywhere;
+  }
+
+  /* The arrow is the tile's one visible affordance: a quiet circle at rest
+     that takes the foreground and steps forward under the pointer or keyboard. */
   .framework-support__arrow {
+    display: inline-flex;
     flex: none;
+    align-items: center;
+    justify-content: center;
+    width: 1.9rem;
+    height: 1.9rem;
+    border: 1px solid var(--border);
+    border-radius: 999px;
     color: var(--muted-foreground);
     transition:
-      color 140ms ease,
-      transform 140ms ease;
+      background 160ms ease,
+      border-color 160ms ease,
+      color 160ms ease,
+      transform 160ms ease;
   }
 
-  .framework-support__link:hover .framework-support__arrow {
+  .framework-support__link:hover .framework-support__arrow,
+  .framework-support__link:focus-visible .framework-support__arrow {
+    border-color: var(--border-hover);
+    background: var(--background);
     color: var(--foreground);
     transform: translateX(2px);
   }
@@ -312,10 +404,19 @@ const supported = frameworks
 
   @media (prefers-reduced-motion: reduce) {
     .framework-support__link,
+    .framework-support__mark,
     .framework-support__arrow,
     .component-nav__link,
     .component-nav__arrow {
       transition: none;
+    }
+
+    /* The lift and the nudge are motion; the state they carry is already in
+       the fill, the border and the foreground. */
+    .framework-support__link:hover,
+    .framework-support__link:hover .framework-support__arrow,
+    .framework-support__link:focus-visible .framework-support__arrow {
+      transform: none;
     }
   }
 </style>
