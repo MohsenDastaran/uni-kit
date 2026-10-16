@@ -1,6 +1,9 @@
 //! `menu` — the whole gallery the Slint example shows: a dropdown menu of file
 //! actions, the icon set, the check state, the disabled row, the destructive
-//! row, and the keyboard the menu answers.
+//! row, and the keyboard the menu answers. The last section goes past the Slint
+//! example to the rows GPUI's menu draws — a sub-title, a checked row, a
+//! disabled row, a submenu chevron, a search mark and an external-link mark —
+//! which the Slint `MenuEntry` has no binding for.
 //!
 //! Run it with `cargo run --example menu`, or in the browser as
 //! `?story=menu` in the gallery the website embeds.
@@ -43,17 +46,18 @@ const PAGE: f32 = 24.0;
 
 /// The section headings, in the order the Slint example and the component page
 /// have them. The index is what the page is asked to scroll to.
-const SECTIONS: [&str; 6] = [
+const SECTIONS: [&str; 7] = [
     "Usage",
     "Icons",
     "Check state",
     "Disabled State",
     "Destructive",
     "Keyboard Shortcuts",
+    "Settings Menu with Custom Elements",
 ];
 
 /// One open flag per menu in the gallery, in the order the sections show them.
-const SLOTS: usize = 6;
+const SLOTS: usize = 7;
 
 pub fn run(theme: Theme) -> iced::Result {
     iced::application(boot, update, view)
@@ -285,6 +289,28 @@ fn menu_items(slot: usize) -> Vec<Item> {
             Item::separator(),
             Item::new("Delete project").icon(TRASH).danger(true),
         ],
+        // The rich rows GPUI's menu draws, in one menu: a search row whose
+        // leading mark is the magnifier, a sub-title's second line, a checked
+        // row, a disabled row, a submenu row with its trailing chevron, a
+        // right-aligned shortcut, and an external-link mark. The row at
+        // [`SETTINGS_SELECTED`] is drawn on the accent surface, which is the
+        // selected row GPUI's menu shows.
+        6 => vec![
+            Item::new("Search settings").icon(SEARCH).shortcut("Cmd K"),
+            Item::separator(),
+            Item::new("Appearance")
+                .icon(PALETTE)
+                .subtitle("Light, dark, or match the system"),
+            Item::new("Notifications").icon(BELL).checked(true),
+            Item::new("Beta features")
+                .icon(SPARKLES)
+                .subtitle("Preview builds, off by default")
+                .disabled(true),
+            Item::separator(),
+            Item::new("Advanced").icon(SETTINGS).submenu(true),
+            Item::new("Keyboard shortcuts").icon(KEYBOARD).shortcut("⇧Cmd K"),
+            Item::new("Documentation").icon(BOOK_OPEN).external(true),
+        ],
         _ => vec![
             Item::new("Undo").shortcut("Cmd Z"),
             Item::new("Redo").shortcut("⇧Cmd Z"),
@@ -294,6 +320,12 @@ fn menu_items(slot: usize) -> Vec<Item> {
         ],
     }
 }
+
+/// The row the rich settings menu draws as selected — GPUI's menu always shows
+/// one row on the accent surface. It is the sub-title row, so the selected state
+/// and the second line are visible together; a choice replaces it through
+/// [`Menu::selected`].
+const SETTINGS_SELECTED: usize = 2;
 
 /// The row a step lands on, skipping separators and disabled rows and stopping
 /// at the ends rather than wrapping — the component's own stepping rule, written
@@ -572,6 +604,31 @@ fn view(app: &App) -> Element<'_, Message> {
 
     let keyboard_section = body_box(keyboard);
 
+    // section: Settings Menu with Custom Elements
+    // One row per kind GPUI's menu draws: a search row whose leading mark is the
+    // magnifier, a sub-title's second line (`subtitle`), a check mark
+    // (`checked`), a disabled row, a submenu row's trailing chevron
+    // (`submenu`), a right-aligned shortcut, and an external-link mark
+    // (`external`). `selected` draws the row at `SETTINGS_SELECTED` on the accent
+    // surface until a choice replaces it.
+    let settings = Popover::new(trigger("Open settings"))
+        .open(app.open[6])
+        .panel_width(PANEL_WIDTH)
+        .filled(true)
+        .padding(0.0)
+        .content(
+            Menu::new(menu_items(6))
+                .selected(app.chosen[6].or(Some(SETTINGS_SELECTED)))
+                .highlighted(app.lit(6))
+                .on_chosen(|index| Message::Chosen { slot: 6, index })
+                .on_highlight(move |index| Message::Highlighted { slot: 6, index })
+                .on_leave(move |row| Message::Left { slot: 6, row })
+                .into_element(),
+        )
+        .on_open_change(|open| Message::Opened { slot: 6, open });
+
+    let settings_section = body_box(settings);
+
     // section: end
     // The status names whichever highlight is live: the pointer's hover while it
     // is over a row, otherwise the row a key moved to.
@@ -613,6 +670,8 @@ fn view(app: &App) -> Element<'_, Message> {
         destructive_section,
         heading(app, 5, SECTIONS[5]),
         keyboard_section,
+        heading(app, 6, SECTIONS[6]),
+        settings_section,
         status,
     ]
     .spacing(PAGE)
@@ -644,5 +703,22 @@ const FOLDER: &[u8] = br#"<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 2
 const TRASH: &[u8] = br#"<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18"/><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/></svg>"#;
 
 const ARCHIVE: &[u8] = br#"<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="20" height="5" x="2" y="3" rx="1"/><path d="M4 8v11a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8"/><path d="M10 12h4"/></svg>"#;
+
+// The rich settings section's marks, from the same Lucide set, so the rows read
+// as one icon family down the panel: the search row's magnifier, the settings
+// rows' own marks, and the submenu/disabled rows' icons.
+const SEARCH: &[u8] = br#"<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m21 21-4.34-4.34"/><circle cx="11" cy="11" r="8"/></svg>"#;
+
+const PALETTE: &[u8] = br#"<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22a1 1 0 0 1 0-20 10 9 0 0 1 10 9 5 5 0 0 1-5 5h-2.25a1.75 1.75 0 0 0-1.4 2.8l.3.4a1.75 1.75 0 0 1-1.4 2.8z"/><circle cx="13.5" cy="6.5" r=".5" fill="currentColor"/><circle cx="17.5" cy="10.5" r=".5" fill="currentColor"/><circle cx="6.5" cy="12.5" r=".5" fill="currentColor"/><circle cx="8.5" cy="7.5" r=".5" fill="currentColor"/></svg>"#;
+
+const BELL: &[u8] = br#"<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10.268 21a2 2 0 0 0 3.464 0"/><path d="M3.262 15.326A1 1 0 0 0 4 17h16a1 1 0 0 0 .74-1.673C19.41 13.956 18 12.499 18 8A6 6 0 0 0 6 8c0 4.499-1.411 5.956-2.738 7.326"/></svg>"#;
+
+const SPARKLES: &[u8] = br#"<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11.017 2.814a1 1 0 0 1 1.966 0l1.051 5.558a2 2 0 0 0 1.594 1.594l5.558 1.051a1 1 0 0 1 0 1.966l-5.558 1.051a2 2 0 0 0-1.594 1.594l-1.051 5.558a1 1 0 0 1-1.966 0l-1.051-5.558a2 2 0 0 0-1.594-1.594l-5.558-1.051a1 1 0 0 1 0-1.966l5.558-1.051a2 2 0 0 0 1.594-1.594z"/><path d="M20 2v4"/><path d="M22 4h-4"/><circle cx="4" cy="20" r="2"/></svg>"#;
+
+const SETTINGS: &[u8] = br#"<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9.671 4.136a2.34 2.34 0 0 1 4.659 0 2.34 2.34 0 0 0 3.319 1.915 2.34 2.34 0 0 1 2.33 4.033 2.34 2.34 0 0 0 0 3.831 2.34 2.34 0 0 1-2.33 4.033 2.34 2.34 0 0 0-3.319 1.915 2.34 2.34 0 0 1-4.659 0 2.34 2.34 0 0 0-3.32-1.915 2.34 2.34 0 0 1-2.33-4.033 2.34 2.34 0 0 0 0-3.831A2.34 2.34 0 0 1 6.35 6.051a2.34 2.34 0 0 0 3.319-1.915"/><circle cx="12" cy="12" r="3"/></svg>"#;
+
+const KEYBOARD: &[u8] = br#"<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 8h.01"/><path d="M12 12h.01"/><path d="M14 8h.01"/><path d="M16 12h.01"/><path d="M18 8h.01"/><path d="M6 8h.01"/><path d="M7 16h10"/><path d="M8 12h.01"/><rect width="20" height="16" x="2" y="4" rx="2"/></svg>"#;
+
+const BOOK_OPEN: &[u8] = br#"<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v16"/><path d="M20.001 19A2 2 0 0022 17V5a2 2 0 00-1.999-2L16 3.002A5 5 0 0012 5a5 5 0 00-4-2H4a2 2 0 00-2 2v12a2 2 0 001.999 2H8a5 5 0 014 2 5 5 0 014-2z"/></svg>"#;
 
 const CODE_XML: &[u8] = br#"<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m18 16 4-4-4-4"/><path d="m6 8-4 4 4 4"/><path d="m14.5 4-5 16"/></svg>"#;
