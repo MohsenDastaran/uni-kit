@@ -1087,6 +1087,12 @@ was *exactly* the old step of 24, so tightening the indent to 16 only worked by 
 8 with it — at `s16/c12` the arcs visibly pinch. The indent is arithmetic, not taste, and the next
 person to trim it will break the curves without this note.
 
+There is a **second floor**: `CORNER <= rowHeight / 2`, or a bend is taller than the row it sits in.
+The current values are `rowHeight` 36, per-depth step 12, `CORNER` 6 — exactly 2x the corner and well
+inside half a row. Levels carry their own weight independently of the active state (depth 0 at 600,
+children at 400, active 700 plus the full-colour label, dot and rail), so the outline's structure reads
+without standing in it.
+
 A second lesson from the same footer section: **"data-driven" is a claim about the filters, not the
 markup.** The framework tiles already looped over a list, but a `key in NAMES && key in toggleLogos`
 guard silently dropped any framework without a logo — which is precisely the state a new framework
