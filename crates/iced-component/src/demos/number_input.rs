@@ -21,11 +21,13 @@
 //! card what it could not express:
 //!
 //! - **Keyboard Navigation** is the application's here. iced's field reports text
-//!   and submit only, so `↑`, `↓` and `Escape` are a `keyboard::listen`
-//!   subscription in this demo, not a property of the control; `Enter` is
-//!   `on_submit`; `Tab` and `Shift+Tab` are iced's own focus traversal. iced
-//!   reports no focus to the application either, so the subscription cannot know
-//!   which field is focused and steps the one the card names.
+//!   and submit only, so `↑`, `↓` and `Escape` are an `event::listen_with`
+//!   subscription in this demo, not a property of the control — the field
+//!   captures those keys while focused and `keyboard::listen` reports only ignored
+//!   events; `Enter` is `on_submit`; `Tab` and `Shift+Tab` are iced's own focus
+//!   traversal. iced reports no focus to the application either, so the
+//!   subscription cannot know which field is focused and steps the one the card
+//!   names.
 //! - **Best Practices** is prose, and a widget cannot be prose: the card builds
 //!   the rules the control does enforce — a step, a range and the two bounds — and
 //!   leaves validation, formatting and error copy, which are the application's,
@@ -35,7 +37,7 @@
 //!   programmatic step needs, [`step_value`](crate::components::number_input::step_value)
 //!   and [`shown`](crate::components::number_input::shown).
 
-use iced::widget::{column, container, mouse_area, row, scrollable, svg, text};
+use iced::widget::{Id, column, container, mouse_area, operation, row, scrollable, svg, text};
 use iced::{font, Alignment, Element, Font, Length, Subscription, Task, Theme};
 
 use crate::components::button::Button;
@@ -211,19 +213,22 @@ fn subscription(_app: &App) -> Subscription<Message> {
     // and `clean-on-escape` clears on Escape. iced's field reports text and submit
     // only, so the same keys are an application subscription — one that cannot know
     // which field is focused, because iced does not report that either.
-    iced::keyboard::listen().filter_map(|event| match event {
-        iced::keyboard::Event::KeyPressed {
-            key: iced::keyboard::Key::Named(iced::keyboard::key::Named::ArrowUp),
-            ..
-        } => Some(Message::KeyStep(StepAction::Increment)),
-        iced::keyboard::Event::KeyPressed {
-            key: iced::keyboard::Key::Named(iced::keyboard::key::Named::ArrowDown),
-            ..
-        } => Some(Message::KeyStep(StepAction::Decrement)),
-        iced::keyboard::Event::KeyPressed {
-            key: iced::keyboard::Key::Named(iced::keyboard::key::Named::Escape),
-            ..
-        } => Some(Message::Escape),
+    //
+    // The field **captures** Escape and the arrows while it is focused, and
+    // `keyboard::listen` reports only the events a widget left unhandled, so the
+    // subscription reads them through `event::listen_with`, which sees them
+    // whoever handled them — the route the focus trap's demo takes for `Tab`.
+    iced::event::listen_with(|event, _status, _window| match event {
+        iced::Event::Keyboard(iced::keyboard::Event::KeyPressed { key, .. }) => match key.as_ref() {
+            iced::keyboard::Key::Named(iced::keyboard::key::Named::ArrowUp) => {
+                Some(Message::KeyStep(StepAction::Increment))
+            }
+            iced::keyboard::Key::Named(iced::keyboard::key::Named::ArrowDown) => {
+                Some(Message::KeyStep(StepAction::Decrement))
+            }
+            iced::keyboard::Key::Named(iced::keyboard::key::Named::Escape) => Some(Message::Escape),
+            _ => None,
+        },
         _ => None,
     })
 }
@@ -263,7 +268,13 @@ fn update(app: &mut App, message: Message) -> Task<Message> {
                 api.text = number_input::shown(value);
             }
         }
-        Message::Escape => app.keyboard.text.clear(),
+        Message::Escape => {
+            app.keyboard.text.clear();
+            // Slint's `clean-on-escape` clears and keeps the caret in the field;
+            // iced's field leaves the field as it captures Escape, so the clear
+            // puts focus back.
+            return operation::focus(Id::new("keyboard"));
+        }
         Message::HoverSource(title) => app.hovered = title,
         Message::PressSource(title) => app.pressed_source = title,
         Message::ShowSource { index, title } => {
@@ -526,7 +537,9 @@ fn view(app: &App) -> Element<'_, Message> {
     // and submit only: `↑` and `↓` step through the subscription above, `Escape`
     // clears through it, `Enter` arrives as `on_submit`, and `Tab`/`Shift+Tab` are
     // iced's own focus traversal. iced gives the application no focus report, so
-    // the subscription steps this one field whatever is focused.
+    // the subscription steps this one field whatever is focused. The field
+    // captures these keys itself, so the subscription reads them with
+    // `event::listen_with` rather than `keyboard::listen`.
     let keyboard = column![
         NumberInput::new("keyboard")
             .value(app.keyboard.value)
