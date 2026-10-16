@@ -551,6 +551,14 @@ impl<'a, Message: Clone + 'static> Combobox<'a, Message> {
                 .into(),
         };
 
+        // The frame is the field's, so its padding is the field's rule: the
+        // horizontal inset is the authority's, and the vertical is what the
+        // label's line leaves of the frame (`input::field_inset_y`). Padding all
+        // four sides with `input_padding_x` left 8px of a 24px `small` trigger
+        // for a 14px label, and iced clipped the label against it.
+        let inset_x = size.input_padding_x();
+        let inset_y = input::field_inset_y(size.input_height(), size.input_font_size(), inset_x);
+
         let trigger = container(
             row![
                 text(label)
@@ -571,7 +579,7 @@ impl<'a, Message: Clone + 'static> Combobox<'a, Message> {
             .height(Length::Fill)
             .width(Length::Fill),
         )
-        .padding(size.input_padding_x())
+        .padding([inset_y, inset_x])
         .height(Length::Fixed(size.input_height()))
         .width(width)
         .style(move |theme: &Theme| {
