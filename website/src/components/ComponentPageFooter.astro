@@ -1,0 +1,321 @@
+---
+// The two sections every component page ends with: the frameworks that carry
+// this component, and the previous/next walk through the catalog.
+//
+// Neither source is invented here. The framework list is the page's own
+// `frameworkAvailable` — the same value `generateSidebar` writes for the
+// sidebar rows and the switcher hides them by — and the previous/next pair is
+// cut from the sidebar's own ordered catalog (`componentPages`, which walks
+// `enComponentSidebar`), so the navigation can never disagree with the list
+// beside it.
+import { toggleLogos } from '../lib/toggle-logos.js';
+import type { SidebarItem } from '../lib/sidebar';
+
+interface Props {
+  /** The frameworks the page has a view in, space separated. */
+  frameworks: string;
+  previous?: SidebarItem;
+  next?: SidebarItem;
+}
+
+const { frameworks, previous, next } = Astro.props;
+
+const NAMES: Record<string, string> = { gpui: 'GPUI', slint: 'Slint', iced: 'Iced' };
+const supported = frameworks
+  .split(/\s+/)
+  .filter((key) => key in NAMES && key in toggleLogos);
+---
+
+<div class="component-page-footer" data-pagefind-ignore>
+  <section class="component-page-footer__section">
+    <h2 id="other-frameworks" data-toc-trailing>See this component in other frameworks</h2>
+
+    {supported.length > 1 ? (
+      <ul class="framework-support">
+        {supported.map((key) => (
+          <li class="framework-support__item" data-framework-support={key}>
+            {/* A query-only link: it is already the same component, and the
+                framework switch's URL sync only rewrites `a[href^="/"]`, so
+                this one keeps the framework it names instead of being given
+                the one in force. */}
+            <a class="framework-support__link" href={`?framework=${key}`}>
+              <svg
+                class="framework-support__logo"
+                viewBox={toggleLogos[key].viewBox}
+                aria-hidden="true"
+              >
+                {toggleLogos[key].paths.map((path) => (
+                  <path
+                    d={path.d}
+                    fill={path.fill}
+                    class={path.accent ? 'framework-switch__logo-accent' : undefined}
+                  />
+                ))}
+              </svg>
+              <span class="sr-only">Open this component in </span>
+              <span class="framework-support__name">{NAMES[key]}</span>
+              <svg
+                class="framework-support__arrow"
+                width="14"
+                height="14"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                aria-hidden="true"
+              >
+                <path d="M5 12h14M13 6l6 6-6 6"></path>
+              </svg>
+            </a>
+          </li>
+        ))}
+      </ul>
+    ) : supported.length === 1 ? (
+      <p class="framework-support__solo">
+        {NAMES[supported[0]]} is the only framework with this component.
+      </p>
+    ) : null}
+  </section>
+
+  <section class="component-page-footer__section">
+    <h2 id="previous-next" data-toc-trailing>Previous and next component</h2>
+
+    <nav class="component-nav" aria-label="Component pages">
+      {previous ? (
+        <a
+          class="component-nav__link component-nav__link--previous"
+          href={previous.link}
+          rel="prev"
+        >
+          <svg
+            class="component-nav__arrow"
+            width="16"
+            height="16"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+            aria-hidden="true"
+          >
+            <path d="m15 18-6-6 6-6"></path>
+          </svg>
+          <span class="component-nav__text">
+            <span class="component-nav__direction">Previous</span>
+            <span class="component-nav__name">{previous.text}</span>
+          </span>
+        </a>
+      ) : null}
+
+      {next ? (
+        <a
+          class="component-nav__link component-nav__link--next"
+          href={next.link}
+          rel="next"
+        >
+          <span class="component-nav__text">
+            <span class="component-nav__direction">Next</span>
+            <span class="component-nav__name">{next.text}</span>
+          </span>
+          <svg
+            class="component-nav__arrow"
+            width="16"
+            height="16"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+            aria-hidden="true"
+          >
+            <path d="m9 18 6-6-6-6"></path>
+          </svg>
+        </a>
+      ) : null}
+    </nav>
+  </section>
+</div>
+
+<style>
+  /* The two sections are top-level regions, so they read as the page's own
+     `h2`s; the rules between them are the site's standard heading rule. */
+  .component-page-footer {
+    display: block;
+  }
+
+  .framework-support {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+    max-width: none;
+    margin: 0.9rem 0 0;
+    padding: 0;
+    list-style: none;
+  }
+
+  .framework-support__item {
+    display: list-item;
+  }
+
+  /* The framework on show is the page the reader is already on: it is left
+     out, so the section names only the frameworks that are a real move. */
+  :global(html[data-framework='gpui']) .framework-support__item[data-framework-support='gpui'],
+  :global(html[data-framework='slint']) .framework-support__item[data-framework-support='slint'],
+  :global(html[data-framework='iced']) .framework-support__item[data-framework-support='iced'] {
+    display: none;
+  }
+
+  .framework-support__link {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.55rem;
+    padding: 0.5rem 0.7rem 0.5rem 0.65rem;
+    border: 1px solid var(--border);
+    border-radius: var(--radius-card);
+    background: var(--card);
+    color: var(--foreground);
+    font-size: 0.875rem;
+    font-weight: 560;
+    line-height: 1;
+    text-decoration: none;
+    transition:
+      background 140ms ease,
+      border-color 140ms ease;
+  }
+
+  .framework-support__link:hover {
+    border-color: var(--border-hover);
+    background: var(--secondary);
+    text-decoration: none;
+  }
+
+  .framework-support__logo {
+    flex: none;
+    width: 1.05rem;
+    height: 1.05rem;
+  }
+
+  .framework-support__arrow {
+    flex: none;
+    color: var(--muted-foreground);
+    transition:
+      color 140ms ease,
+      transform 140ms ease;
+  }
+
+  .framework-support__link:hover .framework-support__arrow {
+    color: var(--foreground);
+    transform: translateX(2px);
+  }
+
+  .framework-support__solo {
+    max-width: none;
+    margin: 0.9rem 0 0;
+    color: var(--muted-foreground);
+    line-height: 1.7;
+  }
+
+  .component-nav {
+    display: flex;
+    align-items: stretch;
+    gap: 0.75rem;
+    margin-top: 0.9rem;
+  }
+
+  .component-nav__link {
+    display: flex;
+    flex: 0 1 22rem;
+    align-items: center;
+    gap: 0.65rem;
+    min-width: 0;
+    padding: 0.7rem 0.9rem;
+    border: 1px solid var(--border);
+    border-radius: var(--radius-card);
+    background: var(--card);
+    color: var(--foreground);
+    text-decoration: none;
+    transition:
+      background 140ms ease,
+      border-color 140ms ease;
+  }
+
+  .component-nav__link:hover {
+    border-color: var(--border-hover);
+    background: var(--secondary);
+    text-decoration: none;
+  }
+
+  /* One link at the end of the list still owns its side: the first component
+     has no previous and the last has no next, and the remaining link keeps the
+     edge it would have had. Nothing is disabled or wrapped around. */
+  .component-nav__link--next {
+    margin-left: auto;
+    text-align: right;
+  }
+
+  .component-nav__text {
+    display: flex;
+    flex-direction: column;
+    gap: 0.15rem;
+    min-width: 0;
+  }
+
+  .component-nav__direction {
+    color: var(--muted-foreground);
+    font: 560 0.6875rem/1.2 var(--font-sans);
+    letter-spacing: 0.045em;
+    text-transform: uppercase;
+  }
+
+  .component-nav__name {
+    font-size: 0.9rem;
+    font-weight: 600;
+    letter-spacing: -0.01em;
+    overflow-wrap: anywhere;
+  }
+
+  .component-nav__arrow {
+    flex: none;
+    color: var(--muted-foreground);
+    transition:
+      color 140ms ease,
+      transform 140ms ease;
+  }
+
+  .component-nav__link--previous:hover .component-nav__arrow {
+    color: var(--foreground);
+    transform: translateX(-2px);
+  }
+
+  .component-nav__link--next:hover .component-nav__arrow {
+    color: var(--foreground);
+    transform: translateX(2px);
+  }
+
+  @media (max-width: 640px) {
+    .component-nav {
+      flex-direction: column;
+    }
+
+    .component-nav__link {
+      flex: 1 1 auto;
+    }
+
+    .component-nav__link--next {
+      margin-left: 0;
+    }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .framework-support__link,
+    .framework-support__arrow,
+    .component-nav__link,
+    .component-nav__arrow {
+      transition: none;
+    }
+  }
+</style>

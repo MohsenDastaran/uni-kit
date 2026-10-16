@@ -263,6 +263,54 @@ export function generateSidebar(config: SidebarGeneratorConfig): SidebarItem[] {
   return [rootGroup];
 }
 
+/**
+ * Every component page, in the order the sidebar lists them.
+ *
+ * The sidebar is the reader's own map of the catalog, so the previous/next
+ * navigation on a component page is cut from this list rather than sorted
+ * again: a page that moves in the sidebar moves here, and the two cannot
+ * disagree. Group labels and the catalog's own root link are not pages and are
+ * left out; nested groups are walked in place, so a future catalog directory
+ * keeps its sidebar order too.
+ */
+export function componentPages(sidebar: SidebarItem[]): SidebarItem[] {
+  const pages: SidebarItem[] = [];
+  const walk = (items: SidebarItem[] | undefined) => {
+    for (const item of items ?? []) {
+      if (item.items) walk(item.items);
+      else if (item.link && !item.rootLink) pages.push(item);
+    }
+  };
+  walk(sidebar);
+  return pages;
+}
+
+export interface ComponentNeighbours {
+  current?: SidebarItem;
+  previous?: SidebarItem;
+  next?: SidebarItem;
+}
+
+/**
+ * The component before and after `pathname` in the sidebar's own order. The
+ * ends of the list are honest: the first page has no `previous` and the last
+ * has no `next`, and the caller hides the missing link rather than inventing a
+ * wrap-around or a disabled row.
+ */
+export function componentNeighbours(
+  sidebar: SidebarItem[],
+  pathname: string,
+): ComponentNeighbours {
+  const pages = componentPages(sidebar);
+  const index = pages.findIndex((page) => page.link === pathname);
+  if (index < 0) return {};
+  return {
+    current: pages[index],
+    previous: pages[index - 1],
+    next: pages[index + 1],
+  };
+}
+
 // Pre-generate sidebars at build time.
 //
 // Not `import.meta.url`: Astro rearranges server assets during the build, so

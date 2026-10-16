@@ -192,6 +192,9 @@ function buildHeadings(): TocHeading[] {
       label: headingLabel(el),
       level: Number(el.tagName[1]),
       visible: isVisible(el),
+      // The page's closing sections end the usage region even on the pages
+      // that have no API Reference. They carry the mark in their markup.
+      trailing: el.hasAttribute('data-toc-trailing'),
     });
   }
   return headings;

@@ -13,6 +13,13 @@
 // heading in the region sits one level under it, and an `h4` under one of those
 // sits one level under that. The install bar and the live example are injected
 // by the layout (`TOC_PINS`), so they are pinned rows rather than headings.
+//
+// The page's closing sections — the other frameworks and the previous/next
+// walk — sit after all of that on every component page, including the 45 pages
+// with no `## API Reference` for the usage region to stop at. They carry
+// `data-toc-trailing` (`trailing` here), which ends the region the same way the
+// API reference does, so they read as top-level rows rather than as more
+// children of Usage.
 
 export interface TocHeading {
   id: string;
@@ -23,6 +30,9 @@ export interface TocHeading {
    *  from the mark: `getClientRects()` is empty for a `display: none` section,
    *  which is the same question the browser answers. */
   visible: boolean;
+  /** A heading that closes the page: it ends the usage region even when the
+   *  page has no API reference, so it is a top-level row. */
+  trailing?: boolean;
 }
 
 export interface TocItem {
@@ -53,10 +63,16 @@ export function tocItems(headings: TocHeading[]): TocItem[] {
 
   // The how-to-use region runs from the first content heading to the API
   // reference. `## Usage` names that region; without one (the component index,
-  // the guides) the headings keep their own tag depth.
+  // the guides) the headings keep their own tag depth. A closing section ends
+  // the region as well, so a component page with no API reference still ends
+  // its nesting at the two sections that close the page.
   const usageAt = content.findIndex((heading) => heading.level === 2 && USAGE.test(heading.label));
   const apiAt = content.findIndex((heading) => heading.level === 2 && API_REFERENCE.test(heading.label));
-  const regionEnd = apiAt >= 0 ? apiAt : content.length;
+  const trailingAt = content.findIndex((heading) => heading.trailing === true);
+  const regionEnd = Math.min(
+    apiAt >= 0 ? apiAt : content.length,
+    trailingAt >= 0 ? trailingAt : content.length,
+  );
 
   // A stack of the depth last used at each heading level, so a child sits one
   // deeper than the nearest heading above it — except under `## Usage`, whose

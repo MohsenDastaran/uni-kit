@@ -51,8 +51,54 @@ test('the Usage category leads Import and owns the samples and their h4 subsecti
   assert.deepEqual(items[1], { id: 'import', label: 'Import', href: '#import', depth: 1 });
 });
 
-test('a page without a Usage heading keeps its own tag depth', () => {
+// The page's closing sections — the other frameworks and the previous/next
+// walk — carry `data-toc-trailing`. They end the usage region the way the API
+// reference does, which matters on the 45 component pages that have no API
+// reference: without it they would read as more children of Usage, and with it
+// they are the top-level rows they look like on the page.
+test('a closing section is top-level on a page with no API Reference', () => {
   const items = tocItems([
+    heading({ id: 'import', label: 'Import' }),
+    heading({ id: 'usage', label: 'Usage' }),
+    heading({ id: 'variants', label: 'Variants', level: 3 }),
+    heading({ id: 'other-frameworks', label: 'See this component in other frameworks', trailing: true }),
+    heading({ id: 'previous-next', label: 'Previous and next component', trailing: true }),
+  ]);
+  assert.deepEqual(
+    items.map(({ id, depth }) => [id, depth]),
+    [
+      ['usage', 0],
+      ['import', 1],
+      ['variants', 1],
+      ['other-frameworks', 0],
+      ['previous-next', 0],
+    ],
+  );
+});
+
+test('closing sections follow the API reference at the same top level', () => {
+  const items = tocItems([
+    heading({ id: 'usage', label: 'Usage' }),
+    heading({ id: 'variants', label: 'Variants', level: 3 }),
+    heading({ id: 'api-reference', label: 'API Reference' }),
+    heading({ id: 'calendar-state', label: 'CalendarState', level: 3 }),
+    heading({ id: 'other-frameworks', label: 'See this component in other frameworks', trailing: true }),
+    heading({ id: 'previous-next', label: 'Previous and next component', trailing: true }),
+  ]);
+  assert.deepEqual(
+    items.map(({ id, depth }) => [id, depth]),
+    [
+      ['usage', 0],
+      ['variants', 1],
+      ['api-reference', 0],
+      ['calendar-state', 1],
+      ['other-frameworks', 0],
+      ['previous-next', 0],
+    ],
+  );
+});
+
+test('a page without a Usage heading keeps its own tag depth', () => {  const items = tocItems([
     heading({ id: 'getting-started' }),
     heading({ id: 'install', level: 3 }),
     heading({ id: 'manual', level: 4 }),

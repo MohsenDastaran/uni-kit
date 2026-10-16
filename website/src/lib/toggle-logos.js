@@ -18,6 +18,22 @@ export const toggleLogos = {
       },
     ],
   },
+  iced: {
+    // The same mark the framework selector carries. Its rounded tile is a rect
+    // there; the switch's logo renderer draws paths, so it is a path here, and
+    // both carry the official blue rather than the foreground.
+    viewBox: '35 31 179 171',
+    paths: [
+      {
+        d: 'M91.815 31H162.085A49.815 49.815 0 0 1 211.9 80.815V151.085A49.815 49.815 0 0 1 162.085 200.9H91.815A49.815 49.815 0 0 1 42 151.085V80.815A49.815 49.815 0 0 1 91.815 31Z',
+        fill: '#00A3FF',
+      },
+      {
+        d: 'm182.62 65.747-28.136 28.606-6.13-6.0291 28.136-28.606 6.13 6.0291zm-26.344.218-42.204 42.909-6.13-6.029 42.204-42.909 6.13 6.0291zm-61.648 23.913c5.3254-5.3831 10.65-10.765 21.569-21.867l6.13 6.0291c-10.927 11.11-16.258 16.498-21.587 21.885-4.4007 4.4488-8.8009 8.8968-16.359 16.573l31.977 8.358 25.968-26.402 6.13 6.0292-25.968 26.402 8.907 31.908 42.138-42.087 6.076 6.083-49.109 49.05-45.837-12.628-13.394-45.646 1.7714-1.801c10.928-11.111 16.258-16.499 21.588-21.886zm28.419 70.99-8.846-31.689-31.831-8.32 9.1945 31.335 31.482 8.674zm47.734-56.517 7.122-7.1221-6.08-6.0797-7.147 7.1474-30.171 30.674 6.13 6.029 30.146-30.649z',
+        fill: '#FFFFFF',
+      },
+    ],
+  },
   npx: {
     viewBox: '0 0 24 24',
     paths: [
@@ -51,8 +67,8 @@ export function logoElement(name) {
   const logo = toggleLogos[name];
   // A framework the site has no mark for still belongs in the switch: it is the
   // name that carries the meaning, and the row is built from whatever marks
-  // exist. iced has none yet — an official one can be added to `toggleLogos` and
-  // this picks it up.
+  // exist. Every framework the selector offers has one now, and a new framework
+  // added to `toggleLogos` is picked up here.
   if (!logo) return null;
   return {
     type: 'element',
