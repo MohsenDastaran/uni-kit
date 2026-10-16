@@ -20,8 +20,8 @@ const props = withDefaults(
     title?: string;
   }>(),
   {
-    rowHeight: 48,
-    indent: 16,
+    rowHeight: 36,
+    indent: 12,
     title: 'On this page',
   },
 );
@@ -36,12 +36,12 @@ const RAIL_X = 8;
 // One S-bend is two quarter-arcs, so it spends `CORNER` on each and the
 // horizontal run between them is `indent - 2 * CORNER`. The step must stay at
 // least that wide or the run doubles back and the curve pinches; the corner is
-// scaled with the step (16 = 2 * 8) so the tighter outline still draws clean
+// scaled with the step (12 = 2 * 6) so the tighter outline still draws clean
 // arcs. See the zoomed comparison beside the indent numbers.
-const CORNER = 8;
+const CORNER = 6;
 // The entries share the rail's origin, so this is the rail's own x plus the
 // gap that keeps the dot off the label; depth adds the same indent to both.
-const TEXT_X = RAIL_X + 16;
+const TEXT_X = RAIL_X + 12;
 
 const xOf = (i: number) => RAIL_X + (items.value[i]?.depth ?? 0) * props.indent;
 const yOf = (i: number) => i * props.rowHeight + props.rowHeight / 2;
@@ -420,7 +420,11 @@ watch([active, rowLens], () => resume(), { flush: 'post' });
           <a
             :href="item.href"
             class="toc__entry"
-            :class="{ 'toc__entry--active': i === active }"
+            :class="{
+              'toc__entry--active': i === active,
+              'toc__entry--top': item.depth === 0,
+              'toc__entry--child': item.depth > 0,
+            }"
             :style="{ paddingLeft: `${TEXT_X + item.depth * indent}px` }"
             :aria-current="i === active ? 'true' : undefined"
             @click="onSelect($event, i)"

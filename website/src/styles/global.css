@@ -1805,11 +1805,23 @@ html[lang^="ja"] .sidebar-subgroup-title {
   overflow-wrap: break-word;
 }
 
+/* The outline's structure reads from the label weight alone: a top-level
+   entry is heavier than its children, whether or not either is current. */
+.toc--animated .toc__entry--top {
+  font-weight: 600;
+}
+
+.toc--animated .toc__entry--child {
+  font-weight: 400;
+}
+
 /* The dot and the rail mark the current entry as well; the label keeps a
-   second, non-colour cue so the position survives a monochrome reading. */
+   second, non-colour cue so the position survives a monochrome reading. Its
+   own weight sits above both levels, so "where I am" stays legible apart from
+   "this is top-level". */
 .toc--animated .toc__entry--active {
   color: var(--foreground);
-  font-weight: 620;
+  font-weight: 700;
 }
 
 /* Below this the three columns stop fitting inside the content box. */
