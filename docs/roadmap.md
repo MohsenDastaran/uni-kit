@@ -1079,6 +1079,22 @@ The trap also cannot occur where a row is **intrinsic** rather than inside a fix
 exempt by construction, and why `menu` items at −2.0 are not defects. Say which components are exempt
 and why, beside the ones you measured.
 
+#### One fallback serving two page shapes is a bug waiting
+
+The outline's `usageAt < 0 -> tag depth` fallback was right for the guides, the index and `theme`,
+which have no usage region at all — and wrong for the **thirteen component pages that never wrote a
+`## Usage` heading**, where it put their samples at depth 0, beside Usage. That measured as 36 of 228
+page x framework cells and **239 sample rows outside Usage**.
+
+The layout already marks the region: the live-example pin exists only where a page shows an example,
+and `## API Reference` or a trailing heading ends it. So when no *visible* `## Usage` exists but the pin
+is there, the outline now **synthesises** the Usage category and nests the region under it — no markdown
+edited, and the synthetic row is a label rather than a link because anchoring it to a child would
+duplicate an id and break the outline's index map.
+
+The general lesson is worth more than the fix: **a fallback keyed on absence conflates "this page has no
+such region" with "this page forgot to name it"**. Ask which one the caller means before defaulting.
+
 #### An indent has a floor set by its corner radius
 
 The ToC's rail draws one S-bend per depth change as **two quarter-arcs**, so together they advance
