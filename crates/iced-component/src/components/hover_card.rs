@@ -37,9 +37,13 @@
 //! - **Separate open and close delays.** GPUI has both; Slint has one `delay`,
 //!   so this has one, and the close is immediate — the delay is cancelled on the
 //!   event the pointer leaves, which is what the tooltip's state machine does.
-//! - **A placement property.** The card is placed below its trigger by the
-//!   shared rule and flips above when there is no room; the Slint component sets
-//!   `y: host.height + 8px` and no property changes it, so this exposes none.
+//! - **A placement property with Slint's four sides, not GPUI's six anchors.**
+//!   The Slint component pins the card below its host (`y: host.height + 8px`)
+//!   and no property changes it; this port exposes the tooltip's [`Side`] so a
+//!   caller can pin it above, below, left or right, which is what the page's
+//!   Positioning example needs. `Side` is the tooltip's own four-value enum —
+//!   the sides, not GPUI's six corner anchors — and a side without room flips
+//!   to the opposite one by the shared rule.
 
 // An application installs the components it uses, so the parts of this file it
 // does not call are not dead code in the way the compiler means — the file is a
@@ -53,7 +57,11 @@ use iced::{Element, Length, Theme};
 
 use super::popover::PanelStyle;
 use super::theme::{self, Tokens};
-use super::tooltip::{Side, Tooltip};
+use super::tooltip::Tooltip;
+
+/// The side of the trigger the card prefers, re-exported from the
+/// [tooltip](super::tooltip) whose placement rule the card shares.
+pub use super::tooltip::Side;
 
 /// How long the pointer rests on the trigger before the card appears — 280ms,
 /// the Slint component's `delay`. The tooltip's own default is 400ms; a card is
@@ -75,6 +83,7 @@ pub struct HoverCard<'a, Message> {
     trigger: Element<'a, Message>,
     title: String,
     description: String,
+    side: Side,
     delay: Duration,
 }
 
@@ -87,6 +96,7 @@ impl<'a, Message> HoverCard<'a, Message> {
             trigger: trigger.into(),
             title: String::new(),
             description: String::new(),
+            side: Side::Bottom,
             delay: DEFAULT_DELAY,
         }
     }
@@ -102,6 +112,14 @@ impl<'a, Message> HoverCard<'a, Message> {
     /// card's width. Empty draws no line.
     pub fn description(mut self, description: impl Into<String>) -> Self {
         self.description = description.into();
+        self
+    }
+
+    /// The side of the trigger the card prefers. [`Side::Bottom`] by default —
+    /// where the Slint component pins it — and a side without room flips to the
+    /// opposite one by the shared [popover](super::popover) rule.
+    pub fn placement(mut self, side: Side) -> Self {
+        self.side = side;
         self
     }
 
@@ -133,6 +151,7 @@ where
             trigger,
             title,
             description,
+            side,
             delay,
         } = card;
 
@@ -161,11 +180,11 @@ where
             );
         }
 
-        // The card is drawn below the trigger at the Slint width, with the
-        // popover's inset; a card with neither heading nor description has no
-        // label and never opens — the tooltip's `text != ""`.
+        // The card is drawn on the requested side of the trigger at the Slint
+        // width, with the popover's inset; a card with neither heading nor
+        // description has no label and never opens — the tooltip's `text != ""`.
         let mut tooltip = Tooltip::new(trigger)
-            .placement(Side::Bottom)
+            .placement(side)
             .delay(delay)
             .padding(theme::SPACING_MD)
             .panel(panel_surface);
