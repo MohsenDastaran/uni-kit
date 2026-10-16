@@ -14,27 +14,34 @@
 //! runs here. Keep them, one per section, in order, and keep the closing
 //! `// section: end` after the last one.
 //!
-//! The page has seven `###` samples; the Slint example is one region, and three
-//! of them can be drawn here without lying about what iced does. The other four
-//! are named rather than approximated: **Focus Trap with Dialog** and **Focus
-//! Trap with Sheet** would show a trap those components do not have (their own
-//! module comments say so), **Nested Focus Traps** nests nothing when there is
-//! nothing to nest, and **Conditional Focus Trap** would gate a scope that does
-//! not exist. What the sections below can honestly show is the frame the
-//! reference draws, and a custom modal built the way its page builds one.
+//! The page has seven `###` samples. Three are drawn here, and the trap itself
+//! is now one of them: `Tab` and `Shift+Tab` are routed from the subscription
+//! below to `focus_trap::tab`, which reads the focused id, steps through the
+//! region that holds it and wraps at the ends. The modal opens on its first
+//! field and returns focus to whatever held it before, when there was one. The
+//! modal is still a layer in one [`Stack`](iced::widget::Stack) over the
+//! backdrop the caller writes; the trap is the region inside it. The
+//! other four samples are still named rather than approximated: **Focus Trap
+//! with Dialog** and **Focus Trap with Sheet** would show a trap those
+//! components do not have (their own module comments say so), **Nested Focus
+//! Traps** would need the innermost region to win, which a flat list of regions
+//! does not express, and **Conditional Focus Trap** gates a scope iced does not
+//! have.
 //!
-//! The gallery owns the open flag and the field values, because the component
-//! has no state of its own. Every line that would move focus is the
-//! application's: the modal is a layer in one [`Stack`](iced::widget::Stack),
-//! the backdrop asks to close, and Escape is the subscription below — an in-flow
-//! widget is handed no key of its own, as `components/focus_trap.rs` explains.
+//! The key is still the application's, because iced 0.14 binds no key to focus
+//! movement: nothing but `combo_box` names `Tab`. So this file owns the open
+//! flag and the field values, routes `Tab`/`Shift+Tab`/Escape from the
+//! subscription, and remembers what held focus when the modal opened; the
+//! region and its arithmetic live in `components/focus_trap.rs`.
 
 use iced::keyboard;
-use iced::widget::{Space, Stack, column, container, mouse_area, row, scrollable, svg, text};
+use iced::widget::{
+    Id, Space, Stack, column, container, mouse_area, operation, row, scrollable, svg, text,
+};
 use iced::{Alignment, Element, Length, Shadow, Subscription, Task, Theme, Vector};
 
 use crate::components::button::{self, Button};
-use crate::components::focus_trap::{FocusTrap, Style};
+use crate::components::focus_trap::{self, FocusTrap, Style};
 use crate::components::group_box::{self, GroupBox};
 use crate::components::input::Input;
 use crate::components::theme::{self, Tokens};
@@ -48,6 +55,21 @@ const GAP: f32 = 16.0;
 
 /// The custom modal's widest panel.
 const MODAL_MAX_WIDTH: f32 = 360.0;
+
+/// The fields each region traps, in reading order. `Id::new` is `const`, so the
+/// view can name a field on its region and the `Tab` handler can walk the same
+/// id, and the trap cannot drift from the fields it guards. A button is not
+/// focusable in iced 0.14, so an action is never in one of these lists.
+const BASIC_FIELDS: [Id; 2] = [Id::new("first"), Id::new("second")];
+
+/// The one focusable of the first of the side-by-side regions.
+const AREA_ONE_FIELDS: [Id; 1] = [Id::new("area-one")];
+
+/// The one focusable of the second of the side-by-side regions.
+const AREA_TWO_FIELDS: [Id; 1] = [Id::new("area-two")];
+
+/// The modal's fields: the workspace name to confirm, and the reason.
+const MODAL_FIELDS: [Id; 2] = [Id::new("modal-name"), Id::new("modal-reason")];
 
 /// The section headings, in the order the component page's `###` examples have
 /// them. The index is what the page is asked to scroll to.
@@ -73,8 +95,15 @@ struct App {
     /// The two fields of the pair of regions.
     area_one: String,
     area_two: String,
+    /// The custom modal's two fields.
+    modal_name: String,
+    modal_reason: String,
     /// Whether the custom modal's layer is showing.
     modal_open: bool,
+    /// What held focus before the modal opened, so closing can return it. iced
+    /// reports focus to no one, so this is read with `focus_trap::focused` at
+    /// the moment the layer opens.
+    previous_focus: Option<Id>,
     /// The last thing the application did, drawn under the sections.
     note: Option<&'static str>,
     /// Which section heading the pointer is over, and which was pressed, so the
@@ -89,9 +118,16 @@ enum Message {
     Second(String),
     AreaOne(String),
     AreaTwo(String),
+    ModalName(String),
+    ModalReason(String),
     Submitted,
     OpenModal,
     CloseModal,
+    /// The focus report the modal asked for as it opened: what to restore when
+    /// it closes. `None` when nothing was focused.
+    OpenedFrom(Option<Id>),
+    /// `Tab` or `Shift+Tab`: move focus inside the region that holds it.
+    Tab { backwards: bool },
     /// A press on the modal's own panel: it keeps the layer open, which is also
     /// what stops that press reaching the backdrop under it.
     StayOpen,
@@ -112,7 +148,10 @@ fn boot() -> App {
         second: String::new(),
         area_one: String::new(),
         area_two: String::new(),
+        modal_name: String::new(),
+        modal_reason: String::new(),
         modal_open: false,
+        previous_focus: None,
         note: None,
         hovered: None,
         pressed_source: None,
@@ -125,21 +164,48 @@ fn update(app: &mut App, message: Message) -> Task<Message> {
         Message::Second(value) => app.second = value,
         Message::AreaOne(value) => app.area_one = value,
         Message::AreaTwo(value) => app.area_two = value,
+        Message::ModalName(value) => app.modal_name = value,
+        Message::ModalReason(value) => app.modal_reason = value,
         Message::Submitted => {
-            app.note = Some("Submit received. The region drew the press; it never held the focus.");
+            app.note = Some("Submit received. The region drew a press; Tab is what moves it.");
         }
         Message::OpenModal => {
             app.modal_open = true;
             app.note = None;
+            // Ask what holds focus before the layer takes it, so closing can
+            // return it. The answer arrives as `OpenedFrom`.
+            return focus_trap::focused().map(Message::OpenedFrom);
         }
-        Message::CloseModal => app.modal_open = false,
+        Message::OpenedFrom(from) => {
+            app.previous_focus = from;
+            // Move focus into the trap, so the first Tab is already inside it.
+            return focus_trap::enter(&MODAL_FIELDS);
+        }
+        Message::CloseModal => {
+            app.modal_open = false;
+            return restore(app);
+        }
+        // Tab and Shift+Tab are routed here by the subscription. While the
+        // modal is open its region is the only one active, so focus is pulled
+        // into it; otherwise the three regions on the page each hold their own.
+        Message::Tab { backwards } => {
+            return if app.modal_open {
+                focus_trap::tab(&[&MODAL_FIELDS], backwards)
+            } else {
+                focus_trap::tab(
+                    &[&BASIC_FIELDS, &AREA_ONE_FIELDS, &AREA_TWO_FIELDS],
+                    backwards,
+                )
+            };
+        }
         Message::StayOpen => {}
-        // An in-flow layer is handed no key of its own, so Escape is the
+        // iced hands a widget no focus operation, so Escape is the
         // application's — the same binding `components/focus_trap.rs` names.
         Message::Escape => {
             if app.modal_open {
                 app.modal_open = false;
                 app.note = Some("Escape closed the modal; the application heard the key.");
+                return restore(app);
             }
         }
         Message::HoverSource(title) => app.hovered = title,
@@ -153,11 +219,35 @@ fn update(app: &mut App, message: Message) -> Task<Message> {
     Task::none()
 }
 
-/// The key the layer cannot take for itself.
+/// Return focus to whatever held it before the modal opened — the move a trap
+/// makes when it closes. iced reports no focus to the application, so the id
+/// was read with [`focus_trap::focused`] as the layer opened; a modal opened
+/// with a press usually has nothing to return to, because that press already
+/// unfocused every field.
+fn restore(app: &mut App) -> Task<Message> {
+    match app.previous_focus.take() {
+        Some(id) => operation::focus(id),
+        None => Task::none(),
+    }
+}
+
+/// The keys iced leaves unbound: `Tab`, `Shift+Tab` and Escape. iced moves
+/// focus for no key at all, so the trap's driver is this subscription.
+///
+/// It listens through [`event::listen_with`](iced::event::listen_with) rather
+/// than `keyboard::listen`, because a focused field consumes Escape to leave
+/// the field and `keyboard::listen` only reports **ignored** events. The
+/// subscription has to hear the key the field swallowed, or the modal would
+/// never dismiss from the keyboard.
 fn subscription(_app: &App) -> Subscription<Message> {
-    iced::keyboard::listen().filter_map(|event| match event {
-        keyboard::Event::KeyPressed { key, .. } => match key.as_ref() {
+    iced::event::listen_with(|event, _status, _window| match event {
+        iced::Event::Keyboard(keyboard::Event::KeyPressed {
+            key, modifiers, ..
+        }) => match key.as_ref() {
             keyboard::Key::Named(keyboard::key::Named::Escape) => Some(Message::Escape),
+            keyboard::Key::Named(keyboard::key::Named::Tab) => Some(Message::Tab {
+                backwards: modifiers.shift(),
+            }),
             _ => None,
         },
         _ => None,
@@ -251,49 +341,55 @@ fn heading<'a>(app: &App, index: usize, title: &'static str) -> Element<'a, Mess
 fn view(app: &App) -> Element<'_, Message> {
     // section: Basic Focus Trap
     // The Slint example's own region: two fields and an action, stacked at the
-    // reference's 12px gap inside its 16px inset and one-pixel edge. The frame
-    // is all iced can draw of it; the trap is named in the module comment.
+    // reference's 12px gap inside its 16px inset and one-pixel edge. The region
+    // names both fields, so `Tab` wraps second -> first inside it.
     let basic = body_box(
         column![
             FocusTrap::new()
+                .focusable(BASIC_FIELDS[0].clone())
                 .child(
-                    Input::new("first")
+                    Input::new(BASIC_FIELDS[0].clone())
                         .placeholder("First field")
                         .value(app.first.clone())
                         .on_input(Message::First),
                 )
+                .focusable(BASIC_FIELDS[1].clone())
                 .child(
-                    Input::new("second")
+                    Input::new(BASIC_FIELDS[1].clone())
                         .placeholder("Second field")
                         .value(app.second.clone())
                         .on_input(Message::Second),
                 )
                 .child(Button::new("Submit").on_press(Message::Submitted)),
             muted_line(
-                "The frame, the gap and the inset are the reference's. iced 0.14 draws no \
-                 focus scope, so Tab is not held inside it.",
+                "The frame, the gap and the inset are the reference's. iced binds no key, so \
+                 the subscription above drives Tab between these two fields and wraps it here.",
             ),
         ]
         .spacing(8.0),
     );
 
     // section: Multiple Focus Traps
-    // Two regions sharing a row. The page says each trap is independent; in iced
-    // neither holds focus, which is why this is two frames rather than two traps.
+    // Two regions sharing a row, each naming its own field. The region that
+    // holds the focused id is the one `Tab` steps through, so the two traps
+    // stay independent; a button is not focusable in iced, so each one holds
+    // its single field.
     let multiple = body_box(
         column![
             row![
                 FocusTrap::new()
+                    .focusable(AREA_ONE_FIELDS[0].clone())
                     .child(
-                        Input::new("area-one")
+                        Input::new(AREA_ONE_FIELDS[0].clone())
                             .placeholder("Area 1")
                             .value(app.area_one.clone())
                             .on_input(Message::AreaOne),
                     )
                     .child(Button::new("Continue").on_press(Message::Submitted)),
                 FocusTrap::new()
+                    .focusable(AREA_TWO_FIELDS[0].clone())
                     .child(
-                        Input::new("area-two")
+                        Input::new(AREA_TWO_FIELDS[0].clone())
                             .placeholder("Area 2")
                             .value(app.area_two.clone())
                             .on_input(Message::AreaTwo),
@@ -302,7 +398,8 @@ fn view(app: &App) -> Element<'_, Message> {
             ]
             .spacing(GAP),
             muted_line(
-                "Two frames, side by side. The page's two independent traps need a focus API."
+                "Two traps, side by side. Each holds its own field, so Tab stays in the region \
+                 it started in; a button is not focusable in iced 0.14."
             ),
         ]
         .spacing(8.0),
@@ -310,11 +407,16 @@ fn view(app: &App) -> Element<'_, Message> {
 
     // section: Custom Modal with Focus Trap
     // The page's own custom-modal shape: a dimmed full-size backdrop with the
-    // region centered on it, here turned into a panel by the style closure.
+    // region centered on it, here turned into a panel by the style closure. Its
+    // two fields are what the trap holds, and `Tab` cycles them rather than
+    // reaching the page behind.
     let custom_modal = body_box(
         column![
             Button::new("Open Modal").on_press(Message::OpenModal),
-            muted_line("A custom modal: the region is the panel, over a dimmed backdrop."),
+            muted_line(
+                "A custom modal: the region is the panel, over a dimmed backdrop, and Tab \
+                 cycles its two fields."
+            ),
         ]
         .spacing(8.0),
     );
@@ -340,11 +442,25 @@ fn view(app: &App) -> Element<'_, Message> {
                 }),
         )
         .child(
-            text("The region is the panel here. Escape and the backdrop both dismiss it.")
+            text("Type the workspace name to confirm. Escape and the backdrop both dismiss it.")
                 .size(theme::FONT_SIZE_SM)
                 .style(|theme: &Theme| text::Style {
                     color: Some(Tokens::of(theme).muted_foreground),
                 }),
+        )
+        .focusable(MODAL_FIELDS[0].clone())
+        .child(
+            Input::new(MODAL_FIELDS[0].clone())
+                .placeholder("Workspace name")
+                .value(app.modal_name.clone())
+                .on_input(Message::ModalName),
+        )
+        .focusable(MODAL_FIELDS[1].clone())
+        .child(
+            Input::new(MODAL_FIELDS[1].clone())
+                .placeholder("Reason")
+                .value(app.modal_reason.clone())
+                .on_input(Message::ModalReason),
         )
         .child(
             row![
@@ -400,11 +516,15 @@ fn view(app: &App) -> Element<'_, Message> {
     // section: end
     let status = text(match (app.modal_open, app.note) {
         (true, _) => {
-            "The modal is open. Escape, the backdrop and Cancel all dismiss it.".to_string()
+            "The modal is open. Tab cycles its two fields; Escape, the backdrop and Cancel \
+             dismiss it."
+                .to_string()
         }
         (false, Some(note)) => note.to_string(),
         (false, None) => {
-            "The regions draw; iced 0.14 has no focus scope, so Tab still leaves them.".to_string()
+            "Tab is the subscription's and the trap's: it cycles the fields of whichever \
+             region holds focus."
+                .to_string()
         }
     })
     .size(theme::FONT_SIZE_XS)
