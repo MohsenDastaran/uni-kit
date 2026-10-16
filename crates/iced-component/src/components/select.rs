@@ -425,7 +425,7 @@ impl<'a, Message: Clone + 'static> Select<'a, Message> {
             .height(Length::Fill)
             .width(Length::Fill),
         )
-        .padding([0.0, size.input_padding_x()])
+        .padding(size.input_padding_x())
         .height(Length::Fixed(size.input_height()))
         .width(width)
         .style(move |theme: &Theme| {
