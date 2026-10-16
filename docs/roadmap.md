@@ -1079,6 +1079,17 @@ The trap also cannot occur where a row is **intrinsic** rather than inside a fix
 exempt by construction, and why `menu` items at −2.0 are not defects. Say which components are exempt
 and why, beside the ones you measured.
 
+#### `currentColor` resolves to black: a button's `text_color` never reaches an SVG
+
+This is the mechanism behind a trap this catalogue hit six times — a mark drawn as an SVG inside a
+coloured control comes out black whatever the control's ink is, so on a dark surface it is a black glyph
+on a dark circle, and in light it is a heavier mark than intended. iced does not carry a button's
+`text_color` into the SVG's paint.
+
+The fix is always to tint it in the SVG's own style closure (`color: Some(tokens.foreground)`), never to
+rely on inheritance. The last offender was the message-scroller's jump control — the only untinted SVG
+left in the catalogue — whose chevron was invisible in dark behind the border token's faint ring.
+
 #### Five capabilities were reported impossible; all five were missing primitives
 
 Worth stating once, because each was written into a module doc as a platform limit and each turned out to
