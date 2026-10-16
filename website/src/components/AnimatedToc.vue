@@ -134,7 +134,7 @@ const dot = ref({ x: RAIL_X, y: props.rowHeight / 2 });
 let rafId: number | undefined;
 let lastTime = 0;
 // A short beat between the active change and the dot's departure.
-const START_DELAY_MS = 100;
+const START_DELAY_MS = 50;
 let startTimer: number | undefined;
 
 const reduceMotion = () =>
