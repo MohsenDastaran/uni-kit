@@ -578,7 +578,11 @@ below instead of being one.
 - [x] `checkbox` — done, and it carried exactly the debt suspected: no `// section:`
       markers, so no iced sample could be cut and no card had anywhere to scroll. It
       has nine now, one per page heading, and only **Custom Tab Order** is sample-less
-      because iced 0.14 has no tab-order or focus-trap API — named in the module docs
+      because iced 0.14 binds **no key** for it: a widget's `update` sees every runtime
+      event, a `focusable` operation can run from a `Task` with `Outcome::Chain` chaining a
+      second in the same walk, and the whole trap is `focus_trap::tab(...)` — the
+      application routes `Tab`/`Shift+Tab` to it and that is the entire gap. Named in the
+      module docs, and implemented in `a7c3bb2a`
       rather than faked. The appearance check then found a real bug: iced's checkbox
       draws its checkmark whenever the box is filled and has no second glyph, so
       `indeterminate(true)` on an unchecked box drew a **tick** where Slint draws a
