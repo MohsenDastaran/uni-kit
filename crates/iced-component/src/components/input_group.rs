@@ -12,6 +12,14 @@
 //! `suffix` stay the field's own slots, inside the frame; an
 //! [`InputGroupAddon`] is outside the field and on either side of it.
 //!
+//! **The frame's row is its interior, not its outer box.** iced draws a
+//! container's border on the bounds without reserving the room, so the row is
+//! inset by the one-pixel edge and clipped to it: nothing a child draws can cover
+//! the edge or stand proud of it. The row carries no horizontal inset, so an
+//! addon reaches the frame's own edge; a control in an addon wants that, and
+//! sets [`flush`](InputGroupAddon::flush) so the frame-facing padding goes with
+//! it, while text and a glyph keep the padding and stay off the edge.
+//!
 //! **Four things the references do that iced 0.14 cannot, and none is faked:**
 //!
 //! - **The frame never learns that the field is focused.** The same limit the
@@ -43,7 +51,7 @@
 
 use iced::widget::container::Style as ContainerStyle;
 use iced::widget::{Row, container, row};
-use iced::{Alignment, Element, Length, Theme};
+use iced::{Alignment, Element, Length, Padding, Theme};
 
 use super::input::{self, Input};
 use super::theme::{self, ControlSize, Tokens};
@@ -141,10 +149,23 @@ impl<Message> Default for InputGroup<'_, Message> {
 ///
 /// The addon's ink is the muted foreground, inherited by text that does not set
 /// a colour of its own; a glyph is still the caller's to colour, because an SVG
-/// keeps its own black unless its style closure says otherwise.
+/// keeps its own black unless its style closure says otherwise. The row is
+/// clipped to the frame's interior, so a control taller than the frame — a
+/// button is `control_height` where the frame is `input_height` — cannot stand
+/// proud of it.
 pub struct InputGroupAddon<'a, Message> {
     children: Vec<Element<'a, Message>>,
     divider: bool,
+    flush: bool,
+}
+
+/// Which end of the group an addon sits at. Only a flush addon asks for one, so
+/// it can drop the frame-facing padding and reach the frame's own edge there;
+/// `None` keeps both paddings, which is what text and a glyph want.
+#[derive(Clone, Copy, PartialEq, Eq)]
+enum AddonSide {
+    Start,
+    End,
 }
 
 impl<'a, Message: 'a> InputGroupAddon<'a, Message> {
@@ -153,6 +174,7 @@ impl<'a, Message: 'a> InputGroupAddon<'a, Message> {
         Self {
             children: Vec::new(),
             divider: false,
+            flush: false,
         }
     }
 
@@ -176,16 +198,55 @@ impl<'a, Message: 'a> InputGroupAddon<'a, Message> {
         self
     }
 
+    /// Draws the addon's content against the frame's own edge on the outer side,
+    /// so a control at the end of the group shares the frame's corner and edge
+    /// instead of floating inside it — the way Slint puts a bare `Button` in the
+    /// track. Off by default, because the addon's inset is what keeps text and a
+    /// glyph off the frame's edge.
+    ///
+    /// Only the addon nearest the frame takes this side; an addon with another
+    /// addon outside it keeps both paddings.
+    pub fn flush(mut self, flush: bool) -> Self {
+        self.flush = flush;
+        self
+    }
+
     /// The padded, muted row the group places beside the field.
-    fn render(self, disabled: bool) -> Element<'a, Message> {
+    ///
+    /// The row is clipped to the room the frame leaves, so a control taller than
+    /// the frame's interior — a button is `control_height` where the frame is
+    /// `input_height` — cannot draw over the edge. A flush addon drops its
+    /// frame-facing padding so its content reaches the edge.
+    fn render(self, disabled: bool, side: Option<AddonSide>) -> Element<'a, Message> {
+        let padding = match side {
+            Some(AddonSide::Start) => Padding {
+                top: 0.0,
+                right: 8.0,
+                bottom: 0.0,
+                left: 0.0,
+            },
+            Some(AddonSide::End) => Padding {
+                top: 0.0,
+                right: 0.0,
+                bottom: 0.0,
+                left: 8.0,
+            },
+            None => Padding {
+                top: 0.0,
+                right: 8.0,
+                bottom: 0.0,
+                left: 8.0,
+            },
+        };
         container(
             Row::with_children(self.children)
                 .spacing(4.0)
                 .align_y(Alignment::Center),
         )
-        .padding([0.0, 8.0])
+        .padding(padding)
         .height(Length::Fill)
         .center_y(Length::Fill)
+        .clip(true)
         .style(move |theme: &Theme| {
             let tokens = Tokens::of(theme);
             ContainerStyle {
@@ -252,9 +313,11 @@ where
         let style = input::Style::new().invalid(invalid).disabled(disabled);
 
         let mut children: Vec<Element<'a, Message>> = Vec::new();
-        for addon in start {
+        for (index, addon) in start.into_iter().enumerate() {
             let divider = addon.divider;
-            children.push(addon.render(disabled));
+            // Only a flush addon at the frame's own edge drops its outer padding.
+            let side = (index == 0 && addon.flush).then_some(AddonSide::Start);
+            children.push(addon.render(disabled, side));
             if divider {
                 children.push(addon_divider());
             }
@@ -269,12 +332,14 @@ where
                     .into(),
             );
         }
-        for addon in end {
+        let last = end.len().saturating_sub(1);
+        for (index, addon) in end.into_iter().enumerate() {
             let divider = addon.divider;
             if divider {
                 children.push(addon_divider());
             }
-            children.push(addon.render(disabled));
+            let side = (index == last && addon.flush).then_some(AddonSide::End);
+            children.push(addon.render(disabled, side));
         }
 
         container(
@@ -283,11 +348,21 @@ where
                 .align_y(Alignment::Center)
                 .height(Length::Fill),
         )
-        // Slint's two-pixel inset, so the field's own padding is not flush
-        // against the frame's edge.
-        .padding([0.0, 2.0])
+        // The row is the frame's **interior**: iced draws a container's border on
+        // its bounds without taking it out of the room the children get, so a row
+        // at the outer height draws over the edge. One pixel of vertical inset
+        // and a clip holds every child inside the frame; there is no horizontal
+        // inset, so the outermost addon reaches the frame's own edge and the
+        // field's own padding keeps its text off it.
+        .padding(Padding {
+            top: 1.0,
+            right: 0.0,
+            bottom: 1.0,
+            left: 0.0,
+        })
         .height(Length::Fixed(height))
         .width(width)
+        .clip(true)
         .style(move |theme: &Theme| style.resolve(Tokens::of(theme)))
         .into()
     }
