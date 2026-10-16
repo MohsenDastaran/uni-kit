@@ -444,11 +444,11 @@ fn body_box<'a>(body: impl Into<Element<'a, Message>>) -> Element<'a, Message> {
 
 fn view(app: &App) -> Element<'_, Message> {
     // section: Predictable composition
-    // One form built the way the page builds it: the label beside the control,
-    // two field columns, and the commit row in `footer`.
+    // One form built the way the page builds it: the label beside the control in
+    // the column the form measures, two field columns, and the commit row in
+    // `footer`.
     let composed = Form::new()
         .label_layout(LabelLayout::Beside)
-        .label_width(96.0)
         .columns(2)
         .gap(12.0)
         .child(
@@ -507,7 +507,6 @@ fn view(app: &App) -> Element<'_, Message> {
 
     // The horizontal form: the same fields with the labels beside them.
     let horizontal = Form::horizontal()
-        .label_width(120.0)
         .child(
             Field::new().label("First Name").child(
                 Input::new("h-first")
@@ -693,7 +692,6 @@ fn view(app: &App) -> Element<'_, Message> {
         );
 
     let layout_horizontal = Form::horizontal()
-        .label_width(100.0)
         .child(
             Field::new().label("Name").child(
                 Input::new("lh-name")
