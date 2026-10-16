@@ -1079,6 +1079,20 @@ The trap also cannot occur where a row is **intrinsic** rather than inside a fix
 exempt by construction, and why `menu` items at −2.0 are not defects. Say which components are exempt
 and why, beside the ones you measured.
 
+#### iced draws a container's border *on* its bounds, reserving no room
+
+A child that fills such a container covers the border. The input group's row was the frame's **outer**
+box, so a 32px button equalled the 32px frame, painted over the 1px top and bottom rules, and drew its
+own `RADIUS_MD` corner into the frame's corner notch — and the frame's 2px horizontal inset left it
+**10px short at the trailing edge**, which reads as a separate box overhanging the frame. The addon was
+never a sibling; the geometry was.
+
+The fix is to lay the row out against the **interior**: the frame's border width as top and bottom
+padding plus `clip`, so an over-tall child is held inside it, with an opt-in `flush` for a control that
+should reach the outer edge. Measured: the trailing primary went from `x[839,849]` 10px short and
+covering both borders to `x[849,859]` flush, h30 in a 30px interior. Anything else with a border and a
+full-bleed child has the same trap.
+
 #### `keyboard::listen` sees only *ignored* events
 
 A focused `text_input` handles Escape — it leaves the field — and swallows the key, so a subscription
