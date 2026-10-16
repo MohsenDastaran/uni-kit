@@ -1255,7 +1255,6 @@ html[lang^="ja"] .example-prompt {
   text-decoration-thickness: 2px;
 }
 
-
 /* ====================================================================
    Nav bar (docs layout)
    ==================================================================== */
@@ -1604,9 +1603,12 @@ html.dark .site-nav__logo--dark {
   opacity: 0.8;
 }
 
-html:not([data-framework="gpui"]) .sidebar-item__count[data-framework-count='gpui'],
-html:not([data-framework="slint"]) .sidebar-item__count[data-framework-count='slint'],
-html:not([data-framework="iced"]) .sidebar-item__count[data-framework-count='iced'] {
+html:not([data-framework="gpui"])
+  .sidebar-item__count[data-framework-count="gpui"],
+html:not([data-framework="slint"])
+  .sidebar-item__count[data-framework-count="slint"],
+html:not([data-framework="iced"])
+  .sidebar-item__count[data-framework-count="iced"] {
   display: none;
 }
 
@@ -1630,9 +1632,9 @@ html[data-framework="iced"]
 
 /* The navbar hides a framework-scoped link the same way the sidebar hides a
    framework-scoped count. */
-html:not([data-framework="gpui"]) .site-nav__link[data-framework-link='gpui'],
-html:not([data-framework="slint"]) .site-nav__link[data-framework-link='slint'],
-html:not([data-framework="iced"]) .site-nav__link[data-framework-link='iced'] {
+html:not([data-framework="gpui"]) .site-nav__link[data-framework-link="gpui"],
+html:not([data-framework="slint"]) .site-nav__link[data-framework-link="slint"],
+html:not([data-framework="iced"]) .site-nav__link[data-framework-link="iced"] {
   display: none;
 }
 
@@ -1814,12 +1816,13 @@ html[lang^="ja"] .sidebar-subgroup-title {
   overflow: hidden;
   white-space: nowrap;
   text-overflow: ellipsis;
+  margin-left: 5px;
 }
 
 /* The outline's structure reads from the label weight alone: a top-level
    entry is heavier than its children, whether or not either is current. */
 .toc--animated .toc__entry--top {
-  font-weight: 600;
+  font-weight: 800;
 }
 
 .toc--animated .toc__entry--child {
@@ -1937,7 +1940,9 @@ html[lang^="ja"] .sidebar-subgroup-title {
   width: 1rem;
   height: 1rem;
 }
-#theme-palette { display: none; }
+#theme-palette {
+  display: none;
+}
 #theme-palette[open] {
   display: flex;
   flex-direction: column;
@@ -1972,10 +1977,20 @@ html[lang^="ja"] .sidebar-subgroup-title {
   color: var(--foreground);
   font: inherit;
 }
-.theme-palette__search input::placeholder { color: var(--muted-foreground); }
-.theme-palette__search:focus-within > svg { color: var(--foreground); }
-.theme-palette__list { min-height: 0; overflow-y: auto; padding: 0.5rem; }
-.theme-palette__group[hidden] { display: none; }
+.theme-palette__search input::placeholder {
+  color: var(--muted-foreground);
+}
+.theme-palette__search:focus-within > svg {
+  color: var(--foreground);
+}
+.theme-palette__list {
+  min-height: 0;
+  overflow-y: auto;
+  padding: 0.5rem;
+}
+.theme-palette__group[hidden] {
+  display: none;
+}
 .theme-palette__heading {
   padding: 0.45rem 0.375rem;
   color: var(--muted-foreground);
@@ -2005,11 +2020,18 @@ html[lang^="ja"] .sidebar-subgroup-title {
   text-align: left;
   cursor: pointer;
 }
-.theme-palette__option[hidden], .theme-palette__empty[hidden] { display: none; }
+.theme-palette__option[hidden],
+.theme-palette__empty[hidden] {
+  display: none;
+}
 /* Hover and selection mark the tile at its edge. Repainting the fill would hide
    the very colours the tile exists to show. */
 .theme-palette__option:hover:not([aria-selected="true"]) {
-  border-color: color-mix(in srgb, var(--tile-ink, var(--foreground)) 45%, transparent);
+  border-color: color-mix(
+    in srgb,
+    var(--tile-ink, var(--foreground)) 45%,
+    transparent
+  );
 }
 .theme-palette__option[aria-selected="true"],
 .theme-palette__option[data-current="true"] {
@@ -2027,23 +2049,47 @@ html[lang^="ja"] .sidebar-subgroup-title {
   /* The one hairline lives on the band, not on each segment: a per-segment ring
      tints every colour, and at this height its top and bottom edges cover a
      quarter of the band. */
-  box-shadow: 0 0 0 0.5px color-mix(in srgb, var(--tile-ink, var(--foreground)) 16%, transparent);
+  box-shadow: 0 0 0 0.5px
+    color-mix(in srgb, var(--tile-ink, var(--foreground)) 16%, transparent);
 }
 .theme-palette__swatch {
   flex: 1 1 0;
   min-width: 0;
 }
-.theme-palette__row { display: flex; align-items: center; gap: 0.375rem; }
-.theme-palette__name { flex: 1; min-width: 0; font-size: 0.8125rem; font-weight: 500; }
-.theme-palette__check { flex: none; color: var(--ring); visibility: hidden; }
-.theme-palette__option[data-current="true"] .theme-palette__check { visibility: visible; }
-.theme-palette__empty { margin: 1.5rem; color: var(--muted-foreground); text-align: center; }
+.theme-palette__row {
+  display: flex;
+  align-items: center;
+  gap: 0.375rem;
+}
+.theme-palette__name {
+  flex: 1;
+  min-width: 0;
+  font-size: 0.8125rem;
+  font-weight: 500;
+}
+.theme-palette__check {
+  flex: none;
+  color: var(--ring);
+  visibility: hidden;
+}
+.theme-palette__option[data-current="true"] .theme-palette__check {
+  visibility: visible;
+}
+.theme-palette__empty {
+  margin: 1.5rem;
+  color: var(--muted-foreground);
+  text-align: center;
+}
 
 @media (max-width: 720px) {
-  .theme-palette__options { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .theme-palette__options {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
 }
 @media (max-width: 460px) {
-  .theme-palette__options { grid-template-columns: minmax(0, 1fr); }
+  .theme-palette__options {
+    grid-template-columns: minmax(0, 1fr);
+  }
 }
 
 /* ====================================================================
@@ -2146,8 +2192,7 @@ html[lang^="ja"] .sidebar-subgroup-title {
    labels apart — `文档`, `本页内容` — because Chinese has no case for the
    uppercase to act on, leaving only the extra space. The Vue components already
    narrow their own kickers this way. */
-html[lang^="zh"]
-  :is(.toc__label, .doc-pager__label, .component-example__label),
+html[lang^="zh"] :is(.toc__label, .doc-pager__label, .component-example__label),
 html[lang^="ja"]
   :is(.toc__label, .doc-pager__label, .component-example__label) {
   letter-spacing: 0.05em;
@@ -2400,8 +2445,7 @@ html:not([data-framework="gpui"])
   display: none;
 }
 
-html[data-framework="gpui"]
-  .framework-code__panel[data-framework-panel="gpui"],
+html[data-framework="gpui"] .framework-code__panel[data-framework-panel="gpui"],
 html[data-framework="slint"]
   .framework-code__panel[data-framework-panel="slint"],
 html[data-framework="iced"]
@@ -2434,12 +2478,10 @@ html:not([data-framework="iced"]) [data-framework-only="iced"] {
   display: none;
 }
 
-html[data-framework="gpui"]
-  .framework-api__panel[data-framework-panel="gpui"],
+html[data-framework="gpui"] .framework-api__panel[data-framework-panel="gpui"],
 html[data-framework="slint"]
   .framework-api__panel[data-framework-panel="slint"],
-html[data-framework="iced"]
-  .framework-api__panel[data-framework-panel="iced"] {
+html[data-framework="iced"] .framework-api__panel[data-framework-panel="iced"] {
   display: block;
 }
 

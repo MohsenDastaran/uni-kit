@@ -10,8 +10,21 @@
 // laid out under the framework in force (see `src/lib/toc.ts`). `framework-change`
 // and the late mounting of the live example rebuild it, which keeps every entry
 // pointing at a section the reader can see.
-import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue';
-import { TOC_PINS, sameTocItems, tocItems, type TocHeading, type TocItem } from '../lib/toc';
+import {
+  computed,
+  nextTick,
+  onBeforeUnmount,
+  onMounted,
+  ref,
+  watch,
+} from "vue";
+import {
+  TOC_PINS,
+  sameTocItems,
+  tocItems,
+  type TocHeading,
+  type TocItem,
+} from "../lib/toc";
 
 const props = withDefaults(
   defineProps<{
@@ -22,7 +35,7 @@ const props = withDefaults(
   {
     rowHeight: 28,
     indent: 12,
-    title: 'On this page',
+    title: "On this page",
   },
 );
 
@@ -51,13 +64,17 @@ const xOf = (i: number) => RAIL_X + (items.value[i]?.depth ?? 0) * props.indent;
 const yOf = (i: number) => i * props.rowHeight + props.rowHeight / 2;
 
 const svgWidth = computed(
-  () => RAIL_X + items.value.reduce((max, item) => Math.max(max, item.depth), 0) * props.indent + 10,
+  () =>
+    RAIL_X +
+    items.value.reduce((max, item) => Math.max(max, item.depth), 0) *
+      props.indent +
+    10,
 );
 const svgHeight = computed(() => items.value.length * props.rowHeight);
 
 // Rail path: vertical runs connected by rounded S-bends where depth changes.
 const railPath = computed(() => {
-  if (items.value.length === 0) return '';
+  if (items.value.length === 0) return "";
   let d = `M ${xOf(0)} ${yOf(0)}`;
   for (let i = 1; i < items.value.length; i++) {
     const x0 = xOf(i - 1);
@@ -117,16 +134,19 @@ const dot = ref({ x: RAIL_X, y: props.rowHeight / 2 });
 let rafId: number | undefined;
 let lastTime = 0;
 // A short beat between the active change and the dot's departure.
-const START_DELAY_MS = 140;
+const START_DELAY_MS = 100;
 let startTimer: number | undefined;
 
 const reduceMotion = () =>
-  typeof window !== 'undefined' && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  typeof window !== "undefined" &&
+  window.matchMedia("(prefers-reduced-motion: reduce)").matches;
 
 function placeDot() {
   const path = pathEl.value;
   if (!path || totalLen.value <= 0) return;
-  const point = path.getPointAtLength(Math.min(Math.max(dotLen.value, 0), totalLen.value));
+  const point = path.getPointAtLength(
+    Math.min(Math.max(dotLen.value, 0), totalLen.value),
+  );
   dot.value = { x: point.x, y: point.y };
 }
 
@@ -181,7 +201,9 @@ function pause() {
   rafId = undefined;
 }
 
-const progressOffset = computed(() => Math.max(totalLen.value - dotLen.value, 0));
+const progressOffset = computed(() =>
+  Math.max(totalLen.value - dotLen.value, 0),
+);
 
 // ---------------------------------------------------------------------------
 // Derive the outline from what the active framework shows.
@@ -190,8 +212,10 @@ function headingLabel(el: HTMLElement) {
   const clone = el.cloneNode(true) as HTMLElement;
   // The section link and the copy-prompt button live inside the heading; they
   // are affordances, not part of its name.
-  clone.querySelectorAll('.heading-anchor, .example-prompt').forEach((node) => node.remove());
-  return clone.textContent?.trim() ?? '';
+  clone
+    .querySelectorAll(".heading-anchor, .example-prompt")
+    .forEach((node) => node.remove());
+  return clone.textContent?.trim() ?? "";
 }
 
 function isVisible(el: Element | null): el is HTMLElement {
@@ -199,16 +223,23 @@ function isVisible(el: Element | null): el is HTMLElement {
 }
 
 function buildHeadings(): TocHeading[] {
-  const root = document.querySelector('.doc-content');
+  const root = document.querySelector(".doc-content");
   if (!root) return [];
   const headings: TocHeading[] = [];
   for (const pin of TOC_PINS) {
     // The pins read as top-level sections, so they carry the level an `h2`
     // would; `tocItems` is what nests everything else under the Usage category.
     const el = document.getElementById(pin.id);
-    headings.push({ id: pin.id, label: pin.label, level: 2, visible: isVisible(el) });
+    headings.push({
+      id: pin.id,
+      label: pin.label,
+      level: 2,
+      visible: isVisible(el),
+    });
   }
-  for (const el of root.querySelectorAll<HTMLElement>('h2[id], h3[id], h4[id]')) {
+  for (const el of root.querySelectorAll<HTMLElement>(
+    "h2[id], h3[id], h4[id]",
+  )) {
     headings.push({
       id: el.id,
       label: headingLabel(el),
@@ -216,7 +247,7 @@ function buildHeadings(): TocHeading[] {
       visible: isVisible(el),
       // The page's closing sections end the usage region even on the pages
       // that have no API Reference. They carry the mark in their markup.
-      trailing: el.hasAttribute('data-toc-trailing'),
+      trailing: el.hasAttribute("data-toc-trailing"),
     });
   }
   return headings;
@@ -234,7 +265,9 @@ let scheduled = false;
 let offsetPx = 88;
 
 function navOffset() {
-  const el = document.querySelector<HTMLElement>('.doc-content h2[id], .doc-content h3[id]');
+  const el = document.querySelector<HTMLElement>(
+    ".doc-content h2[id], .doc-content h3[id]",
+  );
   if (!el) return 88;
   const value = Number.parseFloat(getComputedStyle(el).scrollMarginTop);
   return Number.isFinite(value) && value > 0 ? value : 88;
@@ -309,7 +342,8 @@ function revealRow(index: number) {
 }
 
 function setActive(index: number) {
-  if (index < 0 || index >= items.value.length || active.value === index) return;
+  if (index < 0 || index >= items.value.length || active.value === index)
+    return;
   active.value = index;
   revealRow(index);
 }
@@ -322,8 +356,11 @@ function scrollToItem(index: number) {
   // `scrollIntoView` honours the heading's own `scroll-margin-top`, which is the
   // same offset the observer band uses — so a selected heading comes to rest
   // just under the bar, not underneath it.
-  el.scrollIntoView({ behavior: reduceMotion() ? 'auto' : 'smooth', block: 'start' });
-  history.replaceState(null, '', `#${item.id}`);
+  el.scrollIntoView({
+    behavior: reduceMotion() ? "auto" : "smooth",
+    block: "start",
+  });
+  history.replaceState(null, "", `#${item.id}`);
 }
 
 function onSelect(event: MouseEvent, index: number) {
@@ -369,8 +406,8 @@ function schedule() {
 onMounted(() => {
   measure();
   refresh();
-  document.addEventListener('framework-change', refresh);
-  const root = document.querySelector('.doc-content');
+  document.addEventListener("framework-change", refresh);
+  const root = document.querySelector(".doc-content");
   if (root) {
     mutations = new MutationObserver(schedule);
     mutations.observe(root, { childList: true, subtree: true });
@@ -381,11 +418,11 @@ onBeforeUnmount(() => {
   pause();
   observer?.disconnect();
   mutations?.disconnect();
-  document.removeEventListener('framework-change', refresh);
+  document.removeEventListener("framework-change", refresh);
 });
 
-watch([railPath, () => props.rowHeight], () => measure(), { flush: 'post' });
-watch([active, rowLens], () => resume(), { flush: 'post' });
+watch([railPath, () => props.rowHeight], () => measure(), { flush: "post" });
+watch([active, rowLens], () => resume(), { flush: "post" });
 </script>
 
 <template>
