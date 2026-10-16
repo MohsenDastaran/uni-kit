@@ -132,7 +132,7 @@ html.dark .alignment-dark {
   /* Layout */
   --nav-height: 56px;
   --sidebar-width: 248px;
-  --toc-width: 300px;
+  --toc-width: 390px;
   --layout-max-width: 1280px;
 }
 
@@ -1843,7 +1843,7 @@ html[lang^="ja"] .sidebar-subgroup-title {
    keeps its 300px and gives up its place first, so the article never pays for
    it. A name longer than the column truncates inside its row, with the full
    name in the row's `title`. */
-@media (max-width: 1280px) {
+@media (max-width: 1370px) {
   .toc {
     display: none;
   }
