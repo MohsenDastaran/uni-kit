@@ -189,12 +189,26 @@ function itemFromFile(entry: FileEntry, baseUrl: string): SidebarItem {
   };
 }
 
+/**
+ * Pages that keep their URL, their links and their registry entry, but do not
+ * belong in the sidebar. `message-role` is a supporting component — `message`
+ * and `message-scroller` use it — so its page stays reachable by link or URL
+ * while the catalog list, and the previous/next walk cut from that same list,
+ * pass it over rather than send the reader to a row nobody can see.
+ */
+const SIDEBAR_HIDDEN_SLUGS = new Set(['message-role']);
+
 function entriesToSidebarItems(
   entries: FileEntry[],
   baseUrl: string,
   hideEmpty: boolean,
 ): SidebarItem[] {
-  const hidden = (entry: FileEntry) => hideEmpty && entry.empty === true;
+  // Two reasons a page leaves the sidebar: it is held out on purpose, or (in a
+  // published build) its example window paints nothing. The first is a flag of
+  // its own, so it holds in a dev server too, where nothing is counted.
+  const hidden = (entry: FileEntry) =>
+    SIDEBAR_HIDDEN_SLUGS.has(entry.name.replace(/\.md$/, '')) ||
+    (hideEmpty && entry.empty === true);
   const dirs = entries.filter((e) => e.isDir);
   const files = entries.filter((e) => !e.isDir && !hidden(e));
 
