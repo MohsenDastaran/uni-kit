@@ -66,6 +66,7 @@ pub struct Button<'a, Message> {
     suffix_icon: Option<Element<'a, Message>>,
     on_press: Option<Message>,
     width: Length,
+    radius: Option<f32>,
     group_start: bool,
     group_end: bool,
 }
@@ -83,6 +84,7 @@ impl<'a, Message> Button<'a, Message> {
             suffix_icon: None,
             on_press: None,
             width: Length::Shrink,
+            radius: None,
             group_start: false,
             group_end: false,
         }
@@ -101,6 +103,19 @@ impl<'a, Message> Button<'a, Message> {
     /// Draws the border and keeps the fill, the shape GPUI calls outlined.
     pub fn outline(mut self) -> Self {
         self.outline = true;
+        self
+    }
+
+    /// The corner radius, replacing the size's default. GPUI's
+    /// `rounded(radius_full())` is the same builder, and it is what draws the
+    /// circular icon button a composer's send control and a header's restart
+    /// control are. iced's container clips in a rectangle, so a circle has to be
+    /// the button's own border radius rather than a wrapper's `clip` — the
+    /// `clip` Slint puts on its send button has no iced counterpart. A radius
+    /// larger than half the shorter side is clamped to a circle, so a caller
+    /// wanting one passes any value at or above the control's half height.
+    pub fn rounded(mut self, radius: f32) -> Self {
+        self.radius = Some(radius.max(0.0));
         self
     }
 
@@ -476,6 +491,7 @@ impl Style {
             suffix_icon: None,
             on_press: None,
             width: Length::Shrink,
+            radius: None,
             group_start: false,
             group_end: false,
         }
@@ -530,6 +546,7 @@ where
         let height = control.height();
         let padding = control.padding();
         let width = control.width;
+        let radius = control.radius;
         let group_start = control.group_start;
         let group_end = control.group_end;
         // Read before the name is shadowed by the widget below.
@@ -555,6 +572,12 @@ where
             .padding([0.0, padding])
             .style(move |theme: &Theme, status| {
                 let mut resolved = style.resolve(Tokens::of(theme), status);
+                // `rounded` replaces the size's radius before the grouped
+                // corners square off, so a circular control can still join a
+                // neighbour on one edge.
+                if let Some(radius) = radius {
+                    resolved.border.radius = radius.into();
+                }
                 // A grouped button squares only the corners that meet its
                 // neighbour; the outer corners stay rounded. Nothing else about
                 // the resolved style moves, so a grouped button is the same
