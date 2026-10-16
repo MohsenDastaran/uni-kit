@@ -379,9 +379,11 @@ fn view(app: &App) -> Element<'_, Message> {
     .spacing(12.0);
 
     // section: Buttons, icons, and menus
-    // A primary action fills the trailing edge; the ellipsis is the compact ghost
-    // control the Slint example draws. It opens nothing here — the group carries
-    // no menu state, and a real dropdown belongs to the `menu` component.
+    // A primary action fills the trailing edge — `flush(true)` drops the addon's
+    // outer padding so the button reaches the frame's own edge and corner, and
+    // the compact ghost controls keep the inset the Slint example gives them. The
+    // ellipsis opens nothing here: the group carries no menu state, and a real
+    // dropdown belongs to the `menu` component.
     let buttons = column![
         InputGroup::new()
             .input(
@@ -391,7 +393,7 @@ fn view(app: &App) -> Element<'_, Message> {
                     .on_input(Message::QueryChanged),
             )
             .addon_end(
-                InputGroupAddon::new().child(
+                InputGroupAddon::new().flush(true).child(
                     Button::new("Search")
                         .variant(Variant::Primary)
                         .on_press(Message::Notice("Search")),
@@ -469,6 +471,7 @@ fn view(app: &App) -> Element<'_, Message> {
             .input(Input::new("group-disabled").placeholder("Disabled"))
             .addon_end(
                 InputGroupAddon::new()
+                    .flush(true)
                     .divider(true)
                     .child(Button::new("Go")),
             ),
@@ -490,7 +493,7 @@ fn view(app: &App) -> Element<'_, Message> {
                     .on_input(Message::SmallChanged),
             )
             .addon_end(
-                InputGroupAddon::new().child(
+                InputGroupAddon::new().flush(true).child(
                     Button::new("Go")
                         .size(ControlSize::Small)
                         .on_press(Message::Notice("Go")),
@@ -505,7 +508,7 @@ fn view(app: &App) -> Element<'_, Message> {
                     .on_input(Message::MediumChanged),
             )
             .addon_end(
-                InputGroupAddon::new().child(
+                InputGroupAddon::new().flush(true).child(
                     Button::new("Go")
                         .variant(Variant::Default)
                         .on_press(Message::Notice("Go")),
@@ -520,7 +523,7 @@ fn view(app: &App) -> Element<'_, Message> {
                     .on_input(Message::LargeChanged),
             )
             .addon_end(
-                InputGroupAddon::new().child(
+                InputGroupAddon::new().flush(true).child(
                     Button::new("Go")
                         .size(ControlSize::Large)
                         .on_press(Message::Notice("Go")),
@@ -543,7 +546,7 @@ fn view(app: &App) -> Element<'_, Message> {
                     .on_input(Message::MentionChanged),
             )
             .addon_end(
-                InputGroupAddon::new().child(
+                InputGroupAddon::new().flush(true).child(
                     Button::new("Send")
                         .variant(Variant::Primary)
                         .on_press(Message::Notice("Send")),
