@@ -1079,6 +1079,19 @@ The trap also cannot occur where a row is **intrinsic** rather than inside a fix
 exempt by construction, and why `menu` items at −2.0 are not defects. Say which components are exempt
 and why, beside the ones you measured.
 
+#### A bitmap needs a decoder, and the decoder must not pull the wasm-breaking defaults
+
+The crate ships iced as `image-without-codecs`, so a demo that reads a PNG or JPEG has **no decoder at
+all** — which is why the image demo had been generating RGBA itself. Naming `image` with exactly the
+features wanted fixes it: `default-features = false, features = ["jpeg", "png"]`. Feature unification
+then switches iced's decoder on **without** the default set (AVIF/rav1e) that fails to build for wasm32.
+iced's own feature list stays untouched, which is what keeps `check.sh`'s feature-agreement step and the
+registry's install hint valid. Measured cost: the module grew 255 KB.
+
+A related piece of the same fix: `build-page.sh` copies only `index.html` into `www/dist`, so a demo
+asset has no served path. `include_bytes!` embeds it in the module instead — no extra request, no build
+change — and reusing an image already tracked in the repository keeps the tree from growing.
+
 #### Keep a demo's live controls after `// section: end`
 
 The icon demo's theme buttons sat past the closing marker with no section of their own, so deleting them
