@@ -30,11 +30,25 @@
 //!
 //! **Where a label sits is the shared choice [`LabelLayout`] makes.** `Above` is
 //! Slint's `FormField` and GPUI's `Axis::Vertical`, so the label leads its own
-//! cell; `Beside` is Slint's `FormRow` and GPUI's `Axis::Horizontal` with a fixed
-//! `label_width`, so a single-column form's labels share one edge. A grid cell
-//! carries its own field, label included — GPUI's grid does the same — so in a
-//! multi-column form a label follows its column rather than a spine across the
+//! cell; `Beside` is Slint's `FormRow` and GPUI's `Axis::Horizontal`, so a form's
+//! labels share one edge and every row's control starts at the same x. A grid
+//! cell carries its own field, label included — GPUI's grid does the same — so in
+//! a multi-column form a label follows its column rather than a spine across the
 //! whole form.
+//!
+//! **The shared label column measures, where both references fix it.** GPUI's
+//! `FieldProps::default` is `label_width: Some(px(140.))` and its label is
+//! `w(140px).flex_shrink_0()`; Slint's `FormRow` sets `preferred-width` and
+//! `min-width` to the same `label-width: 140px` (horizontal padding is zero, so
+//! the control starts after the 16px `spacing` gutter). Both are a fixed slot
+//! whatever the text says, so `Name` reserves the whole slot and its control
+//! starts about 95px past the end of the word — the dead space in the report.
+//! 140px is a default reservation, not a measured constraint: it is the width of
+//! the longest label either example happened to carry. This port keeps the shared
+//! spine and fills it with the widest label the form actually has, measured from
+//! the label elements the form itself builds. [`Form::label_width`] and
+//! [`Field::label_width`] are a floor under that measurement, not a replacement
+//! for it.
 //!
 //! **The column count is the caller's.** Neither reference derives it from the
 //! viewport: GPUI's `Form::columns` and the page's Responsive Layout sample
@@ -70,6 +84,9 @@
 // gets a warning for each one it does not want.
 #![allow(dead_code)]
 
+use std::cell::Cell;
+use std::rc::Rc;
+
 use iced::advanced::layout::{self, Limits};
 use iced::advanced::widget::Tree;
 use iced::advanced::{Clipboard, Layout, Shell, Widget, mouse, overlay, renderer};
@@ -91,7 +108,8 @@ pub enum LabelLayout {
     /// The label on its own line over the control.
     #[default]
     Above,
-    /// The label in a fixed-width column before the control.
+    /// The label in the form's shared column before the control, as wide as the
+    /// form's widest label.
     Beside,
 }
 
@@ -107,7 +125,7 @@ pub struct Form<'a, Message> {
     footer: Option<Element<'a, Message>>,
     columns: usize,
     label_layout: LabelLayout,
-    label_width: f32,
+    label_width: Option<f32>,
     size: ControlSize,
     gap: f32,
 }
@@ -121,7 +139,7 @@ impl<'a, Message> Form<'a, Message> {
             footer: None,
             columns: 1,
             label_layout: LabelLayout::Above,
-            label_width: 140.0,
+            label_width: None,
             size: ControlSize::default(),
             gap: theme::SPACING_LG,
         }
@@ -152,9 +170,13 @@ impl<'a, Message> Form<'a, Message> {
         self
     }
 
-    /// The label column's width in [`LabelLayout::Beside`], 140px by default.
+    /// A floor under the shared label column's width in [`LabelLayout::Beside`],
+    /// in pixels. The column is still as wide as the form's widest label whenever
+    /// that label is wider than this; there is no floor by default, so a form
+    /// hugs its own labels. `140px` was the old fixed default and is a reasonable
+    /// floor for a form that wants one.
     pub fn label_width(mut self, label_width: f32) -> Self {
-        self.label_width = label_width;
+        self.label_width = Some(label_width);
         self
     }
 
@@ -211,6 +233,17 @@ impl<'a, Message> Form<'a, Message> {
         let visible: Vec<Field<'a, Message>> =
             fields.into_iter().filter(|field| field.visible).collect();
 
+        // The floor under the shared label column: the form's own minimum and
+        // every field's. The measurement itself happens in [`FormBody`], which
+        // owns all the rows and so can see the widest label at once.
+        let minimum = visible
+            .iter()
+            .filter(|field| !field.full_width)
+            .fold(label_width.unwrap_or(0.0), |minimum, field| {
+                minimum.max(field.label_width.unwrap_or(0.0))
+            });
+        let spine = LabelSpine::default();
+
         let mut rows: Vec<Element<'a, Message>> = Vec::new();
         let mut cells: Vec<(Element<'a, Message>, u16)> = Vec::new();
         let mut col = 0usize;
@@ -220,9 +253,11 @@ impl<'a, Message> Form<'a, Message> {
 
             // A section or a separator owns its own row and spans the grid, which
             // is the row a `FormSection` or `FormSeparator` always takes in Slint.
+            // Its heading is not a field label, so it measures against a spine of
+            // its own rather than widening every field's column.
             if field.full_width {
                 close_row(&mut rows, &mut cells, &mut col, columns, gap);
-                rows.push(field.render_element(label_layout, label_width, size));
+                rows.push(field.render_element(label_layout, LabelSpine::default(), size));
                 continue;
             }
 
@@ -240,7 +275,7 @@ impl<'a, Message> Form<'a, Message> {
                 close_row(&mut rows, &mut cells, &mut col, columns, gap);
             }
 
-            cells.push((field.render_element(label_layout, label_width, size), span));
+            cells.push((field.render_element(label_layout, spine.clone(), size), span));
             col += span as usize;
             if col >= columns {
                 close_row(&mut rows, &mut cells, &mut col, columns, gap);
@@ -259,7 +294,454 @@ impl<'a, Message> Form<'a, Message> {
             );
         }
 
-        grid.into()
+        FormBody {
+            body: grid.into(),
+            spine,
+            minimum,
+        }
+        .into()
+    }
+}
+
+/// The width the labels of a [`LabelLayout::Beside`] form share.
+///
+/// Every row's label slot reads the same width from here, which is what keeps
+/// their controls on one x. That width is the widest label in the form, which is
+/// not known while the rows are built, so [`FormBody`] writes it after one
+/// measuring pass and a slot is [`Shrink`](Length::Shrink) until then. A spine
+/// that is never resolved belongs to a standalone [`Field`], whose label simply
+/// hugs its own text.
+#[derive(Clone, Default)]
+struct LabelSpine {
+    width: Rc<Cell<f32>>,
+    resolved: Rc<Cell<bool>>,
+}
+
+impl LabelSpine {
+    /// Whether the column's width is known. Until it is, a slot measures its own
+    /// label and takes that width.
+    fn is_resolved(&self) -> bool {
+        self.resolved.get()
+    }
+
+    /// The shared width, once resolved.
+    fn width(&self) -> f32 {
+        self.width.get()
+    }
+
+    /// Let the column hold `width`. Only the widest label wins.
+    fn record(&self, width: f32) {
+        self.width.set(self.width.get().max(width));
+    }
+
+    /// Start a measuring pass: the slots shrink to their own labels again.
+    fn reset(&self) {
+        self.width.set(0.0);
+        self.resolved.set(false);
+    }
+
+    /// Fix the column at the widest label recorded, but never narrower than
+    /// `minimum`.
+    fn resolve(&self, minimum: f32) {
+        self.width.set(self.width.get().max(minimum));
+        self.resolved.set(true);
+    }
+
+    /// A spine that is already fixed, for a caller who named a width.
+    fn fixed(width: f32) -> Self {
+        let spine = Self::default();
+        spine.resolve(width);
+        spine
+    }
+}
+
+/// The form's rows, measured once and then laid out.
+///
+/// The label column of a [`LabelLayout::Beside`] form is the widest label the
+/// form actually has, and no single row can know that. This widget owns every
+/// row, so its `layout` first lays them out with the slots unresolved — each slot
+/// shrinks to its own label and records the width — resolves the shared column
+/// from what it recorded, and lays the rows out again against it. That is the
+/// measurement both references skip in favour of a fixed 140px slot.
+struct FormBody<'a, Message> {
+    /// The rows and the optional footer, stacked. Laid out twice by `layout`.
+    body: Element<'a, Message>,
+    spine: LabelSpine,
+    /// The column is never narrower than this, whatever the labels measure.
+    minimum: f32,
+}
+
+impl<Message> Widget<Message, Theme, iced::Renderer> for FormBody<'_, Message>
+where
+    Message: Clone,
+{
+    fn children(&self) -> Vec<Tree> {
+        vec![Tree::new(&self.body)]
+    }
+
+    fn diff(&self, tree: &mut Tree) {
+        tree.diff_children(std::slice::from_ref(&self.body));
+    }
+
+    fn size(&self) -> Size<Length> {
+        Size {
+            width: Length::Fill,
+            height: Length::Shrink,
+        }
+    }
+
+    fn layout(
+        &mut self,
+        tree: &mut Tree,
+        renderer: &iced::Renderer,
+        limits: &Limits,
+    ) -> layout::Node {
+        let limits = limits.width(Length::Fill).height(Length::Shrink);
+
+        // First pass: every label slot shrinks to its own text and records the
+        // width, so the second pass can hand them all the widest one.
+        self.spine.reset();
+        let _ = self
+            .body
+            .as_widget_mut()
+            .layout(&mut tree.children[0], renderer, &limits);
+        self.spine.resolve(self.minimum);
+
+        // Second pass: the real one, against the shared column. The body's node
+        // is wrapped in one of its own, so this widget's single child tree and
+        // its single child layout agree.
+        let node = self
+            .body
+            .as_widget_mut()
+            .layout(&mut tree.children[0], renderer, &limits);
+        layout::Node::with_children(node.size(), vec![node])
+    }
+
+    fn update(
+        &mut self,
+        tree: &mut Tree,
+        event: &Event,
+        layout: Layout<'_>,
+        cursor: mouse::Cursor,
+        renderer: &iced::Renderer,
+        clipboard: &mut dyn Clipboard,
+        shell: &mut Shell<'_, Message>,
+        viewport: &Rectangle,
+    ) {
+        if let Some(child_layout) = layout.children().next() {
+            self.body.as_widget_mut().update(
+                &mut tree.children[0],
+                event,
+                child_layout,
+                cursor,
+                renderer,
+                clipboard,
+                shell,
+                viewport,
+            );
+        }
+    }
+
+    fn mouse_interaction(
+        &self,
+        tree: &Tree,
+        layout: Layout<'_>,
+        cursor: mouse::Cursor,
+        viewport: &Rectangle,
+        renderer: &iced::Renderer,
+    ) -> mouse::Interaction {
+        layout
+            .children()
+            .next()
+            .map(|child_layout| {
+                self.body.as_widget().mouse_interaction(
+                    &tree.children[0],
+                    child_layout,
+                    cursor,
+                    viewport,
+                    renderer,
+                )
+            })
+            .unwrap_or_default()
+    }
+
+    fn draw(
+        &self,
+        tree: &Tree,
+        renderer: &mut iced::Renderer,
+        theme: &Theme,
+        style: &renderer::Style,
+        layout: Layout<'_>,
+        cursor: mouse::Cursor,
+        viewport: &Rectangle,
+    ) {
+        if let Some(viewport) = layout.bounds().intersection(viewport) {
+            if let Some(child_layout) = layout.children().next() {
+                if child_layout.bounds().intersects(&viewport) {
+                    self.body.as_widget().draw(
+                        &tree.children[0],
+                        renderer,
+                        theme,
+                        style,
+                        child_layout,
+                        cursor,
+                        &viewport,
+                    );
+                }
+            }
+        }
+    }
+
+    fn operate(
+        &mut self,
+        tree: &mut Tree,
+        layout: Layout<'_>,
+        renderer: &iced::Renderer,
+        operation: &mut dyn iced::advanced::widget::Operation,
+    ) {
+        operation.container(None, layout.bounds());
+        operation.traverse(&mut |operation| {
+            if let Some(child_layout) = layout.children().next() {
+                self.body.as_widget_mut().operate(
+                    &mut tree.children[0],
+                    child_layout,
+                    renderer,
+                    operation,
+                );
+            }
+        });
+    }
+
+    fn overlay<'b>(
+        &'b mut self,
+        tree: &'b mut Tree,
+        layout: Layout<'b>,
+        renderer: &iced::Renderer,
+        viewport: &Rectangle,
+        translation: Vector,
+    ) -> Option<overlay::Element<'b, Message, Theme, iced::Renderer>> {
+        let child_layout = layout.children().next()?;
+        self.body.as_widget_mut().overlay(
+            &mut tree.children[0],
+            child_layout,
+            renderer,
+            viewport,
+            translation,
+        )
+    }
+}
+
+impl<'a, Message: Clone + 'a> From<FormBody<'a, Message>> for Element<'a, Message> {
+    fn from(form_body: FormBody<'a, Message>) -> Self {
+        Element::new(form_body)
+    }
+}
+
+/// One label slot in a [`LabelLayout::Beside`] row.
+///
+/// Until the shared [`LabelSpine`] is resolved the slot shrinks to its own label
+/// and records that width; afterwards it takes the shared width. A slot with no
+/// label but `indent` still holds the column open, so its control lines up with
+/// the labelled rows beside it.
+struct LabelSlot<'a, Message> {
+    label: Option<Element<'a, Message>>,
+    spine: LabelSpine,
+}
+
+impl<'a, Message> LabelSlot<'a, Message> {
+    fn new(label: Option<Element<'a, Message>>, spine: LabelSpine) -> Self {
+        Self { label, spine }
+    }
+}
+
+impl<Message> Widget<Message, Theme, iced::Renderer> for LabelSlot<'_, Message>
+where
+    Message: Clone,
+{
+    fn children(&self) -> Vec<Tree> {
+        self.label.iter().map(Tree::new).collect()
+    }
+
+    fn diff(&self, tree: &mut Tree) {
+        match &self.label {
+            Some(label) => tree.diff_children(std::slice::from_ref(label)),
+            None => tree.children.clear(),
+        }
+    }
+
+    fn size(&self) -> Size<Length> {
+        Size {
+            width: if self.spine.is_resolved() {
+                Length::Fixed(self.spine.width())
+            } else {
+                Length::Shrink
+            },
+            height: Length::Shrink,
+        }
+    }
+
+    fn layout(
+        &mut self,
+        tree: &mut Tree,
+        renderer: &iced::Renderer,
+        limits: &Limits,
+    ) -> layout::Node {
+        let resolved = self.spine.is_resolved();
+        let available = limits.max();
+
+        // Measuring lays the label out unbounded so the column learns the text's
+        // own width; afterwards the label sits inside the shared width.
+        let width = if resolved { self.spine.width() } else { 0.0 };
+        let label_limits = Limits::new(
+            Size::new(width, 0.0),
+            Size::new(
+                if resolved { width } else { f32::INFINITY },
+                available.height,
+            ),
+        );
+
+        match self.label.as_mut() {
+            Some(label) => {
+                let node = label
+                    .as_widget_mut()
+                    .layout(&mut tree.children[0], renderer, &label_limits);
+                if !resolved {
+                    self.spine.record(node.size().width);
+                }
+                let slot_width = if resolved {
+                    width
+                } else {
+                    node.size().width
+                };
+                layout::Node::with_children(Size::new(slot_width, node.size().height), vec![node])
+            }
+            None => layout::Node::new(Size::new(width, 0.0)),
+        }
+    }
+
+    fn update(
+        &mut self,
+        tree: &mut Tree,
+        event: &Event,
+        layout: Layout<'_>,
+        cursor: mouse::Cursor,
+        renderer: &iced::Renderer,
+        clipboard: &mut dyn Clipboard,
+        shell: &mut Shell<'_, Message>,
+        viewport: &Rectangle,
+    ) {
+        if let (Some(label), Some(child_layout), Some(state)) = (
+            self.label.as_mut(),
+            layout.children().next(),
+            tree.children.first_mut(),
+        ) {
+            label.as_widget_mut().update(
+                state,
+                event,
+                child_layout,
+                cursor,
+                renderer,
+                clipboard,
+                shell,
+                viewport,
+            );
+        }
+    }
+
+    fn mouse_interaction(
+        &self,
+        tree: &Tree,
+        layout: Layout<'_>,
+        cursor: mouse::Cursor,
+        viewport: &Rectangle,
+        renderer: &iced::Renderer,
+    ) -> mouse::Interaction {
+        match (
+            self.label.as_ref(),
+            layout.children().next(),
+            tree.children.first(),
+        ) {
+            (Some(label), Some(child_layout), Some(state)) => {
+                label
+                    .as_widget()
+                    .mouse_interaction(state, child_layout, cursor, viewport, renderer)
+            }
+            _ => mouse::Interaction::default(),
+        }
+    }
+
+    fn draw(
+        &self,
+        tree: &Tree,
+        renderer: &mut iced::Renderer,
+        theme: &Theme,
+        style: &renderer::Style,
+        layout: Layout<'_>,
+        cursor: mouse::Cursor,
+        viewport: &Rectangle,
+    ) {
+        if let Some(viewport) = layout.bounds().intersection(viewport) {
+            if let (Some(label), Some(child_layout), Some(state)) = (
+                self.label.as_ref(),
+                layout.children().next(),
+                tree.children.first(),
+            ) {
+                if child_layout.bounds().intersects(&viewport) {
+                    label.as_widget().draw(
+                        state,
+                        renderer,
+                        theme,
+                        style,
+                        child_layout,
+                        cursor,
+                        &viewport,
+                    );
+                }
+            }
+        }
+    }
+
+    fn operate(
+        &mut self,
+        tree: &mut Tree,
+        layout: Layout<'_>,
+        renderer: &iced::Renderer,
+        operation: &mut dyn iced::advanced::widget::Operation,
+    ) {
+        operation.container(None, layout.bounds());
+        operation.traverse(&mut |operation| {
+            if let (Some(label), Some(child_layout), Some(state)) = (
+                self.label.as_mut(),
+                layout.children().next(),
+                tree.children.first_mut(),
+            ) {
+                label
+                    .as_widget_mut()
+                    .operate(state, child_layout, renderer, operation);
+            }
+        });
+    }
+
+    fn overlay<'b>(
+        &'b mut self,
+        tree: &'b mut Tree,
+        layout: Layout<'b>,
+        renderer: &iced::Renderer,
+        viewport: &Rectangle,
+        translation: Vector,
+    ) -> Option<overlay::Element<'b, Message, Theme, iced::Renderer>> {
+        let label = self.label.as_mut()?;
+        let child_layout = layout.children().next()?;
+        let state = tree.children.first_mut()?;
+        label
+            .as_widget_mut()
+            .overlay(state, child_layout, renderer, viewport, translation)
+    }
+}
+
+impl<'a, Message: Clone + 'a> From<LabelSlot<'a, Message>> for Element<'a, Message> {
+    fn from(label_slot: LabelSlot<'a, Message>) -> Self {
+        Element::new(label_slot)
     }
 }
 
@@ -664,7 +1146,10 @@ impl<'a, Message: 'a> Field<'a, Message> {
         self
     }
 
-    /// The label column's width, when this field does not want the form's.
+    /// A floor under the form's shared label column for this field, in pixels.
+    /// The column still holds the form's widest label when one is wider. Outside
+    /// a [`Form`] this is the whole width: a standalone field's label hugs its
+    /// own text with no floor.
     pub fn label_width(mut self, label_width: f32) -> Self {
         self.label_width = Some(label_width);
         self
@@ -712,17 +1197,19 @@ impl<'a, Message: 'a> Field<'a, Message> {
     }
 
     /// Draw the label, the children and the message line, in the resolved layout.
+    ///
+    /// `spine` is the shared label column for a [`LabelLayout::Beside`] form; a
+    /// field that lays its label out [`Above`](LabelLayout::Above) ignores it.
     fn render_element(
         self,
         form_layout: LabelLayout,
-        form_label_width: f32,
+        spine: LabelSpine,
         form_size: ControlSize,
     ) -> Element<'a, Message>
     where
         Message: Clone + 'a,
     {
         let layout = self.label_layout.unwrap_or(form_layout);
-        let label_width = self.label_width.unwrap_or(form_label_width);
         let size = self.resolve_size(form_size);
 
         let label: Option<Element<'a, Message>> = if self.label.is_empty() {
@@ -791,13 +1278,16 @@ impl<'a, Message: 'a> Field<'a, Message> {
                 // `padding-top: 8px`, so it lines up with a single-line control's
                 // text instead of drifting when the control is a textarea.
                 let label_slot: Element<'a, Message> = match label {
-                    Some(label) => container(label)
-                        .width(Length::Fixed(label_width))
-                        .padding([theme::SPACING_SM, 0.0])
-                        .into(),
-                    None if self.label_indent => {
-                        Space::new().width(Length::Fixed(label_width)).into()
-                    }
+                    Some(label) => LabelSlot::new(
+                        Some(
+                            container(label)
+                                .padding([theme::SPACING_SM, 0.0])
+                                .into(),
+                        ),
+                        spine,
+                    )
+                    .into(),
+                    None if self.label_indent => LabelSlot::new(None, spine).into(),
                     None => Space::new().width(Length::Fixed(0.0)).into(),
                 };
 
@@ -830,7 +1320,13 @@ where
     Message: Clone + 'a,
 {
     fn from(field: Field<'a, Message>) -> Self {
-        field.render_element(LabelLayout::default(), 140.0, ControlSize::default())
+        // A field outside a form has no rows to share a column with, so its label
+        // hugs its own text unless the caller named a width.
+        let spine = match field.label_width {
+            Some(width) => LabelSpine::fixed(width),
+            None => LabelSpine::default(),
+        };
+        field.render_element(LabelLayout::default(), spine, ControlSize::default())
     }
 }
 
