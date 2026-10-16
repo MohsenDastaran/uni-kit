@@ -21,7 +21,7 @@ const props = withDefaults(
   }>(),
   {
     rowHeight: 48,
-    indent: 24,
+    indent: 16,
     title: 'On this page',
   },
 );
@@ -33,10 +33,15 @@ const navEl = ref<HTMLElement | null>(null);
 const listEl = ref<HTMLUListElement | null>(null);
 
 const RAIL_X = 8;
-const CORNER = 12;
+// One S-bend is two quarter-arcs, so it spends `CORNER` on each and the
+// horizontal run between them is `indent - 2 * CORNER`. The step must stay at
+// least that wide or the run doubles back and the curve pinches; the corner is
+// scaled with the step (16 = 2 * 8) so the tighter outline still draws clean
+// arcs. See the zoomed comparison beside the indent numbers.
+const CORNER = 8;
 // The entries share the rail's origin, so this is the rail's own x plus the
 // gap that keeps the dot off the label; depth adds the same indent to both.
-const TEXT_X = RAIL_X + 24;
+const TEXT_X = RAIL_X + 16;
 
 const xOf = (i: number) => RAIL_X + (items.value[i]?.depth ?? 0) * props.indent;
 const yOf = (i: number) => i * props.rowHeight + props.rowHeight / 2;
