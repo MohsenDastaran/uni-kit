@@ -1079,6 +1079,20 @@ The trap also cannot occur where a row is **intrinsic** rather than inside a fix
 exempt by construction, and why `menu` items at −2.0 are not defects. Say which components are exempt
 and why, beside the ones you measured.
 
+#### A shared column width is measured by laying the body out twice
+
+The form's label column has to be the widest label **in the form**, and no single child knows that
+width. `FormBody::layout` lays its rows out once with every slot `Shrink` — recording each label's
+intrinsic width — resolves a shared spine to the widest, then lays out again against it. Both passes
+happen inside one layout, so nothing flickers across frames, and the caller's `label_width` is a floor
+under the measurement (default `None`, meaning hug). Full-width section rows measure against a spine of
+their own, so a heading can never widen the field column.
+
+That is the same shape as the menu's shortcut column, which was silently `Fill` and cost every item a
+third of its label width: a column shared by rows needs one authority, and it has to be measured rather
+than guessed. Measured here: a short "Name" row's control moved **196 → 98** with the column at 41px,
+and a temporary 167px label widened every row's control to x=224 **together**, with no overlap.
+
 #### A `FillPortion` row is not a grid
 
 Equal fractions give equal columns only while every row has the same cell count. A field spanning
