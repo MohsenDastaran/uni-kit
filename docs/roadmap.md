@@ -1079,6 +1079,17 @@ The trap also cannot occur where a row is **intrinsic** rather than inside a fix
 exempt by construction, and why `menu` items at −2.0 are not defects. Say which components are exempt
 and why, beside the ones you measured.
 
+#### Keep a demo's live controls after `// section: end`
+
+The icon demo's theme buttons sat past the closing marker with no section of their own, so deleting them
+changed no panel and orphaned no heading — the page's six sections were untouched. The message-scroller
+and attachment ports moved their live rows out of the samples the same way.
+
+Anything a reader can press that is not itself a documented sample belongs after `end`: a theme toggle, a
+status line, a counter. Then removing or changing it can never move the page's contract, and the sample
+above stays the thing the page shows. Conversely, a control placed *inside* a section is part of the code
+the page prints, so it has to be worth showing.
+
 #### One fallback serving two page shapes is a bug waiting
 
 The outline's `usageAt < 0 -> tag depth` fallback was right for the guides, the index and `theme`,
