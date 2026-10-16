@@ -559,12 +559,17 @@ where
             segments = segments.push(period(hour));
         }
 
-        // `px_1` in the GPUI field: the segments sit just inside the frame. The
-        // width is the content's — iced does not stretch a container the way
-        // Slint's layout would, so the field is as wide as its segments and
-        // stays that width because each segment is padded to two digits.
+        // `px_1` in the GPUI field: the segments sit just inside the frame — on
+        // all four sides, the same inset `textarea.slint` gives its frame. Each
+        // segment's line box is a line taller than this padded inside, so iced
+        // clamps it there and the caret is inset from the frame's edge instead of
+        // running its full height. The segments row is `Fill` and centred, so the
+        // digits do not move, and the outer height is `Fixed`. The width is the
+        // content's — iced does not stretch a container the way Slint's layout
+        // would, so the field is as wide as its segments and stays that width
+        // because each segment is padded to two digits.
         container(segments)
-            .padding([0.0, theme::SPACING_XS])
+            .padding(theme::SPACING_XS)
             .height(Length::Fixed(height))
             .width(Length::Shrink)
             .style(move |theme: &Theme| frame.resolve(Tokens::of(theme)))
