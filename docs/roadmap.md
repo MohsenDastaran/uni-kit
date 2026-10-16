@@ -1079,6 +1079,19 @@ The trap also cannot occur where a row is **intrinsic** rather than inside a fix
 exempt by construction, and why `menu` items at −2.0 are not defects. Say which components are exempt
 and why, beside the ones you measured.
 
+#### The source-heading chip is a copied literal, in seventy files
+
+Slint's `ui/examples/bridge.slint` `SourceHeading` draws the `</>` code button as fill `0.12` with a
+`0.35` border (hover 0.22/0.55, pressed 0.34/0.7), and that same tuple is **copied into 70 of the 76 iced
+demos** rather than owned in one place. So "raise the chip's contrast" is not a one-file change: it needs
+the Slint reference and seventy iced demos together, or iced alone diverges visibly from the other two
+galleries the moment a reader switches framework.
+
+The measurement that matters is the **glyph's** contrast against its fill and the panel behind it —
+**12.55:1 light, 13.11:1 dark** — not the chip surface's 1.28:1, which is the reference's own subtlety and
+supplementary to an affordance that already clears the text-contrast requirement. Check which value an
+accessibility complaint is actually about before treating the surface as the failure.
+
 #### `border` equals `muted` in the dark table, so a token hairline vanishes there
 
 A one-pixel edge drawn with the `border` token reads in light and **disappears in dark**, because the
