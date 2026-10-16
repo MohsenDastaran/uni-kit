@@ -15,6 +15,15 @@
 //! jump-to-latest, and Custom jump button → the style slots. The unread rule is
 //! the page's own seventh sample and has no Slint box.
 //!
+//! The eighth section draws the conversation shell the reference's Conversation
+//! frame shows — the header with its circular restart, the transcript band, and
+//! the composer with its circular send — under the page's "Virtualization,
+//! accessibility, and application boundaries" heading, the one that documents
+//! the composer as an application control placed outside the list. The shell has
+//! no sample heading of its own; the Slint example folds its frame into "create
+//! state" because that is the `GroupBox` the frame sits in, and GPUI does the
+//! same through the page's `SHARED` table.
+//!
 //! Each section carries a heading the page has — the title, and the code icon
 //! that asks the embedding page to scroll to that sample. Clicking either one
 //! posts the section's index and title through [`crate::bridge`], the same bridge
@@ -39,10 +48,11 @@
 
 use crate::components::button::{Button, Variant as ButtonVariant};
 use crate::components::group_box::{self, GroupBox};
+use crate::components::input::Input;
 use crate::components::message_scroller::{MessageScroller, Turn, jump_to_end};
 use crate::components::theme::{self, ControlSize, Tokens};
-use iced::widget::{Id, button, column, container, mouse_area, row, scrollable, svg, text};
-use iced::{Alignment as Axis, Color, Element, Length, Task, Theme};
+use iced::widget::{Id, button, column, container, mouse_area, row, rule, scrollable, svg, text};
+use iced::{Alignment as Axis, Color, Element, Length, Padding, Task, Theme};
 use std::cell::Cell;
 use std::rc::Rc;
 
@@ -56,6 +66,21 @@ const PANEL_HEIGHT: f32 = 220.0;
 /// The interactive scroller's name. It is what this demo's own jump control
 /// passes to `jump_to_end`, and it has to be unique on screen.
 const CONVERSATION: &str = "tail";
+
+/// The conversation shell's frame: the Slint example's
+/// `min(viewport - 48px, 384px)` by 540px, which is the same box the GPUI
+/// story's `w_96()` / `h(rems(35.))` draws a little taller.
+const SHELL_WIDTH: f32 = 384.0;
+const SHELL_HEIGHT: f32 = 540.0;
+
+/// The shell's inset. GPUI's `p_5` / `px_5` / `pb_5`, 20px, which the Slint
+/// example writes as a literal too — the shared spacing scale has no 20.
+const SHELL_PADDING: f32 = 20.0;
+
+/// The full radius a circular control asks for. iced clamps a border radius to
+/// half the shorter side, so any value at or above the control's half height is
+/// a circle; `bubble.rs` uses the same idiom for its reaction pill.
+const CIRCLE_RADIUS: f32 = 999.0;
 
 pub fn run(theme: iced::Theme) -> iced::Result {
     iced::application(boot, update, view)
@@ -128,6 +153,9 @@ struct App {
     unread: bool,
     /// Whether the scroller draws its built-in jump control.
     jump_button: bool,
+    /// The composer's text. iced's field carries no state of its own, so the
+    /// application owns the value the way it owns the collection.
+    composer: String,
     /// How many turns have been appended and prepended, so the buttons say so.
     appended: u32,
     prepended: u32,
@@ -153,6 +181,14 @@ enum Message {
     ToggleUnread,
     /// Show or hide the built-in jump control.
     ToggleJumpButton,
+    /// The composer reported an edit.
+    ComposerChanged(String),
+    /// The composer's send control was pressed, or Enter was raised in the
+    /// field: append what the reader wrote.
+    Send,
+    /// The header's restart control was pressed: return to the opening
+    /// conversation.
+    Restart,
     HoverSource(Option<&'static str>),
     PressSource(Option<&'static str>),
     /// A section heading was released: ask the page for that sample.
@@ -168,6 +204,7 @@ fn boot() -> App {
         scrolled_up: signal(false),
         unread: true,
         jump_button: true,
+        composer: String::new(),
         appended: 0,
         prepended: 0,
         hovered: None,
@@ -209,6 +246,26 @@ fn update(app: &mut App, message: Message) -> Task<Message> {
         }
         Message::ToggleUnread => app.unread = !app.unread,
         Message::ToggleJumpButton => app.jump_button = !app.jump_button,
+        Message::ComposerChanged(value) => app.composer = value,
+        Message::Send => {
+            let body = std::mem::take(&mut app.composer);
+            if !body.trim().is_empty() {
+                app.turns.push(Turn::sent(body));
+                app.appended += 1;
+            }
+        }
+        Message::Restart => {
+            app.turns = transcript();
+            app.composer.clear();
+            app.unread = true;
+            app.appended = 0;
+            app.prepended = 0;
+            app.scrolled_up.set(false);
+            // iced keeps the offset under the scroller's id, so a reset has to
+            // ask for the tail as well; GPUI's `reset` re-engages tail following
+            // on its own.
+            return jump_to_end("shell");
+        }
         Message::HoverSource(title) => app.hovered = title,
         Message::PressSource(title) => app.pressed_source = title,
         Message::ShowSource { index, title } => {
@@ -239,6 +296,32 @@ fn line<'a>(
 fn chip<'a>(label: impl Into<String>, message: Message) -> Element<'a, Message> {
     button(text(label.into()).size(theme::FONT_SIZE_XS))
         .on_press(message)
+        .into()
+}
+
+/// An icon in a token colour, resolved when iced renders it so the glyph reads
+/// in either theme. The icon set belongs to the application, so the shell
+/// carries the two Lucide marks it draws rather than reaching for a catalogue.
+fn icon<'a>(xml: &'static [u8], edge: f32, tone: fn(&Tokens) -> Color) -> Element<'a, Message> {
+    svg(svg::Handle::from_memory(xml))
+        .width(edge)
+        .height(edge)
+        .style(move |theme: &Theme, _status| svg::Style {
+            color: Some(tone(&Tokens::of(theme))),
+        })
+        .into()
+}
+
+/// A one-pixel rule in the border token: the header's bottom edge, which GPUI
+/// writes `border_b_1` and iced has no per-side border for.
+fn hairline<'a>() -> Element<'a, Message> {
+    rule::horizontal(1)
+        .style(|theme: &Theme| rule::Style {
+            color: Tokens::of(theme).border,
+            radius: iced::Border::default().radius,
+            fill_mode: rule::FillMode::Full,
+            snap: false,
+        })
         .into()
 }
 
@@ -480,6 +563,137 @@ fn view(app: &App) -> Element<'_, Message> {
         .on_press(Message::JumpTo("slots"));
     let styled = column![slots, latest].spacing(theme::SPACING_SM);
 
+    // section: Virtualization, accessibility, and application boundaries
+    // The scroller owns the transcript band and nothing else. The shell around
+    // it — the header with its circular restart, and the composer with its
+    // circular send — is the application's, which is the boundary this heading
+    // documents when it places the composer outside the list. The rows the
+    // scroller draws are unchanged: a sent turn is the muted bubble at the
+    // trailing edge and a received turn is the ghost variant, which is plain
+    // text on the surface with no fill, border, radius or padding.
+    let restart = Button::new("")
+        .outline()
+        .icon(icon(
+            REFRESH_CW,
+            ControlSize::Medium.icon_size(),
+            |tokens| tokens.foreground,
+        ))
+        .rounded(CIRCLE_RADIUS)
+        .on_press(Message::Restart);
+
+    let header = container(
+        row![
+            column![
+                text("New Chat").size(theme::FONT_SIZE_SM).font(iced::Font {
+                    weight: iced::font::Weight::Semibold,
+                    ..iced::Font::DEFAULT
+                }),
+                line("How can I help you today?", theme::FONT_SIZE_XS, |tokens| {
+                    tokens.muted_foreground
+                }),
+            ]
+            .spacing(theme::SPACING_XS)
+            .width(Length::Fill),
+            restart,
+        ]
+        .spacing(theme::SPACING_SM)
+        .align_y(Axis::Center),
+    )
+    .width(Length::Fill)
+    .padding(SHELL_PADDING);
+
+    let send = Button::new("")
+        .variant(ButtonVariant::Primary)
+        .icon(icon(ARROW_UP, ControlSize::Medium.icon_size(), |tokens| {
+            tokens.primary_foreground
+        }))
+        .rounded(CIRCLE_RADIUS)
+        .on_press(Message::Send);
+
+    // The composer is a borderless field on the muted surface, with the send
+    // control on the trailing edge — GPUI's `Input.appearance(false)` inside a
+    // `rounded_xl()` `bg(muted)` column, and the Slint example's composer.
+    let composer = container(
+        column![
+            Input::new("composer")
+                .value(app.composer.clone())
+                .placeholder("Write a message…")
+                .appearance(false)
+                .on_input(Message::ComposerChanged)
+                .on_submit(Message::Send),
+            container(send).width(Length::Fill).align_x(Axis::End),
+        ]
+        .spacing(theme::SPACING_XS),
+    )
+    .width(Length::Fill)
+    .padding(theme::SPACING_SM)
+    .style(|theme: &Theme| {
+        let tokens = Tokens::of(theme);
+        container::Style {
+            background: Some(tokens.muted.into()),
+            text_color: Some(tokens.foreground),
+            border: iced::border::rounded(theme::RADIUS_XL),
+            ..container::Style::default()
+        }
+    });
+
+    let shell = container(
+        column![
+            header,
+            hairline(),
+            MessageScroller::new(Id::new("shell"), app.turns.clone())
+                .unread_index(unread_index)
+                .scrolled_up(scrolled_up)
+                .on_scroll({
+                    let flag = app.scrolled_up.clone();
+                    move |scrolled_up| {
+                        flag.set(scrolled_up);
+                        Message::Scrolled(scrolled_up)
+                    }
+                })
+                .on_jump(Message::JumpTo("shell")),
+            container(composer).width(Length::Fill).padding(Padding {
+                top: 0.0,
+                right: SHELL_PADDING,
+                bottom: SHELL_PADDING,
+                left: SHELL_PADDING,
+            }),
+        ]
+        // The column owns the frame's height so the transcript band, a `Fill`
+        // child, receives the space the header and composer leave.
+        .height(Length::Fill),
+    )
+    .width(SHELL_WIDTH)
+    .height(SHELL_HEIGHT)
+    .clip(true)
+    .style(|theme: &Theme| {
+        let tokens = Tokens::of(theme);
+        container::Style {
+            background: Some(tokens.background.into()),
+            text_color: Some(tokens.foreground),
+            border: iced::border::rounded(theme::RADIUS_XL)
+                .color(tokens.border)
+                .width(1.0),
+            ..container::Style::default()
+        }
+    });
+
+    let boundaries = column![
+        row![
+            Button::new("Append").on_press(Message::Received),
+            Button::new("Prepend history").on_press(Message::Prepend),
+        ]
+        .spacing(theme::SPACING_SM),
+        line(
+            "the scroller owns the transcript band; the header, the composer and \
+             their controls are the application's",
+            theme::FONT_SIZE_XS,
+            |tokens| tokens.muted_foreground,
+        ),
+        shell,
+    ]
+    .spacing(theme::SPACING_MD);
+
     // section: end
     let status = text(format!(
         "{} turns · {} appended · {} prepended · scrolled up: {}",
@@ -508,6 +722,12 @@ fn view(app: &App) -> Element<'_, Message> {
         jumping,
         heading(app, 6, "Scrollbar and style slots"),
         styled,
+        heading(
+            app,
+            7,
+            "Virtualization, accessibility, and application boundaries"
+        ),
+        boundaries,
         status,
     ]
     .spacing(PAGE)
@@ -521,3 +741,10 @@ fn view(app: &App) -> Element<'_, Message> {
 // ships (`crates/slint-component/ui/icons`, Lucide, ISC), so the three galleries
 // draw the same glyph.
 const CODE_XML: &[u8] = br#"<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m18 16 4-4-4-4"/><path d="m6 8-4 4 4 4"/><path d="m14.5 4-5 16"/></svg>"#;
+
+// The header's restart control, the Lucide `refresh-cw` glyph the Slint
+// example's header carries. From `crates/slint-component/ui/icons`, Lucide, ISC.
+const REFRESH_CW: &[u8] = br#"<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 0 1 9-9 9.75 9.75 0 0 1 6.74 2.74L21 8"/><path d="M21 3v5h-5"/><path d="M21 12a9 9 0 0 1-9 9 9.75 9.75 0 0 1-6.74-2.74L3 16"/><path d="M8 16H3v5"/></svg>"#;
+
+// The composer's send control, the Lucide `arrow-up` glyph.
+const ARROW_UP: &[u8] = br#"<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m5 12 7-7 7 7"/><path d="M12 19V5"/></svg>"#;
