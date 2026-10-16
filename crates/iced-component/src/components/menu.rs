@@ -78,10 +78,16 @@
 //! the component's: an application binds `↑`/`↓`/`Home`/`End`/`Enter` and moves
 //! the highlight itself. `Escape` and a click outside belong to the popover the
 //! menu sits in, which owns those two dismissals for every overlay in this
-//! crate. `Tab` does not move focus out of a menu; there are no submenus and no
-//! link rows. Slint's `Menu` has none of those either; GPUI's `PopupMenu` has
-//! all of them, and this port names the gap rather than drawing a `›` that
-//! opens nothing.
+//! crate. `Tab` does not move focus out of a menu.
+//!
+//! A submenu is an **affordance here and a panel in the caller**: [`Item::submenu`]
+//! draws the trailing chevron GPUI draws, and the row reports through
+//! [`Menu::on_chosen`] like any other — but the nested items are the caller's, so
+//! the caller opens the nested panel. Drawing a `›` that opened nothing would be
+//! the lie this file used to refuse; what makes it honest is the caller having
+//! nested items to put behind it, which this component cannot know.
+//! [`Item::external`] is the same shape: the external-link mark is drawn, and
+//! opening the URL is the application's.
 
 // An application installs the components it uses, so the parts of this file it
 // does not call are not dead code in the way the compiler means — the file is a
@@ -126,10 +132,21 @@ const CHECK_SLOT: f32 = 16.0;
 #[derive(Debug, Clone, PartialEq)]
 pub struct Item {
     label: String,
+    /// A second, smaller line under the label, GPUI's `element` row with a
+    /// sub-title under its title. Empty means a one-line row.
+    subtitle: String,
     icon: Option<&'static [u8]>,
     shortcut: String,
     disabled: bool,
     checked: bool,
+    /// A row that opens a nested panel. The component draws the affordance — a
+    /// trailing chevron — and reports the choice through [`Menu::on_chosen`];
+    /// opening the nested panel is the caller's job, because this component does
+    /// not own the caller's nested items.
+    submenu: bool,
+    /// A row that leaves the application — GPUI's `PopupMenuItem::link`. The
+    /// trailing external-link mark is drawn next to the label.
+    external: bool,
     danger: bool,
     separator: bool,
 }
@@ -139,10 +156,13 @@ impl Item {
     pub fn new(label: impl Into<String>) -> Self {
         Self {
             label: label.into(),
+            subtitle: String::new(),
             icon: None,
             shortcut: String::new(),
             disabled: false,
             checked: false,
+            submenu: false,
+            external: false,
             danger: false,
             separator: false,
         }
@@ -162,6 +182,32 @@ impl Item {
     /// the row's ink.
     pub fn icon(mut self, icon: &'static [u8]) -> Self {
         self.icon = Some(icon);
+        self
+    }
+
+    /// A second line under the label, drawn at `font-size-xs` in
+    /// `muted-foreground` — the sub-title GPUI's custom-element row puts under
+    /// its title. A row with one is taller than the 32px floor, which is what
+    /// [`ROW_HEIGHT`] being a floor rather than a fixed height is for.
+    pub fn subtitle(mut self, subtitle: impl Into<String>) -> Self {
+        self.subtitle = subtitle.into();
+        self
+    }
+
+    /// A row that opens a nested panel. It draws the trailing chevron GPUI's
+    /// submenu row draws; the panel itself is the caller's, because the nested
+    /// items are. The row still reports through [`Menu::on_chosen`], so a caller
+    /// that has a nested menu reacts to the same index a plain row would.
+    pub fn submenu(mut self, submenu: bool) -> Self {
+        self.submenu = submenu;
+        self
+    }
+
+    /// A row that leaves the application — GPUI's `link`. The external-link mark
+    /// is drawn in `muted-foreground` at the label's trailing edge, where GPUI
+    /// puts it, before the shortcut column.
+    pub fn external(mut self, external: bool) -> Self {
+        self.external = external;
         self
     }
 
@@ -230,6 +276,28 @@ impl Item {
     /// field name.
     pub fn shortcut_text(&self) -> &str {
         &self.shortcut
+    }
+
+    /// The second line under the label, or the empty string. [`Item::subtitle`]
+    /// owns the builder name, so the reader names what it hands back.
+    pub fn subtitle_text(&self) -> &str {
+        &self.subtitle
+    }
+
+    /// Whether the row has a second line, which [`Item::subtitle`] sets.
+    pub fn has_subtitle(&self) -> bool {
+        !self.subtitle.is_empty()
+    }
+
+    /// Whether the row draws the trailing submenu chevron.
+    pub fn has_submenu(&self) -> bool {
+        self.submenu
+    }
+
+    /// Whether the row draws the trailing external-link mark. The builder
+    /// [`Item::external`] owns that name, so this takes the `is_` prefix.
+    pub fn is_external(&self) -> bool {
+        self.external
     }
 }
 
@@ -394,7 +462,7 @@ impl<'a, Message> Menu<'a, Message> {
         let row = build_row(item, highlighted, selected, self.items.len(), index);
         // A row is a pointer target only if it has something to report. The
         // three reports are attached independently: a caller that wants only a
-        // hover, or only a press, still gets one, and `on_leave` is what clears
+        // hover, or only a choice, still gets one, and `on_leave` is what clears
         // the hover when the pointer moves on.
         if self.on_highlight.is_none() && self.on_leave.is_none() && self.on_chosen.is_none() {
             return row;
@@ -481,12 +549,13 @@ fn leading_slot<'a, Message>(
     icon: Option<&'static [u8]>,
     danger: bool,
     disabled: bool,
+    lit: bool,
 ) -> Element<'a, Message>
 where
     Message: 'a,
 {
     let content: Element<'a, Message> = match icon {
-        Some(icon) => glyph(icon, danger, disabled),
+        Some(icon) => glyph(icon, danger, disabled, lit),
         None => Space::new().into(),
     };
     container(content)
@@ -495,24 +564,47 @@ where
         .into()
 }
 
-/// The ink a row's label, icon and check mark are drawn in.
-fn row_ink(tokens: Tokens, danger: bool, disabled: bool) -> Color {
+/// The ink a row's label, icon and check mark are drawn in. A highlighted or
+/// selected row takes the accent surface's own foreground — GPUI draws its
+/// `MenuItem` with `accent_foreground` over the accent fill — so the row's ink
+/// and its fill are a readable pair in both appearances.
+fn row_ink(tokens: Tokens, danger: bool, disabled: bool, lit: bool) -> Color {
     if disabled {
         tokens.muted_foreground
     } else if danger {
         tokens.destructive
+    } else if lit {
+        tokens.accent_foreground
     } else {
         tokens.foreground
     }
 }
 
 /// The 14px SVG a row's leading or trailing slot holds.
-fn glyph<'a, Message: 'a>(bytes: &'static [u8], danger: bool, disabled: bool) -> Element<'a, Message> {
+fn glyph<'a, Message: 'a>(
+    bytes: &'static [u8],
+    danger: bool,
+    disabled: bool,
+    lit: bool,
+) -> Element<'a, Message> {
     svg(svg::Handle::from_memory(bytes))
         .width(14.0)
         .height(14.0)
         .style(move |theme: &Theme, _status| svg::Style {
-            color: Some(row_ink(Tokens::of(theme), danger, disabled)),
+            color: Some(row_ink(Tokens::of(theme), danger, disabled, lit)),
+        })
+        .into()
+}
+
+/// The 14px SVG drawn in `muted-foreground`: the submenu chevron and the
+/// external-link mark. GPUI draws both in the muted ink and never in the row's
+/// own, so a danger or disabled row does not tint them with its label.
+fn muted_glyph<'a, Message: 'a>(bytes: &'static [u8]) -> Element<'a, Message> {
+    svg(svg::Handle::from_memory(bytes))
+        .width(14.0)
+        .height(14.0)
+        .style(|theme: &Theme, _status| svg::Style {
+            color: Some(Tokens::of(theme).muted_foreground),
         })
         .into()
 }
@@ -529,10 +621,16 @@ where
 {
     let danger = item.danger;
     let disabled = item.disabled;
+    // A disabled row never lights, so the two are the same surface and the same
+    // ink whether the caller says it is highlighted or selected.
+    let lit = (highlighted || selected) && !disabled;
 
-    // Every row keeps the same four columns — a leading icon slot, the label,
-    // the shortcut, and a trailing check slot — so a row that leaves one empty
-    // still occupies it and the columns line up down the menu.
+    // Every row keeps the same columns — a leading icon slot, the label, the
+    // shortcut, and a trailing check slot — so a row that leaves one empty
+    // still occupies it and the columns line up down the menu. The label column
+    // is the one that grows: a sub-title adds a line under it and the row grows
+    // past the 32px floor, and an external-link row keeps that mark at the
+    // label's trailing edge, inside the column, so the shortcut does not shift.
     //
     // The row is as tall as its tallest child and the label is the one that can
     // wrap, so a two-line label grows the row instead of being clipped by a
@@ -544,16 +642,36 @@ where
         .spacing(theme::SPACING_SM)
         .align_y(iced::Alignment::Center);
 
-    line = line.push(leading_slot(item.icon, danger, disabled));
+    line = line.push(leading_slot(item.icon, danger, disabled, lit));
 
-    line = line.push(
+    let mut label = column![].spacing(theme::SPACING_XS).width(Length::Fill);
+    label = label.push(
         text(item.label.clone())
             .size(theme::FONT_SIZE_SM)
-            .width(Length::Fill)
             .style(move |theme: &Theme| text::Style {
-                color: Some(row_ink(Tokens::of(theme), danger, disabled)),
+                color: Some(row_ink(Tokens::of(theme), danger, disabled, lit)),
             }),
     );
+    if item.has_subtitle() {
+        // GPUI's sub-title: `text_xs` in `muted-foreground`, under the title.
+        label = label.push(
+            text(item.subtitle.clone())
+                .size(theme::FONT_SIZE_XS)
+                .style(|theme: &Theme| text::Style {
+                    color: Some(Tokens::of(theme).muted_foreground),
+                }),
+        );
+    }
+    let label: Element<'a, Message> = if item.is_external() {
+        row![label, muted_glyph::<Message>(EXTERNAL_LINK)]
+            .spacing(theme::SPACING_XS)
+            .width(Length::Fill)
+            .align_y(iced::Alignment::Center)
+            .into()
+    } else {
+        label.into()
+    };
+    line = line.push(label);
 
     line = line.push(if item.shortcut.is_empty() {
         empty_slot(SHORTCUT_SLOT)
@@ -574,8 +692,16 @@ where
         .into()
     });
 
+    // The trailing slot holds the check mark or the submenu chevron — a row is
+    // one or the other, never both — and stays the same width either way, so the
+    // shortcut column does not move between rows.
     line = line.push(if item.checked {
-        container(glyph::<Message>(CHECK, danger, disabled))
+        container(glyph::<Message>(CHECK, danger, disabled, lit))
+            .width(CHECK_SLOT)
+            .center_x(CHECK_SLOT)
+            .into()
+    } else if item.has_submenu() {
+        container(muted_glyph::<Message>(CHEVRON_RIGHT))
             .width(CHECK_SLOT)
             .center_x(CHECK_SLOT)
             .into()
@@ -596,17 +722,17 @@ where
             let tokens = Tokens::of(theme);
             // Hover and the selected state are the same accent surface: the
             // Slint row is `Theme.accent` while hovered, and GPUI's `MenuItem`
-            // draws a selected row with the accent fill and its foreground too.
-            // In the dark theme the accent is `#262626` on the `#171717` panel
-            // and in the light one `#f5f5f5` on white, so the row lights up in
-            // both without either surface changing colour.
-            let fill = if (highlighted || selected) && !disabled {
-                tokens.accent
-            } else {
-                Color::TRANSPARENT
-            };
+            // draws a selected row with the accent fill and `accent_foreground`
+            // ink (`row_ink` above). In the dark theme the accent is `#262626`
+            // on the `#171717` panel and in the light one `#f5f5f5` on white, so
+            // the row lights up in both without either surface changing colour.
             container::Style {
-                background: Some(fill.into()),
+                background: Some(if lit {
+                    tokens.accent
+                } else {
+                    Color::TRANSPARENT
+                }
+                .into()),
                 border: Border {
                     radius: theme::RADIUS_SM.into(),
                     ..Border::default()
@@ -731,5 +857,15 @@ where
 /// lookalikes. A row's own icons are the caller's; this one glyph is the
 /// exception iced's own `checkbox` also makes.
 const CHECK: &[u8] = br#"<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>"#;
+
+/// The submenu chevron, from `crates/slint-component/ui/icons/chevron-right.svg`
+/// (Lucide, ISC) — the mark GPUI's `PopupMenuItem::Submenu` draws with
+/// `IconName::ChevronRight` at the trailing edge.
+const CHEVRON_RIGHT: &[u8] = br#"<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m9 18 6-6-6-6"/></svg>"#;
+
+/// The external-link mark, from
+/// `crates/slint-component/ui/icons/external-link.svg` (Lucide, ISC) — the mark
+/// GPUI's `PopupMenuItem::link` draws with `IconName::ExternalLink`.
+const EXTERNAL_LINK: &[u8] = br#"<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 3h6v6"/><path d="M10 14 21 3"/><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/></svg>"#;
 
 
