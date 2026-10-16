@@ -1088,7 +1088,7 @@ was *exactly* the old step of 24, so tightening the indent to 16 only worked by 
 person to trim it will break the curves without this note.
 
 There is a **second floor**: `CORNER <= rowHeight / 2`, or a bend is taller than the row it sits in.
-The current values are `rowHeight` 36, per-depth step 12, `CORNER` 6 — exactly 2x the corner and well
+The current values are `rowHeight` 28, per-depth step 12, `CORNER` 6 — exactly 2x the corner and well
 inside half a row. Levels carry their own weight independently of the active state (depth 0 at 600,
 children at 400, active 700 plus the full-colour label, dot and rail), so the outline's structure reads
 without standing in it.

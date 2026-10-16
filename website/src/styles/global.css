@@ -132,7 +132,7 @@ html.dark .alignment-dark {
   /* Layout */
   --nav-height: 56px;
   --sidebar-width: 248px;
-  --toc-width: 200px;
+  --toc-width: 300px;
   --layout-max-width: 1280px;
 }
 
@@ -1798,8 +1798,10 @@ html[lang^="ja"] .sidebar-subgroup-title {
   color: color-mix(in srgb, var(--foreground) 80%, transparent);
 }
 
-/* The outline column is narrow, so a long section name wraps inside its row
-   rather than running past the column edge. */
+/* The column holds the outline's own longest names on one line — a top-level
+   trailing section ("See this component in other frameworks") and the longest
+   indented sample ("Interactive Alert with Custom Action"). A name longer than
+   that still breaks inside its row rather than running past the column edge. */
 .toc--animated .toc__entry-label {
   min-width: 0;
   overflow-wrap: break-word;
@@ -1824,8 +1826,10 @@ html[lang^="ja"] .sidebar-subgroup-title {
   font-weight: 700;
 }
 
-/* Below this the three columns stop fitting inside the content box. */
-@media (max-width: 1180px) {
+/* Below this the three columns stop fitting inside the content box: widening
+   the rail to fit its labels spends the article's measure, so the rail gives up
+   its place first. At the breakpoint the article keeps ~572px of prose. */
+@media (max-width: 1280px) {
   .toc {
     display: none;
   }

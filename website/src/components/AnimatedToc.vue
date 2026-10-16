@@ -20,7 +20,7 @@ const props = withDefaults(
     title?: string;
   }>(),
   {
-    rowHeight: 36,
+    rowHeight: 28,
     indent: 12,
     title: 'On this page',
   },
@@ -41,7 +41,10 @@ const RAIL_X = 8;
 const CORNER = 6;
 // The entries share the rail's origin, so this is the rail's own x plus the
 // gap that keeps the dot off the label; depth adds the same indent to both.
-const TEXT_X = RAIL_X + 12;
+// The gap is `sm` (8), which still clears the rail's widest S-bend: a bend
+// reaches `CORNER` (6) from the rail's x, and the bend's horizontal run sits on
+// the row boundary, where the line box has already given up its leading.
+const TEXT_X = RAIL_X + 8;
 
 const xOf = (i: number) => RAIL_X + (items.value[i]?.depth ?? 0) * props.indent;
 const yOf = (i: number) => i * props.rowHeight + props.rowHeight / 2;
