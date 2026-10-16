@@ -151,11 +151,23 @@ const frameworkList: Record<string, Framework> = {
 };
 
 const readFramework = () => {
+  // The server render has no document. Its markup is inert until hydration, and
+  // the framework in force is a client-only fact, so Slint is the honest answer
+  // there; the setup below runs again on the client, where it can read the real
+  // one.
+  if (typeof document === "undefined") return "slint";
   const value = document.documentElement.dataset.framework ?? "slint";
   return value in frameworkList ? value : "slint";
 };
 
-const selected = shallowRef("slint");
+// `html[data-framework]` is written by the inline script in the page head, so
+// the value is already final when this island's setup runs. It has to be read
+// here rather than in `onMounted`: the production guard below watches
+// `available` and acts on its first value, and a `selected` still holding Slint
+// would tell a page whose only framework is GPUI — or whose active framework is
+// iced — that the framework is missing, sending the reader to the catalog
+// before the real one was read.
+const selected = shallowRef(readFramework());
 const framework = computed(() => selected.value);
 const available = computed(
   () =>
@@ -855,7 +867,6 @@ let observer: MutationObserver | undefined;
 
 onMounted(() => {
   window.addEventListener("message", onExampleMessage);
-  selected.value = readFramework();
   observer = new MutationObserver(() => {
     selected.value = readFramework();
   });
