@@ -21,18 +21,19 @@
 //! - **Read-only** has no iced counterpart. iced's field either accepts edits or
 //!   is disabled, so the "Disabled Input" card shows the disabled state and a
 //!   comment names what is missing.
-//! - **Clean on Escape** is the application's. iced's field handles no keys of
-//!   its own outside editing, so the clear control is an ordinary suffix — the
-//!   "Prefix, suffix and clear button" card builds one — and Escape belongs to
-//!   the application's key subscriptions.
+//! - **Clean on Escape** is the application's, and this demo binds it: iced's
+//!   field reports text and submit only and captures Escape to leave the field,
+//!   so the key is read through `event::listen_with` — which sees it whoever
+//!   handled it — rather than `keyboard::listen`, which sees only ignored events.
+//!   The clear suffix is the same action by pointer.
 //! - **The reveal toggle** is a caller's suffix: iced masks a value with
 //!   `secure`, where Slint's `masked` and `mask-toggle` are one property.
 //! - **Atomic inline tokens** have no iced equivalent at all: the value is one
 //!   plain `String`, so a reference cannot live inside it as a token that
 //!   selection and deletion move as a unit. See the last card.
 
-use iced::widget::{column, container, mouse_area, row, scrollable, svg, text};
-use iced::{Alignment, Border, Element, Length, Task, Theme};
+use iced::widget::{Id, column, container, mouse_area, operation, row, scrollable, svg, text};
+use iced::{Alignment, Border, Element, Length, Subscription, Task, Theme};
 
 use crate::components::button::{self as button, Button, Variant};
 use crate::components::group_box::{self, GroupBox};
@@ -46,6 +47,7 @@ pub fn run(theme: Theme) -> iced::Result {
     iced::application(boot, update, view)
         .title("uni-kit — input")
         .theme(theme)
+        .subscription(subscription)
         .run()
 }
 
@@ -152,7 +154,14 @@ fn update(app: &mut App, message: Message) -> Task<Message> {
         Message::Borderless(value) => app.borderless = value,
         Message::Mention(value) => app.mention = value,
         Message::ClearSearch => app.search.clear(),
-        Message::ClearEscape => app.escape.clear(),
+        Message::ClearEscape => {
+            app.escape.clear();
+            // Slint's `clean-on-escape` clears and keeps the caret in the field;
+            // iced's field leaves the field as it captures Escape, so the clear
+            // the key binds puts focus back. The suffix control clears the same
+            // way, which is also what Slint's `cleanable` button does.
+            return operation::focus(Id::new("escape"));
+        }
         Message::Reveal => app.revealed = !app.revealed,
         Message::Submit(value) => app.submitted = Some(value),
         Message::Notice(label) => app.notice = Some(label),
@@ -165,6 +174,23 @@ fn update(app: &mut App, message: Message) -> Task<Message> {
         }
     }
     Task::none()
+}
+
+/// The one key the reference gives the field and iced does not: `clean-on-escape`.
+///
+/// Escape belongs to the application because iced's `text_input` reports text and
+/// submit only, and it **captures** Escape to leave the field —
+/// `keyboard::listen` reports only the events a widget left unhandled, so a
+/// subscription built on it never sees the key. `event::listen_with` sees it
+/// whoever handled it, which is the route the focus trap's demo takes for `Tab`.
+fn subscription(_app: &App) -> Subscription<Message> {
+    iced::event::listen_with(|event, _status, _window| match event {
+        iced::Event::Keyboard(iced::keyboard::Event::KeyPressed {
+            key: iced::keyboard::Key::Named(iced::keyboard::key::Named::Escape),
+            ..
+        }) => Some(Message::ClearEscape),
+        _ => None,
+    })
 }
 
 /// A glyph for a field's prefix or suffix slot, in the muted colour both the
@@ -475,16 +501,17 @@ fn view(app: &App) -> Element<'_, Message> {
     .spacing(12.0);
 
     // section: Clean on ESC
-    // Escape belongs to the application here: iced's field handles no keys of its
-    // own outside editing, so the clear control in the suffix is the mechanism the
-    // port has.
+    // Escape is the application's subscription above: iced's field handles no key
+    // of its own outside editing and captures Escape to leave the field, so
+    // `event::listen_with` is what hears it. The suffix is the same clear by
+    // pointer, which is Slint's `cleanable` beside `clean-on-escape`.
     let escape = column![
         Input::new("escape")
             .value(app.escape.as_str())
-            .placeholder("Clear this with the button")
+            .placeholder("Press Escape to clear")
             .suffix(icon_button(X, Message::ClearEscape))
             .on_input(Message::Escape),
-        muted_line("iced's field takes no Escape action; the suffix button clears it."),
+        muted_line("Escape clears the field — the key is the application's, the suffix does the same."),
     ]
     .spacing(8.0);
 
