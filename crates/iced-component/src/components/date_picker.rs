@@ -470,7 +470,7 @@ where
             .height(Length::Fill)
             .width(Length::Fill),
         )
-        .padding([0.0, size.control_padding()])
+        .padding(size.control_padding())
         .height(Length::Fixed(size.control_height()))
         .width(width)
         .style(move |theme: &Theme| {
