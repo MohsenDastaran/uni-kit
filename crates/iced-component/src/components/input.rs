@@ -316,7 +316,10 @@ where
             // tall in the middle of the frame. The unit matters — a bare `f32` is
             // a *multiple* of the font size, so `30.0` is a thirty-line box and
             // the text is drawn outside the field. `Pixels` is the absolute
-            // height, which is what the size ladder means.
+            // height, which is what the size ladder means. It is deliberately
+            // taller than the frame's padded inside, so iced clamps it to that
+            // inside and the caret comes out inset by the frame's padding instead
+            // of running the frame's full height.
             .line_height(Pixels(height - 2.0))
             .secure(secure)
             .align_x(align_x)
@@ -364,7 +367,16 @@ where
         }
 
         container(contents)
-            .padding([0.0, inset])
+            // The padding is all four sides, `Theme.input-padding-x(size)`, the
+            // same inset `textarea.slint` gives its frame — the horizontal inset
+            // and the vertical inset are one value in the family's authority.
+            // The field's line box below is a line taller than the inside, so
+            // iced clamps it to the padded content box: the caret is inset from
+            // the frame's edge by this padding instead of running its full
+            // height, and the row is still `Fill` and centred, so the text and
+            // the placeholder do not move. The outer height is `Fixed` and does
+            // not change.
+            .padding(inset)
             .height(Length::Fixed(height))
             .width(width)
             .style(move |theme: &Theme| style.resolve(Tokens::of(theme)))
