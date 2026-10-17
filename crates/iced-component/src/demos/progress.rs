@@ -2,8 +2,9 @@
 //!
 //! iced's timer needs a runtime feature this crate does not enable, so the
 //! component takes the value instead. The buttons below stand in for the
-//! subscription an application would run: each press moves the value, and the
-//! loading forms use the same value as their phase.
+//! subscription an application would run: `Advance` and `Reset` move the value,
+//! and `Loading` moves the bar and its circle between the determinate and
+//! indeterminate forms, which take the same value as their phase.
 //!
 //! Each section carries the heading the page gives its sample — the title, and
 //! the code icon that asks the embedding page to scroll to that sample. Clicking
@@ -44,6 +45,10 @@ pub fn run(theme: Theme) -> iced::Result {
 #[derive(Debug, Clone)]
 struct App {
     value: f32,
+    /// Whether the bar and the circle are in their indeterminate form. The
+    /// `Loading` button is the only thing that moves it, so the state can be
+    /// entered and left without restarting the demo.
+    loading: bool,
     /// The palette the custom-style section hands to the bar's fill and edge.
     tokens: Tokens,
     /// Which section heading the pointer is over, and which was pressed, so the
@@ -56,6 +61,7 @@ struct App {
 enum Message {
     Step,
     Reset,
+    ToggleLoading,
     HoverSource(Option<&'static str>),
     PressSource(Option<&'static str>),
     /// A section heading was released: ask the page for that sample.
@@ -68,6 +74,7 @@ enum Message {
 fn boot(tokens: Tokens) -> App {
     App {
         value: 0.35,
+        loading: false,
         tokens,
         hovered: None,
         pressed_source: None,
@@ -83,6 +90,7 @@ fn update(app: &mut App, message: Message) -> Task<Message> {
             }
         }
         Message::Reset => app.value = 0.0,
+        Message::ToggleLoading => app.loading = !app.loading,
         Message::HoverSource(title) => app.hovered = title,
         Message::PressSource(title) => app.pressed_source = title,
         Message::ShowSource { index, title } => {
@@ -94,8 +102,18 @@ fn update(app: &mut App, message: Message) -> Task<Message> {
     Task::none()
 }
 
-fn caption(value: f32) -> iced::widget::Text<'static, iced::Theme, iced::Renderer> {
-    text(format!("{:.0}%", value * 100.0))
+fn caption(
+    value: f32,
+    loading: bool,
+) -> iced::widget::Text<'static, iced::Theme, iced::Renderer> {
+    // The value is ignored while loading — it is the band's phase instead — so
+    // the percentage is not shown then, which is the Slint demo's reading.
+    let label = if loading {
+        "…".to_string()
+    } else {
+        format!("{:.0}%", value * 100.0)
+    };
+    text(label)
         .size(14.0)
         .style(|theme: &iced::Theme| text::Style {
             color: Some(Tokens::of(theme).muted_foreground),
@@ -186,20 +204,29 @@ fn view(app: &App) -> Element<'_, Message> {
 
     // section: Progress
     // The buttons stand in for the subscription an application would run: each
-    // press moves the value the bar and the loading form read.
+    // press moves the value the bar and the loading form read, and `Loading` is
+    // the one that changes the form rather than the value.
     let progress = column![
         row![
             Button::new("Advance")
                 .variant(Variant::Primary)
                 .on_press(Message::Step),
             Button::new("Reset").on_press(Message::Reset),
-            caption(value),
+            Button::new("Loading")
+                .selected(app.loading)
+                .on_press(Message::ToggleLoading),
+            caption(value, app.loading),
         ]
         .spacing(12)
         .align_y(Alignment::Center),
         Progress::new(value),
-        text("The loading form: the value is the phase of the band.").size(14.0),
-        Progress::new(value).loading(true),
+        text(if app.loading {
+            "Loading: the value is the phase of the band."
+        } else {
+            "Determinate: the value is the filled width."
+        })
+        .size(14.0),
+        Progress::new(value).loading(app.loading),
     ]
     .spacing(12);
 
@@ -235,7 +262,7 @@ fn view(app: &App) -> Element<'_, Message> {
             ProgressCircle::new(value),
             ProgressCircle::new(value).size(ControlSize::Large),
             ProgressCircle::new(value).diameter(48.0),
-            ProgressCircle::new(value).loading(true),
+            ProgressCircle::new(value).loading(app.loading),
             ProgressCircle::new(value).status(Status::Warning),
         ]
         .spacing(12)
