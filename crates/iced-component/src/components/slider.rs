@@ -21,6 +21,20 @@
 //! the width minus one thumb, so the whole thumb stays on the track at either
 //! end, and only the value changes are reported.
 //!
+//! **Every part can be given a colour, and none has to be.** GPUI's `Slider`
+//! lets a caller replace the bar with `Styled::bg` and the thumb with
+//! `Styled::text_color`; Slint draws the four parts from the theme and offers no
+//! override at all, which is the gap the example used to state instead of
+//! filling. Here [`track_color`](Slider::track_color), [`fill_color`](Slider::fill_color),
+//! [`thumb_color`](Slider::thumb_color) and
+//! [`thumb_border_color`](Slider::thumb_border_color) take a `fn(&Tokens) -> Color`
+//! that is resolved in [`draw`](Widget::draw), so a custom slider follows a theme
+//! switch and a fixed `Color` cannot freeze one appearance. Unset, each is exactly
+//! the token named above, so an existing call site draws what it always drew.
+//! [`reverse`](Slider::reverse) is GPUI's `reverse()` — the fill from the thumb to
+//! the maximum instead of from the minimum — and [`radius`](Slider::radius) is the
+//! corner `Styled::rounded` sets, pill by default.
+//!
 //! **A step is shared, not re-derived.** Slint's arrow handler is
 //! `min(maximum, value + step)`, which is exactly what
 //! [`number_input::step_value`](super::number_input::step_value) computes — the
@@ -110,6 +124,12 @@ pub struct Slider<'a, Message> {
     size: ControlSize,
     disabled: bool,
     width: Length,
+    track_color: Option<fn(&Tokens) -> Color>,
+    fill_color: Option<fn(&Tokens) -> Color>,
+    thumb_color: Option<fn(&Tokens) -> Color>,
+    thumb_border_color: Option<fn(&Tokens) -> Color>,
+    reverse: bool,
+    radius: Option<f32>,
     on_change: Option<Box<dyn Fn(f32) -> Message + 'a>>,
 }
 
@@ -125,6 +145,12 @@ impl<'a, Message> Slider<'a, Message> {
             size: ControlSize::default(),
             disabled: false,
             width: Length::Fill,
+            track_color: None,
+            fill_color: None,
+            thumb_color: None,
+            thumb_border_color: None,
+            reverse: false,
+            radius: None,
             on_change: None,
         }
     }
@@ -163,6 +189,50 @@ impl<'a, Message> Slider<'a, Message> {
 
     pub fn width(mut self, width: impl Into<Length>) -> Self {
         self.width = width.into();
+        self
+    }
+
+    /// The unfilled track's colour, default [`Tokens::secondary`]. The function
+    /// receives the active tokens, so the colour is resolved when iced draws the
+    /// slider and a theme switch moves it; a fixed `Color` would freeze one
+    /// appearance.
+    pub fn track_color(mut self, color: fn(&Tokens) -> Color) -> Self {
+        self.track_color = Some(color);
+        self
+    }
+
+    /// The filled part of the track's colour, default [`Tokens::primary`].
+    pub fn fill_color(mut self, color: fn(&Tokens) -> Color) -> Self {
+        self.fill_color = Some(color);
+        self
+    }
+
+    /// The thumb's face, default [`Tokens::background`] — the page showing
+    /// through the track rather than a second fill.
+    pub fn thumb_color(mut self, color: fn(&Tokens) -> Color) -> Self {
+        self.thumb_color = Some(color);
+        self
+    }
+
+    /// The thumb's two-pixel edge, default [`Tokens::primary`], the fill's hue
+    /// so the thumb stays a hole in either appearance.
+    pub fn thumb_border_color(mut self, color: fn(&Tokens) -> Color) -> Self {
+        self.thumb_border_color = Some(color);
+        self
+    }
+
+    /// Fill from the thumb to the maximum instead of from the minimum to the
+    /// thumb, GPUI's `reverse()`. Default `false`; values and interaction do not
+    /// change, only the filled side.
+    pub fn reverse(mut self, reverse: bool) -> Self {
+        self.reverse = reverse;
+        self
+    }
+
+    /// The track's corner radius in pixels, default half the track's height —
+    /// the pill Slint draws. GPUI's `Styled::rounded` is the same override.
+    pub fn radius(mut self, radius: f32) -> Self {
+        self.radius = Some(radius);
         self
     }
 
@@ -224,6 +294,44 @@ impl<'a, Message> Slider<'a, Message> {
             && let Some(on_change) = &self.on_change
         {
             shell.publish(on_change(next));
+        }
+    }
+
+    /// The four colours a slider draws with — the unfilled track, the filled
+    /// track, the thumb's edge and the thumb's face — with any caller override
+    /// resolved against the active tokens.
+    ///
+    /// The defaults are the tokens the Slint authority names: the unfilled track
+    /// is `secondary` and the fill `primary`, so the two halves differ by
+    /// lightness in both appearances rather than by hue alone. The thumb's face
+    /// is the page with an edge of the fill, which is how it stays visible on the
+    /// one hue it sits against.
+    ///
+    /// Disabled lowers the weights instead of fading a subtree iced cannot fade,
+    /// and the edge keeps enough of the fill to be an edge in either theme. A
+    /// caller's own colours are muted the same way, so a custom slider disabled
+    /// by `on_change` being absent still reads as one family.
+    fn colors(&self, tokens: Tokens, disabled: bool) -> (Color, Color, Color, Color) {
+        let track = self
+            .track_color
+            .unwrap_or(|tokens: &Tokens| tokens.secondary)(&tokens);
+        let fill = self.fill_color.unwrap_or(|tokens: &Tokens| tokens.primary)(&tokens);
+        let edge = self
+            .thumb_border_color
+            .unwrap_or(|tokens: &Tokens| tokens.primary)(&tokens);
+        let face = self
+            .thumb_color
+            .unwrap_or(|tokens: &Tokens| tokens.background)(&tokens);
+
+        if disabled {
+            (
+                theme::alpha(track, 0.7),
+                theme::alpha(fill, 0.45),
+                theme::alpha(edge, 0.45),
+                face,
+            )
+        } else {
+            (track, fill, edge, face)
         }
     }
 }
@@ -368,8 +476,15 @@ where
         let travel = (bounds.width - thumb).max(0.0);
         let centre = bounds.x + thumb / 2.0 + travel * self.fraction();
 
-        let (unfilled, filled, edge, face) = colors(tokens, disabled);
-        let radius = track / 2.0;
+        let (unfilled, filled, edge, face) = self.colors(tokens, disabled);
+        let radius = self.radius.unwrap_or(track / 2.0);
+        // GPUI's fill spans the thumb to the end of the track when reversed;
+        // otherwise it runs from the start of the track to the thumb.
+        let (fill_start, fill_end) = if self.reverse {
+            (centre, bounds.x + bounds.width)
+        } else {
+            (bounds.x, centre)
+        };
 
         // The track, then the fill over it from the minimum end to the thumb.
         renderer.fill_quad(
@@ -391,9 +506,9 @@ where
         renderer.fill_quad(
             renderer::Quad {
                 bounds: Rectangle {
-                    x: bounds.x,
+                    x: fill_start,
                     y: rail_y - track / 2.0,
-                    width: (centre - bounds.x).max(0.0),
+                    width: (fill_end - fill_start).max(0.0),
                     height: track,
                 },
                 border: Border {
@@ -452,33 +567,6 @@ where
         } else {
             mouse::Interaction::default()
         }
-    }
-}
-
-/// The four colours a slider draws with: the unfilled track, the filled track,
-/// the thumb's edge and the thumb's face.
-///
-/// The unfilled track is `secondary` and the fill `primary`, so the two halves
-/// differ by lightness in both appearances rather than by hue alone. The thumb's
-/// face is the page with an edge of the fill, which is how it stays visible on
-/// the one hue it sits against. Disabled lowers the weights instead of fading a
-/// subtree iced cannot fade, and the edge keeps enough of the fill to be an edge
-/// in either theme.
-fn colors(tokens: Tokens, disabled: bool) -> (Color, Color, Color, Color) {
-    if disabled {
-        (
-            theme::alpha(tokens.secondary, 0.7),
-            theme::alpha(tokens.primary, 0.45),
-            theme::alpha(tokens.primary, 0.45),
-            tokens.background,
-        )
-    } else {
-        (
-            tokens.secondary,
-            tokens.primary,
-            tokens.primary,
-            tokens.background,
-        )
     }
 }
 
