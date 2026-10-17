@@ -102,23 +102,32 @@ fn label_size(size: ControlSize) -> f32 {
     }
 }
 
-/// The track's fill for a state. Unchecked is the secondary surface a shade
-/// darker, which is what keeps the near-page thumb visible against it in both
-/// appearances.
+/// The track's fill for a state.
+///
+/// Slint's authority is `secondary.darker(0.1)`, and the port drew exactly that,
+/// but the token is too weak to be a switch: the off track measured **1.57:1**
+/// against the light page and **1.24:1** against the dark one, so the
+/// page-coloured thumb had no track to sit in and the control read as a smudge.
+/// `secondary` is parity-locked to the Slint theme, so the component takes the
+/// nearest token that does read instead — `muted_foreground`, which measures
+/// **4.74:1** and **7.85:1** there, against both the page and the thumb. `ring`
+/// was the nearer candidate but clears the boundary only in dark (2.52:1 light).
+/// The gap is in the theme, not in this file: the authority's own off-track pair
+/// needs a stronger token, which is the owner's decision.
 fn track_fill(tokens: Tokens, checked: bool, disabled: bool) -> Color {
     if disabled {
         theme::alpha(
             if checked {
                 tokens.primary
             } else {
-                tokens.secondary
+                tokens.muted_foreground
             },
             0.5,
         )
     } else if checked {
         tokens.primary
     } else {
-        theme::darken(tokens.secondary, 0.1)
+        tokens.muted_foreground
     }
 }
 
