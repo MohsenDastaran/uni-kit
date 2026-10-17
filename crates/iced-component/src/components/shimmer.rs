@@ -1,19 +1,20 @@
-//! A shimmer: a moving highlight that sweeps across a muted band, the loading
-//! treatment GPUI Component's `ShimmerText` and the Slint `ShimmerText` both
-//! animate.
+//! A shimmer: a moving highlight that sweeps through the label's own ink, the
+//! loading treatment GPUI Component's `ShimmerText` and the Slint `ShimmerText`
+//! both animate.
 //!
-//! iced cannot paint a gradient through part of a text run, and a canvas cannot
-//! draw the caller's text, so what this draws is the band itself rather than the
-//! text under it: a track in the base colour with the highlight travelling
-//! across it. That is the same motion at the same fractions as the reference,
-//! and it is the closest an iced component can come without owning the text's
-//! shaping. A caller who wants the text as well places [`label`] over the band
-//! with `stack`, which is what the demo does.
+//! The text keeps its layout as one run and the colour varies along it: the
+//! ink is the label's base colour where the band is not, and the highlight
+//! colour where it is, so the highlight travels *through the glyphs* rather than
+//! behind them. The run is split into [`SPAN_COUNT`] spans, laid out as one
+//! paragraph, and each span's colour is mixed from its own position against the
+//! sweep. A single `text` carries one colour, so spans are the only way to
+//! colour part of a run without giving up shaping and kerning — splitting the
+//! label into a widget per character would lay each glyph out on its own.
 //!
 //! **The sweep is a clock owned by the widget tree.** iced 0.14 has no interval
 //! subscription under this crate's runtime, but an element that implements
 //! `Widget` keeps state in the tree and can ask for frames itself: while the
-//! band is visible it calls `shell.request_redraw()`, and every frame samples
+//! label is visible it calls `shell.request_redraw()`, and every frame samples
 //! the frame's own instant to place the highlight. This is the spinner's shape
 //! rather than the collapsible reveal's — the motion never ends while the
 //! component is shown — and it is why the demo moves without a `Task`, a
@@ -21,17 +22,27 @@
 //! Slint authority's `2s`, and the curve is linear because Slint's animation
 //! clock samples the progress straight from elapsed time.
 //!
-//! The band advances from left to right by default and [`Shimmer::reverse`]
+//! The highlight advances from left to right by default and [`Shimmer::reverse`]
 //! sweeps it the other way, exactly as the Slint `reverse` property does.
 //! [`Shimmer::once`] plays a single sweep and stops at the end; the state is
 //! keyed by position, so [`Shimmer::restart_on`] carries the caller's replay
 //! counter and starts the sweep again when it changes.
 //!
+//! **The default highlight moves the ink 70% of the way toward the page**, the
+//! distance Slint's light-theme default uses (`background.mix(color, 0.7)`,
+//! which weights the receiver). Slint's dark-theme default instead mixes 60%
+//! toward the foreground, which is a no-op for a foreground-coloured label and
+//! only 1.5:1 against a muted one — present but imperceptible, the failure this
+//! catalogue keeps finding. Moving toward the page in both appearances measures
+//! **9.8:1 and 3.2:1 in light** and **7.5:1 and 4.7:1 in dark** for the
+//! foreground and muted labels the example draws, and a caller can still pass
+//! its own [`Shimmer::highlight`] — the accent in the demo's timing sample.
+//!
 //! **The sweep cannot be suppressed.** This crate exposes no reduced-motion
-//! preference (the collapsible's reveal has the same note), so the band keeps
-//! moving even where the platform asks for reduced motion. A caller that needs
-//! a still rendering should draw the band's end state itself — the module has no
-//! builder that switches the clock off.
+//! preference (the collapsible's reveal and the skeleton have the same note), so
+//! the ink keeps moving even where the platform asks for reduced motion. A
+//! caller that needs a still rendering should draw the label's ordinary text
+//! instead — the module has no builder that switches the clock off.
 
 // An application installs the components it uses, so the parts of this file it
 // does not call are not dead code in the way the compiler means — the file is a
@@ -40,12 +51,11 @@
 #![allow(dead_code)]
 
 use iced::advanced::layout::{self, Layout};
-use iced::advanced::renderer::{self, Quad};
+use iced::advanced::text::{self, Paragraph as _, Renderer as _, Span, Text};
 use iced::advanced::widget::{self, Tree, Widget};
-use iced::advanced::{Clipboard, Renderer, Shell};
+use iced::advanced::{Clipboard, Shell};
 use iced::time::{Duration, Instant};
-use iced::widget::text;
-use iced::{Background, Border, Color, Element, Event, Length, Rectangle, Size, Theme};
+use iced::{Color, Element, Event, Font, Length, Pixels, Rectangle, Size, Theme, alignment};
 
 use super::theme::{self, Tokens};
 
@@ -56,34 +66,53 @@ pub const DEFAULT_DURATION: Duration = Duration::from_secs(2);
 /// Slint's `spread: 0.3`.
 pub const DEFAULT_SPREAD: f32 = 0.3;
 
-/// A shimmer band, built with the methods below. It carries no message, but it
+/// How many spans the label is cut into, at most.
+///
+/// Twelve is the handful that makes the ramp read as a moving band: at the
+/// default spread the band covers 60% of the label, so about seven spans sit
+/// inside it and each step between neighbours is roughly a quarter of the
+/// transition. A label shorter than twelve characters gets one span per
+/// character, and the chunks stay inside a single paragraph, so the whole run is
+/// still shaped and kerned together.
+pub const SPAN_COUNT: usize = 12;
+
+/// How far the default highlight moves the base ink toward the page: the
+/// distance Slint's light-theme default uses, `0.7` of the way. It is measured
+/// from the ink rather than from the page, so a muted label gains its band too.
+const DEFAULT_HIGHLIGHT: f32 = 0.7;
+
+/// A shimmer label, built with the methods below. It carries no message, but it
 /// is generic over one so a caller can place it in any view without annotating
 /// the type.
 pub struct Shimmer<Message> {
+    text: String,
     duration: Duration,
     spread: f32,
     spread_width: Option<f32>,
     reverse: bool,
     once: bool,
     restart_on: u64,
-    height: f32,
+    size: f32,
+    font: Font,
     color: Option<fn(&Tokens) -> Color>,
     highlight: Option<fn(&Tokens) -> Color>,
     _message: std::marker::PhantomData<Message>,
 }
 
 impl<Message> Shimmer<Message> {
-    /// A band that starts its sweep when it is first shown. The default is a
+    /// A label whose sweep starts when it is first shown. The default is a
     /// looping, two-second, left-to-right sweep, the Slint authority's own.
-    pub fn new() -> Self {
+    pub fn new(text: impl Into<String>) -> Self {
         Self {
+            text: text.into(),
             duration: DEFAULT_DURATION,
             spread: DEFAULT_SPREAD,
             spread_width: None,
             reverse: false,
             once: false,
             restart_on: 0,
-            height: theme::FONT_SIZE_SM,
+            size: theme::FONT_SIZE_SM,
+            font: Font::DEFAULT,
             color: None,
             highlight: None,
             _message: std::marker::PhantomData,
@@ -97,7 +126,7 @@ impl<Message> Shimmer<Message> {
         self
     }
 
-    /// The highlight's half-width as a fraction of the band, clamped to
+    /// The highlight's half-width as a fraction of the label, clamped to
     /// `0.05..=1.0` as Slint's `spread` is. This is ignored when
     /// [`Shimmer::spread_width`] is set.
     pub fn spread(mut self, spread: f32) -> Self {
@@ -136,83 +165,76 @@ impl<Message> Shimmer<Message> {
         self
     }
 
-    pub fn height(mut self, height: f32) -> Self {
-        self.height = height;
+    /// The label's size in pixels, Slint's `font-size`.
+    pub fn size(mut self, size: f32) -> Self {
+        if size.is_finite() && size > 0.0 {
+            self.size = size;
+        }
         self
     }
 
-    /// The base colour the band sits on. The default is the theme's muted
-    /// surface. It is a function of the tokens because the theme is only known
-    /// when iced draws.
+    /// The label's weight, Slint's `font-weight`.
+    pub fn weight(mut self, weight: iced::font::Weight) -> Self {
+        self.font = Font {
+            weight,
+            ..self.font
+        };
+        self
+    }
+
+    /// The base ink the label draws in where the band is not. The default is
+    /// the theme's foreground, Slint's `color`. It is a function of the tokens
+    /// because the theme is only known when iced draws.
     pub fn color(mut self, color: fn(&Tokens) -> Color) -> Self {
         self.color = Some(color);
         self
     }
 
-    /// The highlight itself. The default is theme-aware: the track moved 20%
-    /// toward the foreground, so the label over it stays readable. Like
-    /// [`Shimmer::color`], it is resolved when the band is drawn.
+    /// The colour the band's centre takes. The default moves the base ink 70%
+    /// of the way toward the page, so the band reads against both a foreground
+    /// and a muted label in both appearances. Like [`Shimmer::color`], it is
+    /// resolved when the ink is drawn.
     pub fn highlight(mut self, color: fn(&Tokens) -> Color) -> Self {
         self.highlight = Some(color);
         self
+    }
+
+    /// The base ink and the highlight this label draws with.
+    fn resolve(&self, tokens: Tokens) -> (Color, Color) {
+        resolve(self.color, self.highlight, tokens)
     }
 }
 
 impl<Message> Default for Shimmer<Message> {
     fn default() -> Self {
-        Self::new()
+        Self::new("")
     }
 }
 
-/// The colours a shimmer draws its track and its highlight with.
-pub struct Style {
-    pub color: Option<fn(&Tokens) -> Color>,
-    pub highlight: Option<fn(&Tokens) -> Color>,
+/// The base ink and the highlight, from the caller's choices or the defaults.
+fn resolve(
+    color: Option<fn(&Tokens) -> Color>,
+    highlight: Option<fn(&Tokens) -> Color>,
+    tokens: Tokens,
+) -> (Color, Color) {
+    let base = color
+        .map(|color| color(&tokens))
+        .unwrap_or(tokens.foreground);
+    let highlight = highlight
+        .map(|color| color(&tokens))
+        .unwrap_or_else(|| default_highlight(tokens, base));
+    (base, highlight)
 }
 
-impl Style {
-    pub fn new() -> Self {
-        Self {
-            color: None,
-            highlight: None,
-        }
-    }
-
-    pub fn color(mut self, color: fn(&Tokens) -> Color) -> Self {
-        self.color = Some(color);
-        self
-    }
-
-    pub fn highlight(mut self, color: fn(&Tokens) -> Color) -> Self {
-        self.highlight = Some(color);
-        self
-    }
-
-    /// The track and the highlight the band paints with.
-    ///
-    /// The default highlight moves the track 20% toward the foreground, the
-    /// same mix GPUI's `ShimmerText` gives its highlight. Slint can light the
-    /// text itself; here the band sits behind the caller's label, so a highlight
-    /// as bright as the foreground would erase the label as it passes. Twenty
-    /// percent stays visible against the muted track in both appearances while
-    /// leaving the foreground readable over it.
-    pub fn resolve(&self, tokens: Tokens) -> (Color, Color) {
-        let base = self
-            .color
-            .map(|color| color(&tokens))
-            .unwrap_or(tokens.muted);
-        let highlight = self
-            .highlight
-            .map(|color| color(&tokens))
-            .unwrap_or_else(|| theme::mix(base, tokens.foreground, 0.2));
-        (base, highlight)
-    }
-}
-
-impl Default for Style {
-    fn default() -> Self {
-        Self::new()
-    }
+/// The base ink brought 70% of the way toward the page background.
+///
+/// Slint's light arm does exactly this from the page's side
+/// (`background.mix(color, 0.7)`); the dark arm mixes toward the foreground,
+/// which leaves a foreground label unlit and a muted one at 1.5:1. Moving the
+/// ink toward the page reads as a band in both appearances, and it always moves
+/// away from the label's own colour rather than toward it.
+fn default_highlight(tokens: Tokens, base: Color) -> Color {
+    theme::mix(base, tokens.background, DEFAULT_HIGHLIGHT)
 }
 
 /// The sweep's clock, held in the widget tree instead of the caller's state.
@@ -270,40 +292,142 @@ impl Sweep {
     }
 }
 
-/// The element that carries [`Sweep`] in the widget tree and paints the band.
-struct Band<Message> {
+/// The paragraph this widget draws: the renderer's own type, kept alive from
+/// `draw` until it flushes the frame.
+type Drawn = <iced::Renderer as text::Renderer>::Paragraph;
+
+/// The element that carries [`Sweep`] in the widget tree and draws the label.
+struct Ink<Message> {
+    text: String,
     duration: Duration,
     spread: f32,
     spread_width: Option<f32>,
     reverse: bool,
     once: bool,
     restart_on: u64,
-    height: f32,
+    size: f32,
+    font: Font,
     color: Option<fn(&Tokens) -> Color>,
     highlight: Option<fn(&Tokens) -> Color>,
+    /// The paragraph the last `draw` handed the renderer.
+    ///
+    /// `fill_paragraph` records a *weak* reference to the paragraph and resolves
+    /// it when the frame is flushed, so a paragraph built as a local in `draw`
+    /// is gone by then and nothing paints. Keeping it here — the element lives
+    /// until the next view rebuild, which is after the flush — is what makes the
+    /// ink visible. Forgetting this is a widget that lays out and draws nothing.
+    drawn: std::cell::RefCell<Option<Drawn>>,
     _message: std::marker::PhantomData<Message>,
 }
 
-impl<Message> Band<Message> {
-    fn band(&self, progress: f32, width: f32) -> f32 {
-        let half = match self.spread_width {
-            Some(spread_width) => spread_width / width.max(1.0),
-            None => self.spread,
-        };
+impl<Message> Ink<Message> {
+    /// Where the band's centre sits along the label, as a fraction of its
+    /// width: `0.0` is the leading edge, `1.0` the trailing one.
+    fn band(&self, progress: f32) -> f32 {
+        let half = self.spread;
         let travel = -half + progress * (1.0 + 2.0 * half);
-        let band = if self.reverse { 1.0 - travel } else { travel };
-        band * width
+        if self.reverse { 1.0 - travel } else { travel }
     }
 
+    /// The half-width as a fraction of the label, from `spread` or from the
+    /// fixed `spread-width` against the measured label width.
     fn half_width(&self, width: f32) -> f32 {
         match self.spread_width {
             Some(spread_width) => spread_width / width.max(1.0),
             None => self.spread,
         }
     }
+
+    /// The label's spans, coloured by where each chunk sits against the band.
+    fn spans<'a>(
+        &'a self,
+        base: Color,
+        highlight: Color,
+        progress: f32,
+        width: f32,
+    ) -> Vec<Span<'a, (), Font>> {
+        let chunks = chunks(&self.text, SPAN_COUNT);
+        let count = chunks.len().max(1) as f32;
+        let half = self.half_width(width).max(0.001);
+        let band = self.band(progress);
+
+        chunks
+            .into_iter()
+            .enumerate()
+            .map(|(index, chunk)| {
+                // The chunk's nearest point to the band, not its centre: the
+                // colour a span can show is the strongest the ramp has inside
+                // it, so the span the band is crossing takes the highlight
+                // itself and its neighbours fade toward the base ink. Sampling
+                // chunk centres would leave the peak a fraction short of the
+                // highlight whenever the band falls between two centres.
+                let start = index as f32 / count;
+                let end = (index + 1) as f32 / count;
+                let distance = (band.clamp(start, end) - band).abs();
+                let t = if distance >= half {
+                    0.0
+                } else {
+                    1.0 - distance / half
+                };
+
+                Span::new(chunk)
+                    .size(self.size)
+                    .font(self.font)
+                    .color(theme::mix(base, highlight, t))
+            })
+            .collect()
+    }
 }
 
-impl<Message> Widget<Message, Theme, iced::Renderer> for Band<Message> {
+/// The label cut into at most `count` chunks at character boundaries, spread
+/// evenly over the string. Real glyph widths differ, so a chunk's centre is an
+/// approximation of its position along the line — which is what a gradient over
+/// the run would have said too, and why the band's edges are soft.
+fn chunks(text: &str, count: usize) -> Vec<&str> {
+    let boundaries: Vec<usize> = text
+        .char_indices()
+        .map(|(index, _)| index)
+        .chain(std::iter::once(text.len()))
+        .collect();
+    let characters = boundaries.len().saturating_sub(1);
+    if characters == 0 {
+        return Vec::new();
+    }
+
+    let spans = count.clamp(1, characters);
+    (0..spans)
+        .map(|index| {
+            let start = boundaries[index * characters / spans];
+            let end = boundaries[(index + 1) * characters / spans];
+            &text[start..end]
+        })
+        .filter(|chunk| !chunk.is_empty())
+        .collect()
+}
+
+/// One paragraph from `spans`, laid out on one line at the caller's size and
+/// font. Drawing it is what carries the per-span colours to the glyphs.
+fn paragraph<'a>(
+    spans: &[Span<'a, (), Font>],
+    size: f32,
+    font: Font,
+    bounds: Size,
+) -> <iced::Renderer as text::Renderer>::Paragraph {
+    <iced::Renderer as text::Renderer>::Paragraph::with_spans(Text {
+        content: spans,
+        bounds,
+        size: Pixels(size),
+        line_height: text::LineHeight::default(),
+        font,
+        align_x: alignment::Horizontal::Left.into(),
+        align_y: alignment::Vertical::Top,
+        shaping: text::Shaping::Advanced,
+        // Slint's `ShimmerText` defaults to `no-wrap` with `elide`.
+        wrapping: text::Wrapping::None,
+    })
+}
+
+impl<Message> Widget<Message, Theme, iced::Renderer> for Ink<Message> {
     fn tag(&self) -> widget::tree::Tag {
         widget::tree::Tag::of::<Sweep>()
     }
@@ -313,7 +437,9 @@ impl<Message> Widget<Message, Theme, iced::Renderer> for Band<Message> {
     }
 
     fn size(&self) -> Size<Length> {
-        Size::new(Length::Fill, Length::Fixed(self.height))
+        // The label owns its own size, as Slint's `Text` does; the caller places
+        // it rather than stretching a track under it.
+        Size::new(Length::Shrink, Length::Shrink)
     }
 
     fn layout(
@@ -322,7 +448,19 @@ impl<Message> Widget<Message, Theme, iced::Renderer> for Band<Message> {
         _renderer: &iced::Renderer,
         limits: &layout::Limits,
     ) -> layout::Node {
-        layout::atomic(limits, Length::Fill, Length::Fixed(self.height))
+        // Colours do not affect metrics, so the measurement is one uncoloured
+        // span; `draw` is where the run is cut up and coloured.
+        let measured = paragraph(
+            &[Span::new(self.text.as_str())
+                .size(self.size)
+                .font(self.font)],
+            self.size,
+            self.font,
+            limits.max(),
+        )
+        .min_bounds();
+
+        layout::sized(limits, Length::Shrink, Length::Shrink, |_| measured)
     }
 
     fn update(
@@ -347,9 +485,9 @@ impl<Message> Widget<Message, Theme, iced::Renderer> for Band<Message> {
             sweep.start(now);
         }
         if sweep.sample(now, self.duration, self.once) {
-            // The motion never ends while the band is visible, so every frame
+            // The motion never ends while the label is visible, so every frame
             // asks for the next one. This is the spinner's request, with the
-            // band rather than a mark.
+            // ink rather than a mark.
             shell.request_redraw();
         }
     }
@@ -359,70 +497,26 @@ impl<Message> Widget<Message, Theme, iced::Renderer> for Band<Message> {
         tree: &Tree,
         renderer: &mut iced::Renderer,
         theme: &Theme,
-        _style: &renderer::Style,
+        _defaults: &iced::advanced::renderer::Style,
         layout: Layout<'_>,
         _cursor: iced::mouse::Cursor,
-        _viewport: &Rectangle,
+        viewport: &Rectangle,
     ) {
         let bounds = layout.bounds();
-        if bounds.width < 1.0 || bounds.height < 1.0 {
+        if bounds.width < 1.0 || bounds.height < 1.0 || !bounds.intersects(viewport) {
             return;
         }
 
-        // Every token is read when iced draws, so a theme switch moves the band
-        // with the page.
+        // Every token is read when iced draws, so a theme switch recolours the
+        // ink with the page.
         let tokens = Tokens::of(theme);
-        let style = Style::new();
-        let style = match self.color {
-            Some(color) => style.color(color),
-            None => style,
-        };
-        let style = match self.highlight {
-            Some(highlight) => style.highlight(highlight),
-            None => style,
-        };
-        let (base, highlight) = style.resolve(tokens);
+        let (base, highlight) = resolve(self.color, self.highlight, tokens);
+        let progress = tree.state.downcast_ref::<Sweep>().progress;
+        let spans = self.spans(base, highlight, progress, bounds.width);
+        let paragraph = paragraph(&spans, self.size, self.font, bounds.size());
 
-        renderer.fill_quad(
-            Quad {
-                bounds,
-                border: Border::default(),
-                ..Quad::default()
-            },
-            Background::Color(base),
-        );
-
-        // The highlight is a gradient in the Slint version: opaque at the band,
-        // fading to the base across the spread on each side. Drawing it as a
-        // run of one-pixel columns reproduces that fade without depending on a
-        // renderer's gradient support.
-        let width = bounds.width;
-        let half = self.half_width(width);
-        let band = self.band(tree.state.downcast_ref::<Sweep>().progress, width);
-        let span = (half * width).max(1.0);
-        let columns = width.ceil() as usize;
-
-        for column in 0..columns {
-            let x = column as f32;
-            let distance = (x - band).abs();
-            if distance >= span {
-                continue;
-            }
-            let t = 1.0 - distance / span;
-            renderer.fill_quad(
-                Quad {
-                    bounds: Rectangle {
-                        x: bounds.x + x,
-                        y: bounds.y,
-                        width: 1.0,
-                        height: bounds.height,
-                    },
-                    border: Border::default(),
-                    ..Quad::default()
-                },
-                Background::Color(theme::mix(base, highlight, t)),
-            );
-        }
+        renderer.fill_paragraph(&paragraph, bounds.position(), base, *viewport);
+        *self.drawn.borrow_mut() = Some(paragraph);
     }
 }
 
@@ -431,33 +525,74 @@ where
     Message: 'a,
 {
     fn from(control: Shimmer<Message>) -> Self {
-        Element::new(Band {
+        Element::new(Ink {
+            text: control.text,
             duration: control.duration,
             spread: control.spread,
             spread_width: control.spread_width,
             reverse: control.reverse,
             once: control.once,
             restart_on: control.restart_on,
-            height: control.height,
+            size: control.size,
+            font: control.font,
             color: control.color,
             highlight: control.highlight,
+            drawn: std::cell::RefCell::new(None),
             _message: std::marker::PhantomData,
         })
     }
 }
 
-/// A label in the shimmer's own colours, for a caller that wants the text as
-/// well as the band and places it over [`Shimmer`] with a `stack`.
-pub fn text_ink(tokens: Tokens) -> Color {
-    tokens.foreground
-}
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::components::theme::{DARK, LIGHT};
 
-/// A text label the caller can place over a shimmer band.
-pub fn label<'a, Message: 'a>(label: impl Into<String>) -> Element<'a, Message> {
-    text(label.into())
-        .size(theme::FONT_SIZE_SM)
-        .style(|theme: &Theme| iced::widget::text::Style {
-            color: Some(Tokens::of(theme).foreground),
-        })
-        .into()
+    /// The WCAG relative luminance of an opaque colour.
+    fn luminance(color: Color) -> f32 {
+        let channel = |value: f32| {
+            if value <= 0.03928 {
+                value / 12.92
+            } else {
+                ((value + 0.055) / 1.055).powf(2.4)
+            }
+        };
+        0.2126 * channel(color.r) + 0.7152 * channel(color.g) + 0.0722 * channel(color.b)
+    }
+
+    fn contrast(a: Color, b: Color) -> f32 {
+        let (a, b) = (luminance(a), luminance(b));
+        (a.max(b) + 0.05) / (a.min(b) + 0.05)
+    }
+
+    #[test]
+    fn test_shimmer_highlight_reads_in_both_themes() {
+        // The band is only present if the eye can see it, and the two labels the
+        // example draws in each appearance are the ones that have to read.
+        for tokens in [LIGHT, DARK] {
+            for base in [tokens.foreground, tokens.muted_foreground] {
+                let ratio = contrast(base, default_highlight(tokens, base));
+                assert!(ratio >= 3.0, "highlight is {ratio:.2}:1 against {base:?}");
+            }
+        }
+    }
+
+    #[test]
+    fn test_shimmer_spans_cover_the_text_once() {
+        assert_eq!(chunks("", SPAN_COUNT), Vec::<&str>::new());
+        assert_eq!(chunks("Hi", SPAN_COUNT).concat(), "Hi");
+        assert_eq!(chunks("Thinking…", SPAN_COUNT).len(), 9);
+        assert_eq!(chunks("Thinking…", SPAN_COUNT).concat(), "Thinking…");
+
+        let long = "The assistant is thinking about the open issues…";
+        let cut = chunks(long, SPAN_COUNT);
+        assert_eq!(cut.len(), SPAN_COUNT);
+        assert_eq!(cut.concat(), long);
+        // Character boundaries, not byte boundaries, or a multi-byte label
+        // would panic on the slice.
+        assert_eq!(
+            chunks("Läbeln mit Ümlauten", SPAN_COUNT).concat(),
+            "Läbeln mit Ümlauten"
+        );
+    }
 }
