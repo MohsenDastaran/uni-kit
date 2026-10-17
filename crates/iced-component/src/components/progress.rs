@@ -1,7 +1,8 @@
 //! A linear progress bar and a circular one. Mirror GPUI Component's `Progress`
 //! and `ProgressCircle` and the Slint versions beside them: a 0–1 value, a
 //! status, sizes from 4 to 10 pixels tall for the bar and 8 to 20 across for
-//! the circle, and a loading form.
+//! the circle, a loading form, and the custom height, radius and border GPUI's
+//! `Styled` set gives the bar.
 //!
 //! **Determinate by value, not by a timer.** The Slint versions animate the
 //! width and drive their loading form from `animation-tick()`. iced's timer
@@ -50,6 +51,10 @@ pub struct Progress<Message> {
     size: ControlSize,
     status: Status,
     color: Option<Color>,
+    height: Option<f32>,
+    radius: Option<f32>,
+    border: f32,
+    border_color: Option<Color>,
     _message: std::marker::PhantomData<Message>,
 }
 
@@ -62,6 +67,10 @@ impl<Message> Progress<Message> {
             size: ControlSize::default(),
             status: Status::default(),
             color: None,
+            height: None,
+            radius: None,
+            border: 0.0,
+            border_color: None,
             _message: std::marker::PhantomData,
         }
     }
@@ -90,14 +99,42 @@ impl<Message> Progress<Message> {
         self
     }
 
-    /// The track height: 4 / 6 / 8 / 10 pixels for xsmall through large.
+    /// A height for the track, replacing the size's. GPUI's `Styled::h`, which
+    /// the page's custom-style sample sets to 16 pixels.
+    pub fn height(mut self, height: f32) -> Self {
+        self.height = Some(height.max(0.0));
+        self
+    }
+
+    /// The corner radius, replacing the capsule of a bar with no custom height.
+    /// GPUI's `Styled::rounded`.
+    pub fn rounded(mut self, radius: f32) -> Self {
+        self.radius = Some(radius.max(0.0));
+        self
+    }
+
+    /// The outline width. GPUI's `Styled::border_2` and its siblings.
+    pub fn border(mut self, width: f32) -> Self {
+        self.border = width.max(0.0);
+        self
+    }
+
+    /// The outline colour. A width with no colour draws no edge, the same way a
+    /// GPUI `border_2` with no `border_color` falls back to its theme's.
+    pub fn border_color(mut self, color: Color) -> Self {
+        self.border_color = Some(color);
+        self
+    }
+
+    /// The track height: 4 / 6 / 8 / 10 pixels for xsmall through large, or the
+    /// height the caller named.
     pub fn girth(&self) -> f32 {
-        match self.size {
+        self.height.unwrap_or(match self.size {
             ControlSize::XSmall => 4.0,
             ControlSize::Small => 6.0,
             ControlSize::Large => 10.0,
             ControlSize::Medium => 8.0,
-        }
+        })
     }
 
     fn tone(&self, tokens: Tokens) -> Color {
@@ -183,6 +220,9 @@ struct Bar<Message> {
     loading: bool,
     value: f32,
     girth: f32,
+    radius: Option<f32>,
+    border: f32,
+    border_color: Option<Color>,
     _message: PhantomData<Message>,
 }
 
@@ -223,11 +263,14 @@ impl<Message> Widget<Message, Theme, iced::Renderer> for Bar<Message> {
             status => tokens.status_color(status),
         });
 
-        // The track is square, and the value is a capsule over it: the shape the
-        // `canvas` version drew, kept so the two renderings diff to nothing.
+        // The track is square and the value is a capsule over it, unless the
+        // caller names a radius: then both take it. The defaults are the shape
+        // the `canvas` version drew, kept so the two renderings diff to nothing.
+        let track_radius = self.radius.unwrap_or(0.0).min(bounds.height / 2.0);
         renderer.fill_quad(
             Quad {
                 bounds,
+                border: iced::border::rounded(track_radius),
                 ..Quad::default()
             },
             Background::Color(theme::alpha(tone, 0.2)),
@@ -246,6 +289,10 @@ impl<Message> Widget<Message, Theme, iced::Renderer> for Bar<Message> {
         };
 
         if width > 0.0 {
+            let fill_radius = self
+                .radius
+                .unwrap_or(bounds.height / 2.0)
+                .min(bounds.height / 2.0);
             renderer.fill_quad(
                 Quad {
                     bounds: Rectangle {
@@ -254,12 +301,32 @@ impl<Message> Widget<Message, Theme, iced::Renderer> for Bar<Message> {
                         width,
                         height: bounds.height,
                     },
-                    border: iced::border::rounded(bounds.height / 2.0),
+                    border: iced::border::rounded(fill_radius),
                     snap: false,
                     ..Quad::default()
                 },
                 Background::Color(tone),
             );
+        }
+
+        // The outline is drawn last so the fill cannot cover it. A width with no
+        // colour draws nothing, which is what the default carries.
+        if self.border > 0.0 {
+            if let Some(color) = self.border_color {
+                renderer.fill_quad(
+                    Quad {
+                        bounds,
+                        border: Border {
+                            color,
+                            width: self.border,
+                            radius: track_radius.into(),
+                        },
+                        snap: false,
+                        ..Quad::default()
+                    },
+                    Background::Color(Color::TRANSPARENT),
+                );
+            }
         }
     }
 }
@@ -276,6 +343,9 @@ where
             loading: control.loading,
             value: control.fraction(),
             girth,
+            radius: control.radius,
+            border: control.border,
+            border_color: control.border_color,
             _message: PhantomData,
         })
     }
