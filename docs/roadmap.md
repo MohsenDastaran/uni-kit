@@ -1145,6 +1145,17 @@ The fix is always to tint it in the SVG's own style closure (`color: Some(tokens
 rely on inheritance. The last offender was the message-scroller's jump control — the only untinted SVG
 left in the catalogue — whose chevron was invisible in dark behind the border token's faint ring.
 
+#### Text pixels are not equally divisible
+
+Measuring a highlight's extent by splitting a label's bounding box into **equal pixel cells** mis-assigns
+it, because character widths are proportional: "Thinking…" has two narrow `i`s and a wide `k`. The
+shimmer's mid-frame was first reported as spans 2–5 and corrected to **2–6**, with the peak still on the
+`k` at ink 182 — the peak value was right and the indexing was not, which is how the error surfaced.
+
+Sample **per glyph**, using the paragraph's own layout for the boundaries, and report both the glyph
+indices and their x ranges. "The band covers the middle third" is a weaker claim than "spans 2–6 of 9,
+peaking on span 4 at x 69–74".
+
 #### `fill_paragraph` holds a weak reference, so a paragraph built in `draw` paints nothing
 
 The shimmer's first span rewrite drew a **blank frame**: the paragraph was built as a local inside `draw`,
