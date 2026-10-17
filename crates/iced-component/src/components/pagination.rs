@@ -133,7 +133,16 @@ impl<'a, Message> Default for Pagination<'a, Message> {
 
 /// One of the two arrows, in the icon box the size gives it. iced ships no icon
 /// set, so the chevron is drawn from the Lucide artwork the Slint folder carries.
-fn chevron<'a, Message: 'a>(previous: bool, size: ControlSize) -> Element<'a, Message> {
+///
+/// An arrow with nowhere to go is drawn in the muted ink, like the carousel's
+/// step: a `Button` cannot carry its disabled `text_color` into an SVG the
+/// caller supplies, so the disabled ink is chosen here. Without it the boundary
+/// arrow is inert but painted in the enabled foreground, which reads as live.
+fn chevron<'a, Message: 'a>(
+    previous: bool,
+    size: ControlSize,
+    disabled: bool,
+) -> Element<'a, Message> {
     let pixels = size.icon_size();
     let handle = if previous {
         CHEVRON_LEFT
@@ -143,8 +152,12 @@ fn chevron<'a, Message: 'a>(previous: bool, size: ControlSize) -> Element<'a, Me
     svg(svg::Handle::from_memory(handle))
         .width(Length::Fixed(pixels))
         .height(Length::Fixed(pixels))
-        .style(|theme: &Theme, _status| svg::Style {
-            color: Some(Tokens::of(theme).foreground),
+        .style(move |theme: &Theme, _status| svg::Style {
+            color: Some(if disabled {
+                Tokens::of(theme).muted_foreground
+            } else {
+                Tokens::of(theme).foreground
+            }),
         })
         .into()
 }
@@ -158,7 +171,7 @@ fn nav_button<'a, Message: Clone + 'a>(
     previous: bool,
     message: Option<Message>,
 ) -> Element<'a, Message> {
-    let glyph = chevron(previous, size);
+    let glyph = chevron(previous, size, message.is_none());
     let label = if previous { "Previous" } else { "Next" };
 
     let mut control = Button::new(if compact { "" } else { label })
