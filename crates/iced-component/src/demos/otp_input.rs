@@ -21,7 +21,7 @@
 //! - **Focus and blur are not reported.** iced's field hands out no such event,
 //!   so `InputEvent::Focus`/`Blur` and the page's "clear on focus" pattern
 //!   cannot be written. Programmatic focus — `otp_input::focus` — is what the
-//!   API Reference card drives.
+//!   Programmatic Control card drives.
 //! - **Arrow keys are not reported either**, so the page's arrow-key navigation
 //!   between cells has no iced expression. Tab still walks the cells, because
 //!   each cell is a focusable field.
@@ -416,12 +416,15 @@ fn view(app: &App) -> Element<'_, Message> {
     ]
     .spacing(8.0);
 
-    // section: API Reference
-    // The whole API, driven: `value` is the caller's code, `length` the cells,
-    // `masked` the hidden characters, `size` the ladder, `disabled` the muted
-    // field and `on_edit` every cell change. `otp_input::focus` is the caret,
-    // returned from `update` as a Task. The four buttons are the page's four
-    // programmatic calls: set the value, clear it, toggle masking, and focus.
+    // section: Programmatic Control
+    // The programmatic calls the page documents: `value` is the caller's code,
+    // `length` the cells, `masked` the hidden characters, `size` the ladder,
+    // `disabled` the muted field and `on_edit` every cell change.
+    // `otp_input::focus` is the caret, returned from `update` as a Task. The four
+    // buttons are the page's four programmatic calls: set the value, clear it,
+    // toggle masking, and focus. The last card is a usage example, not the API
+    // listing — `## API Reference` ends the page's example region, so a card named
+    // for it has no heading to scroll to.
     let api = column![
         OtpInput::new("api")
             .value(app.api.as_str())
@@ -460,7 +463,7 @@ fn view(app: &App) -> Element<'_, Message> {
         body_box(behaviour),
         heading(app, 2, "Common Patterns"),
         body_box(patterns),
-        heading(app, 3, "API Reference"),
+        heading(app, 3, "Programmatic Control"),
         body_box(api),
     ]
     .spacing(PAGE)
