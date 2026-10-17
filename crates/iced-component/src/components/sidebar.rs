@@ -62,7 +62,7 @@
 //! selection or flips `open` — the one state the sidebar does not own.
 //!
 //! A row's trailing slot can also hold the finished [`Badge`]
-//! ([`SidebarEntry::badge`]) and a [`Toggle`] ([`SidebarEntry::toggle`]); the
+//! ([`SidebarEntry::badge`]) and a [`Switch`] ([`SidebarEntry::switch`]); the
 //! header can carry a caller-supplied trailing mark ([`Sidebar::header_action`])
 //! in place of the collapse control. These are the shapes GPUI's
 //! `SidebarMenuItem::suffix` expresses with an element; iced's row is data, so
@@ -81,7 +81,7 @@
 //!   or `Enter`, so the traversal the Slint `TouchArea`s inherit from the window
 //!   is the application's.
 //! - **A child row is not selectable.** Children are drawn and their own
-//!   [`Toggle`] reports, but [`Sidebar::on_select`] addresses a group and a
+//!   [`Switch`] reports, but [`Sidebar::on_select`] addresses a group and a
 //!   top-level entry, so a child gets no selection report and no selected
 //!   backplate. Reporting one would need a path in the message, which this
 //!   component's controlled shape does not carry.
@@ -111,8 +111,8 @@ use super::avatar::{Avatar, AvatarSize};
 use super::badge::Badge;
 use super::collapsible;
 use super::scrollable::{Axis, Scrollable};
+use super::switch::Switch;
 use super::theme::{self, Tokens};
-use super::toggle::Toggle;
 
 /// The expanded rail, `232px` in the Slint component.
 pub const EXPANDED_WIDTH: f32 = 232.0;
@@ -175,7 +175,7 @@ pub struct SidebarEntry {
     muted: bool,
     destructive: bool,
     badge: bool,
-    toggle: Option<bool>,
+    switch: Option<bool>,
     children: Vec<SidebarEntry>,
     open: bool,
 }
@@ -191,7 +191,7 @@ impl SidebarEntry {
             muted: false,
             destructive: false,
             badge: false,
-            toggle: None,
+            switch: None,
             children: Vec::new(),
             open: false,
         }
@@ -240,11 +240,11 @@ impl SidebarEntry {
         self
     }
 
-    /// A [`Toggle`] after the label at this checked value. The report is
-    /// [`Sidebar::on_entry_toggle`]; without that callback the control draws
+    /// A [`Switch`] after the label at this checked value. The report is
+    /// [`Sidebar::on_entry_switch`]; without that callback the control draws
     /// disabled.
-    pub fn toggle(mut self, checked: bool) -> Self {
-        self.toggle = Some(checked);
+    pub fn switch(mut self, checked: bool) -> Self {
+        self.switch = Some(checked);
         self
     }
 
@@ -317,7 +317,7 @@ pub struct Sidebar<'a, Message> {
     header_action: Option<(&'static [u8], Message)>,
     on_select: Option<Box<dyn Fn(usize, usize) -> Message + 'a>>,
     on_toggle: Option<Box<dyn Fn(bool) -> Message + 'a>>,
-    on_entry_toggle: Option<Box<dyn Fn(usize, usize, usize, bool) -> Message + 'a>>,
+    on_entry_switch: Option<Box<dyn Fn(usize, usize, usize, bool) -> Message + 'a>>,
 }
 
 impl<'a, Message> Sidebar<'a, Message> {
@@ -336,7 +336,7 @@ impl<'a, Message> Sidebar<'a, Message> {
             header_action: None,
             on_select: None,
             on_toggle: None,
-            on_entry_toggle: None,
+            on_entry_switch: None,
         }
     }
 
@@ -423,15 +423,15 @@ impl<'a, Message> Sidebar<'a, Message> {
         self
     }
 
-    /// A child row's [`Toggle`](SidebarEntry::toggle) was pressed, with the
+    /// A child row's [`Switch`](SidebarEntry::switch) was pressed, with the
     /// value it wants (`true` selects). The report carries the row's group and
-    /// entry index and the child's index, because a toggle can sit on any
-    /// child. Without this the toggle draws disabled.
-    pub fn on_entry_toggle(
+    /// entry index and the child's index, because a switch can sit on any
+    /// child. Without this the switch draws disabled.
+    pub fn on_entry_switch(
         mut self,
-        on_entry_toggle: impl Fn(usize, usize, usize, bool) -> Message + 'a,
+        on_entry_switch: impl Fn(usize, usize, usize, bool) -> Message + 'a,
     ) -> Self {
-        self.on_entry_toggle = Some(Box::new(on_entry_toggle));
+        self.on_entry_switch = Some(Box::new(on_entry_switch));
         self
     }
 
@@ -502,16 +502,16 @@ impl<'a, Message> Sidebar<'a, Message> {
                     .as_ref()
                     .filter(|_| !entry.muted)
                     .map(|on_select| on_select(group_index, entry_index));
-                let toggle = entry.toggle.and_then(|checked| {
-                    self.on_entry_toggle
+                let switch = entry.switch.and_then(|checked| {
+                    self.on_entry_switch
                         .as_ref()
-                        .map(|on_toggle| on_toggle(group_index, entry_index, 0, !checked))
+                        .map(|on_switch| on_switch(group_index, entry_index, 0, !checked))
                 });
                 rows = rows.push(entry_row(
                     entry,
                     is_selected,
                     message,
-                    toggle,
+                    switch,
                     collapsed,
                     0.0,
                 ));
@@ -519,16 +519,16 @@ impl<'a, Message> Sidebar<'a, Message> {
                 if !collapsed && !entry.children.is_empty() {
                     let mut children = column![].spacing(ENTRY_GAP).width(Length::Fill);
                     for (child_index, child) in entry.children.iter().enumerate() {
-                        let child_toggle = child.toggle.and_then(|checked| {
-                            self.on_entry_toggle.as_ref().map(|on_toggle| {
-                                on_toggle(group_index, entry_index, child_index, !checked)
+                        let child_switch = child.switch.and_then(|checked| {
+                            self.on_entry_switch.as_ref().map(|on_switch| {
+                                on_switch(group_index, entry_index, child_index, !checked)
                             })
                         });
                         children = children.push(entry_row(
                             child,
                             false,
                             None,
-                            child_toggle,
+                            child_switch,
                             collapsed,
                             CHILD_INDENT,
                         ));
@@ -748,14 +748,14 @@ fn group_heading<'a, Message: 'a>(title: &str) -> Element<'a, Message> {
 /// One entry, as the button the shared row shape is built on.
 ///
 /// `message` is `None` for a muted entry, which is how iced spells "cannot be
-/// pressed"; the row then takes no hover either. `toggle_message` drives the
-/// entry's own [`Toggle`], and `indent` is where a child row starts inside the
+/// pressed"; the row then takes no hover either. `switch_message` drives the
+/// entry's own [`Switch`], and `indent` is where a child row starts inside the
 /// row's own inset.
 fn entry_row<'a, Message: Clone + 'a>(
     entry: &SidebarEntry,
     selected: bool,
     message: Option<Message>,
-    toggle_message: Option<Message>,
+    switch_message: Option<Message>,
     collapsed: bool,
     indent: f32,
 ) -> Element<'a, Message> {
@@ -809,9 +809,9 @@ fn entry_row<'a, Message: Clone + 'a>(
                     }),
             );
         }
-        if let Some(checked) = entry.toggle {
-            let mut control = Toggle::new(checked).size(theme::ControlSize::XSmall);
-            if let Some(message) = toggle_message {
+        if let Some(checked) = entry.switch {
+            let mut control = Switch::new(checked).size(theme::ControlSize::XSmall);
+            if let Some(message) = switch_message {
                 control = control.on_toggle(move |_| message.clone());
             }
             line = line.push(control);
