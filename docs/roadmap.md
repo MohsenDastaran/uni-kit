@@ -1079,6 +1079,19 @@ The trap also cannot occur where a row is **intrinsic** rather than inside a fix
 exempt by construction, and why `menu` items at −2.0 are not defects. Say which components are exempt
 and why, beside the ones you measured.
 
+#### A section title is a lookup key, not a label
+
+A demo's `// section:` title is what the page lookup matches against, so titling a section after the
+**page region** it sits in rather than the **heading it documents** produces a card that posts its index
+and finds no scroll target — it reads as a dead icon. `exampleHeadings()` stops before `## API Reference`,
+so three demos that ended with a section titled `API Reference` all had that failure. Two of them were
+drawing the programmatic-driving sample and now take the page's own `### Programmatic Control` heading;
+the third is progress, where a documented sample genuinely sits after the API reference and the lookup
+itself is the thing at fault.
+
+The same rule governed the marker, collapsible and attachment ports: match the heading the page actually
+uses, at the depth it uses, and check with the plugin's own extractor rather than assuming.
+
 #### A second surface inside a panel eats the panel's padding
 
 The popover's demo wrapped each panel's content in a `panel_container` that drew its **own** surface at
