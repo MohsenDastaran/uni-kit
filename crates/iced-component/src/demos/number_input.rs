@@ -1,7 +1,9 @@
 //! `number-input` — the numeric field's whole gallery the way the Slint example
 //! shows it: the quantity, the bounds and the step, the prefix and suffix slots,
 //! the four sizes, the `− value +` stepper shape, the disabled state and a text
-//! that is not a number.
+//! that is not a number. It leads with the basic control in that centred shape —
+//! `−` at the leading edge, the value in the middle, `+` at the trailing edge —
+//! because that arrangement is the one a caller asks the field to change.
 //!
 //! Run it with `cargo run --example number-input`, or in the browser as
 //! `?story=number-input` in the gallery the website embeds.
@@ -15,10 +17,11 @@
 //! them, one per section, in order, and keep the closing `// section: end` after
 //! the last one.
 //!
-//! The four sections are the page's four second-level headings. The three beyond
-//! `Usage` do not describe a widget — one is a key table, one is prose, one is an
-//! API listing — so each builds the closest real thing instead, and says in the
-//! card what it could not express:
+//! The five sections are headed by the page's own: the first by the `### Basic
+//! Number Input` example, the rest by the page's four second-level headings. The
+//! three beyond `Usage` do not describe a widget — one is a key table, one is
+//! prose, one is an API listing — so each builds the closest real thing instead,
+//! and says in the card what it could not express:
 //!
 //! - **Keyboard Navigation** is the application's here. iced's field reports text
 //!   and submit only, so `↑`, `↓` and `Escape` are an `event::listen_with`
@@ -88,6 +91,7 @@ impl FieldState {
 /// state, so one edit arm serves every field.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 enum Slot {
+    Basic,
     Quantity,
     Price,
     Seats,
@@ -107,6 +111,7 @@ enum Slot {
 
 #[derive(Debug)]
 struct App {
+    basic: FieldState,
     quantity: FieldState,
     price: FieldState,
     seats: FieldState,
@@ -158,6 +163,7 @@ enum Message {
 
 fn boot() -> App {
     App {
+        basic: FieldState::of(12.0),
         quantity: FieldState::of(3.0),
         price: FieldState::of(19.99),
         seats: FieldState::of(12.0),
@@ -182,6 +188,7 @@ fn boot() -> App {
 /// The state behind a slot, so one arm edits any of them.
 fn field_mut(app: &mut App, slot: Slot) -> &mut FieldState {
     match slot {
+        Slot::Basic => &mut app.basic,
         Slot::Quantity => &mut app.quantity,
         Slot::Price => &mut app.price,
         Slot::Seats => &mut app.seats,
@@ -404,6 +411,21 @@ fn body_box<'a>(body: impl Into<Element<'a, Message>>) -> Element<'a, Message> {
 }
 
 fn view(app: &App) -> Element<'_, Message> {
+    // section: Basic Number Input
+    // The basic control in the centred-stepper shape: `−` at the leading edge, the
+    // value in the middle and `+` at the trailing edge, so the row reads
+    // `− 12 +` rather than `12 − +`. It is the same field — the frame, the 32px
+    // medium height and the two extra-small ghost steppers — rearranged by one
+    // property, not a second control.
+    let basic = NumberInput::new("basic")
+        .value(app.basic.value)
+        .text(app.basic.text.as_str())
+        .minimum(0.0)
+        .maximum(99.0)
+        .centered(true)
+        .on_input(|text| Message::Edited(Slot::Basic, text))
+        .on_change(|value| Message::Changed(Slot::Basic, value));
+
     // section: Usage
     // The Slint example's gallery in one panel: the bounds and the step, the
     // prefix and suffix slots, the four sizes, the `− value +` shape, the disabled
@@ -651,13 +673,15 @@ fn view(app: &App) -> Element<'_, Message> {
     });
 
     let gallery = column![
-        heading(app, 0, "Usage"),
+        heading(app, 0, "Basic Number Input"),
+        body_box(basic),
+        heading(app, 1, "Usage"),
         body_box(usage),
-        heading(app, 1, "Keyboard Navigation"),
+        heading(app, 2, "Keyboard Navigation"),
         body_box(keyboard),
-        heading(app, 2, "Best Practices"),
+        heading(app, 3, "Best Practices"),
         body_box(practices),
-        heading(app, 3, "API Reference"),
+        heading(app, 4, "API Reference"),
         body_box(api),
         status,
     ]
