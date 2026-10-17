@@ -1,16 +1,16 @@
-//! `shimmer` — a moving highlight over a muted band, swept by the component's
-//! own clock.
+//! `shimmer` — a moving highlight through the label's own ink, swept by the
+//! component's own clock.
 //!
 //! This is the Slint example's four samples: the basic labels, the timing and
 //! spread variants, a one-shot sweep with a replay, and the loading state in
-//! context. Nothing here advances a value or drives a subscription — the band
+//! context. Nothing here advances a value or drives a subscription — the label
 //! samples each frame's own instant and asks for the next frame, so the motion
 //! runs from the moment the page shows it. The only controls replay a `once`
 //! sweep and switch the in-context sample between loading and finished.
 //!
-//! iced cannot paint a gradient through part of a text run, so the component
-//! draws the band and returns the label for the caller to place over it. Each
-//! sample below uses `stack!` for that pairing.
+//! The label *is* the component: `Shimmer::new(text)` draws the text itself and
+//! recolours spans of it as the band passes, so there is no track behind it and
+//! no `stack!` to pair.
 //!
 //! Run it with `cargo run --example shimmer`, or in the browser as
 //! `?story=shimmer` in the gallery the website embeds.
@@ -33,7 +33,7 @@ use crate::components::button::{Button, Variant};
 use crate::components::group_box::{self, GroupBox};
 use crate::components::shimmer::Shimmer;
 use crate::components::theme::{self, Tokens};
-use iced::widget::{column, container, mouse_area, row, stack, svg, text};
+use iced::widget::{column, container, mouse_area, row, svg, text};
 use iced::{Alignment, Border, Color, Element, Length, Padding, Task, Theme};
 use std::time::Duration;
 
@@ -101,54 +101,19 @@ fn update(app: &mut App, message: Message) -> Task<Message> {
 /// A mark from the icon set this repository ships (`crates/slint-component/ui/icons`,
 /// Lucide, ISC), so the two galleries draw the same glyphs. The ink is resolved
 /// inside the style closure, because the theme is only known when iced asks.
-fn mark<'a>(markup: &'static [u8], size: f32, color: fn(&Theme) -> Color) -> Element<'a, Message> {
+fn mark<'a>(markup: &'static [u8], size: f32, color: fn(&Tokens) -> Color) -> Element<'a, Message> {
     svg(svg::Handle::from_memory(markup))
         .width(size)
         .height(size)
         .style(move |theme: &Theme, _status| svg::Style {
-            color: Some(color(theme)),
+            color: Some(color(&Tokens::of(theme))),
         })
         .into()
 }
 
 /// The muted ink the loading labels and the section titles use.
-fn muted(theme: &Theme) -> Color {
-    Tokens::of(theme).muted_foreground
-}
-
-/// The foreground ink the heading text uses.
-fn ink(theme: &Theme) -> Color {
-    Tokens::of(theme).foreground
-}
-
-/// A band with its label laid over it, which is how a caller gets the text and
-/// the highlight in the same place. The label keeps the foreground ink and the
-/// band carries the motion.
-fn band_line<'a>(
-    label: &'a str,
-    shimmer: Shimmer<Message>,
-    size: f32,
-    weight: iced::font::Weight,
-    color: fn(&Theme) -> Color,
-) -> Element<'a, Message> {
-    stack![
-        shimmer,
-        container(
-            text(label)
-                .size(size)
-                .font(iced::Font {
-                    weight,
-                    ..iced::Font::DEFAULT
-                })
-                .style(move |theme: &Theme| text::Style {
-                    color: Some(color(theme)),
-                }),
-        )
-        .width(Length::Fill)
-        .height(Length::Fill)
-        .center_y(Length::Fill),
-    ]
-    .into()
+fn muted(tokens: &Tokens) -> Color {
+    tokens.muted_foreground
 }
 
 /// A section heading: the title, and the code icon that asks the page for this
@@ -234,27 +199,11 @@ fn view(app: &App) -> Element<'_, Message> {
     // spread. The second label is muted and the third is one step larger and
     // medium, which the Slint example pairs with the same motion.
     let basic = column![
-        band_line(
-            "Thinking…",
-            Shimmer::new(),
-            theme::FONT_SIZE_SM,
-            iced::font::Weight::Normal,
-            ink,
-        ),
-        band_line(
-            "Generating a response…",
-            Shimmer::new(),
-            theme::FONT_SIZE_SM,
-            iced::font::Weight::Normal,
-            muted,
-        ),
-        band_line(
-            "Loading project data…",
-            Shimmer::new(),
-            theme::FONT_SIZE_MD,
-            iced::font::Weight::Medium,
-            ink,
-        ),
+        Shimmer::new("Thinking…"),
+        Shimmer::new("Generating a response…").color(muted),
+        Shimmer::new("Loading project data…")
+            .size(theme::FONT_SIZE_MD)
+            .weight(iced::font::Weight::Medium),
     ]
     .spacing(24.0);
 
@@ -265,38 +214,21 @@ fn view(app: &App) -> Element<'_, Message> {
     // They all share the page's `### Duration` heading because that is where
     // the page documents the sweep's timing.
     let configure = column![
-        band_line(
-            "Indexing files…",
-            Shimmer::new()
-                .duration(Duration::from_secs(3))
-                .highlight(|tokens| tokens.primary)
-                .reverse(true)
-                .spread(0.45),
-            theme::FONT_SIZE_SM,
-            iced::font::Weight::Normal,
-            muted,
-        ),
-        band_line(
-            "Loading a narrow label…",
-            Shimmer::new().spread(0.15),
-            theme::FONT_SIZE_SM,
-            iced::font::Weight::Normal,
-            muted,
-        ),
-        band_line(
-            "Loading a broad label…",
-            Shimmer::new().spread(0.7),
-            theme::FONT_SIZE_SM,
-            iced::font::Weight::Normal,
-            muted,
-        ),
-        band_line(
-            "Fixed-width highlight…",
-            Shimmer::new().spread_width(48.0),
-            theme::FONT_SIZE_SM,
-            iced::font::Weight::Normal,
-            muted,
-        ),
+        Shimmer::new("Indexing files…")
+            .duration(Duration::from_secs(3))
+            .highlight(|tokens| tokens.primary)
+            .reverse(true)
+            .spread(0.45)
+            .color(muted),
+        Shimmer::new("Loading a narrow label…")
+            .spread(0.15)
+            .color(muted),
+        Shimmer::new("Loading a broad label…")
+            .spread(0.7)
+            .color(muted),
+        Shimmer::new("Fixed-width highlight…")
+            .spread_width(48.0)
+            .color(muted),
     ]
     .spacing(24.0);
 
@@ -305,17 +237,12 @@ fn view(app: &App) -> Element<'_, Message> {
     // counter changes. `restart_on` is the caller's own generation: the widget
     // tree keeps the clock, and a new value starts it again.
     let play_once = column![
-        band_line(
-            "Finalizing…",
-            Shimmer::new()
-                .once(true)
-                .reverse(true)
-                .duration(Duration::from_millis(1500))
-                .restart_on(app.replay),
-            theme::FONT_SIZE_SM,
-            iced::font::Weight::Normal,
-            muted,
-        ),
+        Shimmer::new("Finalizing…")
+            .once(true)
+            .reverse(true)
+            .duration(Duration::from_millis(1500))
+            .restart_on(app.replay)
+            .color(muted),
         Button::new("Replay")
             .variant(Variant::Default)
             .icon(mark(REFRESH_CW, 14.0, muted))
@@ -330,17 +257,30 @@ fn view(app: &App) -> Element<'_, Message> {
     // `In context` group. Switching to finished replaces the shimmer with the
     // plain text, which is the rule the guide states — do not leave an animated
     // label running after the operation has ended.
-    let assistant = if app.generating {
-        band_line(
-            "The assistant is thinking…",
-            Shimmer::new(),
-            theme::FONT_SIZE_SM,
-            iced::font::Weight::Normal,
-            muted,
-        )
+    let assistant: Element<'_, Message> = if app.generating {
+        Shimmer::new("The assistant is thinking…")
+            .color(muted)
+            .into()
     } else {
         text("Here is a summary of the three open issues in the release milestone.")
             .size(theme::FONT_SIZE_SM)
+            .style(|theme: &Theme| text::Style {
+                color: Some(Tokens::of(theme).foreground),
+            })
+            .into()
+    };
+
+    let title: Element<'_, Message> = if app.generating {
+        Shimmer::new("transcript.pdf")
+            .weight(iced::font::Weight::Medium)
+            .into()
+    } else {
+        text("transcript.pdf")
+            .size(theme::FONT_SIZE_SM)
+            .font(iced::Font {
+                weight: iced::font::Weight::Medium,
+                ..iced::Font::DEFAULT
+            })
             .style(|theme: &Theme| text::Style {
                 color: Some(Tokens::of(theme).foreground),
             })
@@ -351,26 +291,7 @@ fn view(app: &App) -> Element<'_, Message> {
         row![
             mark(FILE_TEXT, 16.0, muted),
             column![
-                if app.generating {
-                    band_line(
-                        "transcript.pdf",
-                        Shimmer::new(),
-                        theme::FONT_SIZE_SM,
-                        iced::font::Weight::Medium,
-                        ink,
-                    )
-                } else {
-                    text("transcript.pdf")
-                        .size(theme::FONT_SIZE_SM)
-                        .font(iced::Font {
-                            weight: iced::font::Weight::Medium,
-                            ..iced::Font::DEFAULT
-                        })
-                        .style(|theme: &Theme| text::Style {
-                            color: Some(Tokens::of(theme).foreground),
-                        })
-                        .into()
-                },
+                title,
                 text(if app.generating {
                     "Processing document…"
                 } else {
