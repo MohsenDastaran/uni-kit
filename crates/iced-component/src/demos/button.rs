@@ -27,11 +27,10 @@
 //! into one control. Both are Slint behaviour this port does not have; neither is
 //! faked here.
 
-use std::time::Duration;
-
 use iced::time::Instant;
 use iced::widget::{column, container, mouse_area, row, scrollable, svg, text};
 use iced::{Alignment, Element, Length, Subscription, Task, Theme};
+use std::time::Duration;
 
 use crate::components::button::{self, Button, Variant};
 use crate::components::group_box::{self, GroupBox};
