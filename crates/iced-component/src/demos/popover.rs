@@ -26,7 +26,7 @@ use iced::{Alignment, Element, Length, Task, Theme};
 
 use crate::components::button::{self, Button};
 use crate::components::group_box::{self, GroupBox};
-use crate::components::popover::{PanelStyle, Placement, Popover, panel_container};
+use crate::components::popover::{PanelStyle, Placement, Popover};
 use crate::components::theme::{self, Tokens};
 
 /// The page padding and the gap between sections, as the Slint example sets them.
@@ -276,25 +276,23 @@ fn activity_row<'a>(
 }
 
 fn view(app: &App) -> Element<'_, Message> {
-    // The surface every panel below draws. It is a function of the theme, not a
-    // value: the appearance is not known where a panel is built — an overlay is
-    // constructed without one — and a surface resolved for one appearance is the
-    // wrong colour in the other. The closure captures nothing, so it is `Copy`
-    // and every section can share it.
-    let panel_style = |theme: &Theme| PanelStyle::resolve(Tokens::of(theme));
-
     // The panels, in the order the sections below show them. Each one renders
     // from a flag and reports every request to change it back through the one
     // message the application already handles.
+    //
+    // The popover draws the surface (`filled(true)`) and lays its own 12px
+    // inset inside it, which is the Slint panel's `padding: 12px` and GPUI's
+    // `popover_style(cx).p_3()`. A panel that wrapped its content in
+    // `panel_container` instead put that surface *inside* the inset, so the
+    // text met the visible edge — the only place the two surfaces can be told
+    // apart, and why nothing here draws its own.
     let usage = Popover::new(trigger("Click me"))
         .open(app.open[0])
-        .content(panel_container(
-            panel_text(
-                "Hello, this is a popover!",
-                "It appears when you click the button.",
-                4.0,
-            ),
-            panel_style,
+        .filled(true)
+        .content(panel_text(
+            "Hello, this is a popover!",
+            "It appears when you click the button.",
+            4.0,
         ))
         .panel_width(260.0)
         .on_open_change(|open| Message::Opened { slot: 0, open });
@@ -302,13 +300,11 @@ fn view(app: &App) -> Element<'_, Message> {
     let click = Popover::new(trigger("Open popover"))
         .open(app.open[1])
         .panel_width(280.0)
-        .content(panel_container(
-            panel_text(
-                "Click outside to dismiss.",
-                "The panel is a popup, so it is not clipped by this card.",
-                6.0,
-            ),
-            panel_style,
+        .filled(true)
+        .content(panel_text(
+            "Click outside to dismiss.",
+            "The panel is a popup, so it is not clipped by this card.",
+            6.0,
         ))
         .on_open_change(|open| Message::Opened { slot: 1, open });
 
@@ -330,46 +326,39 @@ fn view(app: &App) -> Element<'_, Message> {
         .open(app.open[3])
         .placement(Placement::Bottom)
         .panel_width(220.0)
-        .content(panel_container(
-            panel_text("Placement::Bottom", "Under the trigger.", 0.0),
-            panel_style,
-        ))
+        .filled(true)
+        .content(panel_text("Placement::Bottom", "Under the trigger.", 0.0))
         .on_open_change(|open| Message::Opened { slot: 3, open });
 
     let right = Popover::new(trigger("Right"))
         .open(app.open[4])
         .placement(Placement::Right)
         .panel_width(220.0)
-        .content(panel_container(
-            panel_text("Placement::Right", "Right of the trigger.", 0.0),
-            panel_style,
-        ))
+        .filled(true)
+        .content(panel_text("Placement::Right", "Right of the trigger.", 0.0))
         .on_open_change(|open| Message::Opened { slot: 4, open });
 
     let above = Popover::new(trigger("Above"))
         .open(app.open[5])
         .placement(Placement::Top)
         .panel_width(220.0)
-        .content(panel_container(
-            panel_text("Placement::Top", "Above the trigger.", 0.0),
-            panel_style,
-        ))
+        .filled(true)
+        .content(panel_text("Placement::Top", "Above the trigger.", 0.0))
         .on_open_change(|open| Message::Opened { slot: 5, open });
 
     let left = Popover::new(trigger("Left"))
         .open(app.open[6])
         .placement(Placement::Left)
         .panel_width(220.0)
-        .content(panel_container(
-            panel_text("Placement::Left", "Left of the trigger.", 0.0),
-            panel_style,
-        ))
+        .filled(true)
+        .content(panel_text("Placement::Left", "Left of the trigger.", 0.0))
         .on_open_change(|open| Message::Opened { slot: 6, open });
 
     let activity = Popover::new(trigger("Open activity"))
         .open(app.open[7])
         .panel_width(280.0)
-        .content(panel_container(
+        .filled(true)
+        .content(
             column![
                 muted_line("Recent activity"),
                 activity_row("Build finished", "2 minutes ago", false),
@@ -378,14 +367,14 @@ fn view(app: &App) -> Element<'_, Message> {
             ]
             .spacing(10.0)
             .width(Length::Fill),
-            panel_style,
-        ))
+        )
         .on_open_change(|open| Message::Opened { slot: 7, open });
 
     let complex = Popover::new(trigger("Complex content"))
         .open(app.open[8])
         .panel_width(280.0)
-        .content(panel_container(
+        .filled(true)
+        .content(
             column![
                 panel_text(
                     "This popover has complex content.",
@@ -400,14 +389,14 @@ fn view(app: &App) -> Element<'_, Message> {
             ]
             .spacing(10.0)
             .width(Length::Fill),
-            panel_style,
-        ))
+        )
         .on_open_change(|open| Message::Opened { slot: 8, open });
 
     let dismissable = Popover::new(trigger("Dismiss popover"))
         .open(app.open[9])
         .panel_width(300.0)
-        .content(panel_container(
+        .filled(true)
+        .content(
             column![
                 panel_text(
                     "Click the button below to dismiss this popover.",
@@ -423,8 +412,7 @@ fn view(app: &App) -> Element<'_, Message> {
             ]
             .spacing(10.0)
             .width(Length::Fill),
-            panel_style,
-        ))
+        )
         .on_open_change(|open| Message::Opened { slot: 9, open });
 
     // The host's own surface: `primary` for the fill, no edge, `radius-xl`, and
@@ -471,13 +459,11 @@ fn view(app: &App) -> Element<'_, Message> {
     let controlled = Popover::new(trigger("Controlled popover"))
         .open(controlled_open)
         .panel_width(280.0)
-        .content(panel_container(
-            panel_text(
-                "This popover's open state is controlled programmatically.",
-                "The button beside it drives the same flag the panel reports to.",
-                0.0,
-            ),
-            panel_style,
+        .filled(true)
+        .content(panel_text(
+            "This popover's open state is controlled programmatically.",
+            "The button beside it drives the same flag the panel reports to.",
+            0.0,
         ))
         .on_open_change(|open| Message::Opened { slot: 11, open });
 
@@ -487,13 +473,11 @@ fn view(app: &App) -> Element<'_, Message> {
     let open_from_the_start = Popover::new(trigger("Default Open"))
         .open(app.open[11])
         .panel_width(280.0)
-        .content(panel_container(
-            panel_text(
-                "This popover is open by default when first rendered.",
-                "iced has no separate default state; this is the caller's own value.",
-                0.0,
-            ),
-            panel_style,
+        .filled(true)
+        .content(panel_text(
+            "This popover is open by default when first rendered.",
+            "iced has no separate default state; this is the caller's own value.",
+            0.0,
         ))
         .on_open_change(|open| Message::Opened { slot: 11, open });
 
