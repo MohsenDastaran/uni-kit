@@ -336,13 +336,20 @@ impl<'a, Message> Popover<'a, Message> {
     /// has already built the content it wants to show, and rebuilding it in a
     /// callback would be a second place for the same state to live.
     ///
-    /// The content is laid out inside the panel's inset at the panel's width. A
-    /// caller that wants the panel's surface and inset applied around it — so
-    /// its text inherits the panel's colour, the way everything inside the Slint
-    /// example's `@children` slot does — wraps the content with
-    /// [`panel_container`], which is what the gallery does. A caller whose
-    /// content draws its own surface, a list or a calendar, asks for
-    /// [`filled`](Self::filled) instead.
+    /// The content is laid out inside the panel's inset at the panel's width,
+    /// and the panel's surface is drawn around that inset when
+    /// [`filled`](Self::filled) asks for it — which is the Slint example's
+    /// `@children` slot inside the `Rectangle`'s `VerticalLayout { padding: 12px }`
+    /// and GPUI's `popover_style(cx).p_3()`. The panel's text colour is inherited
+    /// by everything in it, so bare text is all a caller needs.
+    ///
+    /// A caller that draws its **own** surface — a card, a second panel — wraps
+    /// the content with [`panel_container`] and takes the surface back from the
+    /// popover: that surface sits inside the panel's inset, so such a caller
+    /// passes [`padding`](Self::padding) `0.0` and adds its own inset inside the
+    /// container. [`notification`](super::notification) is the example. A caller
+    /// whose content fills the panel exactly — a list, a calendar — asks for
+    /// [`filled`](Self::filled) and leaves its content bare.
     pub fn content(mut self, content: impl Into<Element<'a, Message>>) -> Self {
         self.panel = Some(content.into());
         self
@@ -371,8 +378,17 @@ impl<'a, Message> Popover<'a, Message> {
     }
 
     /// The panel's inset, `SPACING_MD` (12px) by default, which is the Slint
-    /// panel's `padding: 12px`. It is the space the content is laid out inside,
-    /// whether or not the surface is drawn here.
+    /// panel's `padding: 12px` and GPUI's `p_3()`. It is drawn **inside** the
+    /// surface when the panel draws one ([`filled`](Self::filled)), so a plain
+    /// content panel gets its inset from here alone.
+    ///
+    /// A panel whose content draws its own surface — one wrapped with
+    /// [`panel_container`] — takes the surface away from the popover, and this
+    /// inset would fall outside it, leaving the content flush with the visible
+    /// edge. Such a caller passes `0.0` and insets the content itself. The menus
+    /// are the other caller that passes `0.0`: their rows carry the panel's own
+    /// 4px inset, and a panel-wide inset here would pull the highlight band away
+    /// from the panel's edges.
     pub fn padding(mut self, padding: f32) -> Self {
         self.padding = padding;
         self
@@ -623,11 +639,18 @@ impl Default for PanelStyle {
 /// The panel's surface around `content`: the fill, the edge, the radius, the
 /// shadow and the panel's text colour, inherited by everything inside.
 ///
-/// A caller wraps its content with this when it wants the panel to look after
-/// the surface, which is what the Slint example's `@children` slot gets. Like
+/// A caller wraps its content with this when it wants its own surface rather
+/// than the popover's — a notification card, a second panel. Like
 /// [`Popover::panel`] it takes a function of the theme, so the surface follows
-/// the appearance in force. The popover's own inset still applies — the content
-/// is laid out inside the panel either way — so this adds no padding of its own.
+/// the appearance in force.
+///
+/// **It adds no inset.** The popover lays its [`padding`](Popover::padding) out
+/// *around* this container, so the surface here is drawn at the content's own
+/// bounds; an inset left on the popover would sit outside it and the text would
+/// meet the visible edge. A caller that uses this therefore passes
+/// `padding(0.0)` and insets the content itself, as
+/// [`notification`](super::notification) does. A caller that wants the popover's
+/// own surface and inset uses [`Popover::filled`] and leaves its content bare.
 ///
 /// [`PanelStyle::container_style`] is the same styling, for a caller that builds
 /// the container itself; [`Popover::filled`] is the same surface drawn by the
