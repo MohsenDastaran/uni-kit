@@ -23266,6 +23266,26 @@
           "module": "avatar"
         },
         {
+          "src": "crates/iced-component/src/components/badge.rs",
+          "target": "badge.rs",
+          "module": "badge"
+        },
+        {
+          "src": "crates/iced-component/src/components/button.rs",
+          "target": "button.rs",
+          "module": "button"
+        },
+        {
+          "src": "crates/iced-component/src/components/checkbox.rs",
+          "target": "checkbox.rs",
+          "module": "checkbox"
+        },
+        {
+          "src": "crates/iced-component/src/components/collapsible.rs",
+          "target": "collapsible.rs",
+          "module": "collapsible"
+        },
+        {
           "src": "crates/iced-component/src/components/scrollable.rs",
           "target": "scrollable.rs",
           "module": "scrollable"
@@ -23274,6 +23294,11 @@
           "src": "crates/iced-component/src/components/sidebar.rs",
           "target": "sidebar.rs",
           "module": "sidebar"
+        },
+        {
+          "src": "crates/iced-component/src/components/switch.rs",
+          "target": "switch.rs",
+          "module": "switch"
         },
         {
           "src": "crates/iced-component/src/components/theme.rs",
