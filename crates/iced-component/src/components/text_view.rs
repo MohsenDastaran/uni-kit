@@ -32,12 +32,12 @@
 //! the divider is 1px of the border colour, and `lines` on [`Clamp`] caps the
 //! preview at the height Slint computes — `lines * font-size-sm * 1.45`.
 //!
-//! **Colours are read at render time.** Every plain block resolves its colour
-//! inside a `style` closure through `Tokens::of(theme)`, so a document follows
-//! the iced theme in force. The one value the Markdown parser needs while it
-//! builds its runs — a link's colour — is supplied for both palettes and the
-//! parser caches its runs per palette, so a theme switch re-derives the other
-//! set.
+//! **Colours are read at render time, except the parsed runs.** Every plain
+//! block resolves its colour inside a `style` closure through `Tokens::of(theme)`,
+//! so a document follows the iced theme in force. A parsed run is built once,
+//! before the widget is drawn and without a theme in hand, so [`TextView::tokens`]
+//! takes the palette it is parsed with; the demo passes the palette its
+//! application booted in. Without it the built-in light table is used.
 
 // An application installs the components it uses, so the parts of this file it
 // does not call are not dead code in the way the compiler means — the file is a
@@ -67,16 +67,33 @@ fn block_spacing(compact: bool) -> f32 {
     }
 }
 
-/// The Markdown text style for each palette, as a document parses against them.
-fn palettes() -> (markdown::Style, markdown::Style) {
-    (
-        markdown::Style::from_palette(Theme::Light.palette()),
-        markdown::Style::from_palette(Theme::Dark.palette()),
-    )
+/// The Markdown run style for a palette. The parser colours a link, an inline
+/// code run and the code block font while it builds the runs, so the palette it
+/// is handed here is the one a document is drawn with.
+fn style(tokens: Tokens) -> markdown::Style {
+    markdown::Style {
+        link_color: tokens.link,
+        inline_code_color: tokens.foreground,
+        inline_code_highlight: markdown::Highlight {
+            background: tokens.muted.into(),
+            border: Border {
+                color: tokens.border,
+                width: 1.0,
+                radius: 4.0.into(),
+            },
+        },
+        inline_code_font: theme::MONO,
+        code_block_font: theme::MONO,
+        ..markdown::Style::from_palette(if tokens.dark {
+            Theme::Dark.palette()
+        } else {
+            Theme::Light.palette()
+        })
+    }
 }
 
 /// The Markdown size table, in the units Slint's `TextHeading` selects between.
-fn settings(compact: bool) -> markdown::Settings {
+fn settings(compact: bool, tokens: Tokens) -> markdown::Settings {
     markdown::Settings {
         text_size: Pixels(theme::FONT_SIZE_SM),
         h1_size: Pixels(theme::FONT_SIZE_XL),
@@ -87,9 +104,9 @@ fn settings(compact: bool) -> markdown::Settings {
         h6_size: Pixels(theme::FONT_SIZE_SM),
         code_size: Pixels(theme::FONT_SIZE_MONO),
         spacing: Pixels(block_spacing(compact)),
-        // The parser colours a run while it builds it, so it is handed a
-        // palette here; `palettes` gives the style closure the other one.
-        style: markdown::Style::from_palette(Theme::Light.palette()),
+        // The parser colours a run while it builds it, so it is handed the
+        // same palette the runs are cut with.
+        style: style(tokens),
     }
 }
 
@@ -187,8 +204,10 @@ impl<'a> Paragraph<'a> {
 
 impl<'a, Message: 'a> From<Paragraph<'a>> for Element<'a, Message> {
     fn from(paragraph: Paragraph<'a>) -> Self {
-        let runs: [iced::widget::text::Span<'_, ()>; 1] =
-            [span(paragraph.text).color(theme::LIGHT.foreground)];
+        // The span carries no colour of its own: the rich text's style closure
+        // is the one place that resolves the theme's foreground, so a span
+        // coloured with the light table here would stay black in the dark one.
+        let runs: [iced::widget::text::Span<'_, ()>; 1] = [span(paragraph.text)];
 
         rich_text(runs)
             .size(Pixels(theme::FONT_SIZE_SM))
@@ -239,8 +258,9 @@ impl<'a> Quote<'a> {
 
 impl<'a, Message: 'a> From<Quote<'a>> for Element<'a, Message> {
     fn from(quote: Quote<'a>) -> Self {
-        let runs: [iced::widget::text::Span<'_, ()>; 1] =
-            [span(quote.text).color(theme::LIGHT.muted_foreground)];
+        // The span carries no colour of its own, for the same reason as
+        // [`Paragraph`]: the style closure resolves the muted ink per theme.
+        let runs: [iced::widget::text::Span<'_, ()>; 1] = [span(quote.text)];
 
         quoted(
             rich_text(runs)
@@ -454,32 +474,28 @@ impl<'a, Message: 'a> From<Clamp<'a>> for Element<'a, Message> {
 
 // ---------------------------------------------------------------- document
 
-/// A run of Markdown text at the size its block draws it, in the theme's colours
-/// and with the document's link message attached.
+/// A run of Markdown text at the size its block draws it, in the palette's
+/// colours and with the document's link message attached.
 ///
-/// Every run the parser builds carries its own colour — a link takes the
-/// palette's link colour, inline code takes the palette's inline-code colour and
-/// the rest take the body colour — so the run is parsed against the light
-/// palette and the style closure picks out the colour the same run took in the
-/// theme's own palette. The parser caches its runs per palette, so a theme
-/// switch re-derives the other set.
+/// Every run the parser builds carries its own colour — a link takes the link
+/// token, inline code takes the inline-code fill and ink, and the rest take the
+/// body colour supplied by the rich text's style. The runs are built once, so
+/// the palette is the one passed to [`TextView::tokens`], not the one iced hands
+/// a `style` closure.
 fn run<'a, Message: Clone + 'a>(
     contents: &Text,
     size: f32,
     on_link: &Option<Rc<dyn Fn(markdown::Uri) -> Message + 'a>>,
+    tokens: Tokens,
 ) -> Element<'a, Message> {
-    let (light, dark) = palettes();
-    let runs = contents.spans(light);
+    let runs = contents.spans(style(tokens));
     let on_link = on_link.clone();
 
     let mut body = rich_text(runs)
         .size(Pixels(size))
         .wrapping(Wrapping::Word)
-        .style(move |theme: &Theme| {
-            let style = if Tokens::of(theme).dark { dark } else { light };
-            iced::widget::text::Style {
-                color: Some(style.link_color),
-            }
+        .style(move |_theme: &Theme| iced::widget::text::Style {
+            color: Some(tokens.foreground),
         });
 
     if let Some(on_link) = on_link {
@@ -493,6 +509,7 @@ fn run<'a, Message: Clone + 'a>(
 /// component beside it draws.
 struct Viewer<'a, Message> {
     compact: bool,
+    tokens: Tokens,
     on_link: Option<Rc<dyn Fn(markdown::Uri) -> Message + 'a>>,
     on_copy: Option<Rc<dyn Fn(&str) -> Message + 'a>>,
 }
@@ -529,6 +546,7 @@ where
             contents,
             Level::of_markdown(level).font_size(),
             &self.on_link,
+            self.tokens,
         ))
         .padding(Padding {
             top,
@@ -542,7 +560,7 @@ where
         settings: markdown::Settings,
         contents: &Text,
     ) -> Element<'a, Message, Theme, iced::Renderer> {
-        run(contents, settings.text_size.0, &self.on_link)
+        run(contents, settings.text_size.0, &self.on_link, self.tokens)
     }
 
     fn code_block(
@@ -673,6 +691,7 @@ fn numbered_marker(start: u64, offset: usize, bullet: &Bullet) -> String {
 /// A parsed document and the two closures its clicks answer to.
 struct Render<'a, Message> {
     compact: bool,
+    tokens: Tokens,
     on_link: Option<Rc<dyn Fn(markdown::Uri) -> Message + 'a>>,
     on_copy: Option<Rc<dyn Fn(&str) -> Message + 'a>>,
 }
@@ -680,7 +699,7 @@ struct Render<'a, Message> {
 impl<'a, Message> Render<'a, Message> {
     /// The document's size table.
     fn settings(&self) -> markdown::Settings {
-        settings(self.compact)
+        settings(self.compact, self.tokens)
     }
 }
 
@@ -700,6 +719,7 @@ impl<'a, Message> Document<'a, Message> {
     {
         let viewer = Viewer {
             compact: self.render.compact,
+            tokens: self.render.tokens,
             on_link: self.render.on_link.clone(),
             on_copy: self.render.on_copy.clone(),
         };
@@ -847,6 +867,11 @@ where
 /// link colour and produces its own URL, and without [`on_copy`](Self::on_copy)
 /// a code block's copy control is not drawn.
 ///
+/// The parsed runs are coloured with the palette passed to
+/// [`tokens`](Self::tokens); the default is the built-in light table. A caller
+/// drawing in the dark theme passes the palette its application booted in,
+/// because the runs are built before iced hands a widget its theme.
+///
 /// ```no_run
 /// use iced_component::components::text_view::TextView;
 ///
@@ -866,6 +891,7 @@ where
 pub struct TextView<'a, Message = markdown::Uri> {
     source: &'a str,
     compact: bool,
+    tokens: Tokens,
     on_link: Option<Rc<dyn Fn(markdown::Uri) -> Message + 'a>>,
     on_copy: Option<Rc<dyn Fn(&str) -> Message + 'a>>,
 }
@@ -875,6 +901,7 @@ impl<'a, Message> TextView<'a, Message> {
         Self {
             source,
             compact: false,
+            tokens: theme::LIGHT,
             on_link: None,
             on_copy: None,
         }
@@ -883,6 +910,14 @@ impl<'a, Message> TextView<'a, Message> {
     /// Tighter spacing, for a preview rather than a page.
     pub fn compact(mut self, compact: bool) -> Self {
         self.compact = compact;
+        self
+    }
+
+    /// The palette the parsed runs are coloured with. The runs are built once,
+    /// before a theme is available, so a document in the dark appearance needs
+    /// this to draw in the dark palette's link and inline-code colours.
+    pub fn tokens(mut self, tokens: Tokens) -> Self {
+        self.tokens = tokens;
         self
     }
 
@@ -910,6 +945,7 @@ where
             items: markdown::parse(view.source).collect(),
             render: Render {
                 compact: view.compact,
+                tokens: view.tokens,
                 on_link: view.on_link,
                 on_copy: view.on_copy,
             },
