@@ -1145,6 +1145,15 @@ The fix is always to tint it in the SVG's own style closure (`color: Some(tokens
 rely on inheritance. The last offender was the message-scroller's jump control — the only untinted SVG
 left in the catalogue — whose chevron was invisible in dark behind the border token's faint ring.
 
+#### `fill_paragraph` holds a weak reference, so a paragraph built in `draw` paints nothing
+
+The shimmer's first span rewrite drew a **blank frame**: the paragraph was built as a local inside `draw`,
+and `fill_paragraph` keeps only a *weak* reference to it, so it was dropped before the renderer flushed.
+The element has to own the paragraph (a `RefCell` field) for as long as it is drawn.
+
+Cheap to hit, cheap to fix, and expensive to diagnose from the picture — a blank label reads as a layout
+fault. Worth knowing before writing another custom text widget.
+
 #### Five capabilities were reported impossible; all five were missing primitives
 
 Worth stating once, because each was written into a module doc as a platform limit and each turned out to
@@ -1157,6 +1166,7 @@ be a builder or an assumption:
 | no focus-trap API | a focusable operation run from a `Task`, with `Outcome::Chain` |
 | the hover card is bottom-only | a hard-coded `Side::Bottom` and no builder |
 | circular buttons are impossible | `Button` always resolved `RADIUS_MD` and `container::clip` is rectangular |
+| a gradient cannot pass through a text run | `Paragraph::with_spans` with per-span colours, shaping intact |
 
 So a component doc saying iced "cannot" do something is a **hypothesis to test**, not a fact to relay —
 and the cheapest test is a small change in a scratch copy, before designing around the limitation.
