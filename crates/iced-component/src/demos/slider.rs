@@ -22,11 +22,14 @@
 //! them here through a subscription, exactly as the `number_input` demo wires
 //! the keys its field does not report. `Tab` and `Shift+Tab` are iced's own.
 //!
-//! **Custom styling is not a property on either side.** Slint's
-//! `Custom Styling` card draws two ordinary sliders because its slider exposes no
-//! colour of its own, and this port does the same rather than inventing one: the
-//! track, the fill and the thumb come from the theme tokens, and a per-instance
-//! colour is not part of the API.
+//! **Custom styling is a builder on this side; Slint draws its tokens.** The
+//! Slint example's `Custom Styling` card draws two ordinary sliders because its
+//! slider exposes no colour, and the first port copied that while saying so.
+//! GPUI's page documents the other shape — `Styled::bg`, `Styled::text_color`
+//! and `Styled::rounded` — and the iced component takes the same overrides as
+//! `fn(&Tokens) -> Color` builders, plus GPUI's `reverse()`. The card below draws
+//! a success slider with a tightened corner and a danger one whose fill runs from
+//! the thumb to the end, so the section is visibly custom in both themes.
 
 use iced::widget::{column, container, mouse_area, row, scrollable, svg, text};
 use iced::{Alignment, Element, Font, Length, Subscription, Task, Theme, font};
@@ -334,13 +337,25 @@ fn view(app: &App) -> Element<'_, Message> {
     .spacing(8.0);
 
     // section: Custom Styling
-    // Two ordinary sliders. Slint's slider exposes no colour of its own and its
-    // example draws the same two, so the track, the fill and the thumb are the
-    // theme's and this port does not invent a per-instance colour.
+    // The page's own sample names a fill, a thumb and a corner. Here each part
+    // is named: the first slider tightens its track to a 2-pixel corner and fills
+    // it in success over a light success tint, and the second reverses the fill
+    // in danger and gives the thumb a solid face. Neither takes the primary the
+    // default sliders above use.
     let styled = column![
-        slider(Slot::StyledTop, app.styled_top),
-        slider(Slot::StyledBottom, app.styled_bottom),
-        muted_line("The track, fill and thumb are theme tokens; a slider has no colour property on either side."),
+        slider(Slot::StyledTop, app.styled_top)
+            .track_color(|tokens| theme::alpha(tokens.success, 0.2))
+            .fill_color(|tokens| tokens.success)
+            .thumb_color(|tokens| tokens.background)
+            .thumb_border_color(|tokens| tokens.success)
+            .radius(2.0),
+        slider(Slot::StyledBottom, app.styled_bottom)
+            .track_color(|tokens| theme::alpha(tokens.danger, 0.15))
+            .fill_color(|tokens| tokens.danger)
+            .thumb_color(|tokens| tokens.danger)
+            .thumb_border_color(|tokens| tokens.background)
+            .reverse(true),
+        muted_line("Success and danger replace the primary on both track and thumb: the first tightens the track's corner, the second fills from the thumb to the end. Each part is a builder over the active tokens, so both themes keep the colours readable."),
     ]
     .spacing(10.0);
 
