@@ -1,7 +1,6 @@
-//! `popover` — the whole gallery the Slint example shows: the plain case, the
-//! click dismissal, all four placements, arbitrary content, an action row, a
-//! dismiss from inside, a styled surface, an external control driving the same
-//! open state, and a panel that starts open.
+//! `popover` — the gallery the Slint example shows: the plain case, the click
+//! dismissal, all four placements, arbitrary content, an action row, a dismiss
+//! from inside, and a styled surface.
 //!
 //! Run it with `cargo run --example popover`, or in the browser as
 //! `?story=popover` in the gallery the website embeds.
@@ -34,7 +33,7 @@ const PAGE: f32 = 24.0;
 
 /// The section headings, in the order the Slint example and the component page
 /// have them. The index is what the page is asked to scroll to.
-const SECTIONS: [&str; 10] = [
+const SECTIONS: [&str; 8] = [
     "Usage",
     "Click",
     "Basic Popover",
@@ -43,13 +42,11 @@ const SECTIONS: [&str; 10] = [
     "Add content by `content` method",
     "Dismiss Popover manually",
     "Styling Popover",
-    "Control Open State",
-    "Default Open",
 ];
 
 /// The flags a gallery of these sections needs: one per panel, and the
 /// custom-positioning card is four panels on its own.
-const SLOTS: usize = 12;
+const SLOTS: usize = 11;
 
 pub fn run(theme: Theme) -> iced::Result {
     iced::application(boot, update, view)
@@ -72,7 +69,10 @@ struct App {
 #[derive(Debug, Clone)]
 enum Message {
     /// A popover asked to be opened or closed; the slot is which one.
-    Opened { slot: usize, open: bool },
+    Opened {
+        slot: usize,
+        open: bool,
+    },
     HoverSource(Option<&'static str>),
     PressSource(Option<&'static str>),
     /// A section heading was released: ask the page for that sample.
@@ -127,14 +127,10 @@ fn heading<'a>(app: &App, index: usize, title: &'static str) -> Element<'a, Mess
     let pressed = app.pressed_source == Some(title);
 
     let label = mouse_area(
-        container(
-            text(title)
-                .size(theme::FONT_SIZE_SM)
-                .font(iced::Font {
-                    weight: iced::font::Weight::Medium,
-                    ..iced::Font::DEFAULT
-                }),
-        )
+        container(text(title).size(theme::FONT_SIZE_SM).font(iced::Font {
+            weight: iced::font::Weight::Medium,
+            ..iced::Font::DEFAULT
+        }))
         .width(Length::Fill)
         .center_x(Length::Fill)
         .style(|theme: &Theme| container::Style {
@@ -452,35 +448,6 @@ fn view(app: &App) -> Element<'_, Message> {
         )
         .on_open_change(|open| Message::Opened { slot: 10, open });
 
-    // The controlled flag is read here, before the two builders that use it, so
-    // neither borrows it from inside a message the panel will send back.
-    let controlled_open = app.open[11];
-
-    let controlled = Popover::new(trigger("Controlled popover"))
-        .open(controlled_open)
-        .panel_width(280.0)
-        .filled(true)
-        .content(panel_text(
-            "This popover's open state is controlled programmatically.",
-            "The button beside it drives the same flag the panel reports to.",
-            0.0,
-        ))
-        .on_open_change(|open| Message::Opened { slot: 11, open });
-
-    // The panel is open from the first frame, because the flag says so: iced has
-    // no separate "default open" state to set, and the caller's initial value is
-    // already the default.
-    let open_from_the_start = Popover::new(trigger("Default Open"))
-        .open(app.open[11])
-        .panel_width(280.0)
-        .filled(true)
-        .content(panel_text(
-            "This popover is open by default when first rendered.",
-            "iced has no separate default state; this is the caller's own value.",
-            0.0,
-        ))
-        .on_open_change(|open| Message::Opened { slot: 11, open });
-
     // section: Usage
     // The whole of a popover: a trigger, the content, the caller's flag, and the
     // one message that moves it. A trigger click, an outside click and Escape all
@@ -535,28 +502,6 @@ fn view(app: &App) -> Element<'_, Message> {
     // `panel-border: false`.
     let style_section = body_box(styled);
 
-    // section: Control Open State
-    // The host owns the flag, so a control outside the panel drives the same
-    // state the panel reports to — the way the Slint example wires an external
-    // button to `open`.
-    let control_section = body_box(
-        row![
-            Button::new(if controlled_open { "Close" } else { "Open" })
-                .outline()
-                .on_press(Message::Opened {
-                    slot: 11,
-                    open: !controlled_open,
-                }),
-            controlled,
-        ]
-        .spacing(12.0),
-    );
-
-    // section: Default Open
-    // `open(true)` from the first frame, with no trigger press at all.
-    let default_section = body_box(open_from_the_start);
-
-    // section: end
     // section: end
     let status = text(if app.open.iter().any(|open| *open) {
         "A panel is open: click outside it, press Escape, or use a control inside it."
@@ -585,10 +530,6 @@ fn view(app: &App) -> Element<'_, Message> {
         dismiss_section,
         heading(app, 7, SECTIONS[7]),
         style_section,
-        heading(app, 8, SECTIONS[8]),
-        control_section,
-        heading(app, 9, SECTIONS[9]),
-        default_section,
         status,
     ]
     .spacing(PAGE)
