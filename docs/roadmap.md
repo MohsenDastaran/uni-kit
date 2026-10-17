@@ -1145,6 +1145,16 @@ The fix is always to tint it in the SVG's own style closure (`color: Some(tokens
 rely on inheritance. The last offender was the message-scroller's jump control — the only untinted SVG
 left in the catalogue — whose chevron was invisible in dark behind the border token's faint ring.
 
+#### Never run a crate-wide formatter in a shared tree
+
+`cargo fmt -- <file>` reformatted **the whole crate**, not the named file. Reverting it meant
+`git checkout --` over every other file — the same command that destroyed the tooltip's uncommitted `Arrow`
+work earlier in this project. In this case it spared the one other agent's uncommitted file, which is luck
+rather than design.
+
+Format by explicit path, check `git status --short` before and after, or do not format while another agent
+is mid-task. A formatter's blast radius is the crate it is run in, not the file named on its command line.
+
 #### Text pixels are not equally divisible
 
 Measuring a highlight's extent by splitting a label's bounding box into **equal pixel cells** mis-assigns
