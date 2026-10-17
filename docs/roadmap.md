@@ -1067,6 +1067,13 @@ the odd one out. `Popover::overlay` is the single placement implementation, so `
 `date-picker`, `color-picker`, `dropdown-button` and the popover/menu/toolbar demos all detached when
 scrolled — select measured +409px and date-picker +141px on the same test. One sign, five components.
 
+**The note alone was not enough.** The popover was fixed first, and the sheet then repeated the same
+subtraction, because each overlay computes its own host rectangle — two of the three implementations had
+it. Both were silent at the top of a page, where the translation is zero, and only wrong once scrolled,
+which is exactly the state a demo rarely starts in. So the rule is necessary but not sufficient: the fix
+is one shared host-rect helper, and until that exists any new overlay should be tested **scrolled past the
+first screen**, not at rest.
+
 #### A sweep of this family needs a calibration, and an exemption list
 
 Across the whole catalogue, offsets of **+/-2px** are text sitting above its line box's centre —
