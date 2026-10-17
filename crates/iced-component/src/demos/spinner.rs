@@ -51,8 +51,8 @@ use crate::components::theme::{self, ControlSize, Tokens};
 /// The page padding and the gap between sections, as the Slint example sets them.
 const PAGE: f32 = 24.0;
 
-/// The sizes the live preview offers, in pixels. The first four are the catalog
-/// steps; the last two are the `width` the Slint example lets a caller set.
+/// The diameters the live preview offers, in pixels: the catalog's large step,
+/// then the caller-set widths the Slint example's `width` property allows.
 const PREVIEW_SIZES: [f32; 4] = [24.0, 32.0, 48.0, 64.0];
 
 /// The height of the loading card in the reference's "In context" sample.
