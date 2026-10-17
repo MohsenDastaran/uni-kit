@@ -29,14 +29,26 @@
 //! Escape. A sheet with no `on_open_change` cannot move its own state, because
 //! it has none; the caller still renders it open whenever it says so.
 //!
+//! # The transition
+//!
+//! The panel travels rather than appearing, which is the `offset` `sheet.slint`
+//! animates: from a whole panel away to flush with its edge over [`SLIDE_DURATION`]
+//! on Slint's `ease-in-out` — `cubic-bezier(0.42, 0.0, 0.58, 1.0)` — while the
+//! scrim fades over [`FADE_DURATION`], whose `animate` block names no curve and
+//! so takes Slint's default `linear`. The panel stays in the tree for the whole
+//! of both legs, so an interrupted close reverses from the position on screen
+//! instead of snapping back to an endpoint.
+//!
+//! The motion lives in the widget tree, not in the caller's state, and it is
+//! driven the way the collapsible's reveal is: `update` samples the instant the
+//! frame carries in `RedrawRequested(at)`, and the frame that sampled asks for
+//! the next one with `shell.request_redraw()`. There is no interval
+//! subscription and none is needed. A sampled frame also asks for a relayout,
+//! because the panel's rectangle is part of the overlay's layout and a repaint
+//! alone would not move it.
+//!
 //! # What iced 0.14 cannot express
 //!
-//! - **The slide.** Slint animates the panel from a whole panel away in 260ms
-//!   and fades the overlay in 200ms. iced has no widget transition, and nothing
-//!   in this crate fabricates one: an open sheet is drawn at its edge and a
-//!   closed one is not drawn, so the panel appears and disappears rather than
-//!   travelling. The `offset` the Slint component animates is not a property
-//!   here.
 //! - **A focus trap, and the focus handle to move focus into the panel.** The
 //!   overlay is the topmost layer while it is open, so it answers Escape, but it
 //!   cannot stop Tab from reaching what is behind it and it cannot move focus
@@ -67,6 +79,7 @@ use std::rc::Rc;
 use iced::advanced::layout::{self, Layout};
 use iced::advanced::widget::{self, Tree, Widget};
 use iced::advanced::{Clipboard, Renderer as _, Shell, overlay, renderer};
+use iced::time::{Duration, Instant};
 use iced::widget::{Space, column, container, row, svg, text};
 use iced::{
     Alignment, Background, Element, Event, Font, Length, Padding, Point, Rectangle, Shadow, Size,
@@ -102,6 +115,40 @@ const FOOTER_PADDING: Padding = Padding {
 
 /// The gap between the title and the description, Slint's `spacing: 4px`.
 const HEADER_GAP: f32 = 4.0;
+
+/// How long the panel takes to reach its edge, or leave it, from
+/// `sheet.slint`'s `animate offset { duration: 260ms; easing: ease-in-out; }`.
+const SLIDE_DURATION: Duration = Duration::from_millis(260);
+
+/// How long the scrim takes to fade, from `sheet.slint`'s
+/// `animate opacity { duration: 200ms; }`. It names no easing, and Slint's
+/// default for an `animate` block is linear.
+const FADE_DURATION: Duration = Duration::from_millis(200);
+
+/// Slint's `ease-in-out`, which `i-slint-core` defines as
+/// `cubic-bezier(0.42, 0.0, 0.58, 1.0)`. The curve is sampled by solving its x
+/// component for the time parameter and reading y there; a cubic-bezier's y is
+/// not a function of linear time, so `t` itself would be the wrong argument.
+/// The y component of this curve reduces to `3t² - 2t³`, and its x is
+/// symmetric, which is what makes a bisection over the monotonic x enough.
+fn ease_in_out(progress: f32) -> f32 {
+    let progress = progress.clamp(0.0, 1.0);
+    let x = |t: f32| {
+        let inverse = 1.0 - t;
+        3.0 * inverse * inverse * t * 0.42 + 3.0 * inverse * t * t * 0.58 + t * t * t
+    };
+    let (mut low, mut high) = (0.0f32, 1.0f32);
+    for _ in 0..20 {
+        let middle = (low + high) / 2.0;
+        if x(middle) < progress {
+            low = middle;
+        } else {
+            high = middle;
+        }
+    }
+    let t = (low + high) / 2.0;
+    3.0 * t * t - 2.0 * t * t * t
+}
 
 /// A panel that slides in from an edge of the surface it covers, built with the
 /// methods below.
@@ -323,8 +370,13 @@ where
         .into()
 }
 
-/// The panel's rectangle: its size for the edge, flush to the edge of `host`.
-fn panel_rect(host: Rectangle, placement: Placement, size: f32) -> Rectangle {
+/// The panel's rectangle: its size for the edge, and its position along the
+/// edge's axis interpolated by `progress`, 0 fully out and 1 flush with `host`.
+///
+/// This is `sheet.slint`'s `offset: open ? 0px : travel`, where the travel is
+/// the panel's own extent: at 0 the panel sits a whole panel outside the host,
+/// which the draw's clip turns into "not seen yet", and at 1 it is on its edge.
+fn panel_rect(host: Rectangle, placement: Placement, size: f32, progress: f32) -> Rectangle {
     let extent = match placement {
         Placement::Left | Placement::Right => Size::new(
             if size > 0.0 {
@@ -343,27 +395,137 @@ fn panel_rect(host: Rectangle, placement: Placement, size: f32) -> Rectangle {
             },
         ),
     };
+    let travel = match placement {
+        Placement::Left | Placement::Right => extent.width,
+        Placement::Top | Placement::Bottom => extent.height,
+    } * (1.0 - progress.clamp(0.0, 1.0));
     let origin = match placement {
-        Placement::Right => Point::new(host.x + host.width - extent.width, host.y),
-        Placement::Left => Point::new(host.x, host.y),
-        Placement::Top => Point::new(host.x, host.y),
-        Placement::Bottom => Point::new(host.x, host.y + host.height - extent.height),
+        Placement::Right => Point::new(host.x + host.width - extent.width + travel, host.y),
+        Placement::Left => Point::new(host.x - travel, host.y),
+        Placement::Top => Point::new(host.x, host.y - travel),
+        Placement::Bottom => Point::new(host.x, host.y + host.height - extent.height + travel),
     };
     Rectangle::new(origin, extent)
 }
 
 /// The panel's own sub-widget state: the tree the caller's body lives in, kept
 /// across frames so a scroll position inside a panel does not reset every time
-/// the panel opens.
+/// the panel opens, and the motion of the panel's edge.
 struct State {
     panel: Tree,
+    motion: Motion,
 }
 
 impl State {
-    fn new() -> Self {
+    fn new(open: bool) -> Self {
         Self {
             panel: Tree::empty(),
+            motion: Motion::new(open),
         }
+    }
+}
+
+/// One animated value. It stores the value on screen as well as the leg's
+/// endpoints, because a reversal starts from the sampled value: that continuity
+/// is what makes an interrupted close travel back open rather than jump to an
+/// endpoint it had already left.
+#[derive(Debug)]
+struct Track {
+    from: f32,
+    target: f32,
+    value: f32,
+}
+
+impl Track {
+    /// A value that has just been mounted at its end state: not moving.
+    fn settled(value: f32) -> Self {
+        Self {
+            from: value,
+            target: value,
+            value,
+        }
+    }
+
+    /// Points the leg at `target` from wherever the value is now.
+    fn retarget(&mut self, target: f32) {
+        self.from = self.value;
+        self.target = target;
+    }
+
+    /// Samples the leg at `now`, and answers whether there is more of it to
+    /// come. `ease` maps linear time to the reference curve.
+    fn sample(
+        &mut self,
+        now: Instant,
+        started: Instant,
+        duration: Duration,
+        ease: impl Fn(f32) -> f32,
+    ) -> bool {
+        let elapsed = now.duration_since(started);
+        if duration.is_zero() || elapsed >= duration {
+            self.value = self.target;
+            return false;
+        }
+        let time = elapsed.as_secs_f32() / duration.as_secs_f32();
+        self.value = self.from + (self.target - self.from) * ease(time);
+        true
+    }
+}
+
+/// The panel's position and the scrim's opacity, held in the widget tree. The
+/// clock is the frame, not a subscription: any frame can ask where the panel
+/// should be at its own instant, so two passes over one frame agree.
+#[derive(Debug)]
+struct Motion {
+    /// The caller's `open` the current leg belongs to.
+    open: bool,
+    /// When the current leg began, shared by both tracks so a reversal turns
+    /// them around together.
+    started: Instant,
+    /// The panel's travel, 0 out and 1 flush, over [`SLIDE_DURATION`].
+    slide: Track,
+    /// The scrim's opacity, over [`FADE_DURATION`].
+    fade: Track,
+    /// The redraw instant whose position is already in the overlay's layout.
+    /// Without this every pass over one frame would invalidate its own layout
+    /// again and the runtime's three-pass guard would stop the animation.
+    framed: Option<Instant>,
+}
+
+impl Motion {
+    fn new(open: bool) -> Self {
+        let value = if open { 1.0 } else { 0.0 };
+        Self {
+            open,
+            started: Instant::now(),
+            slide: Track::settled(value),
+            fade: Track::settled(value),
+            framed: None,
+        }
+    }
+
+    /// Points both tracks at the caller's `open` from where they are now.
+    fn retarget(&mut self, open: bool, now: Instant) {
+        if self.open == open {
+            return;
+        }
+        self.open = open;
+        let target = if open { 1.0 } else { 0.0 };
+        self.slide.retarget(target);
+        self.fade.retarget(target);
+        self.started = now;
+    }
+
+    /// Samples both tracks at `now`, and answers whether either is still
+    /// moving.
+    fn sample(&mut self, now: Instant) -> bool {
+        let sliding = self
+            .slide
+            .sample(now, self.started, SLIDE_DURATION, ease_in_out);
+        let fading = self
+            .fade
+            .sample(now, self.started, FADE_DURATION, |time| time);
+        sliding || fading
     }
 }
 
@@ -381,6 +543,11 @@ struct Panel<'a, 'b, Message> {
     host: Rectangle,
     /// The panel, in window coordinates.
     panel: Rectangle,
+    /// The scrim's opacity this frame.
+    fade: f32,
+    /// The caller's `open`. A sheet that is leaving is still drawn, but it does
+    /// not dismiss again and does not claim the pointer.
+    open: bool,
     overlay_closable: bool,
     /// Shared, not taken: the runtime builds the overlay twice per frame.
     on_open_change: Option<Rc<dyn Fn(bool) -> Message + 'a>>,
@@ -431,31 +598,38 @@ impl<Message> overlay::Overlay<Message, Theme, iced::Renderer> for Panel<'_, '_,
     ) {
         let panel = layout.bounds();
 
-        if let Event::Keyboard(iced::keyboard::Event::KeyPressed {
-            key: iced::keyboard::Key::Named(iced::keyboard::key::Named::Escape),
-            ..
-        }) = event
-        {
-            self.dismiss(shell);
-            shell.capture_event();
-        }
-
-        // A press on the scrim closes the sheet, and one anywhere else on the
-        // surface is swallowed either way: what is behind an open sheet is not
-        // an interactive target. A press outside the surface belongs to
-        // whatever is there — another section's sheet, or the page — so this
-        // overlay neither dismisses nor captures it. iced gives an overlay the
-        // event before the widgets under it, which is what makes that choice
-        // possible.
-        if let Event::Mouse(iced::mouse::Event::ButtonPressed(iced::mouse::Button::Left))
-        | Event::Touch(iced::touch::Event::FingerPressed { .. }) = event
-            && !cursor.is_over(panel)
-            && cursor.is_over(self.host)
-        {
-            if self.overlay_closable {
+        // Only an open sheet answers the keyboard and the scrim. While the
+        // panel is leaving it is still drawn, but the input that closed it has
+        // already been handled and a second close would be a second message for
+        // one intention — the Slint component's `TouchArea` is `enabled` on
+        // `open` for the same reason.
+        if self.open {
+            if let Event::Keyboard(iced::keyboard::Event::KeyPressed {
+                key: iced::keyboard::Key::Named(iced::keyboard::key::Named::Escape),
+                ..
+            }) = event
+            {
                 self.dismiss(shell);
+                shell.capture_event();
             }
-            shell.capture_event();
+
+            // A press on the scrim closes the sheet, and one anywhere else on
+            // the surface is swallowed either way: what is behind an open sheet
+            // is not an interactive target. A press outside the surface belongs
+            // to whatever is there — another section's sheet, or the page — so
+            // this overlay neither dismisses nor captures it. iced gives an
+            // overlay the event before the widgets under it, which is what makes
+            // that choice possible.
+            if let Event::Mouse(iced::mouse::Event::ButtonPressed(iced::mouse::Button::Left))
+            | Event::Touch(iced::touch::Event::FingerPressed { .. }) = event
+                && !cursor.is_over(panel)
+                && cursor.is_over(self.host)
+            {
+                if self.overlay_closable {
+                    self.dismiss(shell);
+                }
+                shell.capture_event();
+            }
         }
 
         // Updated whether or not the pointer is over the panel, for the reason
@@ -473,7 +647,7 @@ impl<Message> overlay::Overlay<Message, Theme, iced::Renderer> for Panel<'_, '_,
         cursor: iced::mouse::Cursor,
         renderer: &iced::Renderer,
     ) -> iced::mouse::Interaction {
-        if !cursor.is_over(self.host) {
+        if !self.open || !cursor.is_over(self.host) {
             return iced::mouse::Interaction::None;
         }
         // A non-`None` interaction tells the runtime the overlay owns the
@@ -507,13 +681,15 @@ impl<Message> overlay::Overlay<Message, Theme, iced::Renderer> for Panel<'_, '_,
         let panel = layout.bounds();
         // Clipped to the surface, which is the Slint example's `clip: true`:
         // without it the panel's shadow falls onto the page around the preview.
+        // While the panel is part-way out, that clip is also what turns the
+        // overlap into a slide from the edge.
         renderer.with_layer(self.host, |renderer| {
             renderer.fill_quad(
                 renderer::Quad {
                     bounds: self.host,
                     ..renderer::Quad::default()
                 },
-                Background::Color(tokens.overlay),
+                Background::Color(tokens.overlay.scale_alpha(self.fade)),
             );
             // The family's surface, square-cornered: a sheet is flush to its
             // edge, where the popover's `radius-lg` would round a corner against
@@ -568,7 +744,7 @@ where
     }
 
     fn state(&self) -> widget::tree::State {
-        widget::tree::State::new(State::new())
+        widget::tree::State::new(State::new(self.open))
     }
 
     fn children(&self) -> Vec<Tree> {
@@ -593,6 +769,14 @@ where
         renderer: &iced::Renderer,
         limits: &layout::Limits,
     ) -> layout::Node {
+        // A layout with no update before it — the first build after the caller
+        // changed `open`, a resize — still reconciles the caller's state, but it
+        // does not advance the clock: `update` owns the sampling, so the position
+        // and the timer never disagree about which frame they are on.
+        tree.state
+            .downcast_mut::<State>()
+            .motion
+            .retarget(self.open, Instant::now());
         self.page
             .as_widget_mut()
             .layout(&mut tree.children[0], renderer, limits)
@@ -630,6 +814,37 @@ where
         shell: &mut Shell<'_, Message>,
         viewport: &Rectangle,
     ) {
+        // The redraw request carries the instant of the frame, and the panel is
+        // placed at that instant rather than at whatever `Instant::now()` says
+        // this pass — two passes over one frame then agree, which is what lets
+        // the second pass see that there is nothing left to lay out.
+        let frame = match event {
+            Event::Window(iced::window::Event::RedrawRequested(at)) => Some(*at),
+            _ => None,
+        };
+        let now = frame.unwrap_or_else(Instant::now);
+        let (moving, stale) = {
+            let motion = &mut tree.state.downcast_mut::<State>().motion;
+            motion.retarget(self.open, now);
+            let moving = motion.sample(now);
+            let stale = frame.is_some() && motion.framed != frame;
+            if frame.is_some() {
+                motion.framed = frame;
+            }
+            (moving, stale)
+        };
+        if stale {
+            // The panel's rectangle belongs to the overlay's layout, not to the
+            // paint, so a sampled frame asks for a new layout.
+            shell.invalidate_layout();
+        }
+        if moving {
+            // iced has no interval subscription under this runtime, so the frame
+            // that just sampled is what asks for the next one — the collapsible
+            // reveal's route, with the compositor's next frame as the target.
+            shell.request_redraw();
+        }
+
         self.page.as_widget_mut().update(
             &mut tree.children[0],
             event,
@@ -679,7 +894,13 @@ where
         _viewport: &Rectangle,
         translation: Vector,
     ) -> Option<overlay::Element<'b, Message, Theme, iced::Renderer>> {
-        if !self.open {
+        let state = tree.state.downcast_mut::<State>();
+        let progress = state.motion.slide.value.clamp(0.0, 1.0);
+        let fade = state.motion.fade.value.clamp(0.0, 1.0);
+        // A closed sheet that has finished leaving is gone; one that is still
+        // travelling is drawn, which is what makes the close an animation
+        // rather than a removal on the frame the caller cleared `open`.
+        if !self.open && progress <= 0.0 {
             return None;
         }
         // The panel is built once and borrowed afterwards: the runtime asks for
@@ -691,21 +912,26 @@ where
             self.panel = Some(self.build_panel(body));
         }
         let content = self.panel.as_mut()?;
-        let state = tree.state.downcast_mut::<State>();
         // The body's sub-tree is reconciled here, before the overlay is built
         // from it: without it a text widget has no paragraph to measure with and
         // lays out at zero height.
         state.panel.diff(content.as_widget());
         // The overlay is laid out against the window, so the surface has to be
-        // in window coordinates: its layout position is in the scroll area's
-        // content coordinates and `translation` is the offset between the two.
-        let host = Rectangle::new(layout.position() - translation, layout.bounds().size());
-        let panel = panel_rect(host, self.placement, self.size);
+        // in window coordinates. `translation` is the window offset of the
+        // coordinate space the layout position is already in — a scrollable
+        // passes `translation - offset` — so the window position is the sum, not
+        // the difference. Subtracting it put a panel below its frame by twice
+        // the scroll offset: unseen when a preview sits at the top of the page,
+        // and offscreen as soon as the section was scrolled into view.
+        let host = Rectangle::new(layout.position() + translation, layout.bounds().size());
+        let panel = panel_rect(host, self.placement, self.size, progress);
         Some(overlay::Element::new(Box::new(Panel {
             content,
             tree: &mut state.panel,
             host,
             panel,
+            fade,
+            open: self.open,
             overlay_closable: self.overlay_closable,
             on_open_change: self.on_open_change.clone(),
         })))
