@@ -1079,6 +1079,17 @@ The trap also cannot occur where a row is **intrinsic** rather than inside a fix
 exempt by construction, and why `menu` items at −2.0 are not defects. Say which components are exempt
 and why, beside the ones you measured.
 
+#### A second surface inside a panel eats the panel's padding
+
+The popover's demo wrapped each panel's content in a `panel_container` that drew its **own** surface at
+the content's bounds — one inset step inside the popover's own 12px. The 12px therefore fell *outside* the
+visible surface, in the transparent gap between the two, and the text met the visible edge: measured left
+inset **1px** where 12 was intended, and the panel **24px smaller in each direction** than it should be.
+Worse, the component's own module doc claimed that wrapping was how the gallery got its inset.
+
+When a container draws a surface and its content draws another, the outer inset is spent in the gap. Pass
+the outer padding to the inner surface, or let only one of them draw — do not nest two.
+
 #### When a module doc and its code disagree, the doc states intent — and the gap is a bug
 
 Two of these surfaced in one session, and both read correctly while behaving wrongly. The alert's fill was
