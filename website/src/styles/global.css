@@ -3227,9 +3227,23 @@ html[data-framework="iced"] .framework-api__panel[data-framework-panel="iced"] {
   gap: 1rem;
 }
 
+/* The copy is the row's centre, not a flex item squeezed between two clusters of
+   different widths: three tracks keep its midpoint on the container's midline
+   whatever the socials and the back-to-top button measure. The side tracks stay
+   `1fr`, so neither cluster's width decides where the middle lands. */
 @media (min-width: 768px) {
   .kit-footer__bottom {
-    flex-direction: row;
+    display: grid;
+    grid-template-columns: 1fr auto 1fr;
+    justify-content: normal;
+  }
+
+  .kit-footer__socials {
+    justify-self: start;
+  }
+
+  .kit-footer__top-btn {
+    justify-self: end;
   }
 }
 
