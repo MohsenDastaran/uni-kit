@@ -1145,6 +1145,16 @@ The fix is always to tint it in the SVG's own style closure (`color: Some(tokens
 rely on inheritance. The last offender was the message-scroller's jump control — the only untinted SVG
 left in the catalogue — whose chevron was invisible in dark behind the border token's faint ring.
 
+#### A clean tree does not mean nothing was written
+
+An agent was stopped mid-task leaving no report. `git status` was clean, so I concluded it "left nothing"
+and re-ran the task — but the tree was clean because the agent had **committed** before dying. `git log`
+would have shown two commits for that component minutes earlier. The re-run agent caught it ("the brief was
+stale") and verified the existing work instead of rewriting it.
+
+So when an agent dies: read **`git log`** for its paths as well as `git status`. A stopped agent can fail
+after committing, and the failure is in the report, not the work.
+
 #### Never run a crate-wide formatter in a shared tree
 
 `cargo fmt -- <file>` reformatted **the whole crate**, not the named file. Reverting it meant
