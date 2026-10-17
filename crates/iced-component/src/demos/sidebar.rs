@@ -5,20 +5,24 @@
 //! in the gallery the website embeds.
 //!
 //! Each section carries the heading the website page gives it — **Basic Sidebar**,
-//! **Collapsible Sidebar**, **Multiple Groups** — and the code icon that asks the
-//! embedding page to scroll to that sample. Clicking either one posts the
-//! section's index and title through [`crate::bridge`], the same bridge the Slint
-//! and GPUI galleries use.
+//! **Collapsible Sidebar**, **Multiple Groups** and **With Badges and
+//! Suffixes** — and the code icon that asks the embedding page to scroll to that
+//! sample. Clicking either one posts the section's index and title through
+//! [`crate::bridge`], the same bridge the Slint and GPUI galleries use.
 //!
 //! The `// section: <title>` comments below are the contract the website reads to
 //! cut this file into the usage panels a component page shows, so the code on the
 //! page is the code that runs here. Keep them, one per section, in order, and keep
 //! the closing `// section: end` after the last one.
 //!
-//! The three headings are the three the Slint example fills. The component's own
-//! shape is the whole of it there, so this port does not invent a fourth section
-//! for GPUI's nested menus, context menus or file browser — the module says the
-//! same thing at the top of `components/sidebar.rs`.
+//! The first three headings are the three the Slint example fills. The fourth is
+//! the page's own **With Badges and Suffixes** sample, drawn as the workspace in
+//! GPUI's sidebar story: a header with a swap chevron, section labels, a
+//! disclosed Playground group whose children indent under it (one destructive
+//! child with a switch), top-level rows with trailing chevrons, a dotted badge,
+//! a muted Travel and the user footer. The disclosure is the component's own,
+//! wrapped around `collapsible::reveal`, so its arrow swaps and its height
+//! animates the same way the accordion's does.
 //!
 //! Each card is drawn with the rail against the leading edge and, while the rail
 //! is collapsed, the 28px `panel-left` trigger the application owns. That trigger
@@ -39,6 +43,9 @@ const PAGE: f32 = 24.0;
 const CARD: f32 = 320.0;
 /// The multiple-groups card, `height: 340px` in the Slint example.
 const TALL_CARD: f32 = 340.0;
+/// The workspace card: tall enough for the header, both groups, the disclosed
+/// Playground children and the footer without the body's own scroll moving.
+const WORKSPACE_CARD: f32 = 560.0;
 /// The collapsed rail's expand trigger, `width: 28px; height: 28px`.
 const TRIGGER: f32 = 28.0;
 
@@ -65,6 +72,24 @@ const USERS: &[u8] = br#"<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24
 const DATABASE: &[u8] = br#"<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><ellipse cx="12" cy="5" rx="9" ry="3"/><path d="M3 5V19A9 3 0 0 0 21 19V5"/><path d="M3 12A9 3 0 0 0 21 12"/></svg>"#;
 /// `message-circle`.
 const MESSAGE_CIRCLE: &[u8] = br#"<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2.992 16.342a2 2 0 0 1 .094 1.167l-1.065 3.29a1 1 0 0 0 1.236 1.168l3.413-.998a2 2 0 0 1 1.099.092 10 10 0 1 0-4.777-4.719"/></svg>"#;
+/// `layers`, the workspace mark the fourth card's header draws.
+const LAYERS: &[u8] = br#"<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12.83 2.18a2 2 0 0 0-1.66 0L2.6 6.08a1 1 0 0 0 0 1.83l8.58 3.91a2 2 0 0 0 1.66 0l8.58-3.9a1 1 0 0 0 0-1.83z"/><path d="M2 12a1 1 0 0 0 .58.91l8.6 3.91a2 2 0 0 0 1.65 0l8.58-3.9A1 1 0 0 0 22 12"/><path d="M2 17a1 1 0 0 0 .58.91l8.6 3.91a2 2 0 0 0 1.65 0l8.58-3.9A1 1 0 0 0 22 17"/></svg>"#;
+/// `square-terminal`, the Playground row.
+const SQUARE_TERMINAL: &[u8] = br#"<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m7 11 2-2-2-2"/><path d="M11 13h4"/><rect width="18" height="18" x="3" y="3" rx="2" ry="2"/></svg>"#;
+/// `bot`, the Models row.
+const BOT: &[u8] = br#"<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 8V4H8"/><rect width="16" height="12" x="4" y="8" rx="2"/><path d="M2 14h2"/><path d="M20 14h2"/><path d="M15 13v2"/><path d="M9 13v2"/></svg>"#;
+/// `book-open`, the Documentation row.
+const BOOK_OPEN: &[u8] = br#"<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v16"/><path d="M20.001 19A2 2 0 0022 17V5a2 2 0 00-1.999-2L16 3.002A5 5 0 0012 5a5 5 0 00-4-2H4a2 2 0 00-2 2v12a2 2 0 001.999 2H8a5 5 0 014 2 5 5 0 014-2z"/></svg>"#;
+/// `frame`, the Design Engineering row.
+const FRAME: &[u8] = br#"<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="22" x2="2" y1="6" y2="6"/><line x1="22" x2="2" y1="18" y2="18"/><line x1="6" x2="6" y1="2" y2="22"/><line x1="18" x2="18" y1="2" y2="22"/></svg>"#;
+/// `globe`, the muted Travel row.
+const GLOBE: &[u8] = br#"<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M12 2a14.5 14.5 0 0 0 0 20 14.5 14.5 0 0 0 0-20"/><path d="M2 12h20"/></svg>"#;
+/// `bell`, the badge's glyph on Design Engineering.
+const BELL: &[u8] = br#"<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10.268 21a2 2 0 0 0 3.464 0"/><path d="M3.262 15.326A1 1 0 0 0 4 17h16a1 1 0 0 0 .74-1.673C19.41 13.956 18 12.499 18 8A6 6 0 0 0 6 8c0 4.499-1.411 5.956-2.738 7.326"/></svg>"#;
+/// `chevron-right`, the collapsed top-level rows' trailing mark.
+const CHEVRON_RIGHT: &[u8] = br#"<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m9 18 6-6-6-6"/></svg>"#;
+/// `chevrons-up-down`, the header's workspace swap.
+const CHEVRONS_UP_DOWN: &[u8] = br#"<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m7 15 5 5 5-5"/><path d="m7 9 5-5 5 5"/></svg>"#;
 
 pub fn run(theme: Theme) -> iced::Result {
     iced::application(boot, update, view)
@@ -75,11 +100,15 @@ pub fn run(theme: Theme) -> iced::Result {
 
 #[derive(Debug, Clone)]
 struct App {
-    /// The current row of each of the three sidebars, as `(group, entry)`.
-    selected: [(usize, usize); 3],
+    /// The current row of each of the four sidebars, as `(group, entry)`.
+    selected: [(usize, usize); 4],
     /// Whether each rail is collapsed. The collapsible card starts on the rail,
     /// as the Slint example sets `collapsed: true`.
-    collapsed: [bool; 3],
+    collapsed: [bool; 4],
+    /// The workspace card's disclosed group and its child toggle. Both are the
+    /// caller's state, which is the sidebar's controlled shape.
+    playground_open: bool,
+    history_on: bool,
     /// Which section heading the pointer is over, and which was pressed, so the
     /// code icon can draw the two states the Slint heading animates to.
     hovered: Option<&'static str>,
@@ -89,8 +118,10 @@ struct App {
 impl Default for App {
     fn default() -> Self {
         Self {
-            selected: [(0, 0), (0, 1), (1, 0)],
-            collapsed: [false, true, false],
+            selected: [(0, 0), (0, 1), (1, 0), (0, 0)],
+            collapsed: [false, true, false, false],
+            playground_open: true,
+            history_on: true,
             hovered: None,
             pressed_source: None,
         }
@@ -110,6 +141,14 @@ enum Message {
         section: usize,
         collapsed: bool,
     },
+    /// The workspace card's Playground row was clicked: disclose or close its
+    /// children.
+    TogglePlayground,
+    /// The Playground child's own toggle, with the value it wants.
+    SetHistory(bool),
+    /// The header's swap chevron. GPUI opens a workspace menu here; the demo
+    /// has one workspace, so the mark is the shape and the press is inert.
+    SwapWorkspace,
     HoverSource(Option<&'static str>),
     PressSource(Option<&'static str>),
     /// A section heading was released: ask the page for that sample.
@@ -131,6 +170,9 @@ fn update(app: &mut App, message: Message) -> Task<Message> {
             entry,
         } => app.selected[section] = (group, entry),
         Message::Toggle { section, collapsed } => app.collapsed[section] = collapsed,
+        Message::TogglePlayground => app.playground_open = !app.playground_open,
+        Message::SetHistory(checked) => app.history_on = checked,
+        Message::SwapWorkspace => {}
         Message::HoverSource(title) => app.hovered = title,
         Message::PressSource(title) => app.pressed_source = title,
         Message::ShowSource { index, title } => {
@@ -392,6 +434,73 @@ fn view(app: &App) -> Element<'_, Message> {
         TALL_CARD,
     );
 
+    // section: With Badges and Suffixes
+    // The workspace from GPUI's sidebar story: the same rail, with a header
+    // swap, two section labels, a disclosed Playground group, trailing chevrons
+    // on the top-level rows, a dotted badge, a muted Travel and the user footer.
+    // The disclosure is the component's own `collapsible::reveal`, so the arrow
+    // swaps and the children move over the accordion's 150ms line.
+    let workspace = card(
+        3,
+        Sidebar::new()
+            .header_icon(LAYERS)
+            .header_title("Company Name")
+            .header_subtitle("Enterprise")
+            .header_action(CHEVRONS_UP_DOWN, Message::SwapWorkspace)
+            .group(
+                SidebarGroup::new("Platform").entries([
+                    SidebarEntry::new("Playground")
+                        .icon(SQUARE_TERMINAL)
+                        .children([
+                            SidebarEntry::new("History")
+                                .destructive(true)
+                                .switch(app.history_on),
+                            SidebarEntry::new("Starred"),
+                            SidebarEntry::new("Settings"),
+                        ])
+                        .open(app.playground_open),
+                    SidebarEntry::new("Models")
+                        .icon(BOT)
+                        .trailing_icon(CHEVRON_RIGHT),
+                    SidebarEntry::new("Documentation")
+                        .icon(BOOK_OPEN)
+                        .trailing_icon(CHEVRON_RIGHT),
+                    SidebarEntry::new("Settings")
+                        .icon(SETTINGS)
+                        .trailing_icon(CHEVRON_RIGHT),
+                ]),
+            )
+            .group(
+                SidebarGroup::new("Projects").entries([
+                    SidebarEntry::new("Design Engineering")
+                        .icon(FRAME)
+                        .trailing_icon(BELL)
+                        .badge(true),
+                    SidebarEntry::new("Sales and Marketing")
+                        .icon(CHART_COLUMN)
+                        .trailing_icon(SETTINGS),
+                    SidebarEntry::new("Travel").icon(GLOBE).muted(true),
+                ]),
+            )
+            .selected(app.selected[3].0, app.selected[3].1)
+            .collapsed(app.collapsed[3])
+            .footer_initials("JL")
+            .footer_name("Jason Lee")
+            .on_select(|group, entry| match (group, entry) {
+                // The row with children reports the same press a leaf does; the
+                // caller is the one that decides it means "disclose".
+                (0, 0) => Message::TogglePlayground,
+                _ => Message::Select {
+                    section: 3,
+                    group,
+                    entry,
+                },
+            })
+            .on_entry_switch(|_, _, _, checked| Message::SetHistory(checked)),
+        app.collapsed[3],
+        WORKSPACE_CARD,
+    );
+
     // section: end
     let selected = app.selected;
     let status = text(format!(
@@ -411,6 +520,8 @@ fn view(app: &App) -> Element<'_, Message> {
         body_box(collapsible),
         heading(app, 2, "Multiple Groups"),
         body_box(multiple),
+        heading(app, 3, "With Badges and Suffixes"),
+        body_box(workspace),
         status,
     ]
     .spacing(PAGE)
