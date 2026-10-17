@@ -50,6 +50,24 @@
 //! collapse control and the footer's `chevrons-up-down`, because those are its
 //! chrome rather than the application's content; Slint hardcodes the same two.
 //!
+//! # Children, badges and the header mark
+//!
+//! A row may carry children ([`SidebarEntry::children`]) and the caller's
+//! `open` decides whether they are disclosed; the row draws a chevron that
+//! swaps from `chevron-right` to `chevron-down` and the children are wrapped in
+//! [`collapsible::reveal`](super::collapsible::reveal), so the reveal is the
+//! accordion's and the tree's own 150ms linear motion rather than a second
+//! implementation. A click on that row reports through [`Sidebar::on_select`]
+//! exactly like any other row, and the caller decides whether it moves the
+//! selection or flips `open` — the one state the sidebar does not own.
+//!
+//! A row's trailing slot can also hold the finished [`Badge`]
+//! ([`SidebarEntry::badge`]) and a [`Toggle`] ([`SidebarEntry::toggle`]); the
+//! header can carry a caller-supplied trailing mark ([`Sidebar::header_action`])
+//! in place of the collapse control. These are the shapes GPUI's
+//! `SidebarMenuItem::suffix` expresses with an element; iced's row is data, so
+//! they are named rather than an arbitrary element slot.
+//!
 //! # What iced cannot draw, named rather than faked
 //!
 //! - **A muted row keeps its ink, not its opacity.** Slint dims the whole row to
@@ -62,7 +80,15 @@
 //!   iced 0.14 gives a bare `button` no focus ring, no `Tab` stop and no `Space`
 //!   or `Enter`, so the traversal the Slint `TouchArea`s inherit from the window
 //!   is the application's.
-//! - **No animation.** Slint animates the rail's width over 160ms; iced snaps.
+//! - **A child row is not selectable.** Children are drawn and their own
+//!   [`Toggle`] reports, but [`Sidebar::on_select`] addresses a group and a
+//!   top-level entry, so a child gets no selection report and no selected
+//!   backplate. Reporting one would need a path in the message, which this
+//!   component's controlled shape does not carry.
+//! - **The rail width snaps.** Slint animates it over 160ms; iced 0.14 has no
+//!   width transition, so it changes on the frame after the message. Row
+//!   disclosure is animated, because that is a panel height rather than a box
+//!   width.
 //! - **The footer is not a menu.** Slint draws the `chevrons-up-down` glyph and
 //!   opens nothing; a caller that wants an account menu composes
 //!   [`Popover`](super::popover::Popover) with [`Menu`](super::menu::Menu) around
@@ -82,8 +108,11 @@ use iced::widget::{Space, button, column, container, row, svg, text};
 use iced::{Alignment, Border, Color, Element, Font, Length, Padding, Shadow, Theme};
 
 use super::avatar::{Avatar, AvatarSize};
+use super::badge::Badge;
+use super::collapsible;
 use super::scrollable::{Axis, Scrollable};
 use super::theme::{self, Tokens};
+use super::toggle::Toggle;
 
 /// The expanded rail, `232px` in the Slint component.
 pub const EXPANDED_WIDTH: f32 = 232.0;
@@ -110,6 +139,16 @@ const ICON: f32 = 16.0;
 const TRAILING_ICON: f32 = 14.0;
 /// The hover tint, `accent.with-alpha(0.4)` in the Slint component.
 const HOVER_TINT: f32 = 0.4;
+/// How far an entry's children are inset past its own row, so a disclosed run
+/// reads as belonging to the row above it.
+const CHILD_INDENT: f32 = 14.0;
+
+/// The disclosure marks: Lucide's `chevron-right` while a group is closed and
+/// `chevron-down` while it is open. Swapped, not turned, because iced 0.14 has
+/// no rotation transition for an arbitrary widget — the same rule the
+/// accordion's disclosure follows.
+const CHEVRON_RIGHT: &[u8] = br#"<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m9 18 6-6-6-6"/></svg>"#;
+const CHEVRON_DOWN: &[u8] = br#"<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m6 9 6 6 6-6"/></svg>"#;
 
 /// The `panel-left` glyph the expanded rail's collapse control draws, from
 /// `crates/slint-component/ui/icons/panel-left.svg` (Lucide, ISC), so the two
@@ -124,7 +163,9 @@ const CHEVRONS_UP_DOWN: &[u8] = br#"<svg xmlns="http://www.w3.org/2000/svg" view
 /// The columns are the Slint `SidebarEntry` struct's: a required label, an
 /// optional leading icon, an optional trailing figure and an optional trailing
 /// icon, and the muted state that dims the row to a control that cannot be
-/// opened yet.
+/// opened yet. A row may also carry children, which it discloses through
+/// [`collapsible::reveal`](super::collapsible::reveal); see
+/// [`SidebarEntry::children`].
 #[derive(Debug, Clone, PartialEq)]
 pub struct SidebarEntry {
     label: String,
@@ -132,6 +173,11 @@ pub struct SidebarEntry {
     suffix: String,
     trailing_icon: Option<&'static [u8]>,
     muted: bool,
+    destructive: bool,
+    badge: bool,
+    toggle: Option<bool>,
+    children: Vec<SidebarEntry>,
+    open: bool,
 }
 
 impl SidebarEntry {
@@ -143,6 +189,11 @@ impl SidebarEntry {
             suffix: String::new(),
             trailing_icon: None,
             muted: false,
+            destructive: false,
+            badge: false,
+            toggle: None,
+            children: Vec::new(),
+            open: false,
         }
     }
 
@@ -171,6 +222,52 @@ impl SidebarEntry {
     /// A row that cannot be opened yet: muted ink, and no pointer report.
     pub fn muted(mut self, muted: bool) -> Self {
         self.muted = muted;
+        self
+    }
+
+    /// Draws the label in the destructive ink, as GPUI's `label_style` does.
+    /// The leading icon keeps the ordinary ink.
+    pub fn destructive(mut self, destructive: bool) -> Self {
+        self.destructive = destructive;
+        self
+    }
+
+    /// Wraps the trailing icon in the finished [`Badge`] as a dot, so a row
+    /// reads as "has a notification". Without a trailing icon the dot has
+    /// nothing to anchor to and is not drawn.
+    pub fn badge(mut self, badge: bool) -> Self {
+        self.badge = badge;
+        self
+    }
+
+    /// A [`Toggle`] after the label at this checked value. The report is
+    /// [`Sidebar::on_entry_toggle`]; without that callback the control draws
+    /// disabled.
+    pub fn toggle(mut self, checked: bool) -> Self {
+        self.toggle = Some(checked);
+        self
+    }
+
+    /// Appends a child row, drawn indented under this one and disclosed through
+    /// [`collapsible::reveal`](super::collapsible::reveal). A row with children
+    /// draws its own chevron and reports a press through [`Sidebar::on_select`],
+    /// as GPUI's `SidebarMenuItem` does.
+    pub fn child(mut self, child: SidebarEntry) -> Self {
+        self.children.push(child);
+        self
+    }
+
+    /// Appends several child rows.
+    pub fn children(mut self, children: impl IntoIterator<Item = SidebarEntry>) -> Self {
+        self.children.extend(children);
+        self
+    }
+
+    /// Whether the children are disclosed. The caller owns this, like every
+    /// other value here; the row reports a click and this decides what the
+    /// reveal shows.
+    pub fn open(mut self, open: bool) -> Self {
+        self.open = open;
         self
     }
 }
@@ -217,8 +314,10 @@ pub struct Sidebar<'a, Message> {
     header_subtitle: String,
     footer_initials: String,
     footer_name: String,
+    header_action: Option<(&'static [u8], Message)>,
     on_select: Option<Box<dyn Fn(usize, usize) -> Message + 'a>>,
     on_toggle: Option<Box<dyn Fn(bool) -> Message + 'a>>,
+    on_entry_toggle: Option<Box<dyn Fn(usize, usize, usize, bool) -> Message + 'a>>,
 }
 
 impl<'a, Message> Sidebar<'a, Message> {
@@ -234,8 +333,10 @@ impl<'a, Message> Sidebar<'a, Message> {
             header_subtitle: String::new(),
             footer_initials: "YK".to_string(),
             footer_name: "You".to_string(),
+            header_action: None,
             on_select: None,
             on_toggle: None,
+            on_entry_toggle: None,
         }
     }
 
@@ -285,6 +386,15 @@ impl<'a, Message> Sidebar<'a, Message> {
         self
     }
 
+    /// A trailing mark in the header, after the title, and the message it
+    /// reports when pressed — the workspace swap GPUI's header carries. It
+    /// takes the collapse control's place: a header has room for one trailing
+    /// control, and a caller that wants both composes its own.
+    pub fn header_action(mut self, icon: &'static [u8], message: Message) -> Self {
+        self.header_action = Some((icon, message));
+        self
+    }
+
     /// The footer avatar's initials. Slint defaults to "YK".
     pub fn footer_initials(mut self, initials: impl Into<String>) -> Self {
         self.footer_initials = initials.into();
@@ -310,6 +420,18 @@ impl<'a, Message> Sidebar<'a, Message> {
     /// application's own trigger is the only way to change the state.
     pub fn on_toggle(mut self, on_toggle: impl Fn(bool) -> Message + 'a) -> Self {
         self.on_toggle = Some(Box::new(on_toggle));
+        self
+    }
+
+    /// A child row's [`Toggle`](SidebarEntry::toggle) was pressed, with the
+    /// value it wants (`true` selects). The report carries the row's group and
+    /// entry index and the child's index, because a toggle can sit on any
+    /// child. Without this the toggle draws disabled.
+    pub fn on_entry_toggle(
+        mut self,
+        on_entry_toggle: impl Fn(usize, usize, usize, bool) -> Message + 'a,
+    ) -> Self {
+        self.on_entry_toggle = Some(Box::new(on_entry_toggle));
         self
     }
 
@@ -351,8 +473,10 @@ impl<'a, Message> Sidebar<'a, Message> {
                 ));
             }
             header = header.push(lines);
-            if let Some(on_toggle) = &self.on_toggle {
-                header = header.push(collapse_control(on_toggle(true)));
+            match (self.header_action, &self.on_toggle) {
+                (Some((icon, message)), _) => header = header.push(header_action(icon, message)),
+                (None, Some(on_toggle)) => header = header.push(collapse_control(on_toggle(true))),
+                (None, None) => {}
             }
         }
 
@@ -369,13 +493,52 @@ impl<'a, Message> Sidebar<'a, Message> {
                 let is_selected = selected == Some((group_index, entry_index));
                 // A muted row is not given a message, so iced draws it as a
                 // disabled control and it answers no pointer — the same rule
-                // `list` and `button` follow.
+                // `list` and `button` follow. A row with children uses the same
+                // report: the caller decides whether that click selects it or
+                // flips `open`, which is the only state the sidebar does not
+                // own.
                 let message = self
                     .on_select
                     .as_ref()
                     .filter(|_| !entry.muted)
                     .map(|on_select| on_select(group_index, entry_index));
-                rows = rows.push(entry_row(entry, is_selected, message, collapsed));
+                let toggle = entry.toggle.and_then(|checked| {
+                    self.on_entry_toggle
+                        .as_ref()
+                        .map(|on_toggle| on_toggle(group_index, entry_index, 0, !checked))
+                });
+                rows = rows.push(entry_row(
+                    entry,
+                    is_selected,
+                    message,
+                    toggle,
+                    collapsed,
+                    0.0,
+                ));
+
+                if !collapsed && !entry.children.is_empty() {
+                    let mut children = column![].spacing(ENTRY_GAP).width(Length::Fill);
+                    for (child_index, child) in entry.children.iter().enumerate() {
+                        let child_toggle = child.toggle.and_then(|checked| {
+                            self.on_entry_toggle.as_ref().map(|on_toggle| {
+                                on_toggle(group_index, entry_index, child_index, !checked)
+                            })
+                        });
+                        children = children.push(entry_row(
+                            child,
+                            false,
+                            None,
+                            child_toggle,
+                            collapsed,
+                            CHILD_INDENT,
+                        ));
+                    }
+                    // Mounted whether or not it is open: the reveal measures
+                    // the children at their full height and clips them, which
+                    // is what lets a toggle mid-flight reverse from where the
+                    // panel already is.
+                    rows = rows.push(collapsible::reveal(children, entry.open));
+                }
             }
             body = body.push(rows);
         }
@@ -515,6 +678,18 @@ fn collapse_control<'a, Message: Clone + 'a>(message: Message) -> Element<'a, Me
     .into()
 }
 
+/// The header's caller-supplied trailing mark, with no surface of its own — the
+/// same bare shape as the collapse control, and the workspace swap GPUI's
+/// header draws.
+fn header_action<'a, Message: Clone + 'a>(
+    icon: &'static [u8],
+    message: Message,
+) -> Element<'a, Message> {
+    iced::widget::mouse_area(glyph(icon, ICON, |tokens: Tokens| tokens.muted_foreground))
+        .on_press(message)
+        .into()
+}
+
 /// A header line. The title is `font-size-sm` at semibold and the subtitle
 /// `font-size-xs`; both keep to one line and clip rather than wrap, because
 /// iced 0.14 has no ellipsis.
@@ -573,14 +748,19 @@ fn group_heading<'a, Message: 'a>(title: &str) -> Element<'a, Message> {
 /// One entry, as the button the shared row shape is built on.
 ///
 /// `message` is `None` for a muted entry, which is how iced spells "cannot be
-/// pressed"; the row then takes no hover either.
+/// pressed"; the row then takes no hover either. `toggle_message` drives the
+/// entry's own [`Toggle`], and `indent` is where a child row starts inside the
+/// row's own inset.
 fn entry_row<'a, Message: Clone + 'a>(
     entry: &SidebarEntry,
     selected: bool,
     message: Option<Message>,
+    toggle_message: Option<Message>,
     collapsed: bool,
+    indent: f32,
 ) -> Element<'a, Message> {
     let muted = entry.muted;
+    let destructive = entry.destructive;
 
     let mut line = row![]
         .spacing(ROW_SPACING)
@@ -604,6 +784,8 @@ fn entry_row<'a, Message: Clone + 'a>(
         let ink = move |tokens: Tokens| {
             if muted {
                 tokens.muted_foreground
+            } else if destructive {
+                tokens.danger
             } else {
                 tokens.foreground
             }
@@ -627,21 +809,58 @@ fn entry_row<'a, Message: Clone + 'a>(
                     }),
             );
         }
+        if let Some(checked) = entry.toggle {
+            let mut control = Toggle::new(checked).size(theme::ControlSize::XSmall);
+            if let Some(message) = toggle_message {
+                control = control.on_toggle(move |_| message.clone());
+            }
+            line = line.push(control);
+        }
         if let Some(bytes) = entry.trailing_icon {
-            line = line.push(glyph(bytes, TRAILING_ICON, |tokens: Tokens| {
+            let icon = glyph(bytes, TRAILING_ICON, |tokens: Tokens| {
                 tokens.muted_foreground
-            }));
+            });
+            let trailing: Element<'a, Message> = if entry.badge {
+                Badge::new(icon).dot().count(1).into()
+            } else {
+                icon
+            };
+            line = line.push(trailing);
+        }
+        if !entry.children.is_empty() {
+            line = line.push(disclosure(entry.open));
         }
     }
 
     let mut control = button(line)
         .width(Length::Fill)
-        .padding(ROW_PADDING)
+        .padding(Padding {
+            top: ROW_PADDING,
+            right: ROW_PADDING,
+            bottom: ROW_PADDING,
+            left: ROW_PADDING + indent,
+        })
         .style(move |theme: &Theme, status| row_style(theme, status, selected, muted));
     if let Some(message) = message {
         control = control.on_press(message);
     }
     control.into()
+}
+
+/// The disclosure mark a row with children draws, in the open or closed end
+/// state, tinted in its own style closure — an SVG keeps its own black otherwise.
+fn disclosure<'a, Message: 'a>(open: bool) -> Element<'a, Message> {
+    svg(svg::Handle::from_memory(if open {
+        CHEVRON_DOWN
+    } else {
+        CHEVRON_RIGHT
+    }))
+    .width(Length::Fixed(TRAILING_ICON))
+    .height(Length::Fixed(TRAILING_ICON))
+    .style(|theme: &Theme, _status| svg::Style {
+        color: Some(Tokens::of(theme).muted_foreground),
+    })
+    .into()
 }
 
 /// The row's surface, resolved inside the closure: `accent` when the caller
