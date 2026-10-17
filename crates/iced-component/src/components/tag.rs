@@ -110,7 +110,7 @@ impl<'a, Message> Tag<'a, Message> {
 
     fn ink(&self, tokens: Tokens) -> Color {
         match self.variant {
-            Variant::Status => tokens.status_color(self.status),
+            Variant::Status => status_ink(tokens, self.status),
             _ => tokens.foreground,
         }
     }
@@ -124,6 +124,22 @@ impl<'a, Message> Tag<'a, Message> {
                 Some(theme::alpha(tokens.status_color(self.status), if tokens.dark { 0.18 } else { 0.12 }))
             }
         }
+    }
+}
+
+/// The ink a tinted status chip draws its label in.
+///
+/// The dark theme's tint is deep enough for the status hue itself, but the light
+/// theme tints the page's own data colours at 12%, and several of those are
+/// already pale — `#93c5fd` as ink on its own tint is a label that has to be
+/// hunted for. Darkening the same hue keeps the meaning and the contrast. This
+/// is the same reading [`super::button::ink`] makes when it refuses hue-on-hue.
+fn status_ink(tokens: Tokens, status: Status) -> Color {
+    let tone = tokens.status_color(status);
+    if tokens.dark {
+        tone
+    } else {
+        theme::darken(tone, 0.45)
     }
 }
 
@@ -148,7 +164,7 @@ impl Style {
 
     pub fn resolve(&self, tokens: Tokens) -> container::Style {
         let ink = match self.variant {
-            Variant::Status => tokens.status_color(self.status),
+            Variant::Status => status_ink(tokens, self.status),
             _ => tokens.foreground,
         };
         container::Style {
@@ -202,7 +218,7 @@ where
                 .size(size.control_font_size())
                 .style(move |theme: &Theme| text::Style {
                     color: Some(match variant {
-                        Variant::Status => Tokens::of(theme).status_color(status),
+                        Variant::Status => status_ink(Tokens::of(theme), status),
                         _ => Tokens::of(theme).foreground,
                     }),
                 }),
