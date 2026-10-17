@@ -1079,6 +1079,19 @@ The trap also cannot occur where a row is **intrinsic** rather than inside a fix
 exempt by construction, and why `menu` items at −2.0 are not defects. Say which components are exempt
 and why, beside the ones you measured.
 
+#### A split measures against the pane it grows, so each axis needs its own sign
+
+The horizontal axis's sized pane sits to the **left** of its strip and grows with `+x`, while a vertical
+axis's pane sits **below** and grows with `-y` — dragging up must enlarge it. One shared
+`start_split + (position - press)` therefore needs the vertical position **signed**, and without that the
+resizable IDE layout moved the split **down** when the handle was dragged **up**: a 40px upward drag moved
+the divider 40px down the wrong way.
+
+The fix signs the axis position (`-point.y` for the vertical axis) and leaves the drag mechanism alone —
+widget-tree state plus `CursorMoved`. The convention is now documented as "the sized pane sits below the
+strip"; a caller placing its pane **above** a vertical strip would need the opposite sign, and no usage in
+this crate does.
+
 #### A section title is a lookup key, not a label
 
 A demo's `// section:` title is what the page lookup matches against, so titling a section after the
