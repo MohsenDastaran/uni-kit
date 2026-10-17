@@ -35,9 +35,9 @@
 //!   the rules the control does enforce — a step, a range and the two bounds — and
 //!   leaves validation, formatting and error copy, which are the application's,
 //!   to the danger edge and the readout.
-//! - **API Reference** is a table, so the card is the table in use: one control
-//!   built with every method the reference lists, and the two helpers a
-//!   programmatic step needs, [`step_value`](crate::components::number_input::step_value)
+//! - **Programmatic Control** is the programmatic step the page documents: one
+//!   control built with every method the reference lists, driven by the two
+//!   helpers it needs, [`step_value`](crate::components::number_input::step_value)
 //!   and [`shown`](crate::components::number_input::shown).
 
 use iced::widget::{Id, column, container, mouse_area, operation, row, scrollable, svg, text};
@@ -621,11 +621,13 @@ fn view(app: &App) -> Element<'_, Message> {
     ]
     .spacing(10.0);
 
-    // section: API Reference
-    // The reference is a table, so the card is the table in use: one control built
-    // with every method it lists, and the two helpers a programmatic step needs.
+    // section: Programmatic Control
+    // The programmatic step the page documents: one control built with every
+    // method the reference lists, and the two helpers a programmatic step needs.
     // `step_value` is the arithmetic the steppers perform; `shown` is the text they
-    // write back.
+    // write back. It is the last card because it is the last usage example, not
+    // because it lists the API — `## API Reference` ends the page's example region,
+    // so a card named for it has no heading to scroll to and reads as broken.
     let api = column![
         NumberInput::new("api")
             .value(app.api.value)
@@ -681,7 +683,7 @@ fn view(app: &App) -> Element<'_, Message> {
         body_box(keyboard),
         heading(app, 3, "Best Practices"),
         body_box(practices),
-        heading(app, 4, "API Reference"),
+        heading(app, 4, "Programmatic Control"),
         body_box(api),
         status,
     ]
