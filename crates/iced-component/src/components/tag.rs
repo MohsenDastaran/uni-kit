@@ -3,7 +3,7 @@
 //! from 16 to 32 pixels tall, and an optional close control.
 //!
 //! The height is the control height less eight pixels, so the chip sits inside
-//! a control-sized row: 16, 20 and 32 pixels for the small, medium and large
+//! a control-sized row: 16, 24 and 32 pixels for the small, medium and large
 //! steps. The fill follows the variant — the theme's muted surface by default,
 //! the secondary surface, nothing with a border, or the status colour at the
 //! theme's tint — and the ink is the status colour when the tag is a status
