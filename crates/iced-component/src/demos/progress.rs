@@ -33,7 +33,7 @@ const PAGE: f32 = 24.0;
 
 pub fn run(theme: Theme) -> iced::Result {
     // `cx.theme()` is not available while a view is built, so the palette the
-    // custom-colour section names is read once, here, and carried on the state.
+    // custom-style section names is read once, here, and carried on the state.
     let tokens = Tokens::of(&theme);
     iced::application(move || boot(tokens), update, view)
         .title("uni-kit — progress")
@@ -44,7 +44,7 @@ pub fn run(theme: Theme) -> iced::Result {
 #[derive(Debug, Clone)]
 struct App {
     value: f32,
-    /// The palette the custom-colour section hands to `ProgressCircle::color`.
+    /// The palette the custom-style section hands to the bar's fill and edge.
     tokens: Tokens,
     /// Which section heading the pointer is over, and which was pressed, so the
     /// code icon can draw the two states the Slint heading animates to.
@@ -243,20 +243,17 @@ fn view(app: &App) -> Element<'_, Message> {
     ]
     .spacing(12);
 
-    // section: Custom Color
-    // The page's own sample — `cx.theme().green`, `.yellow`, `.primary` — drawn
-    // with the tokens that answer those names. A colour the caller names is what
-    // separates this from the status colours above.
-    let custom_color = column![
-        text("A colour the caller names, rather than a status.").size(14.0),
-        row![
-            ProgressCircle::new(value).color(app.tokens.success),
-            ProgressCircle::new(value * 0.75).color(app.tokens.warning),
-            ProgressCircle::new(value).color(app.tokens.info),
-            ProgressCircle::new(value * 0.5).color(app.tokens.primary),
-        ]
-        .spacing(16)
-        .align_y(Alignment::Center),
+    // section: Custom Style
+    // The page's own sample — a 16-pixel bar with a 2-pixel corner and a 2-pixel
+    // edge, none of which the size ladder above can express. Its `green_light`
+    // fill and `green` edge are the success token at half strength and whole.
+    let custom_style = column![
+        Progress::new(value)
+            .height(16.0)
+            .rounded(2.0)
+            .color(theme::alpha(app.tokens.success, 0.5))
+            .border(2.0)
+            .border_color(app.tokens.success),
     ]
     .spacing(12);
     // section: end
@@ -270,8 +267,8 @@ fn view(app: &App) -> Element<'_, Message> {
         body_box(sizes),
         heading(app, 3, "Progress circle"),
         body_box(circles),
-        heading(app, 4, "Custom Color"),
-        body_box(custom_color),
+        heading(app, 4, "Custom Style"),
+        body_box(custom_style),
     ]
     .spacing(PAGE)
     .padding(PAGE)
