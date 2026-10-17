@@ -14,11 +14,12 @@
 //! `// section: end` after the last one.
 //!
 //! The headings this demo and the page share are the ones the iced component can
-//! actually fill: **Basic Sheet**, **Sheet with Placement** and **Sheet with
-//! List**. The rest of `sheet.md` describes GPUI's window-level host —
-//! `open_sheet`, `margin_top`, a resizable edge, programmatic close — which iced
-//! 0.14 has no equivalent for; the component names those gaps in its own module
-//! rather than faking them here.
+//! actually fill: **Basic Sheet**, **Sheet with Placement**, **Sheet with Custom
+//! Size**, **Overlay Options** and **Sheet with List**. The rest of `sheet.md`
+//! describes GPUI's window-level host — `open_sheet`, `margin_top`, a resizable
+//! edge, a programmatic `close_sheet` — which iced 0.14 has no equivalent for;
+//! the component names those gaps in its own module rather than faking them
+//! here.
 
 use iced::widget::{column, container, mouse_area, row, scrollable, svg, text};
 use iced::{Alignment, Border, Element, Length, Padding, Task, Theme};
@@ -46,6 +47,11 @@ struct App {
     placement_open: bool,
     /// The edge the placement sheet comes from.
     side: Placement,
+    /// The sheet whose width the caller names instead of taking the edge's
+    /// default.
+    sized_open: bool,
+    /// The sheet a click on the scrim does not close.
+    overlay_open: bool,
     /// The list sheet, open from the start the way the Slint example's second
     /// group is.
     list_open: bool,
@@ -61,6 +67,8 @@ impl Default for App {
             basic_open: false,
             placement_open: false,
             side: Placement::Right,
+            sized_open: false,
+            overlay_open: false,
             list_open: true,
             hovered: None,
             pressed_source: None,
@@ -73,6 +81,8 @@ enum Message {
     SetBasic(bool),
     SetPlacement(bool),
     SetSide(Placement),
+    SetSized(bool),
+    SetOverlay(bool),
     SetList(bool),
     HoverSource(Option<&'static str>),
     PressSource(Option<&'static str>),
@@ -95,6 +105,8 @@ fn update(app: &mut App, message: Message) -> Task<Message> {
             app.side = side;
             app.placement_open = true;
         }
+        Message::SetSized(open) => app.sized_open = open,
+        Message::SetOverlay(open) => app.overlay_open = open,
         Message::SetList(open) => app.list_open = open,
         Message::HoverSource(title) => app.hovered = title,
         Message::PressSource(title) => app.pressed_source = title,
@@ -320,6 +332,64 @@ fn view(app: &App) -> Element<'_, Message> {
     ]
     .spacing(theme::SPACING_MD);
 
+    // section: Sheet with Custom Size
+    // The panel's width for a left or right sheet — its height for a top or
+    // bottom one — is the edge's default until the caller names one.
+    let sized = column![
+        Button::new("Open 420px sheet")
+            .outline()
+            .on_press(Message::SetSized(true)),
+        Sheet::new(frame(
+            320.0,
+            "The panel is 420px wide: wider than this frame's default."
+        ))
+        .open(app.sized_open)
+        .size(420.0)
+        .title("Custom Size")
+        .description("420px wide, where the default is 85% of the frame capped at 360.")
+        .body(
+            column![
+                text(
+                    "Sheet::size is the Slint component's size: the width for a left or right \
+                     sheet, the height for a top or bottom one. 0.0 keeps the edge's default."
+                )
+                .size(theme::FONT_SIZE_XS)
+            ]
+            .spacing(theme::SPACING_SM),
+        )
+        .on_open_change(Message::SetSized),
+    ]
+    .spacing(theme::SPACING_MD);
+
+    // section: Overlay Options
+    // The scrim is always drawn; whether a click on it closes the panel is the
+    // switch iced has.
+    let overlay = column![
+        Button::new("Open locked sheet")
+            .outline()
+            .on_press(Message::SetOverlay(true)),
+        Sheet::new(frame(
+            320.0,
+            "The scrim is drawn; a click on it does not close this panel."
+        ))
+        .open(app.overlay_open)
+        .title("Overlay Options")
+        .description("The scrim blocks the page, and ignores a click on it.")
+        .body(
+            column![
+                text(
+                    "Sheet::overlay_closable(false) leaves the header's × and Escape as the ways \
+                     out. The iced sheet always draws the scrim; there is no overlay(false)."
+                )
+                .size(theme::FONT_SIZE_XS)
+            ]
+            .spacing(theme::SPACING_SM),
+        )
+        .overlay_closable(false)
+        .on_open_change(Message::SetOverlay),
+    ]
+    .spacing(theme::SPACING_MD);
+
     // section: Sheet with List
     // The body scrolls inside the panel, so the header and the footer stay put
     // however long the list is.
@@ -344,7 +414,11 @@ fn view(app: &App) -> Element<'_, Message> {
         body_box(basic),
         heading(app, 1, "Sheet with Placement"),
         body_box(placement),
-        heading(app, 2, "Sheet with List"),
+        heading(app, 2, "Sheet with Custom Size"),
+        body_box(sized),
+        heading(app, 3, "Overlay Options"),
+        body_box(overlay),
+        heading(app, 4, "Sheet with List"),
         body_box(list),
         status,
     ]
