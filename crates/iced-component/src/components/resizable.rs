@@ -83,16 +83,20 @@ pub enum Axis {
     /// The divider is a vertical strip; the fixed pane's width is the split.
     #[default]
     Horizontal,
-    /// The divider is a horizontal strip; the fixed pane's height is the split.
+    /// The divider is a horizontal strip; the fixed pane's height is the split,
+    /// and that pane sits below the strip.
     Vertical,
 }
 
 impl Axis {
-    /// The coordinate a drag travels along.
+    /// The coordinate a drag travels along, signed so that a positive delta
+    /// grows the split. A horizontal split holds its fixed pane to the left of
+    /// the strip, so x grows with the split; a vertical split holds its fixed
+    /// pane below the strip, so the split grows as the pointer moves up.
     fn position(self, point: iced::Point) -> f32 {
         match self {
             Self::Horizontal => point.x,
-            Self::Vertical => point.y,
+            Self::Vertical => -point.y,
         }
     }
 
