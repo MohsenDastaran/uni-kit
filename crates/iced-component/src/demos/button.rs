@@ -1,6 +1,7 @@
 //! `button` — the whole gallery the Slint version shows: the variants, the
 //! outline set, the four sizes, icons and states, button groups, progress,
-//! dropdowns, a custom size, a custom colour and icon-only buttons.
+//! dropdowns, a custom size, a custom colour, icon-only buttons and a live
+//! loading state.
 //!
 //! Run it with `cargo run --example button`, or in the browser as
 //! `?story=button` in the gallery the website embeds.
@@ -26,20 +27,28 @@
 //! into one control. Both are Slint behaviour this port does not have; neither is
 //! faked here.
 
+use std::time::Duration;
+
+use iced::time::Instant;
 use iced::widget::{column, container, mouse_area, row, scrollable, svg, text};
-use iced::{Alignment, Element, Length, Task, Theme};
+use iced::{Alignment, Element, Length, Subscription, Task, Theme};
 
 use crate::components::button::{self, Button, Variant};
 use crate::components::group_box::{self, GroupBox};
+use crate::components::progress::ProgressCircle;
 use crate::components::theme::{self, ControlSize, Tokens};
 
 /// The page padding and the gap between sections, as the Slint example sets them.
 const PAGE: f32 = 24.0;
 
+/// How long the `Sync` example stays in its loading state.
+const SYNC_DURATION: Duration = Duration::from_millis(1400);
+
 pub fn run(theme: Theme) -> iced::Result {
     iced::application(boot, update, view)
         .title("uni-kit — button")
         .theme(theme)
+        .subscription(subscription)
         .run()
 }
 
@@ -54,6 +63,13 @@ struct App {
     /// code icon can draw the two states the Slint heading animates to.
     hovered: Option<&'static str>,
     pressed_source: Option<&'static str>,
+    /// The `Sync` example is working: it refuses input and carries the loading
+    /// mark, the way the Slint `Button`'s `loading` does.
+    syncing: bool,
+    /// When the sync started, so the frame clock knows when to end it.
+    sync_started: Option<Instant>,
+    /// The loading arc's position, advanced one frame at a time.
+    sync_progress: f32,
 }
 
 #[derive(Debug, Clone)]
@@ -61,6 +77,8 @@ enum Message {
     Pressed(&'static str),
     HoverSource(Option<&'static str>),
     PressSource(Option<&'static str>),
+    /// A redraw happened: the only clock this crate can subscribe to.
+    Frame(Instant),
     /// A section heading was released: ask the page for that sample.
     ShowSource {
         index: usize,
@@ -74,7 +92,29 @@ fn boot() -> App {
 
 fn update(app: &mut App, message: Message) -> Task<Message> {
     match message {
-        Message::Pressed(label) => app.pressed = Some(label),
+        Message::Pressed(label) => {
+            // The `Sync` control stands in for an operation an application would
+            // run: the press starts the wait, and the frame clock below ends it.
+            if label == "Sync" {
+                app.syncing = true;
+                app.sync_started = Some(Instant::now());
+                app.sync_progress = 0.0;
+            }
+            app.pressed = Some(label);
+        }
+        Message::Frame(now) => {
+            if app.syncing {
+                if let Some(started) = app.sync_started {
+                    if now.duration_since(started) >= SYNC_DURATION {
+                        app.syncing = false;
+                        app.sync_started = None;
+                        app.pressed = Some("Sync done");
+                        return Task::none();
+                    }
+                }
+                app.sync_progress = (app.sync_progress + 0.06).fract();
+            }
+        }
         Message::HoverSource(title) => app.hovered = title,
         Message::PressSource(title) => app.pressed_source = title,
         Message::ShowSource { index, title } => {
@@ -84,6 +124,18 @@ fn update(app: &mut App, message: Message) -> Task<Message> {
         }
     }
     Task::none()
+}
+
+/// The frames the sync example is timed on. iced's timer needs a runtime feature
+/// this crate does not enable, so the state advances and ends on its own frame
+/// clock — the same clock the speech demo runs its script on. It is subscribed
+/// only while the wait runs, so an idle gallery is not redrawn every frame.
+fn subscription(app: &App) -> Subscription<Message> {
+    if app.syncing {
+        iced::window::frames().map(Message::Frame)
+    } else {
+        Subscription::none()
+    }
 }
 
 /// A live control, labelled and ready to report a press.
@@ -123,6 +175,31 @@ fn glyph<'a>(markup: &'static [u8], variant: Variant, outline: bool) -> Element<
             color: Some(button::ink(Tokens::of(theme), variant, outline)),
         })
         .into()
+}
+
+/// The loading example's control: a `Sync` button that carries a `refresh-cw`
+/// glyph at rest and the progress arc while it works. The arc is a `ProgressCircle`
+/// rather than a `Spinner` because the circle draws quads whereas the spinner is a
+/// `Canvas`, and a `Canvas` inside a control this small is the position the
+/// catalogue has twice watched draw nothing.
+fn sync_control<'a>(app: &App) -> Button<'a, Message> {
+    let loading = app.syncing;
+    let icon: Element<'a, Message> = if loading {
+        ProgressCircle::new(app.sync_progress).diameter(16.0).into()
+    } else {
+        svg(svg::Handle::from_memory(REFRESH))
+            .width(16.0)
+            .height(16.0)
+            .style(|theme: &Theme, _status| svg::Style {
+                color: Some(Tokens::of(theme).primary_foreground),
+            })
+            .into()
+    };
+    Button::new(if loading { "Syncing" } else { "Sync" })
+        .variant(Variant::Primary)
+        .icon(icon)
+        .loading(loading)
+        .on_press(Message::Pressed("Sync"))
 }
 
 /// A section heading: the title, and the code icon that asks the page for this
@@ -334,6 +411,25 @@ fn view(app: &App) -> Element<'_, Message> {
     .spacing(8.0)
     .align_y(Alignment::Center);
 
+    // section: Loading State with Icons
+    // A button that actually waits: the press starts the sync and the frame clock
+    // ends it, so the control is seen idle, working and done rather than only
+    // working. iced's button draws its loading form as the disabled treatment and
+    // does not swap the icon itself, so the demo supplies the mark the reference
+    // swaps in — a progress arc in the icon slot, advanced by the same clock.
+    let loading_state = row![
+        sync_control(app),
+        text(if app.syncing {
+            "Syncing…"
+        } else if app.pressed == Some("Sync done") {
+            "Synced"
+        } else {
+            "Idle"
+        })
+        .size(14.0),
+    ]
+    .spacing(12.0)
+    .align_y(Alignment::Center);
     // section: end
     let status = text(match app.pressed {
         Some(label) => format!("Last pressed: {label}"),
@@ -361,6 +457,8 @@ fn view(app: &App) -> Element<'_, Message> {
         body_box(custom_color),
         heading(app, 9, "Icon only"),
         body_box(icon_only),
+        heading(app, 10, "Loading State with Icons"),
+        body_box(loading_state),
         status,
     ]
     .spacing(PAGE)
@@ -389,5 +487,8 @@ const CHEVRON_DOWN: &[u8] = br#"<svg xmlns="http://www.w3.org/2000/svg" viewBox=
 const ARROW_LEFT: &[u8] = br#"<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m12 19-7-7 7-7"/><path d="M19 12H5"/></svg>"#;
 
 const HEART: &[u8] = br#"<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 9.5a5.5 5.5 0 0 1 9.591-3.676.56.56 0 0 0 .818 0A5.49 5.49 0 0 1 22 9.5c0 2.29-1.5 4-3 5.5l-5.492 5.313a2 2 0 0 1-3 .019L5 15c-1.5-1.5-3-3.2-3-5.5"/></svg>"#;
+
+/// The set's `refresh-cw`, the mark the loading example rests on.
+const REFRESH: &[u8] = br#"<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 0 1 9-9 9.75 9.75 0 0 1 6.74 2.74L21 8"/><path d="M21 3v5h-5"/><path d="M21 12a9 9 0 0 1-9 9 9.75 9.75 0 0 1-6.74-2.74L3 16"/><path d="M8 16H3v5"/></svg>"#;
 
 const CODE_XML: &[u8] = br#"<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m18 16 4-4-4-4"/><path d="m6 8-4 4 4 4"/><path d="m14.5 4-5 16"/></svg>"#;
