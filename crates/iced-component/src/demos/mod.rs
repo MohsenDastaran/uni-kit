@@ -51,6 +51,7 @@ pub mod message_scroller;
 pub mod notification;
 pub mod number_input;
 pub mod otp_input;
+pub mod paginated_table_block;
 pub mod pagination;
 pub mod popover;
 pub mod progress;
@@ -134,6 +135,7 @@ pub const STORIES: &[&str] = &[
     "notification",
     "number-input",
     "otp-input",
+    "paginated-table-block",
     "pagination",
     "popover",
     "progress",
@@ -220,6 +222,7 @@ pub fn run(story: &str, theme: iced::Theme) -> iced::Result {
         "notification" => notification::run(theme),
         "number-input" => number_input::run(theme),
         "otp-input" => otp_input::run(theme),
+        "paginated-table-block" => paginated_table_block::run(theme),
         "pagination" => pagination::run(theme),
         "popover" => popover::run(theme),
         "progress" => progress::run(theme),
