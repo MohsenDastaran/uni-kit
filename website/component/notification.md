@@ -312,7 +312,7 @@ Platform requirements:
 **Success**: 147 items
 **Failed**: 3 items
 
-[View failed items](../docs/index.md)
+[View failed items](/component)
 "#;
 
 Notification::success("Batch operation completed with some failures.")

@@ -7,8 +7,6 @@ description: Display SVG icons with various sizes, colors, and transformations.
 
 A flexible icon component that renders SVG icons from asset paths or in-memory bytes, with customizable size, color, and transformations. The built-in Lucide icons use the assets bundle; custom SVG bytes can be supplied directly with `Icon::data`.
 
-Before you start, please make sure you have read: [Icons & Assets](../docs/assets.md) to understand how use SVG in GPUI & GPUI Component application.
-
 `gpui_kit::assets::IconName` provides the complete shared catalog without a
 Component dependency. `gpui_kit::component::IconName` remains the original
 compatibility enum: existing imports, exhaustive matches and `.view(cx)` calls
@@ -60,11 +58,10 @@ on-demand CDN loader instead of embedding the complete bundle.
 
 ## Additional application icons
 
-Keep the default `Assets` registration. For extra catalog icons, follow the
-[selected-icons recipe](../docs/assets.md#pick-additional-catalog-icons-with-icon_assets):
+Keep the default `Assets` registration. For extra catalog icons,
 `icon_assets!` creates a source for exactly the named SVGs, and the application
 registers it together with the default source. For your own SVG files, see
-[custom assets](../docs/assets.md#add-your-own-asset-files).
+[custom SVG paths](#custom-svg-path).
 
 ## Import
 

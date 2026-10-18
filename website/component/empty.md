@@ -65,7 +65,7 @@ Empty::new()
     )
     .child(
         Link::new("empty-help")
-            .href("https://gpui-kit.com/docs/getting-started")
+            .href("https://gpui-kit.com/starter")
             .text_sm()
             .child("Learn more"),
     )

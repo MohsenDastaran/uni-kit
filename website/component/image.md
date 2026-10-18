@@ -5,7 +5,7 @@ description: Display embedded, local, and remote images with sizing, loading, an
 
 # Image
 
-GPUI's `img()` draws an image, and `svg()` draws a single-color icon. uni-kit re-exports both from `gpui_kit`. This page shows the patterns an application uses most; [Images](../docs/image.md) explains sources, loading, sizing, `svg()`, caching, and HTTP caching in detail.
+GPUI's `img()` draws an image, and `svg()` draws a single-color icon. uni-kit re-exports both from `gpui_kit`. This page shows the patterns an application uses most.
 
 ## Start with a working image
 
@@ -47,7 +47,7 @@ fn main() {
 }
 ```
 
-`with_assets(Assets)` registers the default component icons; register your own `AssetSource` to embed your images (see [Icons & Assets](../docs/assets.md)). A string such as `"images/cover.png"` is an asset key, a `Path` reads a file, and a URL is fetched through the App's `HttpClient`; see [Sources](../docs/image.md#sources).
+`with_assets(Assets)` registers the default component icons; register your own `AssetSource` to embed your images (see [Icon](./icon.md)). A string such as `"images/cover.png"` is an asset key, a `Path` reads a file, and a URL is fetched through the App's `HttpClient`.
 
 ## Common patterns
 
@@ -80,7 +80,7 @@ img("https://example.com/avatar.png")
     .with_fallback(|| div().child("Image unavailable").into_any_element())
 ```
 
-Use `ObjectFit::Contain` (the default) for logos and diagrams that must stay fully visible. To keep a multicolor SVG's colors, draw it with `img()`; for an icon that follows the theme, use [Icon](./icon.md). See [Size and fit](../docs/image.md#size-and-fit) and [img() or svg()](../docs/image.md#img-or-svg).
+Use `ObjectFit::Contain` (the default) for logos and diagrams that must stay fully visible. To keep a multicolor SVG's colors, draw it with `img()`; for an icon that follows the theme, use [Icon](./icon.md).
 
 ## Gallery with selection
 
@@ -159,9 +159,3 @@ The selected button has an explicit selected state, and the visible `Selected: .
 - Pair an informative image with visible text or an accessible description in the surrounding UI. A file name is not a description. Decorative images need no narration.
 - Make an image that triggers a command a real control, such as a `Button`, so it has a name, focus, and keyboard activation.
 - Keep the loading and failure views in the same box as the image, so nearby content does not move.
-
-## Learn more
-
-- [Images](../docs/image.md): every `img()` source, loading and decoding, `svg()`, and troubleshooting.
-- [Caches for decoded images](../docs/image.md#caches-for-decoded-images): scoped and custom `ImageCache`s.
-- [Cache remote images over HTTP](../docs/image.md#cache-remote-images-over-http): reuse downloads across views and launches.
