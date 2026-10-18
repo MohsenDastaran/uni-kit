@@ -1145,6 +1145,20 @@ The fix is always to tint it in the SVG's own style closure (`color: Some(tokens
 rely on inheritance. The last offender was the message-scroller's jump control — the only untinted SVG
 left in the catalogue — whose chevron was invisible in dark behind the border token's faint ring.
 
+#### Fix the pipeline that actually deploys
+
+The iced gallery was wired into `release-website.yml` and worked there — while production is a **Docker
+image** built by `publish-image.yml` from a `Dockerfile` that never built or copied it. So `/iced-gallery`
+returned 404 for real users while the repository's own release path looked correct, and every iced
+component's live example showed the site's 404 page instead.
+
+Two things kept it silent: the crate's `www/dist` is gitignored, so CI has nothing to copy, and the site
+build tolerated a missing gallery. A copy step that can find nothing should fail the build — which it now
+does, for all four galleries.
+
+Before believing a deploy is broken in code, find which pipeline serves the domain: there were two, and only
+one of them is production.
+
 #### A page inset belongs inside the scroll owner, not around it
 
 The settings block put its 24px inset on a container *wrapping* the `Scrollable`, so the scroll bar and the
