@@ -1,0 +1,162 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>uni-kit — NSH gallery</title>
+  <script>if (new URLSearchParams(location.search).get("embed") === "1") document.documentElement.dataset.embed = "1";</script>
+  <style>
+    html, body { margin: 0; height: 100%; background: #fff; overflow: hidden; }
+    @media (prefers-color-scheme: dark) { html, body { background: #0a0a0a; } }
+    html[data-embed="1"], html[data-embed="1"] body { background: transparent; }
+    #app { position: fixed; inset: 0; }
+    #loading {
+      position: fixed; inset: 0; display: flex; align-items: center; justify-content: center;
+      font: 13px -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      color: #8a8a8e; background: inherit;
+    }
+    #error {
+      position: fixed; inset: 0; display: none; align-items: center; justify-content: center;
+      padding: 24px; box-sizing: border-box; white-space: pre-wrap;
+      font: 13px ui-monospace, SFMono-Regular, Menlo, monospace; color: #b42318;
+      background: inherit;
+    }
+    @media (prefers-color-scheme: dark) { #error { color: #f87171; } }
+  </style>
+</head>
+<body>
+<h1 style="position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap;border:0">uni-kit NSH component gallery</h1>
+<div id="app"></div>
+<div id="loading">Loading…</div>
+<div id="error"></div>
+<script type="module">
+// The page is mounted at `/nsh-gallery` (no trailing slash), so every relative
+// import has to be resolved from the directory the page stands for. A literal
+// `./nsh.js` would resolve against the site root and 404.
+const mounted = location.pathname.replace(/\/+$/, '') + '/';
+const { createPlayer } = await import(mounted + 'nsh.js');
+
+const params = new URLSearchParams(location.search);
+const story = params.get('story') || decodeURIComponent(location.hash.slice(1)) || 'badge';
+const theme = params.get('theme');
+const embedded = params.get('embed') === '1' || (() => {
+  try {
+    return window.parent !== window;
+  } catch {
+    return false;
+  }
+})();
+const loading = document.getElementById('loading');
+const errorBox = document.getElementById('error');
+const app = document.getElementById('app');
+
+function finish() {
+  loading.remove();
+  observer.disconnect();
+}
+
+function fail(message) {
+  errorBox.textContent = String(message ?? 'The NSH example could not start.');
+  errorBox.style.display = 'flex';
+  finish();
+}
+
+function parentIsDark() {
+  try {
+    if (window.parent === window) return null;
+    return window.parent.document.documentElement.classList.contains('dark');
+  } catch {
+    return null;
+  }
+}
+
+function applyChrome(dark) {
+  // The component page already paints its palette behind the iframe. If the
+  // gallery paints its own page surface too, a site palette (Adventure Time,
+  // Asciinema, …) can never show through and the frame reads as a black box.
+  const color = embedded ? 'transparent' : dark ? '#0a0a0a' : '#fff';
+  document.documentElement.style.background = color;
+  document.body.style.background = color;
+  document.documentElement.style.colorScheme = dark ? 'dark' : 'light';
+}
+
+const options = {
+  wasm: mounted + 'nsh.wasm',
+  assetBase: new URL('assets/', location.origin + mounted).href,
+  ...(theme === 'dark' ? { dark: true } : theme === 'light' ? { dark: false } : parentIsDark() === true ? { dark: true } : {}),
+  onLog: (level, message) => {
+    // The demo has no DOM to call postMessage on. Its code-icon helper writes
+    // one console line; the player turns it into the page's bridge message.
+    const prefix = 'nsh-gallery-source:';
+    if (typeof message === 'string' && message.startsWith(prefix)) {
+      try {
+        const payload = JSON.parse(message.slice(prefix.length));
+        if (typeof payload?.index === 'number' && typeof payload?.title === 'string') {
+          if (window.parent !== window) {
+            window.parent.postMessage(
+              { source: 'nsh-component', index: payload.index, title: payload.title },
+              location.origin,
+            );
+          }
+        }
+      } catch {
+        // A malformed log line is not worth failing the example over.
+      }
+    }
+  },
+  onError: (message) => fail(message),
+};
+
+const initialDark =
+  theme === 'dark' ||
+  (theme === undefined &&
+    (parentIsDark() ?? window.matchMedia('(prefers-color-scheme: dark)').matches));
+applyChrome(initialDark);
+
+const observer = new MutationObserver(() => {
+  if (app.childElementCount > 0) finish();
+});
+observer.observe(app, { childList: true });
+
+let player;
+try {
+  player = await createPlayer(app, options);
+  window.player = player;
+  const code = await fetch(mounted + 'demos/' + encodeURIComponent(story) + '.nshc').then((response) => {
+    if (!response.ok) throw new Error(`No NSH example named "${story}" (${response.status}).`);
+    return response.arrayBuffer();
+  });
+  player.run(code, { chunkBase: mounted + 'demos/' });
+} catch (error) {
+  fail(error?.message ?? error);
+}
+
+// The site's theme switch writes the `dark` class on the parent document. The
+// app's appearance follows it without a reload.
+const darkFromParent = parentIsDark();
+if (darkFromParent !== null) {
+  try {
+    new MutationObserver(() => {
+      const dark = parentIsDark() === true;
+      applyChrome(dark);
+      if (window.player) window.player.setDark(dark);
+    }).observe(window.parent.document.documentElement, {
+      attributes: true,
+      attributeFilter: ['class'],
+    });
+  } catch {
+    // A cross-origin parent cannot be inspected; the ?theme= query is the
+    // fallback and the system appearance decides otherwise.
+  }
+}
+
+addEventListener('message', (event) => {
+  const next = event.data?.theme;
+  if ((next === 'dark' || next === 'light') && window.player) {
+    applyChrome(next === 'dark');
+    window.player.setDark(next === 'dark');
+  }
+});
+</script>
+</body>
+</html>
