@@ -1145,6 +1145,18 @@ The fix is always to tint it in the SVG's own style closure (`color: Some(tokens
 rely on inheritance. The last offender was the message-scroller's jump control — the only untinted SVG
 left in the catalogue — whose chevron was invisible in dark behind the border token's faint ring.
 
+#### The four galleries do not share a layout
+
+Story, base and iced write a root `index.html`. **Slint builds per page** — `SLINT_GALLERY_ONLY=<slug>` →
+`www/dist/pages/<slug>/index.html` — because the whole-catalog build does not fit in the image's memory. A
+validation step that required a root `index.html` therefore rejected a correctly built Slint gallery and
+failed the image build; it now accepts a root page **or** a `pages/` directory, while still requiring at
+least one `.wasm` anywhere in the tree.
+
+The general rule: check that each gallery contains *something runnable* — a page and a module — rather than
+assuming one directory shape fits all four. And when such a guard is wrong, it fails immediately, which is
+what it is for.
+
 #### Fix the pipeline that actually deploys
 
 The iced gallery was wired into `release-website.yml` and worked there — while production is a **Docker
