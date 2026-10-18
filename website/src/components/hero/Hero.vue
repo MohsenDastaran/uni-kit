@@ -4,6 +4,7 @@ import {
     ArrowRight,
     Check,
     Copy,
+    Layers,
     Monitor,
     Scale,
     Zap,
@@ -26,6 +27,8 @@ const props = defineProps<{
     starterHref: string;
     componentCount: number;
     frameworkCount: number;
+    exampleCount: number;
+    exampleFramework: string;
     installCommand: string;
 }>();
 
@@ -77,11 +80,27 @@ onBeforeUnmount(() => clearTimeout(copyTimer));
                         <Blocks :size="14" /><strong>{{
                             componentCount
                         }}</strong>
-                        {{ copy.signalComponents }}
+                        {{
+                            componentCount === 1
+                                ? copy.signalComponent
+                                : copy.signalComponents
+                        }}
                         <strong v-if="frameworkCount > 1">{{
                             frameworkCount
                         }}</strong>
                         {{ copy.signalFrameworks }}
+                    </li>
+
+                    <li v-if="exampleCount > 0">
+                        <Layers :size="14" /><strong>{{
+                            exampleCount
+                        }}</strong>
+                        {{ exampleFramework }}
+                        {{
+                            exampleCount === 1
+                                ? copy.signalExample
+                                : copy.signalExamples
+                        }}
                     </li>
 
                     <li><Monitor :size="14" /> {{ copy.signalPlatforms }}</li>

@@ -379,3 +379,36 @@ export const enComponentSidebar = generateSidebar({
   rootLinkText: 'Components',
   countExamples: true,
 });
+
+export interface CatalogTotals {
+  /** Component pages the catalog's sidebar lists. */
+  components: number;
+  /** Example windows those pages paint in the named framework. */
+  examples: number;
+  /** Frameworks at least one of those pages has a view in. */
+  frameworks: number;
+}
+
+/**
+ * The catalogue's size, counted from the same page list the sidebar is cut
+ * from, so a figure the hero prints cannot drift from the catalogue beside it.
+ *
+ * A page's examples are per framework: one window per framework the page has a
+ * view in, and the same component's samples are different code in each. There
+ * is no honest cross-framework total to print, so the caller names the
+ * framework it is quoting and the label says whose examples they are.
+ */
+export function catalogTotals(
+  framework: 'gpui' | 'slint' | 'iced',
+): CatalogTotals {
+  const pages = componentPages(enComponentSidebar);
+  const frameworks = new Set<string>();
+  let examples = 0;
+  for (const page of pages) {
+    for (const name of (page.frameworkAvailable ?? '').split(/\s+/)) {
+      if (name) frameworks.add(name);
+    }
+    examples += page.examples?.[framework] ?? 0;
+  }
+  return { components: pages.length, examples, frameworks: frameworks.size };
+}
