@@ -61,7 +61,8 @@ website/                The documentation site and its live examples
 is a `Root`. Architecture of the GPUI crates is in
 [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md). Slint components are source you
 copy, not a crate from this repository: take `theme.slint`, the component, the
-files it imports, and the `icons/` folder beside `icon.slint`.
+files it imports, and the `icons/` folder beside `icon.slint`. Adding a framework
+port is in [docs/adding-a-framework.md](docs/adding-a-framework.md).
 
 ## Development
 
