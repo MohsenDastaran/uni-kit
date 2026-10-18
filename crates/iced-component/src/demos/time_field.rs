@@ -219,7 +219,7 @@ fn heading<'a>(app: &App, index: usize, title: &'static str) -> Element<'a, Mess
 
     let icon = mouse_area(
         container(
-            svg(svg::Handle::from_memory(CLOCK_XML))
+            svg(svg::Handle::from_memory(CODE_XML))
                 .width(16.0)
                 .height(16.0)
                 .style(|theme: &Theme, _status| svg::Style {
@@ -416,4 +416,4 @@ fn view(app: &App) -> Element<'_, Message> {
 // repository already ships (`crates/slint-component/ui/icons`, Lucide, ISC), so the
 // two galleries draw the same glyph rather than two lookalikes.
 
-const CLOCK_XML: &[u8] = br#"<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg>"#;
+const CODE_XML: &[u8] = br#"<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m18 16 4-4-4-4"/><path d="m6 8-4 4 4 4"/><path d="m14.5 4-5 16"/></svg>"#;
