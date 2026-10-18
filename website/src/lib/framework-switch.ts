@@ -1,5 +1,5 @@
 const STORAGE_KEY = 'selected-framework';
-const FRAMEWORKS = ['gpui', 'slint', 'iced'] as const;
+const FRAMEWORKS = ['gpui', 'slint', 'iced', 'nsh'] as const;
 type Framework = (typeof FRAMEWORKS)[number];
 
 // The framework a first visit gets, and the one the address bar does not need

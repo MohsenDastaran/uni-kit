@@ -45,3 +45,9 @@ __pycache__/
 # not be tracked.
 crates/slint-component/ui/gallery-catalog.slint
 crates/iced-component/www/dist/
+
+# Native Shell gallery and generated app state
+crates/nsh-component/www/dist/
+crates/nsh-component/.tmp/
+crates/nsh-component/examples/.nsh/
+crates/nsh-component/examples/out/

@@ -586,8 +586,10 @@ html[lang^="ja"] .example-prompt {
    follows the palette rather than the light or dark pair above. */
 .component-example--component iframe.component-example__frame--slint,
 .component-example--component iframe.component-example__frame--iced,
+.component-example--component iframe.component-example__frame--nsh,
 .dark .component-example--component iframe.component-example__frame--slint,
-.dark .component-example--component iframe.component-example__frame--iced {
+.dark .component-example--component iframe.component-example__frame--iced,
+.dark .component-example--component iframe.component-example__frame--nsh {
   background: var(--background);
 }
 
@@ -1608,7 +1610,9 @@ html:not([data-framework="gpui"])
 html:not([data-framework="slint"])
   .sidebar-item__count[data-framework-count="slint"],
 html:not([data-framework="iced"])
-  .sidebar-item__count[data-framework-count="iced"] {
+  .sidebar-item__count[data-framework-count="iced"],
+html:not([data-framework="nsh"])
+  .sidebar-item__count[data-framework-count="nsh"] {
   display: none;
 }
 
@@ -1626,7 +1630,10 @@ html[data-framework="slint"]
   [data-framework-available]:not([data-framework-available~="slint"]),
 html[data-framework="iced"]
   .docs-sidebar
-  [data-framework-available]:not([data-framework-available~="iced"]) {
+  [data-framework-available]:not([data-framework-available~="iced"]),
+html[data-framework="nsh"]
+  .docs-sidebar
+  [data-framework-available]:not([data-framework-available~="nsh"]) {
   display: none;
 }
 
@@ -1634,7 +1641,8 @@ html[data-framework="iced"]
    framework-scoped count. */
 html:not([data-framework="gpui"]) .site-nav__link[data-framework-link="gpui"],
 html:not([data-framework="slint"]) .site-nav__link[data-framework-link="slint"],
-html:not([data-framework="iced"]) .site-nav__link[data-framework-link="iced"] {
+html:not([data-framework="iced"]) .site-nav__link[data-framework-link="iced"],
+html:not([data-framework="nsh"]) .site-nav__link[data-framework-link="nsh"] {
   display: none;
 }
 
@@ -2449,7 +2457,9 @@ html[data-framework="gpui"] .framework-code__panel[data-framework-panel="gpui"],
 html[data-framework="slint"]
   .framework-code__panel[data-framework-panel="slint"],
 html[data-framework="iced"]
-  .framework-code__panel[data-framework-panel="iced"] {
+  .framework-code__panel[data-framework-panel="iced"],
+html[data-framework="nsh"]
+  .framework-code__panel[data-framework-panel="nsh"] {
   display: block;
 }
 
@@ -2459,7 +2469,8 @@ html[data-framework="iced"]
    chosen is left out rather than shown with a note saying it is missing. */
 html[data-framework="gpui"] [data-framework-missing~="gpui"],
 html[data-framework="slint"] [data-framework-missing~="slint"],
-html[data-framework="iced"] [data-framework-missing~="iced"] {
+html[data-framework="iced"] [data-framework-missing~="iced"],
+html[data-framework="nsh"] [data-framework-missing~="nsh"] {
   /* `!important`, because the group carries its own `display` a few rules down
      and a section that is left out has to stay left out. */
   display: none !important;
@@ -2468,9 +2479,11 @@ html[data-framework="iced"] [data-framework-missing~="iced"] {
 html[data-framework="gpui"] [data-framework-missing~="gpui"],
 html[data-framework="slint"] [data-framework-missing~="slint"],
 html[data-framework="iced"] [data-framework-missing~="iced"],
+html[data-framework="nsh"] [data-framework-missing~="nsh"],
 html:not([data-framework="gpui"]) [data-framework-only="gpui"],
 html:not([data-framework="slint"]) [data-framework-only="slint"],
-html:not([data-framework="iced"]) [data-framework-only="iced"] {
+html:not([data-framework="iced"]) [data-framework-only="iced"],
+html:not([data-framework="nsh"]) [data-framework-only="nsh"] {
   display: none;
 }
 
@@ -2481,7 +2494,8 @@ html:not([data-framework="iced"]) [data-framework-only="iced"] {
 html[data-framework="gpui"] .framework-api__panel[data-framework-panel="gpui"],
 html[data-framework="slint"]
   .framework-api__panel[data-framework-panel="slint"],
-html[data-framework="iced"] .framework-api__panel[data-framework-panel="iced"] {
+html[data-framework="iced"] .framework-api__panel[data-framework-panel="iced"],
+html[data-framework="nsh"] .framework-api__panel[data-framework-panel="nsh"] {
   display: block;
 }
 

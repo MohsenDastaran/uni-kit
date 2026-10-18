@@ -40,6 +40,9 @@ export interface Block {
    */
   icedStory?: string;
   icedInstall?: string[];
+  /** The NSH gallery's story for this block, when one exists. */
+  nshStory?: string;
+  nshInstall?: string[];
   /**
    * Which composition inside the Slint page to show. A component page documents
    * every one it has; a block is a single finished screen, so it asks for the
@@ -66,7 +69,7 @@ const props = defineProps<{
 
 const base = props.baseUrl.replace(/\/$/, "");
 
-const FRAMEWORKS = ["gpui", "slint", "iced"] as const;
+const FRAMEWORKS = ["gpui", "slint", "iced", "nsh"] as const;
 type Framework = (typeof FRAMEWORKS)[number];
 
 const framework = ref<Framework>("slint");
@@ -134,6 +137,8 @@ const visible = computed(() => {
     return props.blocks.filter((block) => block.gpuiInstall?.length);
   if (framework.value === "iced")
     return props.blocks.filter((block) => block.icedStory);
+  if (framework.value === "nsh")
+    return props.blocks.filter((block) => block.nshStory);
   return props.blocks;
 });
 
@@ -148,6 +153,8 @@ function srcFor(block: Block) {
   }
   if (framework.value === "iced")
     return `${base}/iced-gallery?story=${encodeURIComponent(block.icedStory ?? "")}`;
+  if (framework.value === "nsh")
+    return `${base}/nsh-gallery?story=${encodeURIComponent(block.nshStory ?? "")}`;
   return `${base}/gallery?story=${encodeURIComponent(block.story)}&source=0`;
 }
 
@@ -403,6 +410,7 @@ async function fetchModule(block: Block) {
 
 const hasSlint = (block: Block) => Boolean(block.slug);
 const hasIced = (block: Block) => Boolean(block.icedStory);
+const hasNsh = (block: Block) => Boolean(block.nshStory);
 
 // A block can exist for one framework only: the starter page's introduction is
 // the GPUI gallery's opening screen and has no Slint page. The list already
@@ -410,7 +418,8 @@ const hasIced = (block: Block) => Boolean(block.icedStory);
 // asking for a page that is not there if the list is ever bypassed.
 const frameUnavailable = (block: Block) =>
   (framework.value === "slint" && !hasSlint(block)) ||
-  (framework.value === "iced" && !hasIced(block));
+  (framework.value === "iced" && !hasIced(block)) ||
+  (framework.value === "nsh" && !hasNsh(block));
 
 // Each block teleports its install bar into its own host, since the shared
 // component would otherwise put every one of them in the same place.
@@ -498,24 +507,29 @@ function buildPrompt(block: Block) {
   const source = block.text?.[framework.value] ?? "";
   const slint = framework.value === "slint";
   const iced = framework.value === "iced";
-  const name = slint ? "Slint" : iced ? "iced" : "GPUI";
-  const library = slint ? "Slint" : iced ? "iced-component" : "gpui-component";
+  const nsh = framework.value === "nsh";
+  const name = slint ? "Slint" : iced ? "iced" : nsh ? "NSH" : "GPUI";
+  const library = slint ? "Slint" : iced ? "iced-component" : nsh ? "nsh-component" : "gpui-component";
   const live = slint
     ? "Rust, Slint & WASM"
     : iced
       ? "Rust & iced"
-      : "Rust, GPUI & WASM";
+      : nsh
+        ? "TSX & NSH"
+        : "Rust, GPUI & WASM";
   const names = iced
     ? (block.icedInstall ?? block.components ?? [])
-    : block.components?.length
-      ? block.components
-      : [block.doc ?? block.slug].filter(Boolean);
+    : nsh
+      ? (block.nshInstall ?? block.components ?? [])
+      : block.components?.length
+        ? block.components
+        : [block.doc ?? block.slug].filter(Boolean);
   // Slint and iced install the controls the screen is built from. GPUI
   // installs the screen itself, and the crate it is written against alongside
   // it.
   const gpuiNames = block.gpuiInstall ?? [];
-  const install = slint || iced
-    ? `${managerRunner()} @dastaran/uni-kit@latest add ${slint ? "slint" : "iced"} ${names.join(" ")}`
+  const install = slint || iced || nsh
+    ? `${managerRunner()} @dastaran/uni-kit@latest add ${slint ? "slint" : iced ? "iced" : "nsh"} ${names.join(" ")}`
     : gpuiNames.length > 0
       ? [
           "cargo add gpui-kit",
@@ -530,7 +544,7 @@ function buildPrompt(block: Block) {
     "",
     "## Block",
     block.title,
-    ...(names.length && (slint || iced)
+    ...(names.length && (slint || iced || nsh)
       ? [`Composed from: ${names.join(", ")}`]
       : []),
     `Page: ${window.location.href.split("#")[0]}`,
@@ -543,7 +557,9 @@ function buildPrompt(block: Block) {
       ? "Every file lands in ui/components/ beside the others, and the command adds that directory to the Slint include path in build.rs. Imports between them are by bare file name, as below."
       : iced
         ? "Every control lands in src/components/ and is declared in src/components/mod.rs. The screen below is the block itself: keep its `crate::components::` imports, which is where the command writes them, and add the `Cargo.toml` line the command prints."
-        : gpuiNames.length > 0
+        : nsh
+          ? "Every control lands in src/components/ and imports its siblings as `./theme`, `./icon` and `./icons`. Set `\"theme\": \"src/components/theme.json\"` in nsh.json so nsh/ui/mobile shares the tokens."
+          : gpuiNames.length > 0
           ? `The command writes src/components/${gpuiNames[0]}.rs and adds \`pub mod ${gpuiNames[0]};\` to src/components/mod.rs. Declare \`mod components;\` in the crate root so it is compiled. That file is the screen: the controls it composes come from the gpui-kit crate through \`gpui_kit::component\`, and it needs no asset file of its own.`
           : "The screen is written against the gpui-kit crate; the controls it composes come from `gpui_kit::component`.",
     "",
@@ -625,7 +641,7 @@ function reload(block: Block) {
            is measured against a grid area instead of the row it sits in. -->
       <InstallCommand
         :slug="block.doc"
-        :slugs="{ gpui: block.gpuiInstall ?? [block.id], slint: block.components, iced: block.icedInstall }"
+        :slugs="{ gpui: block.gpuiInstall ?? [block.id], slint: block.components, iced: block.icedInstall, nsh: block.nshInstall }"
         :host="hostFor(block)"
       />
 

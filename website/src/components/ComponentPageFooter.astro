@@ -34,7 +34,7 @@ const { frameworks, pagers } = Astro.props;
 // the frameworks the site ships and title-cased from the key otherwise; the mark
 // falls back to a lettermark, so an unknown key still gets a whole tile instead
 // of a hole or a crash.
-const NAMES: Record<string, string> = { gpui: 'GPUI', slint: 'Slint', iced: 'Iced' };
+const NAMES: Record<string, string> = { gpui: 'GPUI', slint: 'Slint', iced: 'Iced', nsh: 'NSH' };
 const MARKS = toggleLogos as Record<
   string,
   { viewBox: string; paths: { d: string; fill: string; accent?: boolean }[] }
@@ -204,7 +204,8 @@ const supported = frameworks.split(/\s+/).filter(Boolean);
      out, so the section names only the frameworks that are a real move. */
   :global(html[data-framework='gpui']) .framework-support__item[data-framework-support='gpui'],
   :global(html[data-framework='slint']) .framework-support__item[data-framework-support='slint'],
-  :global(html[data-framework='iced']) .framework-support__item[data-framework-support='iced'] {
+  :global(html[data-framework='iced']) .framework-support__item[data-framework-support='iced'],
+  :global(html[data-framework='nsh']) .framework-support__item[data-framework-support='nsh'] {
     display: none;
   }
 

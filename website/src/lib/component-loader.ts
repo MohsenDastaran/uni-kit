@@ -19,6 +19,7 @@ const repoRoot = resolve(fileURLToPath(new URL('.', import.meta.url)), '../../..
 const sampleSources = [
   { dir: join(repoRoot, 'crates/slint-component/ui/examples'), extensions: ['.slint'] },
   { dir: join(repoRoot, 'crates/iced-component/src/demos'), extensions: ['.rs'] },
+  { dir: join(repoRoot, 'crates/nsh-component/src/demos'), extensions: ['.tsx'] },
 ];
 
 function samplesStamp() {

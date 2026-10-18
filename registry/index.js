@@ -162,6 +162,7 @@ function usage() {
   console.log('Examples:');
   console.log('  npx uni-kit add slint alert-dialog');
   console.log('  npx uni-kit add iced button');
+  console.log('  npx uni-kit add nsh button');
   console.log('  npx uni-kit add gpui sidebar');
   console.log('  npx uni-kit add egui alert-dialog');
   console.log('  npx uni-kit add quickgui button');
@@ -170,7 +171,7 @@ function usage() {
   console.log('share are written once:');
   console.log('  npx uni-kit add slint sidebar card button table');
   console.log('');
-  console.log('iced and Slint components are source the app owns; the GPUI blocks');
+  console.log('Slint, iced and NSH components are source the app owns; the GPUI blocks');
   console.log('compose controls that ship in the gpui-kit crate:');
   console.log('  npx uni-kit add gpui sidebar dock settings');
 }
@@ -230,6 +231,29 @@ function ensureIcedDependency(components = [], frameworkConfig = {}) {
         `  ${owners.join(', ')} implements the widget trait directly, so it also needs: ${crate} = "${version}"`,
       );
     }
+  }
+}
+
+// NSH components import `nsh` and `nsh/ui/mobile`, which the runtime provides;
+// there is no crate to add. The theme file is optional (the mobile components
+// have their own default), but pointing `nsh.json` at the installed one makes
+// them wear the same palette as the hand-written components. `nsh package`
+// currently rejects the `theme` key, so the hint says which commands use it.
+function ensureNshDependency() {
+  const manifest = path.join(process.cwd(), 'nsh.json');
+  if (!fs.existsSync(manifest)) {
+    console.log('  Create an NSH app with `nsh init`; its runtime provides `nsh` and `nsh/ui/mobile`.');
+    console.log('  Then set "theme": "src/components/theme.json" in nsh.json so the mobile components share the tokens.');
+    return;
+  }
+  try {
+    const settings = JSON.parse(fs.readFileSync(manifest, 'utf8'));
+    if (!settings.theme) {
+      console.log('  Set "theme": "src/components/theme.json" in nsh.json so nsh/ui/mobile shares the design tokens.');
+      console.log('  (nsh build and nsh run read it; nsh package does not accept the key yet.)');
+    }
+  } catch (error) {
+    console.log(`  Could not read nsh.json (${error.message}); set "theme": "src/components/theme.json" by hand.`);
   }
 }
 
@@ -343,6 +367,7 @@ async function main() {
 
   if (framework === 'slint') ensureSlintIncludePath(baseTargetDir);
   if (framework === 'iced') ensureIcedDependency(components, frameworkConfig);
+  if (framework === 'nsh') ensureNshDependency();
 
   // The `pub mod` line only makes the file reachable from the directory's own
   // module; the crate still has to declare that module, and nothing else will

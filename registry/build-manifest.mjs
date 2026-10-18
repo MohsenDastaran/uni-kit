@@ -207,11 +207,86 @@ if (fs.existsSync(icedUi)) {
   }
 }
 
+// NSH components are TSX source an application copies into `src/components`,
+// like Slint's `.slint` files and iced's `.rs` files. They import their siblings
+// with `./name`; the theme and its token table are appended to every entry, and
+// `theme.json` gives `nsh/ui/mobile` the same palette. There is no module file
+// to declare: the application imports the component it wants directly.
+const nshUi = path.join(root, 'crates/nsh-component/src/components');
+const nsh = {
+  default_target_dir: 'src/components',
+  components: {},
+};
+
+/** Resolve an extensionless relative import to a file in the component folder. */
+function resolveNshImport(spec) {
+  if (!spec.startsWith('./')) return null;
+  const base = spec.slice(2);
+  for (const candidate of [`${base}.tsx`, `${base}.ts`, base]) {
+    if (fs.existsSync(path.join(nshUi, candidate))) return candidate;
+  }
+  return null;
+}
+
+function nshImportsOf(file) {
+  const text = fs
+    .readFileSync(path.join(nshUi, file), 'utf8')
+    .replace(/\/\*[\s\S]*?\*\//g, '')
+    .replace(/(^|[^:])\/\/[^\n]*/g, '$1');
+  const found = new Set();
+  for (const match of text.matchAll(/\bfrom\s+["'](\.\/[^"']+)["']/g)) {
+    const resolved = resolveNshImport(match[1]);
+    if (resolved) found.add(resolved);
+  }
+  for (const match of text.matchAll(/\bimport\s+["'](\.\/[^"']+)["']/g)) {
+    const resolved = resolveNshImport(match[1]);
+    if (resolved) found.add(resolved);
+  }
+  return [...found].filter((imported) => imported !== 'theme.ts' && imported !== 'tokens.ts');
+}
+
+if (fs.existsSync(nshUi)) {
+  const themeFiles = ['theme.ts', 'tokens.ts', 'theme.json'];
+  for (const file of themeFiles) {
+    if (!fs.existsSync(path.join(nshUi, file))) {
+      throw new Error(`NSH components are installed with their theme, and ${file} does not exist in ${nshUi}.`);
+    }
+  }
+  const themeEntries = themeFiles.map((file) => ({
+    src: `crates/nsh-component/src/components/${file}`,
+    target: file,
+  }));
+
+  const files = fs
+    .readdirSync(nshUi)
+    .filter((name) => name.endsWith('.tsx'))
+    .sort();
+  for (const file of files) {
+    const module = file.replace(/\.tsx$/, '');
+    const name = module.replace(/_/g, '-');
+    if (nsh.components[name]) {
+      throw new Error(`NSH components "${file}" and another file both map to the registry key "${name}".`);
+    }
+    nsh.components[name] = [
+      ...closure(file, nshImportsOf).map((imported) => ({
+        src: `crates/nsh-component/src/components/${imported}`,
+        target: imported,
+      })),
+      ...themeEntries,
+    ];
+  }
+
+  // The theme is also a catalog page: `add nsh theme` installs the token file
+  // (and the mobile theme) without a component that imports it.
+  nsh.components.theme = themeEntries.map((entry) => ({ ...entry }));
+}
+
 const registry = {
   slint,
   egui: rust('src/components'),
   gpui,
   iced,
+  nsh,
   quickgui: rust('src/components'),
 };
 
@@ -231,5 +306,6 @@ fs.writeFileSync(
 );
 console.log(
   `slint components: ${Object.keys(slint.components).length}, icons: ${icons.length}, ` +
-    `gpui blocks: ${GPUI_BLOCKS.length}, iced components: ${Object.keys(iced.components).length}`,
+    `gpui blocks: ${GPUI_BLOCKS.length}, iced components: ${Object.keys(iced.components).length}, ` +
+    `nsh components: ${Object.keys(nsh.components).length}`,
 );

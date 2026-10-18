@@ -10,6 +10,8 @@ pnpm dlx uni-kit add slint alert-dialog
 npx uni-kit add gpui sidebar
 npx uni-kit add gpui sidebar dock settings
 
+npx uni-kit add nsh button
+
 npx uni-kit add egui alert-dialog
 npx uni-kit add quickgui button
 ```
@@ -35,6 +37,31 @@ The components compile against iced and nothing else:
 ```bash
 cargo add iced
 npx uni-kit add iced button
+```
+
+## NSH
+
+NSH components are TSX source, and they land in `src/components/` with
+`theme.ts`, `tokens.ts`, `theme.json`, `icon.tsx` and `icons.ts`. A component
+imports its siblings as `./theme`, `./icon` and `./icons`, so the directory can
+be moved or renamed without editing anything. There is no module file to
+declare: the application imports the component it wants directly.
+
+The runtime provides `nsh` and `nsh/ui/mobile`; there is no dependency line.
+Point `nsh.json` at the installed theme so the mobile components share the
+tokens (the hand-written components read it through `theme.ts` regardless):
+
+```json
+{
+  "theme": "src/components/theme.json"
+}
+```
+
+`nsh run` and `nsh build` read that key; `nsh package` currently rejects it.
+Without the key the mobile components use NSH's own default palette.
+
+```bash
+npx uni-kit add nsh button
 ```
 
 ## GPUI

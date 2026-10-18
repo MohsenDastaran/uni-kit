@@ -144,7 +144,7 @@ const jsonLd = JSON.stringify(structuredData ?? defaultStructuredData).replace(
          reader last asked for; Slint is what a first visit gets. -->
         <script is:inline>
             (function () {
-                const FRAMEWORKS = ["gpui", "slint", "iced"];
+                const FRAMEWORKS = ["gpui", "slint", "iced", "nsh"];
                 const asked = new URLSearchParams(location.search).get(
                     "framework",
                 );

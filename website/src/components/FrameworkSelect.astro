@@ -37,6 +37,13 @@ const label = 'Framework';
       </svg>
       <span class="framework-select__name">Iced</span>
     </span>
+    <span class="framework-select__value" data-framework-value="nsh">
+      <svg class="framework-select__logo" viewBox="0 0 128 128" aria-hidden="true">
+        <path d="M30 100 V58 a34 34 0 0 1 68 0 V100" fill="none" stroke="currentColor" stroke-width="20" stroke-linecap="round"></path>
+        <circle cx="64" cy="76" r="11" fill="currentColor"></circle>
+      </svg>
+      <span class="framework-select__name">NSH</span>
+    </span>
     <svg class="framework-select__chevron" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
       <path d="M6 9l6 6 6-6"></path>
     </svg>
@@ -73,6 +80,16 @@ const label = 'Framework';
         ></path>
       </svg>
       <span>Iced</span>
+      <svg class="framework-select__check" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+        <path d="m20 6-11 11-5-5"></path>
+      </svg>
+    </button>
+    <button class="framework-select__option" type="button" role="option" data-framework-option="nsh" aria-selected="false" tabindex="-1">
+      <svg class="framework-select__logo" viewBox="0 0 128 128" aria-hidden="true">
+        <path d="M30 100 V58 a34 34 0 0 1 68 0 V100" fill="none" stroke="currentColor" stroke-width="20" stroke-linecap="round"></path>
+        <circle cx="64" cy="76" r="11" fill="currentColor"></circle>
+      </svg>
+      <span>NSH</span>
       <svg class="framework-select__check" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
         <path d="m20 6-11 11-5-5"></path>
       </svg>
@@ -339,9 +356,11 @@ const label = 'Framework';
   .framework-select[data-selected='gpui'] .framework-select__value[data-framework-value='gpui'],
   .framework-select[data-selected='slint'] .framework-select__value[data-framework-value='slint'],
   .framework-select[data-selected='iced'] .framework-select__value[data-framework-value='iced'],
+  .framework-select[data-selected='nsh'] .framework-select__value[data-framework-value='nsh'],
   :global(html[data-framework='gpui']) .framework-select:not([data-selected]) .framework-select__value[data-framework-value='gpui'],
   :global(html[data-framework='slint']) .framework-select:not([data-selected]) .framework-select__value[data-framework-value='slint'],
-  :global(html[data-framework='iced']) .framework-select:not([data-selected]) .framework-select__value[data-framework-value='iced'] {
+  :global(html[data-framework='iced']) .framework-select:not([data-selected]) .framework-select__value[data-framework-value='iced'],
+  :global(html[data-framework='nsh']) .framework-select:not([data-selected]) .framework-select__value[data-framework-value='nsh'] {
     display: inline-flex;
   }
 
@@ -413,9 +432,11 @@ const label = 'Framework';
   .framework-select[data-selected='gpui'] [data-framework-option='gpui'],
   .framework-select[data-selected='slint'] [data-framework-option='slint'],
   .framework-select[data-selected='iced'] [data-framework-option='iced'],
+  .framework-select[data-selected='nsh'] [data-framework-option='nsh'],
   :global(html[data-framework='gpui']) .framework-select:not([data-selected]) [data-framework-option='gpui'],
   :global(html[data-framework='slint']) .framework-select:not([data-selected]) [data-framework-option='slint'],
-  :global(html[data-framework='iced']) .framework-select:not([data-selected]) [data-framework-option='iced'] {
+  :global(html[data-framework='iced']) .framework-select:not([data-selected]) [data-framework-option='iced'],
+  :global(html[data-framework='nsh']) .framework-select:not([data-selected]) [data-framework-option='nsh'] {
     background: var(--secondary);
     font-weight: 600;
   }
@@ -433,9 +454,11 @@ const label = 'Framework';
   .framework-select[data-selected='gpui'] [data-framework-option='gpui'] .framework-select__check,
   .framework-select[data-selected='slint'] [data-framework-option='slint'] .framework-select__check,
   .framework-select[data-selected='iced'] [data-framework-option='iced'] .framework-select__check,
+  .framework-select[data-selected='nsh'] [data-framework-option='nsh'] .framework-select__check,
   :global(html[data-framework='gpui']) .framework-select:not([data-selected]) [data-framework-option='gpui'] .framework-select__check,
   :global(html[data-framework='slint']) .framework-select:not([data-selected]) [data-framework-option='slint'] .framework-select__check,
-  :global(html[data-framework='iced']) .framework-select:not([data-selected]) [data-framework-option='iced'] .framework-select__check {
+  :global(html[data-framework='iced']) .framework-select:not([data-selected]) [data-framework-option='iced'] .framework-select__check,
+  :global(html[data-framework='nsh']) .framework-select:not([data-selected]) [data-framework-option='nsh'] .framework-select__check {
     opacity: 1;
   }
 

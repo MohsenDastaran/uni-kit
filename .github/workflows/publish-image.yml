@@ -1,6 +1,6 @@
 name: Publish Website Image
 
-# The website serves three WebAssembly galleries that cannot be built on the
+# The website serves four WebAssembly galleries that cannot be built on the
 # deployment host: the Slint catalog's own build script asks for more than a
 # 14 GiB machine, and the built galleries total several gigabytes. So the image
 # is assembled here, where the runners have the memory, and Coolify only pulls

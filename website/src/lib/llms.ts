@@ -198,13 +198,13 @@ const SECTIONS = (root: string) => [
  */
 /**
  * What an assistant needs to cite a specific view: the site documents one
- * component per page for two frameworks, and the address bar names which one is
+ * component per page for several frameworks, and the address bar names which one is
  * on screen. Written for machines, since a reader sees the switch itself.
  */
 const FRAMEWORK_NOTICE = [
   '## Frameworks',
   '',
-  'Every component page documents the same control for both frameworks: GPUI, as a Rust crate, and Slint, as the same controls written in `.slint`. Slint is the default view; `?framework=gpui` pins the GPUI view of any page, and every page carries a canonical link to the URL without the parameter. The Markdown of a page holds both, so nothing is hidden by the choice.',
+  'Every component page documents the same control for the frameworks that have a view of it: GPUI as a Rust crate, Slint as `.slint`, iced as Rust, and NSH as TSX. Slint is the default view; `?framework=<name>` pins a view of any page, and every page carries a canonical link to the URL without the parameter. The Markdown of a page holds the views it has, so nothing is hidden by the choice.',
   '',
 ].join('\n');
 

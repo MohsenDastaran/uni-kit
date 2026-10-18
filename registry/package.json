@@ -1,7 +1,7 @@
 {
   "name": "@dastaran/uni-kit",
-  "version": "0.4.0",
-  "description": "Copy Uni Kit components into a Rust app. One command for Slint, iced & GPUI.",
+  "version": "0.5.0",
+  "description": "Copy Uni Kit components into a Rust or NSH app. One command for Slint, iced, GPUI & NSH.",
   "type": "module",
   "bin": {
     "uni-kit": "index.js"

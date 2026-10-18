@@ -11,7 +11,7 @@ const MANAGERS = ["npx", "pnpm", "bun"] as const;
 type Manager = (typeof MANAGERS)[number];
 
 /** The frameworks a command can name, in the order the bar shows them. */
-const FRAMEWORKS = ["gpui", "slint", "iced"] as const;
+const FRAMEWORKS = ["gpui", "slint", "iced", "nsh"] as const;
 type Framework = (typeof FRAMEWORKS)[number];
 
 /**

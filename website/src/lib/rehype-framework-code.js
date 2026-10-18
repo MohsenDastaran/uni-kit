@@ -7,9 +7,9 @@ import { logoElement } from './toggle-logos.js';
 // block is GPUI. A block that only one framework has is omitted from the other
 // framework, including the heading that introduces nothing else.
 
-export const FRAMEWORKS = ['gpui', 'slint', 'iced'];
+export const FRAMEWORKS = ['gpui', 'slint', 'iced', 'nsh'];
 
-const NAMES = { gpui: 'GPUI', slint: 'Slint', iced: 'Iced' };
+const NAMES = { gpui: 'GPUI', slint: 'Slint', iced: 'Iced', nsh: 'NSH' };
 
 const COPY = {
   en: {
@@ -31,7 +31,7 @@ function frameworkOf(pre) {
   // loses the whole block). Everything else on a component page is the GPUI
   // block the page was written around.
   const language = pre.properties?.dataLanguage;
-  if (language === 'slint' || language === 'iced') return language;
+  if (language === 'slint' || language === 'iced' || language === 'nsh') return language;
   return 'gpui';
 }
 
@@ -155,7 +155,7 @@ function selector(copy, slug) {
   );
 }
 
-const FRAMEWORK_MARK = /framework:\s*(gpui|slint)/;
+const FRAMEWORK_MARK = /framework:\s*(gpui|slint|iced|nsh)/;
 
 function isMdBlank(node) {
   return node.type === 'text' && !String(node.value ?? '').trim();
