@@ -11,11 +11,10 @@ let starCount = 0;
 try { starCount = await fetchStarCount(); } catch {}
 
 const base = import.meta.env.BASE_URL;
-// The catalogue's own pages, and their samples, counted from the list the
-// sidebar is built from rather than written down. Examples are quoted for one
-// framework because every window is; the label names it.
-const exampleFramework = 'iced';
-const totals = catalogTotals(exampleFramework);
+// The catalogue's components and samples, counted from the list the sidebar is
+// built from rather than written down. Both totals run over every framework the
+// pages have a view in, and the hero names none of them.
+const totals = catalogTotals();
 ---
 
 <HomeLayout
@@ -27,9 +26,7 @@ const totals = catalogTotals(exampleFramework);
   <HomeApp
     client:load
     componentCount={totals.components}
-    frameworkCount={totals.frameworks}
     exampleCount={totals.examples}
-    exampleFramework="Iced"
     base={base}
   />
 

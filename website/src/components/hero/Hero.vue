@@ -26,9 +26,7 @@ const props = defineProps<{
     componentsHref: string;
     starterHref: string;
     componentCount: number;
-    frameworkCount: number;
     exampleCount: number;
-    exampleFramework: string;
     installCommand: string;
 }>();
 
@@ -85,17 +83,12 @@ onBeforeUnmount(() => clearTimeout(copyTimer));
                                 ? copy.signalComponent
                                 : copy.signalComponents
                         }}
-                        <strong v-if="frameworkCount > 1">{{
-                            frameworkCount
-                        }}</strong>
-                        {{ copy.signalFrameworks }}
                     </li>
 
                     <li v-if="exampleCount > 0">
                         <Layers :size="14" /><strong>{{
                             exampleCount
                         }}</strong>
-                        {{ exampleFramework }}
                         {{
                             exampleCount === 1
                                 ? copy.signalExample

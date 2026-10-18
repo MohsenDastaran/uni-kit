@@ -381,34 +381,33 @@ export const enComponentSidebar = generateSidebar({
 });
 
 export interface CatalogTotals {
-  /** Component pages the catalog's sidebar lists. */
+  /** Component views across every framework the catalogue shows. */
   components: number;
-  /** Example windows those pages paint in the named framework. */
+  /** Example windows those views paint, across every framework. */
   examples: number;
-  /** Frameworks at least one of those pages has a view in. */
-  frameworks: number;
 }
 
 /**
  * The catalogue's size, counted from the same page list the sidebar is cut
  * from, so a figure the hero prints cannot drift from the catalogue beside it.
  *
- * A page's examples are per framework: one window per framework the page has a
- * view in, and the same component's samples are different code in each. There
- * is no honest cross-framework total to print, so the caller names the
- * framework it is quoting and the label says whose examples they are.
+ * A component counts once for every framework its page has a view in: the same
+ * component written for GPUI, Slint and iced is three catalogue entries, which
+ * is what "components across frameworks" means here. Examples are summed the
+ * same way -- each framework's window is its own sample -- so both totals rise
+ * when a page or a sample is added anywhere.
  */
-export function catalogTotals(
-  framework: 'gpui' | 'slint' | 'iced',
-): CatalogTotals {
+export function catalogTotals(): CatalogTotals {
   const pages = componentPages(enComponentSidebar);
-  const frameworks = new Set<string>();
+  let components = 0;
   let examples = 0;
   for (const page of pages) {
-    for (const name of (page.frameworkAvailable ?? '').split(/\s+/)) {
-      if (name) frameworks.add(name);
+    components += (page.frameworkAvailable ?? '')
+      .split(/\s+/)
+      .filter(Boolean).length;
+    for (const count of Object.values(page.examples ?? {})) {
+      examples += count;
     }
-    examples += page.examples?.[framework] ?? 0;
   }
-  return { components: pages.length, examples, frameworks: frameworks.size };
+  return { components, examples };
 }
