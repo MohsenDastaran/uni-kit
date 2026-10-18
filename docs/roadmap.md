@@ -1145,6 +1145,16 @@ The fix is always to tint it in the SVG's own style closure (`color: Some(tokens
 rely on inheritance. The last offender was the message-scroller's jump control — the only untinted SVG
 left in the catalogue — whose chevron was invisible in dark behind the border token's faint ring.
 
+#### A page inset belongs inside the scroll owner, not around it
+
+The settings block put its 24px inset on a container *wrapping* the `Scrollable`, so the scroll bar and the
+content drew over that padding — over the Save button and the cards' right edges. Moving the inset onto the
+page *inside* the scroll owner fixed it: the bar then sits at the frame's trailing edge within the padding,
+which is what the coding guides describe.
+
+The general shape: the scroll owner should occupy the frame's full extent, and the padding the content needs
+belongs to the content. An inset applied outside a scroller is space the scroller draws straight through.
+
 #### A block is a demo file plus two fields
 
 `/blocks` is one Astro page whose `definitions` array feeds a Vue island; each block gets a header, an
