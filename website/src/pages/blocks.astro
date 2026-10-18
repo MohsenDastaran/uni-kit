@@ -155,6 +155,10 @@ const definitions = [
         // The page is a data table plus the control that moves it, so the install
         // command and the usage prompt name both.
         components: ["data-table", "pagination", "button", "toolbar"],
+        // The iced view is the gallery's `paginated-table-block` story, built
+        // from the table, the control that moves it, and the bar over both.
+        icedStory: "paginated-table-block",
+        icedInstall: ["data-table", "pagination", "button", "toolbar"],
         // The page tours every composition; the block is the finished screen.
         slintExample: "last",
     },
