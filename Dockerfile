@@ -133,6 +133,13 @@ RUN node website/scripts/precompress-wasm.mjs \
 # used to be copied as an empty directory, which deploys as a page whose iframe
 # answers 404. Failing the image build is the only way that mistake is visible.
 #
+# The check accepts both layouts the galleries use: Story, the base examples and
+# iced are one page at the root of their `www/dist`, so they have an
+# `index.html`; the Slint catalog is a folder per page under `pages/` and has no
+# root page at all, because the image never runs the memory-hungry whole-catalog
+# build that would write one. A gallery must match one of the two and hold at
+# least one module; an empty or half-written folder still fails.
+#
 # `GITHUB_TOKEN` only lifts the rate limit for the navbar's star count, which the
 # build falls back to 0 without. It arrives as a secret mount rather than an ARG so
 # the value is not recorded in the image metadata.
@@ -146,7 +153,7 @@ RUN --mount=type=secret,id=github_token \
       ../crates/slint-component/www/dist:slint-gallery \
       ../crates/iced-component/www/dist:iced-gallery; do \
       source_dir="${gallery%%:*}"; target_dir="${gallery#*:}"; \
-      if [ ! -f "$source_dir/index.html" ] || \
+      if { [ ! -f "$source_dir/index.html" ] && [ ! -d "$source_dir/pages" ]; } || \
          ! find "$source_dir" -name '*.wasm' -print -quit | grep -q .; then \
         echo "::error::$source_dir holds no built gallery; dist/$target_dir would deploy as a 404." >&2; \
         exit 1; \
