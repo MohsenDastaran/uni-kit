@@ -262,6 +262,8 @@ enum Headline {
 /// A chart card: heading, legend, the chart and a footer that reads the data.
 struct Card {
     title: SharedString,
+    /// Distinguishes cards that share a chart type, such as several line charts.
+    subtitle: SharedString,
     period: SharedString,
     legend: Vec<(Hsla, SharedString)>,
     chart: AnyElement,
@@ -276,6 +278,7 @@ impl Card {
     fn new(title: impl Into<SharedString>, period: impl Into<SharedString>) -> Self {
         Self {
             title: title.into(),
+            subtitle: "".into(),
             period: period.into(),
             legend: vec![],
             chart: div().into_any_element(),
@@ -283,6 +286,11 @@ impl Card {
             note: "".into(),
             centered: false,
         }
+    }
+
+    fn subtitle(mut self, subtitle: impl Into<SharedString>) -> Self {
+        self.subtitle = subtitle.into();
+        self
     }
 
     fn chart(mut self, chart: impl IntoElement) -> Self {
@@ -361,6 +369,14 @@ impl Card {
                             .flex_shrink_0()
                             .when(centered, |this| this.text_center())
                             .child(div().font_semibold().child(self.title))
+                            .when(!self.subtitle.is_empty(), |column| {
+                                column.child(
+                                    div()
+                                        .text_color(cx.theme().muted_foreground)
+                                        .text_sm()
+                                        .child(self.subtitle.clone()),
+                                )
+                            })
                             .child(
                                 div()
                                     .text_color(cx.theme().muted_foreground)
@@ -517,7 +533,8 @@ impl ChartCard {
         let mid = cx.theme().chart_3;
         let deep = cx.theme().chart_4;
         let card = match self {
-            Self::AreaStacked => Card::new("Visitors", "April – June 2025")
+            Self::AreaStacked => Card::new("AreaChart", "April – June 2025")
+                .subtitle("Stacked")
                 .legend(accent, "Desktop")
                 .legend(deep, "Mobile")
                 .chart(
@@ -553,7 +570,8 @@ impl ChartCard {
                     .traffic_sources
                     .iter()
                     .max_by(|a, b| a.visitors.total_cmp(&b.visitors));
-                let mut card = Card::new("Traffic Sources", "June 2025")
+                let mut card = Card::new("PieChart", "June 2025")
+                    .subtitle("Basic")
                     .centered()
                     .chart(
                         PieChart::new(data.traffic_sources.clone())
@@ -581,7 +599,8 @@ impl ChartCard {
             }
             Self::PieDonut => {
                 let leader = &data.browsers[0];
-                let mut card = Card::new("Browser Share", "June 2025")
+                let mut card = Card::new("PieChart", "June 2025")
+                    .subtitle("Donut")
                     .centered()
                     .chart(
                         div()
@@ -639,7 +658,8 @@ impl ChartCard {
                     .filter(|d| d.plan != "Free")
                     .map(|d| d.accounts)
                     .sum();
-                let mut card = Card::new("Plan Mix", "June 2025")
+                let mut card = Card::new("PieChart", "June 2025")
+                    .subtitle("Gap")
                     .centered()
                     .chart(
                         PieChart::new(data.plans.clone())
@@ -663,7 +683,8 @@ impl ChartCard {
             }
             Self::PieLabel => {
                 let total: f64 = data.regions.iter().map(|d| d.revenue).sum();
-                Card::new("Revenue by Region", "Q2 2025")
+                Card::new("PieChart", "Q2 2025")
+                    .subtitle("Labels")
                     .centered()
                     .chart(
                         PieChart::new(data.regions.clone())
@@ -686,7 +707,8 @@ impl ChartCard {
             Self::Radar => {
                 let average = data.product_scores.iter().map(|d| d.alpha).sum::<f64>()
                     / data.product_scores.len() as f64;
-                Card::new("Product Score", "Alpha, Q2 review")
+                Card::new("RadarChart", "Alpha, Q2 review")
+                    .subtitle("Basic")
                     .centered()
                     .chart(
                         RadarChart::new(data.product_scores.clone())
@@ -707,7 +729,8 @@ impl ChartCard {
                     .product_scores
                     .iter()
                     .fold((0., 0.), |(a, b), d| (a + d.alpha, b + d.beta));
-                Card::new("Alpha vs Beta", "Q2 review")
+                Card::new("RadarChart", "Q2 review")
+                    .subtitle("Two series")
                     .centered()
                     .legend(accent, "Alpha")
                     .legend(deep, "Beta")
@@ -732,7 +755,8 @@ impl ChartCard {
                     })
                     .note("Alpha wins on usability, Beta on reliability")
             }
-            Self::RadarDots => Card::new("Review Grades", "Alpha, Q2 review")
+            Self::RadarDots => Card::new("RadarChart", "Alpha, Q2 review")
+                .subtitle("Dots")
                 .centered()
                 .chart(
                     RadarChart::new(data.product_scores.clone())
@@ -784,7 +808,8 @@ impl ChartCard {
                 )
                 .headline("Two dimensions graded A")
                 .note("A from 85, B from 70, C below"),
-            Self::RadarLinesOnly => Card::new("Beta Profile", "Q2 review")
+            Self::RadarLinesOnly => Card::new("RadarChart", "Q2 review")
+                .subtitle("Outline")
                 .centered()
                 .legend(deep, "Beta")
                 .chart(
@@ -800,7 +825,8 @@ impl ChartCard {
                 )
                 .headline("Strongest on reliability and support")
                 .note("Outline only, five grid rings"),
-            Self::Bar => Card::new("Monthly Revenue", "2025")
+            Self::Bar => Card::new("BarChart", "2025")
+                .subtitle("Rounded")
                 .chart(
                     BarChart::new(data.metrics.clone())
                         .band(|d| d.month.clone())
@@ -824,7 +850,8 @@ impl ChartCard {
                     money(data.metrics.iter().map(|d| d.revenue).sum())
                 )),
             Self::BarMixed => {
-                let mut card = Card::new("Revenue by Region", "Q2 2025")
+                let mut card = Card::new("BarChart", "Q2 2025")
+                    .subtitle("Mixed shades")
                     .chart(
                         BarChart::new(data.regions.clone())
                             .band(|d| d.region.clone())
@@ -858,7 +885,8 @@ impl ChartCard {
                     .iter()
                     .map(|d| d.desktop + d.mobile + d.tablet + d.watch)
                     .sum();
-                Card::new("Visitors by Device", "First week of April")
+                Card::new("BarChart", "First week of April")
+                    .subtitle("Stacked")
                     .legend(cx.theme().chart_4, "Desktop")
                     .legend(cx.theme().chart_3, "Mobile")
                     .legend(cx.theme().chart_2, "Tablet")
@@ -867,7 +895,8 @@ impl ChartCard {
                     .headline(format!("{} visitors in eight days", compact(total)))
                     .note("Stacked by device, a custom Plot")
             }
-            Self::BarRounded => Card::new("Signups", "2025")
+            Self::BarRounded => Card::new("BarChart", "2025")
+                .subtitle("Fully rounded")
                 .chart(
                     BarChart::new(data.metrics.clone())
                         .band(|d| d.month.clone())
@@ -886,7 +915,8 @@ impl ChartCard {
                     "{} new accounts this year; fully rounded bars",
                     compact(data.metrics.iter().map(|d| d.signups).sum())
                 )),
-            Self::BarBottomAligned => Card::new("Orders", "2025")
+            Self::BarBottomAligned => Card::new("BarChart", "2025")
+                .subtitle("Bottom aligned")
                 .chart(
                     BarChart::new(data.metrics.clone())
                         .band(|d| d.month.clone())
@@ -901,7 +931,8 @@ impl ChartCard {
                     "this month",
                 )
                 .note("Bottom aligned: bars grow up from the axis"),
-            Self::BarTopAligned => Card::new("Refunds", "2025")
+            Self::BarTopAligned => Card::new("BarChart", "2025")
+                .subtitle("Top aligned")
                 .chart(
                     BarChart::new(data.metrics.clone())
                         .band(|d| d.month.clone())
@@ -917,7 +948,8 @@ impl ChartCard {
                     "this month",
                 )
                 .note("Top aligned: bars hang from the axis"),
-            Self::BarLeftAligned => Card::new("Top Products", "Units sold, Q2 2025")
+            Self::BarLeftAligned => Card::new("BarChart", "Units sold, Q2 2025")
+                .subtitle("Left aligned")
                 .chart(
                     BarChart::new(data.products.clone())
                         .band(|d| d.product.clone())
@@ -934,7 +966,8 @@ impl ChartCard {
                     compact(data.products[0].sales - data.products[1].sales)
                 ))
                 .note("Left aligned: labels beside horizontal bars"),
-            Self::BarRightAligned => Card::new("Page Views", "June 2025")
+            Self::BarRightAligned => Card::new("BarChart", "June 2025")
+                .subtitle("Right aligned")
                 .chart(
                     BarChart::new(data.pages.clone())
                         .band(|d| d.page.clone())
@@ -951,7 +984,8 @@ impl ChartCard {
                 let positive = cx.theme().chart_bullish;
                 let negative = cx.theme().chart_bearish;
                 let net: f64 = data.cash_flow.iter().map(|d| d.revenue).sum();
-                Card::new("Net Cash Flow", "2025")
+                Card::new("BarChart", "2025")
+                    .subtitle("Negative")
                     .legend(positive, "Surplus")
                     .legend(negative, "Deficit")
                     .chart(
@@ -979,7 +1013,8 @@ impl ChartCard {
                     .headline(format!("{} net for the year", money(net)))
                     .note("Revenue less expenses; the axis sits at zero")
             }
-            Self::BarGradientBottom => Card::new("Downloads", "2025")
+            Self::BarGradientBottom => Card::new("BarChart", "2025")
+                .subtitle("Gradient")
                 .chart(
                     BarChart::new(data.metrics.clone())
                         .band(|d| d.month.clone())
@@ -995,7 +1030,8 @@ impl ChartCard {
                     "this month",
                 )
                 .note("Shaded across the width, not along the length"),
-            Self::BarGradientTop => Card::new("Refunds", "2025")
+            Self::BarGradientTop => Card::new("BarChart", "2025")
+                .subtitle("Gradient, top aligned")
                 .chart(
                     BarChart::new(data.metrics.clone())
                         .band(|d| d.month.clone())
@@ -1011,7 +1047,8 @@ impl ChartCard {
                     "this month",
                 )
                 .note("The shading stays with the bar as it hangs"),
-            Self::BarGradientLeft => Card::new("Page Views", "June 2025")
+            Self::BarGradientLeft => Card::new("BarChart", "June 2025")
+                .subtitle("Gradient, horizontal")
                 .chart(
                     BarChart::new(data.pages.clone())
                         .band(|d| d.page.clone())
@@ -1027,7 +1064,8 @@ impl ChartCard {
                     compact(data.pages.iter().map(|d| d.views).sum())
                 ))
                 .note("Horizontal bars shade top to bottom"),
-            Self::BarGradientRight => Card::new("Top Products", "Units sold, Q2 2025")
+            Self::BarGradientRight => Card::new("BarChart", "Units sold, Q2 2025")
+                .subtitle("Gradient, right aligned")
                 .chart(
                     BarChart::new(data.products.clone())
                         .band(|d| d.product.clone())
@@ -1043,7 +1081,8 @@ impl ChartCard {
                     compact(data.products.iter().map(|d| d.sales).sum())
                 ))
                 .note("The same shading on right-aligned bars"),
-            Self::BarGradientPerBar => Card::new("Sessions", "2025")
+            Self::BarGradientPerBar => Card::new("BarChart", "2025")
+                .subtitle("Gradient, rounded")
                 .chart(
                     BarChart::new(data.metrics.clone())
                         .band(|d| d.month.clone())
@@ -1062,7 +1101,8 @@ impl ChartCard {
             Self::BarGradientDiagonal => {
                 let c1 = cx.theme().chart_1;
                 let c2 = cx.theme().chart_5;
-                Card::new("Orders", "2025")
+                Card::new("BarChart", "2025")
+                    .subtitle("Diagonal gradient")
                     .chart(
                         BarChart::new(data.metrics.clone())
                             .band(|d| d.month.clone())
@@ -1101,7 +1141,8 @@ impl ChartCard {
                     )
                     .note("One diagonal gradient across all bars")
             }
-            Self::Line => Card::new("Monthly Recurring Revenue", "2025")
+            Self::Line => Card::new("LineChart", "2025")
+                .subtitle("Curved")
                 .chart(
                     LineChart::new(data.metrics.clone())
                         .x(|d| d.month.clone())
@@ -1123,7 +1164,8 @@ impl ChartCard {
                     money(data.metrics[data.metrics.len() - 1].mrr),
                     money(data.metrics[0].mrr)
                 )),
-            Self::LineLinear => Card::new("Conversion Rate", "2025")
+            Self::LineLinear => Card::new("LineChart", "2025")
+                .subtitle("Linear")
                 .chart(
                     LineChart::new(data.metrics.clone())
                         .x(|d| d.month.clone())
@@ -1138,7 +1180,8 @@ impl ChartCard {
                     "this month",
                 )
                 .note("Visitors who signed up; straight segments"),
-            Self::LineStepAfter => Card::new("Active Subscriptions", "2025")
+            Self::LineStepAfter => Card::new("LineChart", "2025")
+                .subtitle("Step after")
                 .chart(
                     LineChart::new(data.metrics.clone())
                         .x(|d| d.month.clone())
@@ -1153,7 +1196,8 @@ impl ChartCard {
                     "this month",
                 )
                 .note("Counts change on renewal day; step after"),
-            Self::LineDots => Card::new("Deploys", "Per month, 2025")
+            Self::LineDots => Card::new("LineChart", "Per month, 2025")
+                .subtitle("Dots")
                 .chart(
                     LineChart::new(data.metrics.clone())
                         .x(|d| d.month.clone())
@@ -1171,7 +1215,8 @@ impl ChartCard {
                     "{} production deploys this year",
                     compact(data.metrics.iter().map(|d| d.deploys).sum())
                 )),
-            Self::Area => Card::new("Active Users", "2025")
+            Self::Area => Card::new("AreaChart", "2025")
+                .subtitle("Flat fill")
                 .chart(
                     AreaChart::new(data.metrics.clone())
                         .x(|d| d.month.clone())
@@ -1186,7 +1231,8 @@ impl ChartCard {
                     "this month",
                 )
                 .note("Monthly active users; a flat fill"),
-            Self::AreaLinear => Card::new("Sessions", "2025")
+            Self::AreaLinear => Card::new("AreaChart", "2025")
+                .subtitle("Linear")
                 .chart(
                     AreaChart::new(data.metrics.clone())
                         .x(|d| d.month.clone())
@@ -1202,7 +1248,8 @@ impl ChartCard {
                     "this month",
                 )
                 .note("Straight segments between months"),
-            Self::AreaGradient => Card::new("Revenue vs Last Year", "2025")
+            Self::AreaGradient => Card::new("AreaChart", "2025")
+                .subtitle("Gradient")
                 .legend(accent, "2025")
                 .legend(cx.theme().chart_1, "2024")
                 .chart(
@@ -1265,7 +1312,8 @@ impl ChartCard {
                 });
                 let open = minutes.first().map_or(0., |d| d.price);
                 let last = minutes.last().map_or(0., |d| d.price);
-                Card::new("Intraday Price", "Today, in progress")
+                Card::new("AreaChart", "Today, in progress")
+                    .subtitle("In progress")
                     .chart(
                         AreaChart::new(minutes)
                             .x(|d| d.time.clone())
@@ -1346,7 +1394,8 @@ impl ChartCard {
                 };
 
                 let revenue = nodes.first();
-                Card::new("TSLA Income Statement", period.clone())
+                Card::new("SankeyChart", period.clone())
+                    .subtitle(period.clone())
                     .chart(chart)
                     .headline(match revenue {
                         Some(node) => format!(
@@ -1394,9 +1443,10 @@ impl ChartCard {
             .map(|d| d.low)
             .fold(f64::MAX, f64::min);
         Card::new(
-            "ACME Daily",
+            "CandlestickChart",
             format!("{} – {} 2025 · {variant}", first.date, last.date),
         )
+        .subtitle(variant)
         .chart(
             CandlestickChart::new(data.stock_prices.clone())
                 .x(|d| d.date.clone())
