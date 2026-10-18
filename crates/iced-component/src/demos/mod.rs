@@ -62,6 +62,7 @@ pub mod resizable;
 pub mod scrollable;
 pub mod select;
 pub mod settings;
+pub mod settings_block;
 pub mod sheet;
 pub mod shimmer;
 pub mod sidebar;
@@ -146,6 +147,7 @@ pub const STORIES: &[&str] = &[
     "scrollable",
     "select",
     "settings",
+    "settings-block",
     "sheet",
     "shimmer",
     "sidebar",
@@ -233,6 +235,7 @@ pub fn run(story: &str, theme: iced::Theme) -> iced::Result {
         "scrollable" => scrollable::run(theme),
         "select" => select::run(theme),
         "settings" => settings::run(theme),
+        "settings-block" => settings_block::run(theme),
         "sheet" => sheet::run(theme),
         "shimmer" => shimmer::run(theme),
         "sidebar" => sidebar::run(theme),
