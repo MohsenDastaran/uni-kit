@@ -133,6 +133,10 @@ const definitions = [
         doc: "dock",
         components: ["dock", "button", "toolbar", "status-bar"],
         gpuiInstall: ["dock"],
+        // The iced view is the gallery's `dock-block` story: the bar, the
+        // workspace and the status bar under it, in one shell.
+        icedStory: "dock-block",
+        icedInstall: ["dock", "button", "toolbar", "status-bar"],
         // The page tours every composition; the block is the finished screen.
         slintExample: "last",
     },
