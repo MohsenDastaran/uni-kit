@@ -1145,17 +1145,21 @@ The fix is always to tint it in the SVG's own style closure (`color: Some(tokens
 rely on inheritance. The last offender was the message-scroller's jump control — the only untinted SVG
 left in the catalogue — whose chevron was invisible in dark behind the border token's faint ring.
 
-#### A catalogue total summed per framework double-counts
+#### A catalogue total must be derived from the sidebar's page list, and labelled
 
-The hero read "158 components" because it added the manifest's per-framework blocks — Slint 79 + iced 76
-+ GPUI 3 — so the 75 components shipping in **both** Slint and iced were counted twice. Adding a component
-*page* moved nothing, because the manifest is generated from installable crate sources rather than from
-pages.
+The hero first read "158 components" because it added `registry/components.json`'s per-framework blocks —
+79 Slint + 76 iced + 3 GPUI. That was wrong twice over: the manifest only carries *registry-shipped*
+sources, so it **undercounted GPUI badly**, and it is not the site's component total at all, which is why
+adding a page moved nothing.
 
-The honest total is the number of **pages** (78), derived from the same list the sidebar and pager walk, so
-it cannot disagree with them; per-framework counts belong beside it and labelled by framework. Examples
-likewise come from the same `// section:` parser that builds the source panels, which is why they cannot
-drift from what the pages actually show.
+Deriving from `componentPages(enComponentSidebar)` — the same list the sidebar and pager walk — gives the
+counts the catalogue can defend, and the site now shows them: **228 component views** (78 GPUI + 75 Slint +
+75 iced) and **1367 examples** (413 + 468 + 486), with examples read from the same `// section:` parser that
+builds the source panels so they cannot drift from what the pages display.
+
+Both 228 views and 78 pages are honest numbers; they answer different questions, and the label has to say
+which. The invariant that matters is the one tested by removing a page: `button.md` carries 32 examples
+across its three views, and dropping it moved the totals to 225 / 1335 — its own share, not one.
 
 #### The gallery wears the host page's palette, so a contrast bug can be invisible in the built-ins
 
