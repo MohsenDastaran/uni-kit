@@ -1,0 +1,173 @@
+---
+url: https://nsh.dev/docs/images-and-assets
+description: "Showing images with the Image element - imported assets and @2x files, remote URLs, resize modes, placeholders, blur, tint, load events, and Image.getSize / Image.prefetch."
+---
+
+# Images and assets
+
+`<Image>` shows a bitmap: a file shipped with the app, or an image downloaded from a URL. Images are read and decoded off the main thread, downsampled to the size the view shows them at, and cached; the main thread only displays the decoded result.
+
+```tsx
+import { Image } from "nsh/image";
+import logo from "./assets/logo@2x.png";
+
+<Image src={logo} />
+<Image src="https://picsum.photos/seed/nsh/600/400" style={{ width: "100%", height: 200, borderRadius: 12 }} />
+```
+
+The element's props are listed on [image](https://nsh.dev/elements/image.md).
+
+## Images in the app
+
+Import an image file like a module. The import gives an `ImageAsset`, `{ uri, width, height }`, and the bundler ships the file with the app:
+
+```tsx
+import logo from "./assets/logo@2x.png";
+
+logo; // { uri: "asset:/assets/logo@2x.png", width: 64, height: 64 }
+```
+
+Supported files: `.png`, `.jpg`, `.jpeg`, `.gif`, `.webp`, `.heic`.
+
+**Sizes are in points.** An `@2x` or `@3x` suffix in the file name says the file has 2 or 3 pixels per point, so `logo@2x.png` at 128×128 pixels is a 64×64 point asset. Without a suffix, one pixel is one point. There is no automatic choice between `logo@2x.png` and `logo@3x.png`: the file you import is the one that ships. Export at the highest density you need (`@3x` for the sharpest result on every phone); images are downsampled to the screen when decoded.
+
+**Natural size.** An image from an asset lays out at its natural size when its style leaves the width or height open, so `<Image src={logo} />` needs no style. Set one dimension and `aspectRatio`, or both, to size it differently.
+
+Assets are resolved relative to the importing module, and their `uri` is relative to the app's root (the entry's directory). `nsh build` copies them to `out/assets/`, `nsh package` puts them in the app, and during development the dev server serves them.
+
+> [!TIP]
+> `src` also accepts `asset:/path` strings, but only imported files are guaranteed to ship. A path that is never imported works with the dev server, which serves the whole app directory, and is missing from packaged apps. Import every image you use.
+
+## Remote images
+
+Give `src` a URL string or `{ uri }`:
+
+```tsx
+<Image src={user().avatarUrl} style={{ width: 48, height: 48, borderRadius: 24, backgroundColor: "#eaeef2" }} />
+```
+
+- **Give remote images a size.** Their size is unknown until they load, so without a width and height (or one of them and `aspectRatio`) they collapse to no height.
+- **A background color** shows while the image loads, or use `defaultSource` (below).
+- Downloads are shared: several views showing the same URL download it once, also when they decode it at different sizes. A download nobody waits for any more is cancelled.
+- Decoded images are cached in memory (the cache is purged under memory pressure), keyed by URL, decode size and blur radius.
+- When the app declares [capabilities](https://nsh.dev/docs/sandbox-and-capabilities.md), the image's host must be allowed under `network`; a refused image fails with `onError`.
+
+## Resize modes
+
+`resizeMode` decides how an image fills a box of a different shape:
+
+| Value | Result |
+|---|---|
+| `"cover"` (default) | Fills the box, keeping the aspect ratio, cropping what overflows |
+| `"contain"` | Fits inside the box, keeping the aspect ratio, leaving empty bands |
+| `"stretch"` | Fills the box exactly, distorting the image |
+| `"center"` | Natural size, centered |
+
+```tsx
+<Image src={photo} resizeMode="contain" style={{ width: 140, height: 140, backgroundColor: "#eaeef2" }} />
+```
+
+The Tailwind classes `object-cover`, `object-contain`, ... do the same.
+
+## Styling images
+
+Images are views: they take `borderRadius` (also per corner), borders, shadows, `opacity` and transforms. Corners clip the image.
+
+```tsx
+<Image src={avatar} style={{ width: 90, height: 90, borderRadius: 45, borderWidth: 3, borderColor: "#8250df" }} />
+```
+
+- **`tintColor`** (a style) recolors the image's opaque pixels: use it for one-color icons that follow the theme.
+- **`filter`** (`grayscale()`, `sepia()`, `blur()`, ...) applies to images on both platforms ([Filters](https://nsh.dev/docs/styling.md#filters-and-blending)).
+
+```tsx
+<Image src={icon} style={{ width: 24, height: 24, tintColor: active() ? "#0969da" : "#6e7781" }} />
+```
+
+## Placeholders, fading and blur
+
+| Prop | Description |
+|---|---|
+| `defaultSource` | An image shown until `src` has loaded; best a local asset |
+| `fadeDuration` | Milliseconds the loaded image fades in over. Default 0 on iOS, 300 on Android |
+| `blurRadius` | Blurs the image by this radius in points, applied once when decoding |
+
+```tsx
+<Image
+  src={`https://picsum.photos/seed/${id()}/300/300`}
+  defaultSource={placeholder}
+  fadeDuration={250}
+  style={{ width: 100, height: 100, borderRadius: 12 }}
+/>
+<Image src={cover} blurRadius={16} style={{ position: "absolute", top: 0, right: 0, bottom: 0, left: 0 }} />
+```
+
+## Animated images
+
+Animated GIF, WebP and APNG files play automatically, as assets or from URLs. They take the same styles and resize modes; a tinted animated image shows its first frame on iOS.
+
+## Load events
+
+| Event | Payload | When |
+|---|---|---|
+| `onLoadStart` | | Loading starts |
+| `onProgress` | `{ loaded, total }` in bytes (`total` 0 when unknown) | During a download, at most every 100 ms |
+| `onLoad` | `{ width, height }` | The image is ready; the source's size in pixels |
+| `onError` | `{ message }` | Loading or decoding failed |
+| `onLoadEnd` | | After `onLoad` or `onError` |
+
+```tsx
+const status = signal("loading…");
+
+<Image
+  src={url}
+  onLoad={(e) => status.set(`${e.width}×${e.height}`)}
+  onError={(e) => status.set(e.message)}
+  style={{ width: 90, height: 60 }}
+/>
+```
+
+`onLoad` reports the source image's size, not the size it was decoded at.
+
+## Image.getSize and Image.prefetch
+
+The same `Image` that renders the element also works with images that are not on screen:
+
+```tsx
+import { Image } from "nsh/image";
+
+const size = await Image.getSize("https://example.com/photo.jpg");   // { width, height } in pixels
+const ok = await Image.prefetch("https://example.com/next.jpg");      // true once the bytes are in memory
+```
+
+| Method | Returns |
+|---|---|
+| `Image.getSize(source)` | The image's size in pixels. Rejects when it cannot be loaded |
+| `Image.prefetch(source)` | `true` once the image's bytes are loaded |
+
+`source` is a URL string or `{ uri }`. Both keep the downloaded bytes for the views that show the image next, so an image prefetched before it is shown appears without a download.
+
+A common use is sizing a remote image by its aspect ratio:
+
+```tsx
+function RemoteImage(props: { uri: string }) {
+  const ratio = signal(1);
+  Image.getSize(props.uri).then((s) => ratio.set(s.width / s.height));
+  return <Image src={props.uri} style={{ width: "100%", aspectRatio: ratio() }} />;
+}
+```
+
+## Other assets
+
+| Import | Gives | Page |
+|---|---|---|
+| `.ttf`, `.otf` | The font's family name, registered before the first frame | [Fonts](https://nsh.dev/docs/fonts.md) |
+| `.json` | The parsed value, bundled into the script | [Project structure](https://nsh.dev/docs/project-structure.md#modules) |
+
+Images are also drawn on a canvas with `drawImage` ([Canvas](https://nsh.dev/docs/canvas.md)), and the gradients of `backgroundImage` replace many decorative images ([Styling](https://nsh.dev/docs/styling.md#gradients)).
+
+## Related
+
+- [image element](https://nsh.dev/elements/image.md): every prop.
+- [`nsh/image`](https://nsh.dev/modules/nsh-image.md): `Image`, with `getSize` and `prefetch`.
+- [Lists](https://nsh.dev/docs/lists.md): long lists of images recycle their views.
