@@ -29,6 +29,7 @@ pub mod date_picker;
 pub mod description_list;
 pub mod dialog;
 pub mod dock;
+pub mod dock_block;
 pub mod dropdown_button;
 pub mod editor;
 pub mod empty;
@@ -114,6 +115,7 @@ pub const STORIES: &[&str] = &[
     "description-list",
     "dialog",
     "dock",
+    "dock-block",
     "dropdown-button",
     "editor",
     "empty",
@@ -202,6 +204,7 @@ pub fn run(story: &str, theme: iced::Theme) -> iced::Result {
         "description-list" => description_list::run(theme),
         "dialog" => dialog::run(theme),
         "dock" => dock::run(theme),
+        "dock-block" => dock_block::run(theme),
         "dropdown-button" => dropdown_button::run(theme),
         "editor" => editor::run(theme),
         "empty" => empty::run(theme),
