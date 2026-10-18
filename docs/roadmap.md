@@ -1145,6 +1145,21 @@ The fix is always to tint it in the SVG's own style closure (`color: Some(tokens
 rely on inheritance. The last offender was the message-scroller's jump control — the only untinted SVG
 left in the catalogue — whose chevron was invisible in dark behind the border token's faint ring.
 
+#### A site that prints `@latest` installs nothing from an unpublished branch
+
+Every literal iced install command on the site currently exits 1 with `Framework "iced" is not in the
+registry.`, because npm `latest` is 0.3.1 (predating iced) and `main`'s manifest has no `iced` key, while
+this branch is 21 commits ahead of `origin/iced` and unpublished. The code and manifest are sound — 76 of 76
+install and compile, 76 of 76 sibling closures are exact, and `npx`, `pnpm dlx` and `bunx` all succeed
+against a packed 0.3.2 — so this is a **release step**, not a defect.
+
+The install bar is a claim about npm, and it is only true after a publish. Worth checking whenever a feature
+is developed on an unpublished branch, before believing the feature ships.
+
+What makes an install trustworthy is the **name triple** — manifest key == site slug == `demos::STORIES` ==
+`demos::run` arm — checked for all 76. It is the check that would have caught the `dropdown-button` page
+before the owner did.
+
 #### A catalogue total must be derived from the sidebar's page list, and labelled
 
 The hero first read "158 components" because it added `registry/components.json`'s per-framework blocks —
