@@ -1174,8 +1174,10 @@ demo's: `settings-block`, not `settings`.
 #### A site that prints `@latest` installs nothing from an unpublished branch
 
 Every literal iced install command on the site currently exits 1 with `Framework "iced" is not in the
-registry.`, because npm `latest` is 0.3.1 (predating iced) and `main`'s manifest has no `iced` key, while
-this branch is 21 commits ahead of `origin/iced` and unpublished. The code and manifest are sound — 76 of 76
+registry.` The cause is narrower than "unpublished": npm `latest` **0.4.0 already ships an `iced` key**, but
+**the CLI reads `main`'s manifest** — the copy bundled in the package is only an offline fallback — and
+`main` has no `iced` key. So **merging is what fixes it**, and the npm publish is the release process's own
+step rather than a prerequisite. The code and manifest are sound — 76 of 76
 install and compile, 76 of 76 sibling closures are exact, and `npx`, `pnpm dlx` and `bunx` all succeed
 against a packed 0.3.2 — so this is a **release step**, not a defect.
 
