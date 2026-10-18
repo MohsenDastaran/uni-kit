@@ -13,9 +13,9 @@ project as source you own — so the first thing you change is the thing you wan
 to change.
 
 uni-kit carries the [GPUI Kit](https://github.com/longbridge/gpui-kit) catalog
-past a single framework. GPUI and Slint are both in it today, with the same pages
-and the same components; egui, QuickGUI and others join them as their components
-are written. The [roadmap](docs/roadmap.md) tracks it.
+past a single framework. GPUI, Slint and iced are all in it today, with the same
+pages and the same components; egui, QuickGUI and others join them as their
+components are written. The [roadmap](docs/roadmap.md) tracks it.
 
 ## Frameworks
 
@@ -25,6 +25,20 @@ are written. The [roadmap](docs/roadmap.md) tracks it.
 | [Slint](https://slint.dev)                    | `npx uni-kit add slint <component>` copies the `.slint` files into `ui/components/`.                                             |
 | [iced](https://iced.rs)                      | `npx uni-kit add iced <component>` copies the `.rs` files into `src/components/`.                     |
 | egui, QuickGUI, others                        | The same pages, once the source exists. [Roadmap](docs/roadmap.md).                                                              |
+
+iced is a third port of the same catalogue, in
+[`crates/iced-component`](crates/iced-component): 76 of the catalog's 79
+components, with 80 demos, written against iced 0.14 and sharing the same design
+tokens and documentation site. Its source is copied like Slint's, not depended
+on.
+
+> **Not published from `main` yet.** iced support lives on the `iced` branch, and
+> `main`'s `registry/components.json` has no `iced` key. The CLI reads that
+> manifest — the copy bundled in the npm package is only an offline fallback — so
+> `npx uni-kit add iced <component>` currently fails with
+> `Framework "iced" is not in the registry`. It starts working once the branch is
+> merged and the registry is published; until then, copy the source from
+> [`crates/iced-component/src/components`](crates/iced-component/src/components).
 
 ## What is in this repository
 
@@ -36,6 +50,7 @@ crates/shell            gpui-shell — JavaScript extensions for a Rust host
 crates/component-shell  The styled catalog for that host
 crates/blocks           Composed GPUI screens the CLI installs
 crates/slint-component  The same catalog, written for Slint 1.17
+crates/iced-component   The same catalog, written for iced 0.14
 crates/story            The component gallery, as a native application
 crates/story-web        The same gallery, built for the browser
 registry/               The uni-kit CLI and the manifest it installs from
