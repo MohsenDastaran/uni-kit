@@ -254,9 +254,14 @@ fn view(app: &App) -> Element<'_, Message> {
         ],
     );
 
+    // The inset belongs to the page the scroll owner carries, not to a
+    // container around the scroll owner: the bar then resolves against the
+    // frame's own trailing edge, in the page padding, instead of drawing over
+    // the heading's buttons and the cards.
     let page = column![heading(app), appearance, notifications]
         .spacing(GAP)
-        .width(Length::Fill);
+        .width(Length::Fill)
+        .padding(PAGE);
 
     // The screen scrolls rather than clipping: the second group is below the
     // frame in the Blocks page's height, and a preferences page that cannot reach
@@ -264,7 +269,6 @@ fn view(app: &App) -> Element<'_, Message> {
     container(scrollable(page).height(Length::Fill))
         .width(Length::Fill)
         .height(Length::Fill)
-        .padding(PAGE)
         .style(|theme: &Theme| container::Style {
             background: Some(theme::alpha(Tokens::of(theme).muted, 0.25).into()),
             border: Border {
