@@ -13,7 +13,11 @@
 //! - each numeric segment is iced's text field — the only editable primitive
 //!   iced has — fixed at the Slint `segment` width, monospaced, centred, and
 //!   filled with `Theme.selection` while it holds the caret, which is the
-//!   Slint `background: hour-field.has-focus ? active : transparent`;
+//!   Slint `background: hour-field.has-focus ? active : transparent`. The fill
+//!   is that selection pulled 6% toward the page's ink, and the digits take
+//!   whichever pole of the palette reads on it, because a host palette can
+//!   publish a light selection whose `foreground` does not (see
+//!   [`segment_style`]);
 //! - the colon between two segments is the muted label the Slint row draws, and
 //!   the period is the small semibold `AM`/`PM` text it draws, set off by the
 //!   same `ml_1` inset.
@@ -351,18 +355,58 @@ fn typed(raw: &str, max: u32) -> u32 {
     0
 }
 
+/// The WCAG relative luminance of an opaque colour.
+fn luminance(color: Color) -> f32 {
+    let channel = |value: f32| {
+        if value <= 0.04045 {
+            value / 12.92
+        } else {
+            ((value + 0.055) / 1.055).powf(2.4)
+        }
+    };
+    0.2126 * channel(color.r) + 0.7152 * channel(color.g) + 0.0722 * channel(color.b)
+}
+
+/// The WCAG contrast ratio between two colours: 1.0 is identical, 21.0 the most
+/// the scale allows.
+fn contrast(a: Color, b: Color) -> f32 {
+    let (a, b) = (luminance(a), luminance(b));
+    (a.max(b) + 0.05) / (a.min(b) + 0.05)
+}
+
 /// The colours a segment's field draws with: transparent at rest, the selection
 /// fill while it holds the caret. It is iced's field, not a frame around it, so
 /// the focus status is visible and the selection can move with it — the reason
 /// the Slint row's focused rectangle is a field of its own here.
+///
+/// The fill is the Slint `active` — `Theme.selection` — pulled 6% toward the
+/// page's ink, which moves it off the field's surface in both appearances: the
+/// built-in light selection goes from 2.69:1 to 3.00:1 against the white frame,
+/// the dark one from 2.72:1 to 3.06:1 against `input-background`.
+///
+/// The digits cannot keep `foreground` on that fill. A host palette publishes
+/// `selection` as its own token, and a catalog theme that names none gets its
+/// primary instead (`website/src/lib/theme-catalog.ts`), so the fill can be a
+/// light brand hue that its own `primary-foreground` cannot read: the default
+/// Asciinema theme is cyan with white at 2.54:1 and with the foreground at
+/// 1.58:1, while the page's background reads at 7.33:1. The ink is therefore the
+/// pole of the palette with the better contrast on the fill — `foreground` on
+/// the two built-in fills, `background` on the light ones — not a `dark` branch.
 fn segment_style(disabled: bool) -> impl Fn(&Theme, text_input::Status) -> text_input::Style {
     move |theme: &Theme, status| {
         let tokens = Tokens::of(theme);
         let focused = matches!(status, text_input::Status::Focused { .. });
+        let lit = focused && !disabled;
+        let fill = theme::mix(tokens.selection, tokens.foreground, 0.06);
+        let ink = if lit && contrast(tokens.background, fill) > contrast(tokens.foreground, fill) {
+            tokens.background
+        } else {
+            tokens.foreground
+        };
 
         text_input::Style {
-            background: if focused && !disabled {
-                Background::Color(tokens.selection)
+            background: if lit {
+                Background::Color(fill)
             } else {
                 Background::Color(Color::TRANSPARENT)
             },
@@ -376,7 +420,7 @@ fn segment_style(disabled: bool) -> impl Fn(&Theme, text_input::Status) -> text_
             value: if disabled {
                 tokens.muted_foreground
             } else {
-                tokens.foreground
+                ink
             },
             selection: theme::alpha(tokens.selection, 0.35),
         }
