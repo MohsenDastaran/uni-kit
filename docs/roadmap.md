@@ -1145,6 +1145,18 @@ The fix is always to tint it in the SVG's own style closure (`color: Some(tokens
 rely on inheritance. The last offender was the message-scroller's jump control — the only untinted SVG
 left in the catalogue — whose chevron was invisible in dark behind the border token's faint ring.
 
+#### A catalogue total summed per framework double-counts
+
+The hero read "158 components" because it added the manifest's per-framework blocks — Slint 79 + iced 76
++ GPUI 3 — so the 75 components shipping in **both** Slint and iced were counted twice. Adding a component
+*page* moved nothing, because the manifest is generated from installable crate sources rather than from
+pages.
+
+The honest total is the number of **pages** (78), derived from the same list the sidebar and pager walk, so
+it cannot disagree with them; per-framework counts belong beside it and labelled by framework. Examples
+likewise come from the same `// section:` parser that builds the source panels, which is why they cannot
+drift from what the pages actually show.
+
 #### The gallery wears the host page's palette, so a contrast bug can be invisible in the built-ins
 
 The time field's selected segment measured **7.37:1** in the gallery's own light theme — comfortable — and
