@@ -1,11 +1,12 @@
 # syntax=docker/dockerfile:1
 
 # The component previews are WebAssembly, and the site only serves them when the
-# built galleries sit inside its own output: `/gallery`, `/examples/base` and
-# `/slint-gallery` are Vite dev-server middleware in development, so a production
-# build has to carry the files. Building them needs the wasm toolchain, and the
-# Slint catalog's own script says a full compile wants more than a 14 GiB
-# machine. That is why this image is built in CI and Coolify only pulls it.
+# built galleries sit inside its own output: `/gallery`, `/examples/base`,
+# `/slint-gallery` and `/iced-gallery` are Vite dev-server middleware in
+# development, so a production build has to carry the files. Building them needs
+# the wasm toolchain, and the Slint catalog's own script says a full compile
+# wants more than a 14 GiB machine. That is why this image is built in CI and
+# Coolify only pulls it.
 
 # ---- galleries and site ----------------------------------------------------
 FROM rust:1-bookworm AS build
@@ -60,6 +61,17 @@ RUN --mount=type=cache,target=/usr/local/cargo/registry \
  && cargo install -f wasm-bindgen-cli --version "$version" \
  && wasm-bindgen --version
 
+# The iced crate keeps its own lockfile, and its `wasm-bindgen` is a different
+# version from the workspace's, so it gets its own CLI rather than replacing the
+# one the other galleries need. Two versions cannot share one binary, and the
+# crate's build script looks in this prefix first. Its lock file is copied just
+# as early, for the same caching reason.
+COPY crates/iced-component/Cargo.lock crates/iced-component/Cargo.lock
+RUN --mount=type=cache,target=/usr/local/cargo/registry \
+    version=$(grep -A 1 '^name = "wasm-bindgen"$' crates/iced-component/Cargo.lock | grep '^version' | cut -d '"' -f 2) \
+ && cargo install -f wasm-bindgen-cli --version "$version" --root /root/.wasm-bindgen-iced \
+ && /root/.wasm-bindgen-iced/bin/wasm-bindgen --version
+
 WORKDIR /src
 COPY . .
 
@@ -91,6 +103,15 @@ RUN --mount=type=cache,target=/usr/local/cargo/registry \
       SLINT_GALLERY_ONLY="$slug" ./scripts/build.sh --release --out "www/dist/pages/$slug" || exit 1; \
     done
 
+# One module answers for every iced component -- `?story=<registry key>` picks
+# the demo -- so unlike the Slint catalog this is a single bounded build. The CLI
+# is named outright rather than left to `$HOME` or `PATH`, so the wrong
+# wasm-bindgen cannot be picked up by accident.
+RUN --mount=type=cache,target=/usr/local/cargo/registry \
+    --mount=type=cache,target=/src/crates/iced-component/target \
+    WASM_BINDGEN=/root/.wasm-bindgen-iced/bin/wasm-bindgen \
+    make -C crates/iced-component build-wasm
+
 # The galleries are tens of megabytes each, and nginx deliberately does not
 # compress wasm on the fly. Compress it once here instead: `gzip_static on`
 # serves the `.wasm.gz` beside each module as-is, so the transfer shrinks ~2.5x
@@ -100,11 +121,17 @@ RUN --mount=type=cache,target=/usr/local/cargo/registry \
 RUN node website/scripts/precompress-wasm.mjs \
       crates/story-web/www/dist \
       crates/base/examples/wasm/www/dist \
-      crates/slint-component/www/dist
+      crates/slint-component/www/dist \
+      crates/iced-component/www/dist
 
-# The site reads the Story and Slint sources from the repository root to count
-# examples and to render the Slint samples, so it has to build from here rather
-# than from `website/` alone. The copies mirror release-docs.yml.
+# The site reads the Story, Slint and iced sources from the repository root to
+# count examples and to render the Slint and iced samples, so it has to build
+# from here rather than from `website/` alone. The copies mirror
+# release-website.yml.
+#
+# Each gallery is checked before it is copied: a missing or half-built gallery
+# used to be copied as an empty directory, which deploys as a page whose iframe
+# answers 404. Failing the image build is the only way that mistake is visible.
 #
 # `GITHUB_TOKEN` only lifts the rate limit for the navbar's star count, which the
 # build falls back to 0 without. It arrives as a secret mount rather than an ARG so
@@ -113,10 +140,20 @@ RUN --mount=type=secret,id=github_token \
     cd website \
  && bun install --frozen-lockfile \
  && GITHUB_TOKEN="$(cat /run/secrets/github_token 2>/dev/null || true)" bun run build \
- && mkdir -p dist/gallery dist/examples/base dist/slint-gallery \
- && cp -r ../crates/story-web/www/dist/. dist/gallery/ \
- && cp -r ../crates/base/examples/wasm/www/dist/. dist/examples/base/ \
- && cp -r ../crates/slint-component/www/dist/. dist/slint-gallery/
+ && for gallery in \
+      ../crates/story-web/www/dist:gallery \
+      ../crates/base/examples/wasm/www/dist:examples/base \
+      ../crates/slint-component/www/dist:slint-gallery \
+      ../crates/iced-component/www/dist:iced-gallery; do \
+      source_dir="${gallery%%:*}"; target_dir="${gallery#*:}"; \
+      if [ ! -f "$source_dir/index.html" ] || \
+         ! find "$source_dir" -name '*.wasm' -print -quit | grep -q .; then \
+        echo "::error::$source_dir holds no built gallery; dist/$target_dir would deploy as a 404." >&2; \
+        exit 1; \
+      fi; \
+      mkdir -p "dist/$target_dir" \
+      && cp -r "$source_dir/." "dist/$target_dir/"; \
+    done
 
 # ---- server ----------------------------------------------------------------
 FROM nginx:alpine AS runtime
