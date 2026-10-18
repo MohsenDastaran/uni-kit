@@ -116,6 +116,10 @@ const definitions = [
         doc: "settings",
         components: ["settings", "card", "button"],
         gpuiInstall: ["settings"],
+        // The iced view is the gallery's `settings-block` story: the groups are
+        // cards, the rows are settings, and every row's control is a switch.
+        icedStory: "settings-block",
+        icedInstall: ["settings", "card", "button", "switch"],
         // The page tours every composition; the block is the finished screen.
         slintExample: "last",
     },
