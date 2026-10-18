@@ -1145,6 +1145,19 @@ The fix is always to tint it in the SVG's own style closure (`color: Some(tokens
 rely on inheritance. The last offender was the message-scroller's jump control — the only untinted SVG
 left in the catalogue — whose chevron was invisible in dark behind the border token's faint ring.
 
+#### The gallery wears the host page's palette, so a contrast bug can be invisible in the built-ins
+
+The time field's selected segment measured **7.37:1** in the gallery's own light theme — comfortable — and
+**1.58:1** under the Asciinema catalog theme, because a catalog theme with no `selection` of its own
+borrows its `primary` (`website/src/lib/theme-catalog.ts` supplies the fallback), and that cyan is not
+something `foreground` digits read on. A contrast check against the built-in pair alone would have passed
+it.
+
+So measure a state on **both** surfaces: the built-in token pair and the host palette the gallery actually
+wears. When that was done, **9 of the 35 catalog themes** turned out to have no readable pole at all for
+their own selection colour — Everforest Light 2.35:1, Ayu Light 2.50:1, Catppuccin Latte 2.75:1, six dark
+3.32–4.32:1 — which is a theme gap needing a text-safe selection token, not a component fix.
+
 #### A clean tree does not mean nothing was written
 
 An agent was stopped mid-task leaving no report. `git status` was clean, so I concluded it "left nothing"
