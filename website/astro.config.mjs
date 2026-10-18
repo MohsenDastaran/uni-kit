@@ -41,7 +41,7 @@ const legacyDocRedirects = Object.fromEntries(
 );
 
 export default defineConfig({
-  site: 'https://gpui-kit.com',
+  site: 'https://uni-kit.dastaran.com',
   base: BASE,
   output: 'static',
   trailingSlash: 'never',

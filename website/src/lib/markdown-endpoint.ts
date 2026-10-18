@@ -1,3 +1,4 @@
+import { SITE_URL } from './site';
 import { readFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { bodyWithoutFrontmatter, documentationLicenseNotice, expandSnippets } from './llms';
@@ -25,7 +26,7 @@ export function markdownResponse(options: {
 
   const body = expandDocVariables(expandSnippets(bodyWithoutFrontmatter(source), dirname(absolute)));
   const lang = options.route.startsWith('/zh-CN/') ? 'zh-CN' : 'en';
-  const notice = documentationLicenseNotice(lang, `https://gpui-kit.com${options.route}`);
+  const notice = documentationLicenseNotice(lang, `${SITE_URL}${options.route}`);
   const text = `---\n${front.join('\n')}\n---\n\n${body.trimEnd()}\n\n> ${notice}\n`;
 
   return new Response(text, {

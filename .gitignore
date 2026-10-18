@@ -44,3 +44,4 @@ __pycache__/
 # the pages it compiles, so the file changes with every filtered build and must
 # not be tracked.
 crates/slint-component/ui/gallery-catalog.slint
+crates/iced-component/www/dist/
