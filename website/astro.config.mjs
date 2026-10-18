@@ -48,7 +48,6 @@ export default defineConfig({
   redirects: {
     ...componentRedirects,
     ...legacyDocRedirects,
-    '/docs/ui-testing': '/docs/test',
   },
 
   integrations: [

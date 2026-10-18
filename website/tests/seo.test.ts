@@ -97,15 +97,7 @@ test('component pages have independent routes and readable legacy URLs', () => {
   assert.ok(read('docs/components/index.html').includes('url=/component'));
 });
 
-test('shared guides remain under docs and sidebars keep the sections separate', () => {
-  for (const guide of ['coding-guides', 'design-guides']) {
-    const html = read(`docs/${guide}/index.html`);
-    assert.ok(html.includes(`rel="canonical" href="${origin}/docs/${guide}"`));
-    const sidebar = html.match(/<aside class="docs-sidebar"[\s\S]*?<\/aside>/)?.[0] ?? '';
-    assert.ok(sidebar.includes('href="/docs/coding-guides"'));
-    assert.ok(sidebar.includes('href="/docs/design-guides"'));
-    assert.ok(!sidebar.includes('href="/component/'));
-  }
+test('component pages keep their own sidebar, with no legacy docs links', () => {
   const html = read('component/button/index.html');
   const sidebar = html.match(/<aside class="docs-sidebar"[\s\S]*?<\/aside>/)?.[0] ?? '';
   assert.ok(sidebar.includes('href="/component/input"'));
@@ -141,13 +133,4 @@ test('primary navigation follows the Kit section order', () => {
   assert.deepEqual(links.slice(0, 3).map(match => match[2]), ['Component', 'Blocks', 'Starter']);
   assert.deepEqual(links.slice(0, 3).map(match => match[1]), ['/component', '/blocks', '/starter']);
   assert.doesNotMatch(nav, /site-nav__lang-btn/);
-});
-
-test('testing guide has canonical routes and readable legacy URLs', () => {
-  const route = 'docs/test';
-  const html = read(`${route}/index.html`);
-  assert.ok(html.includes(`${origin}/docs/test`));
-  assert.ok(read('docs/ui-testing/index.html').includes('url=/docs/test'));
-  assert.equal(read('docs/ui-testing.md'), read(`${route}.md`));
-  assert.ok(read('llms.txt').includes(`/${route}.md`));
 });

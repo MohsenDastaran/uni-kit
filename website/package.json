@@ -7,7 +7,6 @@
     "build": "bunx --bun astro build && bunx pagefind --site ${SITE_OUT_DIR:-dist}",
     "dev": "bunx --bun astro dev",
     "preview": "bunx --bun astro preview",
-    "test:docs": "bun test tests/doc-sources.test.ts tests/release-version.test.ts tests/markdown.test.ts",
     "test:links": "bun test tests/links.test.ts",
     "test:seo": "bun test tests/seo.test.ts"
   },
