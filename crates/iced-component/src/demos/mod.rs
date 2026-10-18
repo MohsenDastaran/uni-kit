@@ -64,6 +64,7 @@ pub mod settings;
 pub mod sheet;
 pub mod shimmer;
 pub mod sidebar;
+pub mod sidebar_block;
 pub mod skeleton;
 pub mod slider;
 pub mod speech;
@@ -146,6 +147,7 @@ pub const STORIES: &[&str] = &[
     "sheet",
     "shimmer",
     "sidebar",
+    "sidebar-block",
     "skeleton",
     "slider",
     "speech",
@@ -231,6 +233,7 @@ pub fn run(story: &str, theme: iced::Theme) -> iced::Result {
         "sheet" => sheet::run(theme),
         "shimmer" => shimmer::run(theme),
         "sidebar" => sidebar::run(theme),
+        "sidebar-block" => sidebar_block::run(theme),
         "skeleton" => skeleton::run(theme),
         "slider" => slider::run(theme),
         "speech" => speech::run(theme),
