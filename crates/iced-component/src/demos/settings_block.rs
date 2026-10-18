@@ -263,9 +263,9 @@ fn view(app: &App) -> Element<'_, Message> {
         .width(Length::Fill)
         .padding(PAGE);
 
-    // The screen scrolls rather than clipping: the second group is below the
-    // frame in the Blocks page's height, and a preferences page that cannot reach
-    // its lower half is not a page.
+    // The screen scrolls rather than clipping: at a short frame the second group
+    // falls below the bottom edge, and a preferences page that cannot reach its
+    // lower half is not a page. The bar keeps its own lane in the page padding.
     container(scrollable(page).height(Length::Fill))
         .width(Length::Fill)
         .height(Length::Fill)
