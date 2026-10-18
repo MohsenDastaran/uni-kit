@@ -7,18 +7,27 @@
 // sidebar rows and the switcher hides them by — and the previous/next pair is
 // cut from the sidebar's own ordered catalog (`componentPages`, which walks
 // `enComponentSidebar`), so the navigation can never disagree with the list
-// beside it.
+// beside it. Each pair arrives already cut for one framework: the pager is
+// rendered once per framework the page has a view in, and the stylesheet's
+// `data-framework-only` switch shows the pair in force.
 import { toggleLogos } from '../lib/toggle-logos.js';
 import type { SidebarItem } from '../lib/sidebar';
 
-interface Props {
-  /** The frameworks the page has a view in, space separated. */
-  frameworks: string;
+interface Pager {
+  /** The framework this pair is for; left off, the pair is shown for any. */
+  framework?: string;
   previous?: SidebarItem;
   next?: SidebarItem;
 }
 
-const { frameworks, previous, next } = Astro.props;
+interface Props {
+  /** The frameworks the page has a view in, space separated. */
+  frameworks: string;
+  /** One previous/next pair per framework the page has a view in. */
+  pagers: Pager[];
+}
+
+const { frameworks, pagers } = Astro.props;
 
 // The two lookups are data, not markup: a framework added to the page's
 // `frameworkAvailable` renders a tile from its key alone. The name is known for
@@ -98,61 +107,67 @@ const supported = frameworks.split(/\s+/).filter(Boolean);
   <section class="component-page-footer__section">
     <h2 id="previous-next" data-toc-trailing>Previous and next component</h2>
 
-    <nav class="component-nav" aria-label="Component pages">
-      {previous ? (
-        <a
-          class="component-nav__link component-nav__link--previous"
-          href={previous.link}
-          rel="prev"
-        >
-          <svg
-            class="component-nav__arrow"
-            width="16"
-            height="16"
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            stroke-width="2"
-            stroke-linecap="round"
-            stroke-linejoin="round"
-            aria-hidden="true"
+    {pagers.map(({ framework, previous, next }) => (
+      <nav
+        class="component-nav"
+        aria-label="Component pages"
+        data-framework-only={framework}
+      >
+        {previous ? (
+          <a
+            class="component-nav__link component-nav__link--previous"
+            href={previous.link}
+            rel="prev"
           >
-            <path d="m15 18-6-6 6-6"></path>
-          </svg>
-          <span class="component-nav__text">
-            <span class="component-nav__direction">Previous</span>
-            <span class="component-nav__name">{previous.text}</span>
-          </span>
-        </a>
-      ) : null}
+            <svg
+              class="component-nav__arrow"
+              width="16"
+              height="16"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              aria-hidden="true"
+            >
+              <path d="m15 18-6-6 6-6"></path>
+            </svg>
+            <span class="component-nav__text">
+              <span class="component-nav__direction">Previous</span>
+              <span class="component-nav__name">{previous.text}</span>
+            </span>
+          </a>
+        ) : null}
 
-      {next ? (
-        <a
-          class="component-nav__link component-nav__link--next"
-          href={next.link}
-          rel="next"
-        >
-          <span class="component-nav__text">
-            <span class="component-nav__direction">Next</span>
-            <span class="component-nav__name">{next.text}</span>
-          </span>
-          <svg
-            class="component-nav__arrow"
-            width="16"
-            height="16"
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            stroke-width="2"
-            stroke-linecap="round"
-            stroke-linejoin="round"
-            aria-hidden="true"
+        {next ? (
+          <a
+            class="component-nav__link component-nav__link--next"
+            href={next.link}
+            rel="next"
           >
-            <path d="m9 18 6-6-6-6"></path>
-          </svg>
-        </a>
-      ) : null}
-    </nav>
+            <span class="component-nav__text">
+              <span class="component-nav__direction">Next</span>
+              <span class="component-nav__name">{next.text}</span>
+            </span>
+            <svg
+              class="component-nav__arrow"
+              width="16"
+              height="16"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              aria-hidden="true"
+            >
+              <path d="m9 18 6-6-6-6"></path>
+            </svg>
+          </a>
+        ) : null}
+      </nav>
+    ))}
   </section>
 </div>
 

@@ -6,6 +6,7 @@ import { componentNeighbours, enComponentSidebar } from '../../lib/sidebar';
 import ComponentExample from '../../components/ComponentExample.vue';
 import { hasIcedExample, hasIcedPage } from '../../lib/remark-iced-source.js';
 import { hasSlintExample, hasSlintPage } from '../../lib/remark-slint-source.js';
+import { FRAMEWORKS } from '../../lib/rehype-framework-code.js';
 import { gallerySizes } from '../../lib/gallery-sizes';
 
 export async function getStaticPaths() {
@@ -63,6 +64,16 @@ const contentData = {
 // page. Both read the sidebar's own ordered catalog, so the framework rows and
 // the previous/next pair are the same list the reader sees beside the page.
 const neighbours = slug === 'index' ? {} : componentNeighbours(enComponentSidebar, pathname);
+const footerFrameworks =
+  neighbours.current?.frameworkAvailable ?? contentData['data-framework-available'];
+// The framework is a client-side choice on a static page, so the walk is cut
+// once per framework the site has and the stylesheet's `data-framework-only`
+// switch shows the pair in force. A neighbour with no view in that framework is
+// skipped, the way the sidebar hides its row.
+const pagers = FRAMEWORKS.map((framework) => ({
+  framework,
+  ...componentNeighbours(enComponentSidebar, pathname, framework),
+}));
 ---
 
 <DocsLayout
@@ -75,9 +86,8 @@ const neighbours = slug === 'index' ? {} : componentNeighbours(enComponentSideba
   <Content />
   {slug !== 'index' && (
     <ComponentPageFooter
-      frameworks={neighbours.current?.frameworkAvailable ?? contentData['data-framework-available']}
-      previous={neighbours.previous}
-      next={neighbours.next}
+      frameworks={footerFrameworks}
+      pagers={pagers}
     />
   )}
   {entry.data.example !== false && (

@@ -310,18 +310,39 @@ export interface ComponentNeighbours {
  * ends of the list are honest: the first page has no `previous` and the last
  * has no `next`, and the caller hides the missing link rather than inventing a
  * wrap-around or a disabled row.
+ *
+ * `framework` walks past the pages that have no view in it: `theme` is a GPUI
+ * guide, so a reader on iced goes on to the next page that has a view instead
+ * of landing on one with nothing to show. The answer is the page's own
+ * `frameworkAvailable` — the list the sidebar hides rows by and the support
+ * tiles are built from — so the pager and the list beside it cannot disagree.
+ * No framework, or a page that does not say (a missing source tree), keeps the
+ * plain walk.
  */
 export function componentNeighbours(
   sidebar: SidebarItem[],
   pathname: string,
+  framework?: string,
 ): ComponentNeighbours {
   const pages = componentPages(sidebar);
   const index = pages.findIndex((page) => page.link === pathname);
   if (index < 0) return {};
+
+  const hasView = (page: SidebarItem) =>
+    !framework ||
+    !page.frameworkAvailable ||
+    page.frameworkAvailable.split(/\s+/).includes(framework);
+  const step = (from: number, direction: -1 | 1): SidebarItem | undefined => {
+    for (let i = from + direction; i >= 0 && i < pages.length; i += direction) {
+      if (hasView(pages[i])) return pages[i];
+    }
+    return undefined;
+  };
+
   return {
     current: pages[index],
-    previous: pages[index - 1],
-    next: pages[index + 1],
+    previous: step(index, -1),
+    next: step(index, 1),
   };
 }
 
