@@ -1145,6 +1145,22 @@ The fix is always to tint it in the SVG's own style closure (`color: Some(tokens
 rely on inheritance. The last offender was the message-scroller's jump control — the only untinted SVG
 left in the catalogue — whose chevron was invisible in dark behind the border token's faint ring.
 
+#### A block is a demo file plus two fields
+
+`/blocks` is one Astro page whose `definitions` array feeds a Vue island; each block gets a header, an
+install bar, a prompt button and a live iframe, and the frame's route comes from `srcFor(block)`. A
+framework appears for a block only when that block declares its field — `gpuiInstall`, a Slint page folder,
+or `icedStory` — so an empty framework list is a missing field, not a missing page.
+
+For iced the whole contract is: add `demos/<name>_block.rs` with `pub fn run(theme)` and a `//!` header,
+run `scripts/mod-rs.mjs` so the story enters `STORIES` and the dispatcher, then add `icedStory` and
+`icedInstall` to that block's entry. The install bar, the loader size, the prompt's source and the routing
+all follow from those two fields.
+
+What makes a block different from a component demo is that it is a whole application screen — state lives in
+the demo and the installed components only report it. And the story name must not collide with the component
+demo's: `settings-block`, not `settings`.
+
 #### A site that prints `@latest` installs nothing from an unpublished branch
 
 Every literal iced install command on the site currently exits 1 with `Framework "iced" is not in the
