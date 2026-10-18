@@ -132,8 +132,10 @@ html.dark .alignment-dark {
   /* Layout */
   --nav-height: 56px;
   --sidebar-width: 248px;
-  --toc-width: 200px;
-  --layout-max-width: 1280px;
+  --toc-width: 390px;
+  /* Wide enough that the 390px outline column is paid for by the layout, not by
+     the article: at 1280 the article lost the 90px the column had grown by. */
+  --layout-max-width: 1370px;
 }
 
 .dark {
@@ -568,10 +570,10 @@ html[lang^="ja"] .example-prompt {
   border: 0;
 }
 
-/* These four match the background of the GPUI application inside the frame,
-   not this site's surface, so the frame does not flash a different colour
-   while the WASM loads. An external surface is the one place the guides allow
-   a raw value. */
+/* The pair below matches the background of the GPUI application inside the
+   frame, not this site's surface, so the frame does not flash a different
+   colour while the WASM loads. An external surface is the one place the guides
+   allow a raw value. */
 .component-example--component iframe {
   background: white;
 }
@@ -580,8 +582,12 @@ html[lang^="ja"] .example-prompt {
   background: #0e0e0e;
 }
 
+/* The Slint and iced galleries paint their page's own theme, so their frame
+   follows the palette rather than the light or dark pair above. */
 .component-example--component iframe.component-example__frame--slint,
-.dark .component-example--component iframe.component-example__frame--slint {
+.component-example--component iframe.component-example__frame--iced,
+.dark .component-example--component iframe.component-example__frame--slint,
+.dark .component-example--component iframe.component-example__frame--iced {
   background: var(--background);
 }
 
@@ -1249,7 +1255,6 @@ html[lang^="ja"] .example-prompt {
   text-decoration-thickness: 2px;
 }
 
-
 /* ====================================================================
    Nav bar (docs layout)
    ==================================================================== */
@@ -1598,15 +1603,38 @@ html.dark .site-nav__logo--dark {
   opacity: 0.8;
 }
 
-html:not([data-framework="gpui"]) .sidebar-item__count[data-framework-count='gpui'],
-html[data-framework="gpui"] .sidebar-item__count[data-framework-count='slint'] {
+html:not([data-framework="gpui"])
+  .sidebar-item__count[data-framework-count="gpui"],
+html:not([data-framework="slint"])
+  .sidebar-item__count[data-framework-count="slint"],
+html:not([data-framework="iced"])
+  .sidebar-item__count[data-framework-count="iced"] {
+  display: none;
+}
+
+/* A sidebar row names the frameworks its page has a view in, space separated.
+   A page with no iced view is not in the iced sidebar, the way a page with no
+   Slint view was not in the Slint one — and the framework switch sends the
+   reader to the catalog instead of a page with nothing to show. The row goes
+   only when the framework in force is the one missing from its list, so the
+   test is on the active framework and `~=` matches one name in the list. */
+html[data-framework="gpui"]
+  .docs-sidebar
+  [data-framework-available]:not([data-framework-available~="gpui"]),
+html[data-framework="slint"]
+  .docs-sidebar
+  [data-framework-available]:not([data-framework-available~="slint"]),
+html[data-framework="iced"]
+  .docs-sidebar
+  [data-framework-available]:not([data-framework-available~="iced"]) {
   display: none;
 }
 
 /* The navbar hides a framework-scoped link the same way the sidebar hides a
    framework-scoped count. */
-html:not([data-framework="gpui"]) .site-nav__link[data-framework-link='gpui'],
-html[data-framework="gpui"] .site-nav__link[data-framework-link='slint'] {
+html:not([data-framework="gpui"]) .site-nav__link[data-framework-link="gpui"],
+html:not([data-framework="slint"]) .site-nav__link[data-framework-link="slint"],
+html:not([data-framework="iced"]) .site-nav__link[data-framework-link="iced"] {
   display: none;
 }
 
@@ -1710,53 +1738,116 @@ html[lang^="ja"] .sidebar-subgroup-title {
   text-transform: uppercase;
 }
 
-/* A rail down the list gives the entries a shared edge and somewhere for the
-   current one to be marked — the segment lights up in place rather than the
-   text colour changing alone, so the reader's position is visible without
-   reading the labels. */
-.toc ul {
+/* The outline's own rule is a single SVG rail that snakes through the
+   indentation levels, with a dot gliding along it to the current entry and the
+   traveled portion darkening behind it. The rail replaces the list border, so
+   the list draws none. */
+.toc--animated .toc__body {
+  position: relative;
+  display: flex;
+}
+
+/* The rail shares the list's origin rather than sitting beside it in a flex
+   column: reserving its width would spend the column's measure on the deepest
+   indent, which left an `h4` row about forty pixels of text. Overlaid, the
+   rail keeps its own coordinates and the entries keep the column. */
+.toc--animated .toc__rail-svg {
+  position: absolute;
+  top: 0;
+  left: 0;
+  pointer-events: none;
+}
+
+.toc--animated .toc__rail,
+.toc--animated .toc__rail-traveled {
+  fill: none;
+  stroke-width: 2;
+  stroke-linecap: round;
+}
+
+.toc--animated .toc__rail {
+  stroke: var(--border);
+}
+
+.toc--animated .toc__rail-traveled {
+  stroke: color-mix(in srgb, var(--foreground) 60%, transparent);
+}
+
+.toc--animated .toc__dot {
+  fill: var(--foreground);
+}
+
+.toc--animated .toc__list {
+  flex: 1;
+  min-width: 0;
   margin: 0;
   padding: 0;
-  border-left: 1px solid var(--border);
+  border-left: 0;
   list-style: none;
 }
 
-/* Installation and Live Example sit above the heading list. The gap is the
-   seam between that pair and the rest of the outline. */
-.toc__item--pin + .toc__item:not(.toc__item--pin) {
-  margin-top: 0.65rem;
-}
-
-.toc__item a {
-  display: block;
-  margin-left: -1px;
-  padding: 0.2rem 0 0.2rem 0.75rem;
-  border-left: 1px solid transparent;
+.toc--animated .toc__entry {
+  display: flex;
+  align-items: center;
+  height: 100%;
+  cursor: pointer;
   color: var(--muted-foreground);
-  line-height: 1.4;
+  font-size: 0.8125rem;
+  line-height: 1.3;
   text-decoration: none;
-  transition:
-    color 140ms ease,
-    border-color 140ms ease;
+  transition: color 300ms ease;
 }
 
-.toc__item a:hover {
-  border-left-color: var(--border-hover);
+.toc--animated .toc__entry:hover {
+  color: color-mix(in srgb, var(--foreground) 80%, transparent);
+}
+
+/* The 390px column holds the outline's longest names — the trailing "See this
+   component in other frameworks" and the prose `h2`s a component page nests
+   under Usage ("Virtualization, accessibility, and application boundaries").
+   A name longer than the column truncates inside its row instead of wrapping:
+   the rows are a fixed 28px, so a second line would spill into the next row
+   rather than growing it. `white-space: nowrap` is what keeps it to one line,
+   and the ellipsis is the visual mark; the full name stays in the DOM as the
+   link's text, with the `title` attribute carrying it as the recovery path the
+   guides require for a truncating label. */
+.toc--animated .toc__entry-label {
+  min-width: 0;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  margin-left: 5px;
+}
+
+/* The outline's structure reads from the label weight alone: a top-level
+   entry is heavier than its children, whether or not either is current. */
+.toc--animated .toc__entry--top {
+  font-weight: 800;
+}
+
+.toc--animated .toc__entry--child {
+  font-weight: 400;
+}
+
+/* A synthesised Usage category names a region, it does not link to a heading,
+   so it keeps the default cursor rather than promising a jump it cannot make. */
+.toc--animated .toc__entry--category {
+  cursor: default;
+}
+
+/* The dot and the rail mark the current entry as well; the label keeps a
+   second, non-colour cue so the position survives a monochrome reading. Its
+   own weight sits above both levels, so "where I am" stays legible apart from
+   "this is top-level". */
+.toc--animated .toc__entry--active {
   color: var(--foreground);
+  font-weight: 700;
 }
 
-.toc__item a.is-current {
-  border-left-color: var(--brand);
-  color: var(--brand);
-}
-
-.toc__item--sub a {
-  padding-left: 1.5rem;
-  font-size: 0.78rem;
-}
-
-/* Below this the three columns stop fitting inside the content box. */
-@media (max-width: 1180px) {
+/* The hide point tracks the layout cap: at 1370 the three columns still fit, so
+   the rail only gives up its place once the content box can no longer pay for
+   it. Below this the article keeps its measure instead. */
+@media (max-width: 1370px) {
   .toc {
     display: none;
   }
@@ -1849,7 +1940,9 @@ html[lang^="ja"] .sidebar-subgroup-title {
   width: 1rem;
   height: 1rem;
 }
-#theme-palette { display: none; }
+#theme-palette {
+  display: none;
+}
 #theme-palette[open] {
   display: flex;
   flex-direction: column;
@@ -1884,10 +1977,20 @@ html[lang^="ja"] .sidebar-subgroup-title {
   color: var(--foreground);
   font: inherit;
 }
-.theme-palette__search input::placeholder { color: var(--muted-foreground); }
-.theme-palette__search:focus-within > svg { color: var(--foreground); }
-.theme-palette__list { min-height: 0; overflow-y: auto; padding: 0.5rem; }
-.theme-palette__group[hidden] { display: none; }
+.theme-palette__search input::placeholder {
+  color: var(--muted-foreground);
+}
+.theme-palette__search:focus-within > svg {
+  color: var(--foreground);
+}
+.theme-palette__list {
+  min-height: 0;
+  overflow-y: auto;
+  padding: 0.5rem;
+}
+.theme-palette__group[hidden] {
+  display: none;
+}
 .theme-palette__heading {
   padding: 0.45rem 0.375rem;
   color: var(--muted-foreground);
@@ -1917,11 +2020,18 @@ html[lang^="ja"] .sidebar-subgroup-title {
   text-align: left;
   cursor: pointer;
 }
-.theme-palette__option[hidden], .theme-palette__empty[hidden] { display: none; }
+.theme-palette__option[hidden],
+.theme-palette__empty[hidden] {
+  display: none;
+}
 /* Hover and selection mark the tile at its edge. Repainting the fill would hide
    the very colours the tile exists to show. */
 .theme-palette__option:hover:not([aria-selected="true"]) {
-  border-color: color-mix(in srgb, var(--tile-ink, var(--foreground)) 45%, transparent);
+  border-color: color-mix(
+    in srgb,
+    var(--tile-ink, var(--foreground)) 45%,
+    transparent
+  );
 }
 .theme-palette__option[aria-selected="true"],
 .theme-palette__option[data-current="true"] {
@@ -1939,23 +2049,47 @@ html[lang^="ja"] .sidebar-subgroup-title {
   /* The one hairline lives on the band, not on each segment: a per-segment ring
      tints every colour, and at this height its top and bottom edges cover a
      quarter of the band. */
-  box-shadow: 0 0 0 0.5px color-mix(in srgb, var(--tile-ink, var(--foreground)) 16%, transparent);
+  box-shadow: 0 0 0 0.5px
+    color-mix(in srgb, var(--tile-ink, var(--foreground)) 16%, transparent);
 }
 .theme-palette__swatch {
   flex: 1 1 0;
   min-width: 0;
 }
-.theme-palette__row { display: flex; align-items: center; gap: 0.375rem; }
-.theme-palette__name { flex: 1; min-width: 0; font-size: 0.8125rem; font-weight: 500; }
-.theme-palette__check { flex: none; color: var(--ring); visibility: hidden; }
-.theme-palette__option[data-current="true"] .theme-palette__check { visibility: visible; }
-.theme-palette__empty { margin: 1.5rem; color: var(--muted-foreground); text-align: center; }
+.theme-palette__row {
+  display: flex;
+  align-items: center;
+  gap: 0.375rem;
+}
+.theme-palette__name {
+  flex: 1;
+  min-width: 0;
+  font-size: 0.8125rem;
+  font-weight: 500;
+}
+.theme-palette__check {
+  flex: none;
+  color: var(--ring);
+  visibility: hidden;
+}
+.theme-palette__option[data-current="true"] .theme-palette__check {
+  visibility: visible;
+}
+.theme-palette__empty {
+  margin: 1.5rem;
+  color: var(--muted-foreground);
+  text-align: center;
+}
 
 @media (max-width: 720px) {
-  .theme-palette__options { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .theme-palette__options {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
 }
 @media (max-width: 460px) {
-  .theme-palette__options { grid-template-columns: minmax(0, 1fr); }
+  .theme-palette__options {
+    grid-template-columns: minmax(0, 1fr);
+  }
 }
 
 /* ====================================================================
@@ -2058,8 +2192,7 @@ html[lang^="ja"] .sidebar-subgroup-title {
    labels apart — `文档`, `本页内容` — because Chinese has no case for the
    uppercase to act on, leaving only the extra space. The Vue components already
    narrow their own kickers this way. */
-html[lang^="zh"]
-  :is(.toc__label, .doc-pager__label, .component-example__label),
+html[lang^="zh"] :is(.toc__label, .doc-pager__label, .component-example__label),
 html[lang^="ja"]
   :is(.toc__label, .doc-pager__label, .component-example__label) {
   letter-spacing: 0.05em;
@@ -2279,6 +2412,12 @@ html:not([data-framework="gpui"])
   object-fit: contain;
 }
 
+.framework-switch__logo--pnpm {
+  width: 1.15rem;
+  height: 0.85rem;
+  object-fit: contain;
+}
+
 html.dark .framework-switch__logo-accent {
   fill: #419cff;
 }
@@ -2299,30 +2438,50 @@ html:not([data-framework="gpui"])
   position: relative;
 }
 
-.framework-code__panel[data-framework-panel="slint"],
-html:not([data-framework="gpui"])
-  .framework-code__panel[data-framework-panel="gpui"] {
+/* A code block shows the panel of the framework in force, and only that one.
+   Everything is hidden first and the active panel is shown, so a third
+   framework is one line per block rather than a pair with each of the others. */
+.framework-code__panel[data-framework-panel] {
   display: none;
 }
 
-html:not([data-framework="gpui"])
-  .framework-code__panel[data-framework-panel="slint"] {
+html[data-framework="gpui"] .framework-code__panel[data-framework-panel="gpui"],
+html[data-framework="slint"]
+  .framework-code__panel[data-framework-panel="slint"],
+html[data-framework="iced"]
+  .framework-code__panel[data-framework-panel="iced"] {
   display: block;
 }
 
+/* A section, or a block, that only one framework has is hidden from the
+   others. Keyed on the framework that owns it, so it stays a single value. */
+/* The other direction: a section with no sample for the framework the reader has
+   chosen is left out rather than shown with a note saying it is missing. */
+html[data-framework="gpui"] [data-framework-missing~="gpui"],
+html[data-framework="slint"] [data-framework-missing~="slint"],
+html[data-framework="iced"] [data-framework-missing~="iced"] {
+  /* `!important`, because the group carries its own `display` a few rules down
+     and a section that is left out has to stay left out. */
+  display: none !important;
+}
+
+html[data-framework="gpui"] [data-framework-missing~="gpui"],
+html[data-framework="slint"] [data-framework-missing~="slint"],
+html[data-framework="iced"] [data-framework-missing~="iced"],
 html:not([data-framework="gpui"]) [data-framework-only="gpui"],
-html[data-framework="gpui"] [data-framework-only="slint"] {
+html:not([data-framework="slint"]) [data-framework-only="slint"],
+html:not([data-framework="iced"]) [data-framework-only="iced"] {
   display: none;
 }
 
-.framework-api__panel[data-framework-panel="slint"],
-html:not([data-framework="gpui"])
-  .framework-api__panel[data-framework-panel="gpui"] {
+.framework-api__panel[data-framework-panel] {
   display: none;
 }
 
-html:not([data-framework="gpui"])
-  .framework-api__panel[data-framework-panel="slint"] {
+html[data-framework="gpui"] .framework-api__panel[data-framework-panel="gpui"],
+html[data-framework="slint"]
+  .framework-api__panel[data-framework-panel="slint"],
+html[data-framework="iced"] .framework-api__panel[data-framework-panel="iced"] {
   display: block;
 }
 
@@ -3068,9 +3227,23 @@ html:not([data-framework="gpui"])
   gap: 1rem;
 }
 
+/* The copy is the row's centre, not a flex item squeezed between two clusters of
+   different widths: three tracks keep its midpoint on the container's midline
+   whatever the socials and the back-to-top button measure. The side tracks stay
+   `1fr`, so neither cluster's width decides where the middle lands. */
 @media (min-width: 768px) {
   .kit-footer__bottom {
-    flex-direction: row;
+    display: grid;
+    grid-template-columns: 1fr auto 1fr;
+    justify-content: normal;
+  }
+
+  .kit-footer__socials {
+    justify-self: start;
+  }
+
+  .kit-footer__top-btn {
+    justify-self: end;
   }
 }
 

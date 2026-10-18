@@ -1,0 +1,78 @@
+[package]
+name = "iced-component"
+description = "Hand-written iced versions of the uni-kit component catalog, and the gallery the website embeds."
+version = "0.1.0"
+license = "Apache-2.0"
+publish = false
+edition = "2024"
+
+# Not a member of the GPUI Kit workspace: iced keeps its own lockfile, and the
+# components are source an application copies rather than a crate it depends on.
+[workspace]
+
+[lib]
+name = "iced_component"
+path = "src/lib.rs"
+# `rlib` is what the examples and the native gallery link against; `cdylib` is what
+# the browser gallery is: the same dispatcher, compiled to a wasm module.
+crate-type = ["cdylib", "rlib"]
+
+[[bin]]
+name = "iced-gallery"
+path = "src/main.rs"
+
+[dependencies]
+# The version every component is written against, pinned to the minor release.
+#
+# The features are the ones the components draw with and none are in iced's
+# defaults; `advanced` is what opens the core traits `text_view` implements. A
+# plain `cargo add iced` installs a component that does not compile, so the CLI
+# prints this exact line — `registry/index.js` and this file are kept in step by
+# `crates/iced-component/scripts/check.sh`.
+iced = { version = "0.14", features = ["svg", "canvas", "image-without-codecs", "qr_code", "markdown", "advanced", "webgl", "fira-sans", "advanced-shaping"] }
+# `fira-sans` embeds a font. A browser gives a canvas no system fonts, so a wasm
+# build with no font of its own draws every label as nothing — the shapes appear
+# and the words do not. Native builds take the system font and ignore this.
+#
+# `text_view` is the one component that needs a second crate: it implements
+# `Widget` itself, and iced exposes that trait only through `iced_core`. The CLI
+# learns which components these are from `registry/build-manifest.mjs`, which
+# reads the sources rather than trusting a list kept by hand.
+iced_core = "0.14"
+# The `image` demo shows real files rather than generated pixels, and iced's
+# `image-without-codecs` feature ships no decoder. Naming the `image` crate here
+# with only the two codecs a browser raster needs turns iced's decoder on by
+# feature unification without pulling the default set — AVIF and `rav1e` — that
+# fails a `wasm32` build. No component uses it; the demo is the consumer.
+image = { version = "0.25", default-features = false, features = ["jpeg", "png"] }
+
+[target.'cfg(target_arch = "wasm32")'.dependencies]
+# The browser entry point in `src/wasm.rs`. iced brings its own web backend, but
+# the page has to be able to call into the module, and that is wasm-bindgen's job.
+wasm-bindgen = "0.2"
+# The image demo's one online source is fetched with the browser's own `fetch`
+# and decoded once it arrives, so the wasm face needs the JS promise bridge.
+wasm-bindgen-futures = "0.4"
+js-sys = "0.3"
+# The bridge posts the clicked sample to the page that embeds the gallery, which
+# is a `postMessage` on the parent window, so the gallery needs the browser
+# bindings the way the Slint and GPUI galleries do. The palette read in
+# `src/wasm.rs` also needs the parent document and its computed theme tokens —
+# the same read the Slint gallery makes. Native builds do not compile this at
+# all. `Response` is what the image demo's fetch answers with.
+web-sys = { version = "0.3", features = ["CssStyleDeclaration", "Document", "DomTokenList", "Element", "Location", "Response", "Window"] }
+
+[profile.release]
+# The browser has to compile this module before it shows anything, so the profile
+# prefers small, single-unit code over build convenience.
+opt-level = "s"
+lto = "thin"
+codegen-units = 1
+panic = "abort"
+strip = "symbols"
+
+[profile.dev]
+# Debug info for the gallery's generated component tree is the largest thing rustc
+# builds, and the default needs more memory than the CI container has.
+debug = false
+incremental = false

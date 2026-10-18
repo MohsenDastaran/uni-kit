@@ -161,6 +161,7 @@ function usage() {
   console.log('Usage: uni-kit add <framework> <component...> [--dir <path>]');
   console.log('Examples:');
   console.log('  npx uni-kit add slint alert-dialog');
+  console.log('  npx uni-kit add iced button');
   console.log('  npx uni-kit add gpui sidebar');
   console.log('  npx uni-kit add egui alert-dialog');
   console.log('  npx uni-kit add quickgui button');
@@ -169,8 +170,67 @@ function usage() {
   console.log('share are written once:');
   console.log('  npx uni-kit add slint sidebar card button table');
   console.log('');
-  console.log('GPUI blocks compose the controls that ship in the gpui-kit crate:');
+  console.log('iced and Slint components are source the app owns; the GPUI blocks');
+  console.log('compose controls that ship in the gpui-kit crate:');
   console.log('  npx uni-kit add gpui sidebar dock settings');
+}
+
+// An iced component compiles against iced itself and nothing else. Slint needs
+// its include path, GPUI needs its crate; iced needs one dependency line, and
+// saying so is the whole of its framework-specific step.
+//
+// The features are the ones the components draw with, and none of them are in
+// iced's defaults: a plain `cargo add iced` would install a component that does
+// not compile. They are kept in step with `crates/iced-component/Cargo.toml`,
+// which `crates/iced-component/scripts/check.sh` verifies.
+const ICED_FEATURES = ['svg', 'canvas', 'image-without-codecs', 'qr_code', 'markdown', 'advanced', 'webgl', 'fira-sans', 'advanced-shaping'];
+
+// iced is not always the whole story. A component that implements `Widget`
+// directly reaches for `iced_core`, which iced re-exports only behind its
+// `advanced` feature, so an application installing that component needs the
+// crate named too. Which components those are, and at which version, comes from
+// the generated manifest — read out of the component sources and the crate's own
+// Cargo.toml by `registry/build-manifest.mjs`, which fails rather than record a
+// version that is not declared there. The hint therefore cannot drift from the
+// crate it is describing.
+function ensureIcedDependency(components = [], frameworkConfig = {}) {
+  const cargo = path.join(process.cwd(), 'Cargo.toml');
+  const text = fs.existsSync(cargo) ? fs.readFileSync(cargo, 'utf8') : null;
+  const wanted = `iced = { version = "0.14", features = [${ICED_FEATURES.map((f) => `"${f}"`).join(', ')}] }`;
+
+  if (text === null) {
+    console.log(`  Add the framework the components are written against: ${wanted}`);
+  } else {
+    const line = text.match(/^\s*iced\s*=.*$/m)?.[0];
+    if (!line) {
+      console.log(`  Add the framework the components are written against: ${wanted}`);
+    } else if (!ICED_FEATURES.every((feature) => line.includes(`"${feature}"`))) {
+      console.log(`  Add the features the components draw with: ${wanted}`);
+    }
+  }
+
+  // Asked per component and reported per crate, so naming four components that
+  // share a need produces one line rather than four, and the line names which of
+  // them brought the need.
+  const extra = new Map();
+  for (const component of components) {
+    for (const crate of frameworkConfig.needs_extra?.[component] ?? []) {
+      if (!extra.has(crate)) extra.set(crate, []);
+      extra.get(crate).push(component);
+    }
+  }
+  for (const [crate, owners] of extra) {
+    const version = frameworkConfig.extra_versions?.[crate];
+    if (version === undefined) {
+      throw new Error(`the registry does not say which version of ${crate} to install`);
+    }
+    const declared = text === null ? false : new RegExp(`^\\s*${crate}\\s*=`, 'm').test(text);
+    if (!declared) {
+      console.log(
+        `  ${owners.join(', ')} implements the widget trait directly, so it also needs: ${crate} = "${version}"`,
+      );
+    }
+  }
 }
 
 async function main() {
@@ -282,6 +342,7 @@ async function main() {
   }
 
   if (framework === 'slint') ensureSlintIncludePath(baseTargetDir);
+  if (framework === 'iced') ensureIcedDependency(components, frameworkConfig);
 
   // The `pub mod` line only makes the file reachable from the directory's own
   // module; the crate still has to declare that module, and nothing else will

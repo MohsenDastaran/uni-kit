@@ -14,7 +14,7 @@ import HomeTimeline from "./HomeTimeline.vue";
 
 const props = defineProps<{
     componentCount: number;
-    frameworkCount: number;
+    exampleCount: number;
     base: string;
 }>();
 
@@ -67,8 +67,10 @@ const copy = {
 
     componentsAction: "Browse components",
     baseAction: "Browse components",
-    signalComponents: "components across",
-    signalFrameworks: "frameworks",
+    signalComponent: "component",
+    signalComponents: "components",
+    signalExample: "example",
+    signalExamples: "examples",
     signalLicense: "Apache-2.0",
     signalPlatforms: "macOS, Windows, Linux",
     capsKicker: "Capabilities",
@@ -159,7 +161,7 @@ const copy = {
             :components-href="componentsHref"
             :starter-href="starterHref"
             :component-count="componentCount"
-            :framework-count="frameworkCount"
+            :example-count="exampleCount"
             :install-command="installCommand"
         />
 

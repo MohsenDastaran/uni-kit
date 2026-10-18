@@ -14,9 +14,9 @@ The site is already Astro at [https://gpui-kit.com](https://gpui-kit.com) (`webs
 - [x] 4. Framework selector on the website
 - [x] 5. Write Slint components (one per GPUI component)
 - [x] 6. Slint usage, main controls first
-- [ ] 7. Add blocks (Login, Dashboard, Settings)
-- [ ] 8. Starter templates
-- [ ] 9. Deploy & launch
+- [x] 7. Add blocks (Login, Dashboard, Settings)
+- [x] 8. Starter templates
+- [x] 9. Deploy & launch
 
 ---
 
@@ -282,6 +282,1294 @@ The repository is already public and Apache-2.0. The site is already at [https:/
 
 ---
 
+## iced
+
+The first toolkit after Slint, in progress. The plan, the conventions and the
+checklist are in [iced-integration.md](iced-integration.md), and the components
+are written against **iced 0.14** in `crates/iced-component`. Coverage is
+whatever `crates/iced-component/scripts/status.mjs` prints; it is generated from
+the tree rather than written down here, so it cannot go stale.
+
+An iced component is Rust source: it arrives in `src/components/` with the theme
+it reads, and the install says `cargo add iced` instead of touching a build
+script.
+
+### The gallery
+
+One module answers for every component — `?story=<registry key>` — and the demos
+live in the library, at `src/demos/<story>.rs`, so the example binary and the
+browser gallery run the same application rather than two copies that drift.
+
+```bash
+make dev:website-iced        # build the module, then serve the site
+make build:wasm-iced         # the release module
+make -C crates/iced-component build-page   # the page and the sources alone
+```
+
+The site serves it at `/iced-gallery`, in the release workflow as well. The page
+is static — no bundler, and the only generated part is wasm-bindgen's glue — and
+it is built **release**: a debug iced module is 90 MB against 7.8 MB. Rendering
+needs WebGPU or WebGL2, and the page says so when a browser offers neither.
+
+### A sample per section, like Slint
+
+The Slint button page is ten outlined sections. The iced one is the same ten:
+variants, outline, sizes, icons and states, button group, progress, dropdown,
+custom size, custom colour, icon only — drawn from the same icon set the Slint
+example names (`crates/slint-component/ui/icons`), with the two differences iced
+cannot draw stated in the module: a `suffix-icon` (iced's button carries one icon,
+before the label) and a squared `ButtonGroup` join (every button rounds its own
+corners).
+
+**Done when every component's demo has the sections its Slint example has.**
+Button is the first; the others are one section each.
+
+- [x] Button — the ten Slint sections
+
+#### The process, to repeat for every component
+
+1. **Read the Slint example**, `crates/slint-component/ui/examples/<name>.slint`.
+   Every `GroupBox` is one section, in order. That list is the target.
+2. **Port each section** into `src/demos/<name>.rs`, in the same order, and mark it:
+
+   ```rust
+   // section: Variants
+   let variants = column![ … ];
+   ```
+
+   The markers are a contract, not comments — the website reads them, which is
+   what keeps the page's code and the running code the same file. Close the last
+   section with `// section: end`, or the lines that assemble the gallery (the
+   status line among them) are shown as part of it.
+
+3. **Give each section a heading.** `heading(app, index, title)` draws the title
+   and the 28px code box, and posts through `crate::bridge`:
+
+   ```json
+   { "source": "gpui-kit", "index": 0, "title": "Variants" }
+   ```
+
+   the same payload and the same tag the Slint and GPUI galleries post. Indexes
+   count from zero, in the order the sections appear. Both the title and the icon
+   are the button, as in Slint's `SourceHeading`, and the icon is the same box:
+   `primary` at 0.12 with a 0.35 border, 0.22/0.55 on hover, 0.34/0.7 pressed.
+
+4. **Run it natively first** — `cargo build --examples`, then
+   `cargo run --bin iced-gallery -- <name>` — before building any wasm.
+5. **Build**: `make -C crates/iced-component build-page` for the page alone,
+   `make build:wasm-iced` for the module, `make dev:website-iced` for both and the
+   site.
+
+#### Where button stands
+
+**Done, both sides.** The gallery has its ten sections, ten headings, the bridge
+and the markers; the page carries an iced panel per section, holding the same Rust
+the gallery runs — `let variants = column![ … ]` under "Variants". `FRAMEWORKS` in
+`rehype-framework-code` is `gpui`, `slint`, `iced`, and the grouping takes any
+number of them: the first block of a run opens the control and a framework that
+has not spoken yet joins it.
+
+Four things cost time and are worth knowing before the next component:
+
+- **A framework needs a language Shiki can name.** The iced samples are
+  `lang: 'iced'`, aliased to `rust` in `src/lib/markdown.js` for the highlighter.
+  A `data-*` property set on a code node does **not** survive the trip to HTML,
+  which is why the first attempt put every iced sample in the GPUI panel; the
+  language does.
+- **`data-*` properties are camel-cased** on the way into hast, so
+  `data-gallery-framework` is read as `dataGalleryFramework`.
+- **A framework in `FRAMEWORKS` needs everything the switch asks for**, and
+  `toggle-logos.js` had no iced mark, so `logo.viewBox` threw and 78 component
+  pages came out as error pages. `logoElement` returns nothing for a framework
+  without a mark now, and the switch skips it — an official iced mark can be added
+  to `toggleLogos` whenever one is sourced.
+- **A wasm build needs a font, and font fallback.** A browser gives a canvas no
+  system fonts, so `fira-sans` is in the feature list — crate and install hint
+  together, about 0.4 MB in the module. It is not enough on its own: that feature
+  embeds Fira Sans **Regular**, and the components ask for `Weight::Medium` and
+  `Weight::Semibold` in seventeen places, which then match no face and draw
+  nothing at all — shapes and icons appeared, every word was missing. Enabling
+  `advanced-shaping` is what fixes it: it turns on font fallback, so a weight with
+  no face of its own resolves against the one that is embedded. Both features,
+  together, are the difference between a gallery with labels and a gallery
+  without.
+
+### The plan: the major components first
+
+Button is done end to end, so it is the template rather than the exception: what it
+proves is the **route** — a section per example, the markers, the bridge, the page
+panel cut from the same file, the tokens. Everything below walks that route again,
+in an order chosen so each component can be built out of what is already finished.
+`input` is first because half the catalog is a field of some kind.
+
+An `[x]` here means the component satisfies the checklist at the end of this section,
+the appearance check included; a component that exists but has not been looked at in
+both themes is named plainly rather than ticked.
+
+**The field family, and the one layout piece everything needs**
+
+- [x] `input` — the base: value and placeholder, disabled, invalid, the size ladder,
+      prefix and suffix slots. `textarea`, `number-input`, `otp-input`, `combobox`,
+      `select` and `date-picker` are built on it, which is why it is first.
+- [x] `label` — done. Its demo had no `// section:` markers at all, so no iced sample
+  could be cut from it and no card could scroll anywhere: the affordance was added
+  with it, and the card-to-sample path is verified in a real browser.
+- [x] `scrollable` — the styled scroll area that `table`, `list` and dialog bodies
+      need. Cheap, and unblocks three later components.
+- [x] `textarea`, `number-input`, `otp-input` — the field, once, in three shapes.
+
+**The overlay family**
+
+- [x] `popover` — the positioning layer the rest of this family sits in, built on
+      iced's own overlay mechanism (`Widget::overlay` → `overlay::Element`, the route
+      `pick_list` and `combo_box` take) rather than a fake-positioned `stack!`. Click
+      opens, outside-click and Escape close — verified by clip-region hash, with the
+      three states byte-identical around the open one, and the dark panel surface read
+      after a fix: its style had been resolved at view-build time from light tokens,
+      so the dark panel was white with near-white content. `panel`/`panel_container`
+      take `impl Fn(&Theme) -> PanelStyle` now, which is the shape the family inherits.
+      Two traps are written into the comments: the runtime builds a widget's overlay
+      twice per frame, so the panel must be borrowed and not taken, and its sub-tree
+      must be reconciled in `overlay` or nothing paints.
+- [x] `tooltip` — done, on iced's own hover state machine (`Idle`/`Hovered`/`Open`, a
+      delayed redraw) with placement, flip and arrow from `popover::Placed`. Verified by
+      measurement rather than by assertion: the 28px trigger was found by sweeping, the
+      label is **unchanged at 150 ms and open at 1450 ms**, leaving returns the clip hash
+      to the closed one byte for byte, and cancellation holds — a pointer resting 200 ms
+      or 350 ms never opens it while 1200 ms does. A preferred-top panel draws above and
+      a preferred-bottom one below, and in a 290px-high viewport that bottom one
+      **flips above**. The arrow's stepped triangle was measured at all three positions
+      (row widths 1,1,3,3,5,5,7 with centroids at start/centre/end). The dark label
+      surface is `#f8f8f8` on `#080808` — **19.5:1**, not the white-on-white it could
+      have been — and two code icons were clicked to confirm the page scrolls to their
+      own samples. Two defects it found are fixed, both by measurement: the arrow's taper was
+      **inverted** against `Arrow::draw`'s own doc, so an above-panel arrow pointed up
+      into the surface — `abdfb567` now draws it widest where it meets the panel and
+      narrowing to the trigger (`8,6,6,4,4,2,2` at Start, `7,7,5,5,3,3,1,1` at Centre
+      and End, against `1,1,3,3,5,5,7` before), and renamed `Facing::tip` to
+      `Facing::base` with a comment saying the sign is the taper, because that is the
+      kind of sign that inverts silently. A demo comment claiming the first card was
+      the flip test was wrong — it was measured drawing above at both viewports, and
+      the flip is the Underline trigger in a 290px window — corrected in `9fa19e5f`.
+      Left/right placements and the native window are unverified; no demo uses them.
+      - [x] `menu`, `dropdown_button` — done, one item shape between them (the shape `select`
+      composes). Two defects were found by looking rather than reading: the surface was
+      drawn **twice** — `Menu::into_element` added one and every caller added another —
+      so the menu now returns only its body and exactly one container owns the surface,
+      a rule stated in five places; and `build_separator` was **never called**, so a
+      separator painted a blank 32px row instead of Slint's 9px band and 1px rule (the
+      panel was 167px, it is 145px). The shortcut glyphs were settled by parsing the
+      embedded face's cmap rather than guessing: `⇧` and `⌫` are present, `⌘` and `⌥`
+      are not, so `⌘N` was painting as `N`, and the demos spell `Cmd`/`Alt` with the rule
+      on `Menu::shortcut`. Verified by measurement: every actionable row hovers to the
+      accent in both themes (clip hashes per row), selected and highlighted are
+      distinguishable, Escape and outside-click return the closed hash exactly, keyboard
+      traversal still skips the separator, and the dropdown's label half runs its action
+      while only the caret opens the menu. Two things are named and left: the dropdown's
+      default width is 240px against Slint's 280px, so a long label wraps where Slint
+      elides — iced 0.14 has no ellipsis — and `demos/kbd.rs` still writes `⌘` in the
+      same face, which renders as a bare letter. The hover highlight also clears on a **direct jump**
+      out of the panel now: `Panel::update` forwarded events only `if inside`, so a
+      one-event exit never reached a row's `on_exit` and the accent stuck — a fast flick
+      left it behind. It always forwards now, as iced's own overlay does with its list,
+      and each widget guards its own `cursor.is_over`. Five commits, one per file, and
+      the shared popover change was re-checked against the tooltip, whose closed hash
+      returned byte-identical. `dropdown_button` still has no leave path of its own, so
+      its caller cannot clear a hover through the new report. The deferred consolidation now has a concrete
+      instance: `message_scroller.rs` carries its own private `BubbleVariant`/`RowStyle` copy of
+      the bubble surface, and `bubble.rs` is the component that should own it.
+
+#### Four legibility cases, and the one gap behind them
+
+Both are faithful to the Slint originals and both are visible defects, which is why they
+are recorded rather than quietly fixed:
+
+- The **light theme's `danger`** on the page background measures **3.76:1**, under AA for
+  12px text, and it colours every component's error line. It is parity-locked to the Slint
+  theme, which `check.sh` enforces, so raising it moves both frameworks.
+- **`message-role`'s failed state draws its initials in the fill's own colour.** `Role::ink`
+  returns `destructive`, the same value as the failed fill, so the initials disappear in
+  both themes — reproduced deliberately from `message.slint`, where the tint foreground is
+  the destructive token. The one-line fix is `destructive_foreground`.
+- **A dialog's auto close glyph is ghost ink on a primary-filled panel**, low contrast in the
+  light theme. It mirrors Slint's own ghost button on the same fill, so it is inherited
+  rather than introduced.
+- **A disabled command paints in the enabled ink.** A ghost `Button` cannot take the muted
+  disabled colour at all, so the toolbar's disabled `Publish` is drawn through the shared
+  `button::handle` with its own closure instead — worked around rather than fixed, because
+  `button.rs` belongs to another component's work. Measured: light 115 against 23 for
+  enabled ink, dark 163 against 250.
+
+Four instances now, and they are one shape: an ink or a hue chosen for one surface, used on
+another — error text, a failed marker's initials, a close glyph on a fill, a disabled label.
+The theme has no text-safe variant of these pairs, which is why each component rediscovers it,
+and why the fix is a theme decision rather than four component patches. The `check.sh`
+theme-parity step means any such change moves the Slint theme with it.
+
+A sixth pair is worth separating from those four, because it is *subtle* rather than wrong:
+**`accent` on a sidebar-like surface** is `#f5f5f5` on `#fafafa`, five levels. Two components
+have now met it — the sidebar's current row reads as "visible but subtle", and the status bar's
+pressed tint could not be read from a screenshot at all, though the press itself is proven by
+the message it sends. Same root cause, lesser severity, and the same single fix.
+
+One more trap is worth noting beside them because it bit the same component: **an SVG keeps
+its own black** unless the style closure colours it, so an un-coloured icon vanishes in the
+dark theme. The toolbar sets every icon from `button::ink` for that reason.
+
+`message-role` was also the last component missing from a framework's sidebar: the sidebar
+is built by scanning `website/component/*.md`, and it had no page — so a component that
+exists, with a working demo, was invisible in every framework's list. Its page and its
+section markers both landed in `0523e3be`, and with them the iced sidebar is complete at 45
+components. One caveat belongs with it: `html[data-framework]` defaults to `slint`, so a
+production first visit to a page whose framework list is iced-only redirects to
+`/component` — pre-existing behaviour, and message-role is the only page where it bites.
+      - [x] `select` — done, and it composes rather than re-derives: the trigger is
+      `input::Style` with the size ladder, the panel is `Popover::filled(true)` around
+      `Menu::into_element()` following menu.rs's one-surface rule, and a chosen row is
+      the item marked `checked(true)` plus `Menu::selected`. Rows are the menu's own
+      `Item`, so `select` inherits icons, shortcuts, disabled, danger and separators.
+      The size table it needed (`ControlSize::input_height`) went into `theme.rs` as its
+      **own commit first**, which is the shared-file rule applied without being asked.
+      Drove it: open, hover to the accent, arrows moving the highlight, choosing row 2
+      so the trigger reads `egui`, and Escape and an outside click returning the closed
+      frame byte for byte — in both themes, with the dark panel measured at `#171717`
+      against a `#0a0a0a` page. Two defects it found and left, both outside its files:
+      a hovered menu row's highlight does not clear when the pointer leaves (inherited
+      from `Menu` reporting on enter only), and `dropdown_button` is not counted by
+      `status.mjs` because its registry key is `dropdown-button` while the Slint
+      inventory key is `dropdown_button` — so a landed component still reads as
+      outstanding.
+- [x] `combobox` — done, and it reuses `menu::Item` rather than inventing a second item
+      shape, filtering internally while every index it reports stays into the caller's
+      own list. Composed from the field's style, the popover's single surface and the
+      menu's body, with a search row, a rule and a caller footer. Verified by driving it
+      and by installing it: typing `Sv` filters to SvelteKit, arrows step, Enter chooses
+      and clears the query, Escape closes with the query kept, and reopening the panel is
+      **byte-identical** to the escape-then-reopen frame; multi-select toggles one row
+      without closing; the footer action appends a new value. With the pointer moved
+      away, a filtered single row shows **no stray highlight** — the hover-leave fix
+      arriving where it matters. Named rather than faked: no groups or badges, pinned
+      rows, custom check glyph, trigger variants, `cleanable`, an empty element or
+      elision, and the host's arrows act on an open panel because iced 0.14 reports no
+      focus to the application.
+- [x] `date-picker` — done, the last of this family: the field's frame as the trigger,
+      the popover's single surface for the panel, and the calendar inside it. It needed
+      one shared-file extension — `Calendar::bordered(false)` — committed **alone,
+      first**, so the popover owns the panel edge and no second border appears. Verified
+      by driving it rather than reading it: paging months, picking a day so the trigger
+      reads `2026-11-10`, and Escape and an outside click each restoring the picked frame
+      **byte-identical**; a blocked weekend leaving the frame **unchanged** where the
+      Monday beside it selects; presets filling yesterday and a range; a two-click range
+      completing; and a two-month panel **flipping above** the trigger near the window
+      floor. Contrast measured at ~17.6:1 for the selected day in light and ~15.9:1 in
+      dark. The install was run too — `add iced date-picker` writes calendar, date_picker,
+      input, popover and theme, and an app using it compiles clean. Named, not faked: no
+      year grid or in-component year clamp, no arbitrary disabled-date matcher (only
+      weekends), no `cleanable`/`date_format`/`first_day_of_week`/12-hour clock, no
+      elision, and time fields use the field size ladder rather than Slint's fixed
+      height.
+
+**The form family**
+
+None of this waits on `popover`, so it can run beside the overlay family rather than
+after it. `form` is the exception and goes last, because it composes the controls
+below instead of being one.
+
+- [x] `checkbox` — done, and it carried exactly the debt suspected: no `// section:`
+      markers, so no iced sample could be cut and no card had anywhere to scroll. It
+      has nine now, one per page heading, and only **Custom Tab Order** is sample-less
+      because iced 0.14 binds **no key** for it: a widget's `update` sees every runtime
+      event, a `focusable` operation can run from a `Task` with `Outcome::Chain` chaining a
+      second in the same walk, and the whole trap is `focus_trap::tab(...)` — the
+      application routes `Tab`/`Shift+Tab` to it and that is the entire gap. Named in the
+      module docs, and implemented in `a7c3bb2a`
+      rather than faked. The appearance check then found a real bug: iced's checkbox
+      draws its checkmark whenever the box is filled and has no second glyph, so
+      `indeterminate(true)` on an unchecked box drew a **tick** where Slint draws a
+      minus. The icon slot takes `U+2212` now, from the face the mandatory `fira-sans`
+      feature embeds — the generic sans-serif resolves to no face on wasm, which is the
+      same trap that once made every label in the gallery invisible. `radio`, `switch`
+      and `toggle` follow its shape.
+- [x] `radio`, `switch`, `toggle` — done on one shared handle, as planned:
+      `button::handle(content, on_press: Option<Message>, style)` is iced's own button
+      with zero padding, a shrinking size and `on_press_maybe`, so disabled is simply
+      the absence of a message — the same rule `checkbox` follows. The three differ
+      only in what they draw and report: radio draws a disc and a dot and reports
+      `true`; switch draws a track with a sliding thumb and reports the new value;
+      toggle draws its own pressed fill and border. `RadioGroup` holds the index and
+      reports it. Verified by driving real clicks, not by reading: radio exclusivity
+      and each control toggling forward and back, in light **and** dark, by
+      clip-region hash. Their shared-file extensions were committed separately
+      (`ControlSize::control_height` in `theme.rs`, `handle` in `button.rs`) because a
+      shared file left dirty across agents is how the popover's arrow was lost.
+      Named, not faked: iced 0.14 has no subtree opacity (disabled is fill and ink),
+      no layout transition (the thumb snaps), and no focus ring or Space/Enter on a
+      bare button; `ToggleGroup` was not built.
+- [x] `slider`, `stepper` — done, and the stepper behaviour was shared rather than
+      copied: `stepper::step_index` is built on `number_input::step_value` and skips a
+      disabled step in the direction of travel, which is Slint's `step-by`; the slider's
+      arrow keys call the same function. Clamping is verified at **both** ends in both
+      themes — the slider drags to 100% and 0%, the stepper clamps to "Step 1 of 4" with
+      Previous disabled and to "Step 4 of 4" with a disabled Done — and the negative
+      cases are the good ones: dragging a disabled slider leaves the clip hash
+      **byte-identical**, and clicking a disabled step leaves its row unchanged. The
+      section titles are the Slint example's GroupBox headings rather than only the
+      page's `##` ones, which is what puts a panel under every example and matches the
+      button precedent; the author flagged the choice, and it is the right one. Two
+      things were left unverified: the scratch install for these two (the manifest
+      closure carries `number_input`, `input`, `button` and `theme`, and it compiles,
+      but it was not installed and built), and the stepper demo's arrow-key
+      subscription, which was wired and native-built but not re-driven in wasm.
+- [x] `form` — done, and it is what the plan said it would be: no control of its own,
+      but the layout, the labels, the error placement and the state tying a control to
+      its message. `LabelLayout::{Above, Beside}` covers Slint's FormField and FormRow,
+      fields carry section and separator rows, `col_span`/`col_start` place a field in a
+      grid, and the error is application state the field only places — while it is set it
+      takes the message line in `danger` and the description steps aside. Verified by
+      driving the whole cycle in both themes: submit produces the error lines, and
+      correcting the field returns the message clip **byte-identical** to its baseline.
+      The install was proven too — `add iced form` writes form, label and theme and the
+      scratch crate compiles. Two things are named rather than faked: a column span is a
+      `FillPortion` share, exact for single-column and full-width rows and proportional
+      for mixed three-column ones, and a hidden field leaves the grid rather than
+      holding an empty cell. One real finding is left for a decision rather than fixed:
+      the light theme's `danger` on the page is **3.76:1**, under AA for 12px text, but it
+      is parity-locked to the Slint theme and shared by every component's error line.
+
+**Surfaces and data**
+
+- [x] `dialog` — done, and it is deliberately **not** a `Widget::overlay`, which is what
+      the brief suggested and what the code proves wrong: iced's `overlay::Group` updates
+      every overlay in the group and does not stop on a neighbour's capture, so two open
+      overlays would each see the other's press. A modal needs the topmost layer to be the
+      only one answered, so it is a full-size in-flow layer for `Stack`, whose `update`
+      runs last-first and stops on capture — nested dialogs route correctly. Backdrop is
+      the `overlay` token, the panel is the popover's fill/edge/radius/shadow, and a press
+      on the panel asks to stay open while a press on the backdrop closes when the caller
+      allows it. Verified in proportion: one screenshot per theme with the dialog open
+      (panel set off from the dimmed page, no white-on-white), and a driven open, backdrop
+      close and Escape each returning the frame byte-identical to the closed baseline.
+      Named, not faked: no focus trap, no Escape at the layer itself (the demo binds it, as
+      date-picker's does), no scroll lock, no transition, and `content_padding` is a value
+      rather than Slint's sub-420px breakpoint.
+- [x] `sheet` — done, side-anchored and flush to its edge, covering a page the caller
+      passes in. It reuses `popover`'s `PanelStyle` and re-exports its `Placement`, and
+      names why the popover's `Placed` flip does not apply to it — a sheet is flush to its
+      edge, so it never flips. Two defects were found by **looking at the screenshot**
+      rather than by reading: `Placement::default()` is the popover's `Bottom`, so an
+      unset sheet anchored to the wrong edge until the default became `Right`; and its
+      panel draw handed the content the panel's own layout node, so only the first child
+      painted — the same trap `popover` documents, re-learned by a component that wrote
+      its own panel draw rather than reusing `popover`'s. That is a design gap worth
+      settling: there are now two implementations of "draw a panel", and one of them
+      repeated a bug the other had already paid for. Verified in proportion — a
+      screenshot per theme with the sheet open, and one driven open with a scrim click
+      returning the frame byte-identical.
+- [x] `alert-dialog` — done, and it composes `dialog` rather than inventing a third
+      mechanism, so it inherits the in-flow `Stack` layer and the dialog's stated gaps (no
+      focus trap, no Escape at the layer, no scroll lock, no transition). What it adds is
+      the confirmation surface: title and description pass-through, Cancel and confirm
+      texts, a `destructive` flag that turns the confirm button into Danger, and a centred
+      footer with Cancel first — with a press on Cancel, the backdrop or the close control
+      all reporting `false` through the composed dialog, which matches Slint's
+      `closed → cancelled`. A caller that passes no `on_open_change` gets no Cancel button
+      and nothing captured, which is documented rather than left to be discovered.
+      Verified in proportion: one screenshot per theme with the dialog open over the dimmed
+      page, and one driven open-then-Cancel returning the frame byte-identical to the
+      settled baseline in both themes — the first baseline per theme was discarded because
+      the canvas settles a one-pixel edge on the first interaction, which is the kind of
+      detail that makes a hash comparison mean something.
+- [x] `table` — done, built on the finished `scrollable`, with one type per part the
+      reference names (`Table`, `TableHead`, `TableRow`, `TableCell`, header/body/footer,
+      caption). It found the **build-time token trap** the hard way — its first dark
+      screenshot was a *white table*, because the surface was resolved from the light
+      tokens when the element was built rather than inside the style closure. That is the
+      second time a documented trap has recurred in a new component, the first being the
+      panel layout node that `sheet` re-learned, so the lesson is worth more than the fix:
+      a comment in another file does not prevent it, and the family now has two
+      implementations of "draw a surface" that each rediscovered one. Verified in
+      proportion — a screenshot per theme (header band distinct, badges legible, footer
+      present) plus scrollbar crops, and one driven interaction: the striped toggle tints
+      the rows and a second click returns the clip byte-identical. Named, not faked: no
+      minimum or preferred column width, no elision or wrap, no rounded clip, no `Styled`
+      trait (so Custom Styling has no iced panel and the module says why), the table is
+      static with no sorting, selection or keyboard, and the scrollbar cannot widen on
+      hover.
+- [x] `list`, `pagination` — done, both on the finished `scrollable`, and both needing a
+      small extension to a landed component that was committed **on its own first**: the
+      button gained a trailing icon for pagination's "Next ›". The list's rows are buttons
+      in a scroll area with hover and selected states, and pagination draws a five-wide
+      window with ellipses, first/last and prev/next, the current page a primary button and
+      the rest ghost — sitting in a horizontal scroll area so a wide run scrolls instead of
+      clipping. Verified in proportion with pixel samples rather than assertions: clicking a
+      row **moved** the selected fill from one row to another by sampled colour, and
+      clicking page 3 moved the primary fill with it while the previous arrow became
+      enabled. Dark showed no white surface anywhere, including the search field, which is
+      the trap the table had just paid for. Named, not faked: no keyboard or accessibility
+      layer, no virtual scrolling, no list sections, search or loading state — the search
+      field is the reference's mock, not a working filter — and pagination's horizontal
+      scrollbar never overflows in these demos, so it was never seen.
+- [x] `notification`, `hover-card` — done, **and both reuse `popover`'s surface rather
+      than writing a third one**, which is the first time since the popover that a
+      component inheriting this family's traps did not re-learn one: the notification
+      draws through `panel_container` and `PanelStyle::resolve` with every token resolved
+      inside the style closure, and the hover card composes the tooltip's hover machine and
+      the popover's `Placed` flip instead of writing its own. The one small extension it
+      needed — tooltip padding, for the card's 12px inset — was committed alone first. A
+      defect still turned up **by looking**: `panel_container` deliberately adds no
+      padding, so the first build had the icon flush against the card edge. Verified in
+      proportion and by hash: a notification raises and dismisses with the card clip
+      returning byte-identical in both themes, a second anchor proving the layer's
+      alignment mapping, and the hover card opening on a held hover past its delay and
+      closing on leaving, byte-identical again. Named, not faked: no entry animation or
+      auto-hide, no window-level host, no system delivery, no unique ids, four of six
+      anchors undriven, and the hover card has fixed placement, one delay and no pointer
+      events of its own.
+
+**The family is complete.** Everything the plan named — the field family, the overlay
+family, the form family and this one — is built, ticked with its gaps recorded, and
+verified in proportion. What remains is the rest of the 79 as they come, and the one piece
+of deferred work the recurrences earned: there are still two implementations of "draw a
+surface", and consolidating them is what stops a fourth component re-learning what two
+already paid for.
+
+**A component is done when all of this is true**
+
+- [ ] `src/components/<name>.rs`, tokens only — no colour written by hand
+- [ ] `src/demos/<name>.rs`, a running example with one `// section:` per example
+- [ ] `examples/<name>.rs`, a thin `main` that calls it
+- [ ] A registry entry, so `add iced <name>` installs it
+- [ ] `./scripts/check.sh` green: module lists, both cargo builds, theme parity,
+      feature agreement, the manifest
+- [ ] Every card's code icon scrolls to *its* sample, and the sample shown is the
+      source of the example that is running
+- [ ] Seen in light **and** dark, by looking at a screenshot, not by reading tokens
+- [ ] One commit per component
+
+**The GPUI original is not always under `crates/component/src`.** Three briefs named it
+wrongly, and each agent spent a search correcting them: `focus-trap` lives in
+`crates/base/src/focus_trap.rs`, and `input-group` in `crates/component/src/input/group.rs`
+rather than `input_group.rs`. Glob for the name instead of trusting a path — and note that a
+component living in `base` is a signal about what it is: a focus trap is infrastructure, which
+is also why iced has no counterpart to express it.
+
+**`check-one.sh` is superseded, and misleading.** It copies only the demo's direct imports,
+so it cannot build a *composed* component — `date_picker`, `toolbar` and `sidebar` have each
+spent a paragraph reporting it broken, and it fails for reasons that have nothing to do with
+the work. `check.sh --install` now installs all fifty-nine components through the real registry
+closure with a check that has been proven able to fail, so `check-one.sh` earns nothing and
+costs a false alarm per composed component. Delete it, or rename it to say what it is for.
+
+**The gates check the install, and the check has been shown to fail.** `check.sh --install`
+installs **every** component the manifest lists — not a hand-picked five — each into its own
+scratch crate so no sibling can be silently supplied, sharing the crate's target dir and
+feature set so iced compiles once: **57 of 57 in about 57 seconds warm**. The list is read
+from the manifest keys, so a newly registered component is covered without anyone
+remembering to add it, and a failure now prints the compiler error instead of discarding it.
+It was proven able to fail by feeding a doctored manifest through the CLI's
+`UNI_KIT_REGISTRY` override — removing `input.rs` from `command`'s entry produced
+`error[E0432]: unresolved import super::input` and 56 of 57, and restoring it produced 57 of
+57. That matters more than the coverage number: the earlier version of this check was
+vacuous for a while, and a gate nobody has seen fail is a gate nobody can trust.
+
+**`git commit --amend` sweeps whatever is staged.** One agent amended a commit to fold in a
+formatting change and carried a *sibling's* staged file into its own component commit — the shared
+index in a different disguise, and the one that looks safest because the commit is already yours.
+It caught it immediately and recovered correctly (`git reset --soft HEAD~1`, then re-cut for its own
+path, preserving the sibling's content and staged state), but the safe form in a shared tree is
+`git commit --amend -- <your path>`, or no amend at all.
+
+**A row-wide target gives its content first refusal.** iced's `MouseArea::update` updates its
+content first and bails when `shell.is_event_captured()`, so wrapping a row in a `mouse_area` answers
+only the presses the content left unhandled — it never steals an inner control's own click. The
+accordion's `header_target` and the checkbox's label fix both rest on this, and it is what makes "the
+whole row toggles" safe beside a button inside the row.
+
+The checkbox itself failed because it draws its label as a sibling column instead of passing iced a
+label slot, so the renderer's hit area stopped at the box: clicking the box worked and clicking the
+words did nothing. `radio`, `switch` and `toggle` were fine for the opposite reason — they route the
+whole row through `button::handle`.
+
+**Catching a short transition needs a small viewport.** At 1440x1200 the swiftshader renderer takes
+about 300ms a frame, so the chart's 120ms tooltip fade falls entirely between two frames and its
+mid-state cannot be captured at all; at 520x760 the same page runs near 35fps and four frames land
+inside the fade. A mid-transition frame is the only proof an animation exists, so the viewport is
+part of the instrument.
+
+Two smaller ones from the same sweep: a screenshot clip **larger than the viewport silently pads
+white**, so raise the viewport rather than the clip; and a run detector scanning the icon column must
+keep only grey runs of about 18-40px, because chart marks in that column are coloured.
+
+**`Input.insertText` never reaches iced.** Typing into an iced field over CDP needs real
+`keydown` events carrying the text (per character), not `Input.insertText` — that call is ignored, so
+the field sits unchanged and the harness looks like a broken component. The card demo's login field
+found this; the existing note about clicking and pressing `End` first still applies for placing the
+caret.
+
+**Disable smooth scrolling before verifying icon clicks.** The description-list sweep failed on
+odd indices until it emulated `prefers-reduced-motion` and waited for `scrollY` to return to 0 between
+clicks: the page animates the heading into place, so a read taken immediately after the click can
+still see the previous scroll position and look exactly like a card landing on the wrong sample. The
+alert agent's "first click after navigation is swallowed" is probably the same race seen from the
+other end. Neither is a component bug, and both cost a round.
+
+**Never `git checkout --` a path you do not own.** One agent ran `cargo fmt` on the crate, which
+reformatted a dozen sibling files, and reverted them with `git checkout --` — the same command that
+destroyed the popover's arrow extension earlier. It happened to be safe because every sibling had
+just committed, but the command does not check that. Revert only your own files, with an explicit
+path list, and tell me if a formatter or a build touches something outside your work.
+
+**Commit with a pathspec — the index is shared.** Agents work in one checkout, so anything
+one of them stages is visible to every other agent's plain `git commit`. One commit already
+swept up a sibling's staged files this way (caught and re-cut with `reset --soft` and a
+pathspec). Two rules follow: stage your own files and nobody else's, and always name the
+paths when committing — `git commit -F - -- path/a path/b` — so a commit contains what its
+message says it contains regardless of what is sitting in the index.
+
+**Verify in proportion — do not over-engineer, do not over-test.** The list above says
+what must be true, not how hard to look. In practice: one screenshot per theme, read with
+your eyes; one driven interaction where the component's whole point is interaction; and
+the component built as the honest minimum that matches the reference. Clip-hash matrices,
+coordinate sweeps and before/after triples are tools for chasing a *suspected* defect.
+They earned their place on the field and overlay families because the panel content, the
+hover exit and the tooltip delay were each wrong in a way a screenshot could not show —
+but they are not the default, and nothing should be engineered just to make it easier to
+measure.
+
+### Themes are part of done
+
+A component seen in one appearance is not finished. Three rules came out of the
+button, and everything below inherits them:
+
+- A **solid** control carries its colour in the fill and its label in the
+  **foreground**. A hue used as ink on a fill of the same hue is unreadable in the
+  dark theme, and in the light theme the same mistake hides inside a pale tint.
+- An **outlined** control needs an edge that exists in both appearances. A fixed
+  dark grey is an edge on white and nothing on near-black; a proportion of the
+  foreground is an edge in both.
+- **Hover** moves the fill *toward* the page: 90% of the fill over the background,
+  which is shadcn's `bg-primary/90`. Moving it 90% of the way toward the page made
+  the control vanish under the pointer instead.
+
+The gallery runs under `theme::iced_theme`, built from the very tokens the
+components read, so a window clears to the page's own background and a
+default-styled widget agrees with the components beside it.
+
+#### What the wasm face can and cannot draw
+
+Four separate components lost a round to the same thing, so here is the answer. On wasm
+the only embedded faces are Fira Sans Regular (`fira-sans`) and Iced Icons, so a
+symbol the regular face lacks draws **nothing at all** rather than falling back to
+anything. Parsing that face's cmap settles which marks are safe:
+
+- **Present:** `⇧` `⌫` `↑` `↓` `←` `→` `⌦` `⇪` `⏎`
+- **Absent:** `⌘` `⌥` `⌃` `↵` `⎋` `⇥` `⌤` `␣` `⎇`
+
+A shortcut written with an absent mark reads wrong instead of not at all — `⌘N` paints
+as a bare `N` — which is how the menu, kbd and tooltip demos each shipped a shortcut
+that lied. The rule the demos now follow: keep the marks above, spell the rest
+(`Cmd`, `Alt`), and check the cmap rather than assuming. This is the same failure that
+once made every label in the gallery invisible: a glyph with no face resolves to
+nothing, silently.
+
+#### Driving the wasm gallery from a script
+
+Verifying these components means driving a canvas, and three agents have lost a round
+each to the same handful of traps. What works:
+
+- **The gallery does render here.** Chrome's wgpu has no adapter on this machine, but
+  `--enable-unsafe-swiftshader` gives it the WebGL2 fallback and the canvas paints — that is
+  how most of this work was verified. A native window under Xvfb plus lavapipe is an equally
+  valid alternative, and it runs the same `demos::<name>::run`; one agent reached the wrong
+  conclusion that the browser was unusable and took the native route, which was sound but
+  unnecessary.
+- **Coordinates are CSS pixels.** The canvas bitmap is CSS-sized and iced paints at
+  `devicePixelRatio`, so a screenshot at DSF 2 is a scale-up of the same UI and input
+  coordinates are unaffected — drive with `deviceScaleFactor: 1` and read at 2.
+- **Sweep for the hit box.** These controls are as small as 28px, and a click 8px low
+  produces a confident wrong conclusion rather than an error.
+- **Wait out any delay, and hold the hover.** The tooltip opens after 400ms; a
+  screenshot taken straight after a `mouseMoved` is byte-identical by construction,
+  which is exactly how one agent decided the environment could not deliver input at all.
+- **Compare clip-region hashes.** A before/after/dismiss triple that returns to the
+  original hash is stronger evidence than an image someone has to squint at, and it is
+  cheap.
+- **A wheel scroll can leave stale tiles.** Under swiftshader the questionnaire's lower
+  captures came back with damaged tiles after a scroll; a forced one-pixel resize repaint
+  cleared them. An environment artifact that looks exactly like a rendering defect, so force
+  a repaint before believing a scrolled screenshot.
+- **Check whose story you are looking at.** Agents run dev servers on the same machine, and
+  more than one has been surprised by a port already in use: the time field's first dark
+  screenshot showed the *toolbar* demo, because another agent's server had taken the port.
+  Pin a private port, or assert the story in the frame before trusting what you see — a
+  screenshot of the wrong component is evidence of the wrong thing, which is worse than no
+  screenshot.
+- **Expect three caches.** The page stamp in `component-loader.ts`, Astro's
+  `node_modules/.astro/data-store.json`, and a long-running dev server's own HTML. A
+  change that "isn't showing" is usually one of them — restart with `--force`.
+- **`/tmp` is a small tmpfs, and filling it looks like a full disk.** It is 7.3 GB and every
+  agent's screenshots and driver scripts land there; at 100% the harness cannot write its own
+  command-output temp files, so *every* command fails with `ENOSPC` while `/` has hundreds of
+  gigabytes free. Clear your own artifacts as you go, and if space runs short, say so rather
+  than truncating a file to make room — three agents were stalled by this at once.
+- **Do not `pkill -f` a pattern that matches your own command line.** It has killed
+  this session's shell three times; bracket a character or kill by PID.
+- **Click the canvas before sending keys.** Keyboard-driven state needs the headless
+  canvas focused first; without that one click every keystroke is silently ignored, and
+  the state looks like it never changes.
+- **A screenshot preview is not the coordinate space.** Read a 1:1
+  `Page.captureScreenshot` clip to derive coordinates; an estimate taken from a scaled
+  preview was 50px low and looked like a dead control.
+- **Make the clip cover where the text lands.** These fields left-align, so a clip
+  starting mid-width misses typed text entirely and reports "the field never took a
+  keystroke" — a false negative that reads exactly like a broken input.
+- **Click, then type.** With focus emulation on, the first click after a navigation does
+  not always register; the reliable sequence is to click the field and then send keys.
+- **To enter a value: click, End, then keys.** Triple-click-and-type produced `08:05` where
+  `18:45` was intended, and `Input.insertText` was ignored outright — the reliable sequence
+  is a click on the segment, `End` to move the caret to the end, then the keystrokes.
+
+#### A live drag *is* possible — with widget-tree state
+
+A claim recorded earlier from `data-table` ("iced has no drag delta for a controlled widget") is
+**too broad**, and `resizable` disproved it: a divider that implements `iced::advanced::Widget`
+directly — the route `slider` takes — keeps `{dragging, press, start_split}` in its widget-tree
+state and receives `CursorMoved`, so it reports `start + (position - press)` clamped, one message
+per pixel. Measured with the button still down: the divider had already moved 80px, and the same
+80 persisted after release. The narrow version is that a *stateless element* has no drag delta;
+anything that owns tree state can have a live drag, and a component that gives up on drag without
+checking this will be needlessly worse than the reference.
+
+The same component also hit the menu's hover-exit shape again: drawing the hover colour from
+`cursor.is_over` alone left the strip active after the pointer left, because iced repaints only on
+request. Tracking the flag in tree state and calling `shell.request_redraw()` on change measured
+rest 229, hover 151, away 229.
+
+#### `anchor_bottom()` inverts the viewport fraction
+
+A scrollable anchored to the end reports **0 as the newest content and 1 as the top**, so any code
+reading `relative_offset().y` as if it were start-anchored is exactly backwards. The message
+scroller's jump-to-latest ran `snap_to_end` (fraction 1) and landed on the **top** instead, and its
+tail-crossing test `< 1.0` read the tail as "scrolled up", so the fade and the jump control drew at
+rest. Both were found by driving the component — a screenshot of either end state looks correct on
+its own, which is why this survived until someone clicked.
+
+#### `align_bottom` sets the height, it does not align
+
+iced's `Container::align_bottom(h)` **sets the container's height to `h`** rather than aligning a
+child to the bottom of a taller one. The message scroller's floating jump control did
+`.height(Length::Fill).align_bottom(Length::Fixed(48))`, so the stack child became a 48px box at the
+**top** of the scroll region instead of 8px above its bottom. Same family as the `Fill`-in-a-`Shrink`
+trap: a size that reads like an alignment and behaves like a dimension.
+
+#### `theme::mix(a, b, t)` weights its **second** argument
+
+The alert's fill was written `mix(ink, tokens.background, 0.04)`, which is the status colour at
+**96%** — a saturated bar — while its title, message and icon were that same ink at 100%. Ink
+against its own fill measured **1.03:1 in light and 1.08:1 in dark**, in both built-in themes and
+under a site palette alike, so the text was invisible everywhere and looked like a palette fault.
+
+Three sources agree it should be a 4% tint over the page: the Slint authority writes
+`tone.mix(Theme.background, 0.04)`, GPUI's `mix_oklab(transparent_white(), 0.04)` weights the
+receiver, and the iced file's *own module doc* says "the fill is the status colour at 4% over the
+page". The code was the transcription error, and a comment claiming `mix` read "the way Slint's
+`mix` reads" was the seed of it. Worth remembering that a two-argument mix is exactly the shape of
+call that no compiler and no screenshot of a *single* theme will catch.
+
+#### Text alignment does nothing on a single line
+
+iced's `iced_graphics::text::align` only calls `line.set_align` for **multi-line** paragraphs, so
+`align_x` on one line of text is a no-op — a centred or right-aligned label silently renders at its
+box's left edge. The chart found it because every bar value label and x-axis label landed left of
+where it belonged, and the fix is to compute the label's own x from a character-count estimate, as
+the gutter and the chart both now do. Worth knowing before reaching for alignment on one line.
+
+#### The fourth `Canvas` incident was invisible, not wrong
+
+`progress` was drawing **nothing at all** on wasm: both themes rendered its bars as empty, and only
+two of its seven circles painted. The component looked unstyled rather than broken, which is why it
+survived this long. Moving it to quads made it visible — and against the one Canvas render that did
+work (the collapsible's fresh-load bar) the quad version is identical above an intensity tolerance
+of 60, with sub-pixel antialiasing differences only, at the same band and fill width. So the Canvas
+version was never a baseline worth matching.
+
+The same component proved the smear with numbers rather than a picture. Before: one open animation
+in a region above it left four stale bars that **persisted** (hot vs settled 0 changed pixels,
+settled vs repainted 25466) — a repaint fixed it, which is the stale-tile trap showing through.
+After: hot, settled and repainted all agree at 0. Two faces of one defect, then: a `Canvas` can draw
+nothing, and it can smear when something above it moves. Both are gone from this catalog now.
+
+#### A `Canvas` in a region a height animation moves will smear
+
+Third `Canvas` incident, and the most specific. Animating the collapsible's height relayouts the
+whole tree every frame; a `Canvas` sitting in a section that moves because of it came out as about
+five stale rounded bars under the wgpu-to-swiftshader web fallback. The agent isolated it properly:
+absent when the panel is open at boot, absent when the section is scrolled past the viewport (no
+per-frame relayout), **present when `with_layer` is removed**, and persistent across repaints. So it
+needs all three — a per-frame relayout, a `Canvas` inside the moving region, and the web fallback.
+
+The practical rule: prefer a widget that draws quads (`progress` and `speech` have each moved that
+way) and avoid a `Canvas` inside anything that animates its height. The catalog still has `Canvas`
+in `progress`; auditing that is a real, small task rather than a theory.
+
+#### A `Canvas` can silently draw nothing
+
+`speech`'s first waveform was a `Canvas`, and inside a field's suffix — and in the first body box
+— it drew nothing at all, while the identical program drew fine in a later section on the same
+page. Layout had resolved the correct 96x16 bounds; `draw` simply produced no visible geometry. A
+red `fill_rectangle` diagnostic proved it: the red appeared in the second section's canvas and
+nowhere else. The meter is a custom `Widget` drawing `fill_quad`s instead, which renders in both
+places. Worth knowing before reaching for `Canvas` inside a form or an input suffix — it fails
+silently, and only in some positions.
+
+#### The `dropdown_button` page must not be renamed
+
+An earlier note here recommended renaming `website/component/dropdown_button.md` to
+`dropdown-button.md` so it matched every other slug. **That is wrong**, and it is worth leaving the
+correction where the advice was.
+
+The page slug really is the catalog's only underscored one, and the iced registry key really is
+`dropdown-button`. But the **Slint** side keys on that slug in four places —
+`remark-slint-source`'s `hasSlintExample`/`usageBoxes`, `example-counts.countSlint`, the sidebar's
+`pageFrameworks`, and the per-framework install slug — and the Slint gallery's page folder is the
+`.slint` stem, so renaming the page fixes iced by breaking Slint.
+
+The fix that works normalises the two **iced-facing** lookups instead: the page's iced gallery story
+is the slug with `_`→`-` (`/iced-gallery?story=dropdown-button`), and `status.mjs` reads both the
+Slint inventory and the iced wired keys through its existing `moduleOf` mapping. Afterwards the route
+renders both frameworks' panels and both install commands (`add iced dropdown-button`, `add slint
+dropdown_button`), and the checklist counted the component for the first time — **75 → 76**, leaving
+only `root`, `theme` and `title-bar`.
+
+#### A section marker can cut code that does not compile
+
+The dock page's first Usage panel showed `fn view(app: &App) -> Element<'_, Message> {` with its
+`// section: end` **before the function closed** and no tail expression — a sample that cannot
+compile, while the running demo beside it was fine. The marker had been placed on the function
+signature and closed early, so the site printed an incomplete function.
+
+A brace-balance sweep over every iced demo's sections (driven through the site's own `icedSections`)
+found that one at **+1**; all 76 demos' other sections balance at 0, including the same demo's six
+others. Worth keeping as a check beside the icon-target sweep: the code a page prints has to compile
+as printed, not merely match a range of the file. The fix was to move the workspace construction into
+a complete function *inside* the section, and the gallery rendered byte-identically afterwards.
+
+#### An overlay's window position is `layout.position() + translation`
+
+`translation` is the window offset of the coordinate space a layout position is already in — a
+`scrollable` passes `translation - offset` and paints under `with_translation(-offset)`. So the window
+position of a widget is `position + translation`, and subtracting it instead put the popover's panel
+**twice the scroll offset** below its trigger: measured **+383px** at a 189px scroll on a 32px row,
+where iced's clamp then pinned the panel to the floor and it read as "opens somewhere else".
+
+iced's own `pick_list.rs:733` adds it, and this crate's `tooltip.rs:643` already did; the popover was
+the odd one out. `Popover::overlay` is the single placement implementation, so `select`, `combobox`,
+`date-picker`, `color-picker`, `dropdown-button` and the popover/menu/toolbar demos all detached when
+scrolled — select measured +409px and date-picker +141px on the same test. One sign, five components.
+
+**The note alone was not enough.** The popover was fixed first, and the sheet then repeated the same
+subtraction, because each overlay computes its own host rectangle — two of the three implementations had
+it. Both were silent at the top of a page, where the translation is zero, and only wrong once scrolled,
+which is exactly the state a demo rarely starts in. So the rule is necessary but not sufficient: the fix
+is one shared host-rect helper, and until that exists any new overlay should be tested **scrolled past the
+first screen**, not at rest.
+
+#### A sweep of this family needs a calibration, and an exemption list
+
+Across the whole catalogue, offsets of **+/-2px** are text sitting above its line box's centre —
+typography, not layout. Only larger ones are defects: the editor's bars measured −10.0 and −6.0, the
+combobox search row −1.0 in a 36px frame (worth fixing, at the boundary), and every other bar and row
+measured inside 2px and correct. Without the threshold a sweep table reads as though everything failed.
+
+The trap also cannot occur where a row is **intrinsic** rather than inside a fixed bar, which is why
+`tabs`, `card`, `sheet`, `notification`, the dialog and alert-dialog title rows, and `carousel` are
+exempt by construction, and why `menu` items at −2.0 are not defects. Say which components are exempt
+and why, beside the ones you measured.
+
+#### A split measures against the pane it grows, so each axis needs its own sign
+
+The horizontal axis's sized pane sits to the **left** of its strip and grows with `+x`, while a vertical
+axis's pane sits **below** and grows with `-y` — dragging up must enlarge it. One shared
+`start_split + (position - press)` therefore needs the vertical position **signed**, and without that the
+resizable IDE layout moved the split **down** when the handle was dragged **up**: a 40px upward drag moved
+the divider 40px down the wrong way.
+
+The fix signs the axis position (`-point.y` for the vertical axis) and leaves the drag mechanism alone —
+widget-tree state plus `CursorMoved`. The convention is now documented as "the sized pane sits below the
+strip"; a caller placing its pane **above** a vertical strip would need the opposite sign, and no usage in
+this crate does.
+
+#### A section title is a lookup key, not a label
+
+A demo's `// section:` title is what the page lookup matches against, so titling a section after the
+**page region** it sits in rather than the **heading it documents** produces a card that posts its index
+and finds no scroll target — it reads as a dead icon. `exampleHeadings()` stops before `## API Reference`,
+so three demos that ended with a section titled `API Reference` all had that failure. Two of them were
+drawing the programmatic-driving sample and now take the page's own `### Programmatic Control` heading;
+the third is progress, where a documented sample genuinely sits after the API reference and the lookup
+itself is the thing at fault.
+
+The same rule governed the marker, collapsible and attachment ports: match the heading the page actually
+uses, at the depth it uses, and check with the plugin's own extractor rather than assuming.
+
+#### A second surface inside a panel eats the panel's padding
+
+The popover's demo wrapped each panel's content in a `panel_container` that drew its **own** surface at
+the content's bounds — one inset step inside the popover's own 12px. The 12px therefore fell *outside* the
+visible surface, in the transparent gap between the two, and the text met the visible edge: measured left
+inset **1px** where 12 was intended, and the panel **24px smaller in each direction** than it should be.
+Worse, the component's own module doc claimed that wrapping was how the gallery got its inset.
+
+When a container draws a surface and its content draws another, the outer inset is spent in the gap. Pass
+the outer padding to the inner surface, or let only one of them draw — do not nest two.
+
+#### When a module doc and its code disagree, the doc states intent — and the gap is a bug
+
+Two of these surfaced in one session, and both read correctly while behaving wrongly. The alert's fill was
+documented as "the status colour at 4% over the page" while the code passed its arguments to `mix` the
+other way round, making it 96% ink against ink at **1.03:1**. The menu's selected row was documented as
+taking `accent_foreground` ink over the accent fill while the code changed only the fill.
+
+So a doc sentence that states a **value**, a **direction** or a **colour rule** is worth diffing against the
+code beneath it. It is one of the few cheap checks available, since the prose came from someone who knew
+what the component was supposed to do.
+
+#### `currentColor` resolves to black: a button's `text_color` never reaches an SVG
+
+This is the mechanism behind a trap this catalogue hit six times — a mark drawn as an SVG inside a
+coloured control comes out black whatever the control's ink is, so on a dark surface it is a black glyph
+on a dark circle, and in light it is a heavier mark than intended. iced does not carry a button's
+`text_color` into the SVG's paint.
+
+The fix is always to tint it in the SVG's own style closure (`color: Some(tokens.foreground)`), never to
+rely on inheritance. The last offender was the message-scroller's jump control — the only untinted SVG
+left in the catalogue — whose chevron was invisible in dark behind the border token's faint ring.
+
+#### A page inset belongs inside the scroll owner, not around it
+
+The settings block put its 24px inset on a container *wrapping* the `Scrollable`, so the scroll bar and the
+content drew over that padding — over the Save button and the cards' right edges. Moving the inset onto the
+page *inside* the scroll owner fixed it: the bar then sits at the frame's trailing edge within the padding,
+which is what the coding guides describe.
+
+The general shape: the scroll owner should occupy the frame's full extent, and the padding the content needs
+belongs to the content. An inset applied outside a scroller is space the scroller draws straight through.
+
+#### A block is a demo file plus two fields
+
+`/blocks` is one Astro page whose `definitions` array feeds a Vue island; each block gets a header, an
+install bar, a prompt button and a live iframe, and the frame's route comes from `srcFor(block)`. A
+framework appears for a block only when that block declares its field — `gpuiInstall`, a Slint page folder,
+or `icedStory` — so an empty framework list is a missing field, not a missing page.
+
+For iced the whole contract is: add `demos/<name>_block.rs` with `pub fn run(theme)` and a `//!` header,
+run `scripts/mod-rs.mjs` so the story enters `STORIES` and the dispatcher, then add `icedStory` and
+`icedInstall` to that block's entry. The install bar, the loader size, the prompt's source and the routing
+all follow from those two fields.
+
+What makes a block different from a component demo is that it is a whole application screen — state lives in
+the demo and the installed components only report it. And the story name must not collide with the component
+demo's: `settings-block`, not `settings`.
+
+#### A site that prints `@latest` installs nothing from an unpublished branch
+
+Every literal iced install command on the site currently exits 1 with `Framework "iced" is not in the
+registry.` The cause is narrower than "unpublished": npm `latest` **0.4.0 already ships an `iced` key**, but
+**the CLI reads `main`'s manifest** — the copy bundled in the package is only an offline fallback — and
+`main` has no `iced` key. So **merging is what fixes it**, and the npm publish is the release process's own
+step rather than a prerequisite. The code and manifest are sound — 76 of 76
+install and compile, 76 of 76 sibling closures are exact, and `npx`, `pnpm dlx` and `bunx` all succeed
+against a packed 0.3.2 — so this is a **release step**, not a defect.
+
+The install bar is a claim about npm, and it is only true after a publish. Worth checking whenever a feature
+is developed on an unpublished branch, before believing the feature ships.
+
+What makes an install trustworthy is the **name triple** — manifest key == site slug == `demos::STORIES` ==
+`demos::run` arm — checked for all 76. It is the check that would have caught the `dropdown-button` page
+before the owner did.
+
+#### A catalogue total must be derived from the sidebar's page list, and labelled
+
+The hero first read "158 components" because it added `registry/components.json`'s per-framework blocks —
+79 Slint + 76 iced + 3 GPUI. That was wrong twice over: the manifest only carries *registry-shipped*
+sources, so it **undercounted GPUI badly**, and it is not the site's component total at all, which is why
+adding a page moved nothing.
+
+Deriving from `componentPages(enComponentSidebar)` — the same list the sidebar and pager walk — gives the
+counts the catalogue can defend, and the site now shows them: **228 component views** (78 GPUI + 75 Slint +
+75 iced) and **1367 examples** (413 + 468 + 486), with examples read from the same `// section:` parser that
+builds the source panels so they cannot drift from what the pages display.
+
+Both 228 views and 78 pages are honest numbers; they answer different questions, and the label has to say
+which. The invariant that matters is the one tested by removing a page: `button.md` carries 32 examples
+across its three views, and dropping it moved the totals to 225 / 1335 — its own share, not one.
+
+#### The gallery wears the host page's palette, so a contrast bug can be invisible in the built-ins
+
+The time field's selected segment measured **7.37:1** in the gallery's own light theme — comfortable — and
+**1.58:1** under the Asciinema catalog theme, because a catalog theme with no `selection` of its own
+borrows its `primary` (`website/src/lib/theme-catalog.ts` supplies the fallback), and that cyan is not
+something `foreground` digits read on. A contrast check against the built-in pair alone would have passed
+it.
+
+So measure a state on **both** surfaces: the built-in token pair and the host palette the gallery actually
+wears. When that was done, **9 of the 35 catalog themes** turned out to have no readable pole at all for
+their own selection colour — Everforest Light 2.35:1, Ayu Light 2.50:1, Catppuccin Latte 2.75:1, six dark
+3.32–4.32:1 — which is a theme gap needing a text-safe selection token, not a component fix.
+
+#### A clean tree does not mean nothing was written
+
+An agent was stopped mid-task leaving no report. `git status` was clean, so I concluded it "left nothing"
+and re-ran the task — but the tree was clean because the agent had **committed** before dying. `git log`
+would have shown two commits for that component minutes earlier. The re-run agent caught it ("the brief was
+stale") and verified the existing work instead of rewriting it.
+
+So when an agent dies: read **`git log`** for its paths as well as `git status`. A stopped agent can fail
+after committing, and the failure is in the report, not the work.
+
+#### Never run a crate-wide formatter in a shared tree
+
+`cargo fmt -- <file>` reformatted **the whole crate**, not the named file. Reverting it meant
+`git checkout --` over every other file — the same command that destroyed the tooltip's uncommitted `Arrow`
+work earlier in this project. In this case it spared the one other agent's uncommitted file, which is luck
+rather than design.
+
+Format by explicit path, check `git status --short` before and after, or do not format while another agent
+is mid-task. A formatter's blast radius is the crate it is run in, not the file named on its command line.
+
+#### Text pixels are not equally divisible
+
+Measuring a highlight's extent by splitting a label's bounding box into **equal pixel cells** mis-assigns
+it, because character widths are proportional: "Thinking…" has two narrow `i`s and a wide `k`. The
+shimmer's mid-frame was first reported as spans 2–5 and corrected to **2–6**, with the peak still on the
+`k` at ink 182 — the peak value was right and the indexing was not, which is how the error surfaced.
+
+Sample **per glyph**, using the paragraph's own layout for the boundaries, and report both the glyph
+indices and their x ranges. "The band covers the middle third" is a weaker claim than "spans 2–6 of 9,
+peaking on span 4 at x 69–74".
+
+#### `fill_paragraph` holds a weak reference, so a paragraph built in `draw` paints nothing
+
+The shimmer's first span rewrite drew a **blank frame**: the paragraph was built as a local inside `draw`,
+and `fill_paragraph` keeps only a *weak* reference to it, so it was dropped before the renderer flushed.
+The element has to own the paragraph (a `RefCell` field) for as long as it is drawn.
+
+Cheap to hit, cheap to fix, and expensive to diagnose from the picture — a blank label reads as a layout
+fault. Worth knowing before writing another custom text widget.
+
+#### Five capabilities were reported impossible; all five were missing primitives
+
+Worth stating once, because each was written into a module doc as a platform limit and each turned out to
+be a builder or an assumption:
+
+| reported | actually |
+|---|---|
+| no animation clock | sample the frame's own instant and request a redraw while moving |
+| no drag delta | widget-tree state plus `CursorMoved` with the button down |
+| no focus-trap API | a focusable operation run from a `Task`, with `Outcome::Chain` |
+| the hover card is bottom-only | a hard-coded `Side::Bottom` and no builder |
+| circular buttons are impossible | `Button` always resolved `RADIUS_MD` and `container::clip` is rectangular |
+| a gradient cannot pass through a text run | `Paragraph::with_spans` with per-span colours, shaping intact |
+
+So a component doc saying iced "cannot" do something is a **hypothesis to test**, not a fact to relay —
+and the cheapest test is a small change in a scratch copy, before designing around the limitation.
+Repeatedly, the design that gave up on the feature was worse than the one that checked.
+
+#### The source-heading chip is a copied literal, in seventy files
+
+Slint's `ui/examples/bridge.slint` `SourceHeading` draws the `</>` code button as fill `0.12` with a
+`0.35` border (hover 0.22/0.55, pressed 0.34/0.7), and that same tuple is **copied into 70 of the 76 iced
+demos** rather than owned in one place. So "raise the chip's contrast" is not a one-file change: it needs
+the Slint reference and seventy iced demos together, or iced alone diverges visibly from the other two
+galleries the moment a reader switches framework.
+
+The measurement that matters is the **glyph's** contrast against its fill and the panel behind it —
+**12.55:1 light, 13.11:1 dark** — not the chip surface's 1.28:1, which is the reference's own subtlety and
+supplementary to an affordance that already clears the text-contrast requirement. Check which value an
+accessibility complaint is actually about before treating the surface as the failure.
+
+#### `border` equals `muted` in the dark table, so a token hairline vanishes there
+
+A one-pixel edge drawn with the `border` token reads in light and **disappears in dark**, because the
+dark palette sets `border == muted` (#262626). The kbd keycap needed `alpha(foreground, 0.22)` instead,
+which is an edge in both themes; `button.rs` already carried the same fix, so the precedent was in the
+repository.
+
+The token is right for a **divider between two surfaces**. For the outline of a control that sits *on*
+`muted` — a keycap, a chip, a badge — a proportion of the foreground is what stays visible in both
+palettes. Worth checking before adding any new bordered control.
+
+#### The caret *is* the text bounds, so derive the vertical inset from the line
+
+iced sets `text_bounds.height = min(requested line_height, limits.max)` and draws the caret at exactly
+that height, while the paragraph keeps its own line box and is **clipped to the text bounds**. So a field
+whose padding is too deep does not merely squeeze the caret — it cuts the glyphs. At `small` the family
+had 8px of bounds for a 14px line: letters cut top and bottom, caret 8.
+
+The inset therefore has to be derived, not chosen: the vertical inset is what a line (`font * 1.25`,
+GPUI's `LINE_HEIGHT`) leaves of the frame, floored to whole pixels and capped at the authored horizontal
+inset, and `line_height(height - 2 * inset_y)` then equals the padded inside exactly so iced never
+clamps it. The horizontal inset keeps the authority's value; only the vertical is traded down, and the
+trade is worth naming — a 24px field cannot give 8px above and below and still hold an 18px line.
+
+This is the same knob as the note above from the other side: that one described a caret with no inset,
+this one an inset with no room for the line. Both come from treating the vertical inset as a taste
+decision when it is arithmetic.
+
+#### A `line_height` the height of the frame draws the caret flush to both borders
+
+iced draws the caret at the **text bounds**, so a single-line field that padded horizontally only
+(`padding([0.0, x])`) and set `line_height(height - 2)` — a hack to make the click target fill the frame —
+got a caret running the field's full inside height, touching the top and bottom rules. The family's
+authored inset is all sides (`textarea.slint`'s `input-padding-x`); with it the caret lands inset, the
+field's outer height is unchanged, and the text stays centred. Measured on a 32px medium field: caret
+30 tall at inset 1/1 → **12 tall at inset 10/10**, centre still equal to the field's.
+
+Six components carried a copy of that frame and two more inherited it through their composed `Input`, so
+the symptom — "the cursor has no y padding on most inputs" — was one line of geometry repeated eight
+times.
+
+#### iced draws a container's border *on* its bounds, reserving no room
+
+A child that fills such a container covers the border. The input group's row was the frame's **outer**
+box, so a 32px button equalled the 32px frame, painted over the 1px top and bottom rules, and drew its
+own `RADIUS_MD` corner into the frame's corner notch — and the frame's 2px horizontal inset left it
+**10px short at the trailing edge**, which reads as a separate box overhanging the frame. The addon was
+never a sibling; the geometry was.
+
+The fix is to lay the row out against the **interior**: the frame's border width as top and bottom
+padding plus `clip`, so an over-tall child is held inside it, with an opt-in `flush` for a control that
+should reach the outer edge. Measured: the trailing primary went from `x[839,849]` 10px short and
+covering both borders to `x[849,859]` flush, h30 in a 30px interior. Anything else with a border and a
+full-bleed child has the same trap.
+
+#### `keyboard::listen` sees only *ignored* events
+
+A focused `text_input` handles Escape — it leaves the field — and swallows the key, so a subscription
+built on `keyboard::listen` never fires for exactly the keys a text component cares about: Escape, and
+any shortcut pressed while a field has focus. The working pattern is `event::listen_with`, which sees the
+event regardless of who handled it, which is what the focus trap uses to route `Tab`.
+
+Two agents lost a round to this — the focus trap's Tab and the number input's Escape — and in both cases
+the symptom looked like a missing feature rather than a wrong listener. If a key binding "does nothing",
+check which listener it is on before concluding iced cannot do it.
+
+#### A bitmap needs a decoder, and the decoder must not pull the wasm-breaking defaults
+
+The crate ships iced as `image-without-codecs`, so a demo that reads a PNG or JPEG has **no decoder at
+all** — which is why the image demo had been generating RGBA itself. Naming `image` with exactly the
+features wanted fixes it: `default-features = false, features = ["jpeg", "png"]`. Feature unification
+then switches iced's decoder on **without** the default set (AVIF/rav1e) that fails to build for wasm32.
+iced's own feature list stays untouched, which is what keeps `check.sh`'s feature-agreement step and the
+registry's install hint valid. Measured cost: the module grew 255 KB.
+
+A related piece of the same fix: `build-page.sh` copies only `index.html` into `www/dist`, so a demo
+asset has no served path. `include_bytes!` embeds it in the module instead — no extra request, no build
+change — and reusing an image already tracked in the repository keeps the tree from growing.
+
+#### Keep a demo's live controls after `// section: end`
+
+The icon demo's theme buttons sat past the closing marker with no section of their own, so deleting them
+changed no panel and orphaned no heading — the page's six sections were untouched. The message-scroller
+and attachment ports moved their live rows out of the samples the same way.
+
+Anything a reader can press that is not itself a documented sample belongs after `end`: a theme toggle, a
+status line, a counter. Then removing or changing it can never move the page's contract, and the sample
+above stays the thing the page shows. Conversely, a control placed *inside* a section is part of the code
+the page prints, so it has to be worth showing.
+
+#### One fallback serving two page shapes is a bug waiting
+
+The outline's `usageAt < 0 -> tag depth` fallback was right for the guides, the index and `theme`,
+which have no usage region at all — and wrong for the **thirteen component pages that never wrote a
+`## Usage` heading**, where it put their samples at depth 0, beside Usage. That measured as 36 of 228
+page x framework cells and **239 sample rows outside Usage**.
+
+The layout already marks the region: the live-example pin exists only where a page shows an example,
+and `## API Reference` or a trailing heading ends it. So when no *visible* `## Usage` exists but the pin
+is there, the outline now **synthesises** the Usage category and nests the region under it — no markdown
+edited, and the synthetic row is a label rather than a link because anchoring it to a child would
+duplicate an id and break the outline's index map.
+
+The general lesson is worth more than the fix: **a fallback keyed on absence conflates "this page has no
+such region" with "this page forgot to name it"**. Ask which one the caller means before defaulting.
+
+#### An indent has a floor set by its corner radius
+
+The ToC's rail draws one S-bend per depth change as **two quarter-arcs**, so together they advance
+`2 x CORNER` horizontally and a clean bend needs `step >= 2 x CORNER`. With `CORNER = 12` that floor
+was *exactly* the old step of 24, so tightening the indent to 16 only worked by scaling the corner to
+8 with it — at `s16/c12` the arcs visibly pinch. The indent is arithmetic, not taste, and the next
+person to trim it will break the curves without this note.
+
+There is a **second floor**: `CORNER <= rowHeight / 2`, or a bend is taller than the row it sits in.
+The current values are `rowHeight` 28, per-depth step 12, `CORNER` 6 — exactly 2x the corner and well
+inside half a row. Levels carry their own weight independently of the active state (depth 0 at 600,
+children at 400, active 700 plus the full-colour label, dot and rail), so the outline's structure reads
+without standing in it.
+
+A third instance arrived the same day from the other direction: the framework-only marker's pattern
+matches `gpui|slint`, so `<!-- framework: iced -->` before a callout does nothing — no mark, no warning,
+no visible difference. Same shape as the footer's `key in NAMES && key in toggleLogos` guard that dropped
+every framework without a logo. **When a set gains a member, the check over that set is what needs
+changing, not only the data** — an `in`-style test against a fixed list fails silently by construction.
+
+A second lesson from the same footer section: **"data-driven" is a claim about the filters, not the
+markup.** The framework tiles already looped over a list, but a `key in NAMES && key in toggleLogos`
+guard silently dropped any framework without a logo — which is precisely the state a new framework
+arrives in. Making it dynamic meant deleting that guard and giving the mark a lettermark fallback, not
+rewriting the loop.
+
+#### A shared column width is measured by laying the body out twice
+
+The form's label column has to be the widest label **in the form**, and no single child knows that
+width. `FormBody::layout` lays its rows out once with every slot `Shrink` — recording each label's
+intrinsic width — resolves a shared spine to the widest, then lays out again against it. Both passes
+happen inside one layout, so nothing flickers across frames, and the caller's `label_width` is a floor
+under the measurement (default `None`, meaning hug). Full-width section rows measure against a spine of
+their own, so a heading can never widen the field column.
+
+That is the same shape as the menu's shortcut column, which was silently `Fill` and cost every item a
+third of its label width: a column shared by rows needs one authority, and it has to be measured rather
+than guessed. Measured here: a short "Name" row's control moved **196 → 98** with the column at 41px,
+and a temporary 167px label widened every row's control to x=224 **together**, with no overlap.
+
+#### A `FillPortion` row is not a grid
+
+Equal fractions give equal columns only while every row has the same cell count. A field spanning
+*n* columns has to be *n* column widths **plus the `n-1` gaps inside it**, and a fill share cannot
+carry a fixed width — so `row.spacing(gap)` fixes the gutter and breaks the spans. The form now lays
+each row out itself: `column = (W - gap*(columns-1))/columns`, cell `i` at `span*column + (span-1)*gap`.
+That is what makes column edges agree row to row, and it is measurable: widths 189/188/189 →
+**178/178/178**, gutters 6px (input borders only) → **22px**, and a full-width row's edges against the
+three columns went from −2/+2 to **0/0**, at two iframe widths.
+
+#### A third shape: a `button`'s content starts at its padding origin
+
+The dock's collapse controls rode 5.5-6px high while the tab strip's row beside them was already
+correct, because a `button` lays its content out at the padding origin — a bare text child in a fixed
+26x30 box sits at the top however the box is aligned. Same family as the two above, different place to
+look: give the content the box (a filling container) rather than a bare child. The tab close, already
+an SVG inside a filling container, measured 0.0 before and after, which is what isolated it.
+
+Two probe notes from the same fix. A mark that is a **text glyph** cannot be centred honestly — it
+carries its own side bearings — and the dock's arrows were `<-`, `->`, `v` before becoming embedded
+Lucide `panel-left`/`panel-right`/`panel-bottom`. And the **first captured frame after a wasm load can
+differ by a pixel** as the canvas settles, so compare the second cycle of a toggle rather than the
+first.
+
+#### The inverse: a `Shrink` row in a `Fixed` frame sits at the top
+
+Both halves of this bit the same catalogue. The trigger fields were built as
+`container(row![...].align_y(Center)).height(Length::Fixed(h))`; with a **`Shrink`** row, that
+`align_y(Center)` only centres the children inside the row's own content height — the row itself
+sits at the frame's top. The colour picker's swatch and text rode **6px high** with perfectly
+symmetric padding, which reads as a padding bug and is not one. `.height(Length::Fill)` on the row
+is the fix; `input`, `input_group` and `time_field` already had it, and the four copies of that same
+trigger source (`color_picker`, `select`, `combobox`, `date_picker`) had all dropped it. Field height
+is unchanged by the fix, so measure the content centre against the box centre, not the padding.
+
+#### A `Fill` child inside a `Shrink` cross axis lays out at zero
+
+The bubble's first build drew blank boxes: a `Length::Fill` child inside a `Shrink` column or
+container is laid out in flex's second pass against a cross size of **0**, so the whole surface
+came out zero-width. `Text` survives it because `Limits::resolve` falls back to intrinsic — which
+is why `message_scroller` works — and a `Column` does not. The fix is to keep the inner column and
+the body text `Shrink` and let `max_width` resolve the wrapping. Same family as the `Stack` note:
+a size that is invisible in the type signature and looks like a broken paint.
+
+#### What iced 0.14 cannot do on wasm at all
+
+Two platform limits have been confirmed here rather than assumed, and both look like component
+bugs until you check:
+
+- **The clipboard write is a no-op.** `iced::clipboard::write` reaches `window_clipboard`, whose
+  cfg falls through to a dummy provider on wasm and returns `Unimplemented`; a CDP read-back
+  after a copy returned `""`. So a copy control can show its own feedback and cannot promise the
+  write landed — the clipboard demo says exactly that rather than claiming success.
+- **No interval subscription under this crate's runtime — but that is not a missing clock.**
+  `iced::time::every` exists only with the `tokio`/`smol` backends and the crate resolves
+  `thread-pool`, so a component cannot own a *subscription*. It can own a clock: sample the frame's
+  own instant in `RedrawRequested(at)`, and either call `shell.request_redraw()` while something
+  moves (the collapsible's reveal, the icon's spinner at Slint's 800ms tick) or
+  `shell.request_redraw_at(deadline)` for a single wake-up (the clipboard's 2s reset, the tooltip's
+  400ms delay). Three components named this as a gap and all three were wrong; this note previously
+  said a component "cannot own a timed reset or an animated spin", which discouraged exactly the
+  work that turned out to be straightforward.
+
+#### A demo's `// section:` titles match the page's `###` examples
+
+Most demos match the page's **`###` sample headings** rather than its `##` sections, which is
+what makes the sidebar count and the card's code-icon scroll agree — but it is not a rule.
+`bubble.md` documents every behaviour as an `##` section, and naming the demo's markers after the
+Slint GroupBoxes there would have made the plugin append fresh `###` headings at the end of the
+page instead of cutting panels under the documented ones. So the instruction is: **match the
+heading the page actually documents that sample under, and check it with `icedSections`** rather
+than assuming a depth.
+
+#### A `Stack` sizes itself from its first child
+
+iced's `Stack` defaults to `Shrink` and takes its size from the first child, so a layer
+meant to cover a frame — which is how `dialog` and everything built on it are drawn —
+ends up as a fragment of whatever sits behind it. The command palette's dialog sections
+rendered as a tiny rectangle until both stacks were given `Width::Fill`/`Height::Fill`.
+Nobody reads that from the type signature, and it cost a screenshot to notice, which is
+the third time in this family that looking at a picture beat reading the code.
+
+#### What "missing" means, now that it is implemented
+
+Two defects in that contract are fixed (`b5f363df`, `6122e4fc`), and the first one settles a
+question the wording had left open.
+
+- **A heading is marked missing only for a framework whose *whole section* has no sample for it.**
+  Before, a heading with prose between it and its code was marked `gpui slint` for the iced-only
+  group standing above it, and the CSS then hid the entire section in both other views — five
+  headings across `list`, `table` and `virtual-list`. The walk now intersects the group's absent
+  frameworks with what the section actually samples, so `table`'s Column widths and Without Border
+  are visible under GPUI and iced and correctly stay hidden under **Slint**, whose example has
+  nothing for them. Hidden means "this framework has nothing here", not "some framework does".
+- **A repeated sample gets its own heading and scroll target.** A later section sharing a title
+  takes a created heading placed at the *end* of the shared section — so panels keep demo order —
+  which repeats the shared title as its text and adds a subtitle (`— 2 of 2`), plus a
+  `data-gallery-index` that the scroll lookup prefers over a title-only match. That is the
+  subtitle rule above, implemented the first time a page needed it: accordion's custom-icon
+  example has no heading of its own on `accordion.md`, so two sections share one. The gallery
+  *card* still shows the bare shared title — a card subtitle needs `crates/iced-component` — so
+  disambiguation travels by index instead.
+
+### Every card scrolls to its own sample
+
+A card's code icon scrolls the page to that card's copyable sample, and the sample
+**is the gallery example that is already running** — cut from the same file by the
+`// section:` markers, not a usage file written beside it. There is one source of
+truth per example: it runs in the gallery, and the page shows that source verbatim.
+A sample cannot drift from the behaviour it documents, because there is nothing for
+it to drift from. The gallery serves no source files at all now — `www/dist` holds
+the module, the glue and the page — and the page carries the samples because the
+build read them out of the demos.
+
+Embedded, the gallery's code icon posts `{source: "gpui-kit", index, title}` to the
+page hosting it, the same payload Slint and GPUI post. The site accepts that name
+and scrolls to the heading that carries the title, which is the heading over the
+sample in the usage section.
+
+**Done when** every card has a sample to land on, and each one lands on its own.
+
+- [x] The gallery posts the payload and the site scrolls to the titled heading
+- [x] `rehype-framework-code` handles iced panels: `FRAMEWORKS` is `gpui`, `slint`
+      and `iced`, and a sample is named by its language (`iced`, aliased to `rust`
+      for the highlighter) or by `data-gallery-framework`
+- [x] The page's sample is the demo's own source, cut by the section markers
+- [ ] Every gallery card has a sample in the usage section, so no card's icon
+      scrolls to nothing
+- [ ] When several cards share a type — three buttons, two inputs — the card keeps
+      the type as its title and adds a **subtitle**, so each card scrolls to its own
+      sample instead of all of them landing on the first
+- [ ] The scroll is checked by clicking the icon in a browser, not by reading the
+      markup
+
 ## Later
 
-egui, Iced, or another toolkit can join after phase 9, one at a time, once its API is stable: hand-write the full catalog and the 3 blocks, add a value to the selector, and add the snippets on the English pages.
+egui, QuickGUI, or another toolkit can join after iced, one at a time, once its
+API is stable: hand-write the full catalog and the 3 blocks, add a value to the
+selector, and add the snippets on the English pages.

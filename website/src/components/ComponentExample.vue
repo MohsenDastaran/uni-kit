@@ -75,6 +75,16 @@ const titleCase = (value: string) =>
     .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
     .join("");
 
+/**
+ * The iced registry key for a page slug.
+ *
+ * A page's slug is the page's own name, while the manifest names an iced
+ * component with its Rust module's underscores written as hyphens, so the page
+ * `dropdown_button` is the story `dropdown-button`. A slug that is already
+ * hyphenated — every other page — is unchanged.
+ */
+const icedRegistryKey = (slug: string) => slug.replace(/_/g, "-");
+
 const storyName = computed(() =>
   component.value
     ? (storyNames[component.value] ?? titleCase(component.value))
@@ -123,14 +133,41 @@ const frameworkList: Record<string, Framework> = {
       return `${base}/slint-gallery/pages/${slug}?component=${slug}`;
     },
   },
+  iced: {
+    name: "Iced",
+    live: "Rust & iced",
+    library: "iced-component",
+    src: () => {
+      if (!component.value) return undefined;
+      const base = props.baseUrl.replace(/\/$/, "");
+      // One module answers for every component, like the GPUI gallery, and it
+      // dispatches on the registry key — the same name the manifest lists and
+      // the CLI installs under. So `message-role` is asked for as
+      // `message-role`, where GPUI has a gallery story name of its own, and
+      // `dropdown_button` is asked for as `dropdown-button`.
+      return `${base}/iced-gallery?story=${encodeURIComponent(icedRegistryKey(component.value))}`;
+    },
+  },
 };
 
 const readFramework = () => {
+  // The server render has no document. Its markup is inert until hydration, and
+  // the framework in force is a client-only fact, so Slint is the honest answer
+  // there; the setup below runs again on the client, where it can read the real
+  // one.
+  if (typeof document === "undefined") return "slint";
   const value = document.documentElement.dataset.framework ?? "slint";
   return value in frameworkList ? value : "slint";
 };
 
-const selected = shallowRef("slint");
+// `html[data-framework]` is written by the inline script in the page head, so
+// the value is already final when this island's setup runs. It has to be read
+// here rather than in `onMounted`: the production guard below watches
+// `available` and acts on its first value, and a `selected` still holding Slint
+// would tell a page whose only framework is GPUI — or whose active framework is
+// iced — that the framework is missing, sending the reader to the catalog
+// before the real one was read.
+const selected = shallowRef(readFramework());
 const framework = computed(() => selected.value);
 const available = computed(
   () =>
@@ -685,7 +722,11 @@ function exampleHeadings(): HTMLElement[] {
   const root = document.querySelector(".doc-content");
   if (!root) return [];
   const headings: HTMLElement[] = [];
-  for (const node of root.querySelectorAll<HTMLElement>("h2, h3, h4")) {
+  // The page's own heading counts: a gallery that names the component rather
+  // than one of its sections — which is what both the GPUI and iced galleries do
+  // — lands on the component, and the code under its title is the first thing
+  // the reader wants.
+  for (const node of root.querySelectorAll<HTMLElement>("h1, h2, h3, h4")) {
     const text = plainHeading(node);
     if (/^api reference\b/i.test(text)) break;
     if (/^import$/i.test(text)) continue;
@@ -728,13 +769,25 @@ function scrollToSource(destination: HTMLElement) {
   }
 }
 
-function showExample(title: string) {
+function showExample(title: string, index?: number | null) {
   const headings = exampleHeadings();
   const described = headings.map((heading) => ({
     text: plainHeading(heading),
     titles: heading.dataset.galleryTitle,
+    // A heading the chosen framework has no sample under is left out of the
+    // view by the stylesheet, and the lookup must not land on one: its
+    // `scrollIntoView` does nothing. An element that is not rendered has no
+    // client rects, which is the same test the browser makes.
+    visible: heading.getClientRects().length > 0,
+    // The framework that owns the heading's section, when one does. The lookup
+    // reads it to tell its own sample from a heading it shares with another
+    // framework that happens to carry the same title.
+    only: heading.dataset.frameworkOnly,
+    // The section index the iced plugin kept on the heading, so two samples
+    // under one title can still be told apart.
+    index: heading.dataset.galleryIndex ? Number(heading.dataset.galleryIndex) : undefined,
   }));
-  const match = findExampleHeading(described, title);
+  const match = findExampleHeading(described, title, framework.value, index);
   const heading = match ? headings[described.indexOf(match)] : undefined;
   if (!heading) return;
   const code = codeAfter(heading);
@@ -761,7 +814,11 @@ function onExampleMessage(event: MessageEvent) {
   } else if (event.data && typeof event.data === "object") {
     payload = event.data;
   }
-  if (!payload || payload.source !== "gpui-kit") return;
+  // Which galleries may ask the page to reveal a source section. GPUI posts
+  // `gpui-kit`; iced posts the library name it is listed under. Anything else is
+  // ignored, so a stray frame cannot scroll the reader's page.
+  const galleries = new Set(["gpui-kit", "iced-component"]);
+  if (!payload || !galleries.has(payload.source)) return;
   const title = typeof payload.title === "string" ? payload.title : "";
   const index = typeof payload.index === "number" ? payload.index : null;
   showExample(title, index);
@@ -810,7 +867,6 @@ let observer: MutationObserver | undefined;
 
 onMounted(() => {
   window.addEventListener("message", onExampleMessage);
-  selected.value = readFramework();
   observer = new MutationObserver(() => {
     selected.value = readFramework();
   });

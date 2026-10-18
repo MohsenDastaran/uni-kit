@@ -27,6 +27,16 @@ const label = 'Framework';
       </svg>
       <span class="framework-select__name">Slint</span>
     </span>
+    <span class="framework-select__value" data-framework-value="iced">
+      <svg class="framework-select__logo" viewBox="35 31 179 171" aria-hidden="true">
+        <rect x="42" y="31" width="169.9" height="169.9" rx="49.815" fill="#00A3FF"></rect>
+        <path
+          fill="#FFFFFF"
+          d="m182.62 65.747-28.136 28.606-6.13-6.0291 28.136-28.606 6.13 6.0291zm-26.344.218-42.204 42.909-6.13-6.029 42.204-42.909 6.13 6.0291zm-61.648 23.913c5.3254-5.3831 10.65-10.765 21.569-21.867l6.13 6.0291c-10.927 11.11-16.258 16.498-21.587 21.885-4.4007 4.4488-8.8009 8.8968-16.359 16.573l31.977 8.358 25.968-26.402 6.13 6.0292-25.968 26.402 8.907 31.908 42.138-42.087 6.076 6.083-49.109 49.05-45.837-12.628-13.394-45.646 1.7714-1.801c10.928-11.111 16.258-16.499 21.588-21.886zm28.419 70.99-8.846-31.689-31.831-8.32 9.1945 31.335 31.482 8.674zm47.734-56.517 7.122-7.1221-6.08-6.0797-7.147 7.1474-30.171 30.674 6.13 6.029 30.146-30.649z"
+        ></path>
+      </svg>
+      <span class="framework-select__name">Iced</span>
+    </span>
     <svg class="framework-select__chevron" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
       <path d="M6 9l6 6 6-6"></path>
     </svg>
@@ -50,6 +60,19 @@ const label = 'Framework';
         ></path>
       </svg>
       <span>Slint</span>
+      <svg class="framework-select__check" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+        <path d="m20 6-11 11-5-5"></path>
+      </svg>
+    </button>
+    <button class="framework-select__option" type="button" role="option" data-framework-option="iced" aria-selected="false" tabindex="-1">
+      <svg class="framework-select__logo" viewBox="35 31 179 171" aria-hidden="true">
+        <rect x="42" y="31" width="169.9" height="169.9" rx="49.815" fill="#00A3FF"></rect>
+        <path
+          fill="#FFFFFF"
+          d="m182.62 65.747-28.136 28.606-6.13-6.0291 28.136-28.606 6.13 6.0291zm-26.344.218-42.204 42.909-6.13-6.029 42.204-42.909 6.13 6.0291zm-61.648 23.913c5.3254-5.3831 10.65-10.765 21.569-21.867l6.13 6.0291c-10.927 11.11-16.258 16.498-21.587 21.885-4.4007 4.4488-8.8009 8.8968-16.359 16.573l31.977 8.358 25.968-26.402 6.13 6.0292-25.968 26.402 8.907 31.908 42.138-42.087 6.076 6.083-49.109 49.05-45.837-12.628-13.394-45.646 1.7714-1.801c10.928-11.111 16.258-16.499 21.588-21.886zm28.419 70.99-8.846-31.689-31.831-8.32 9.1945 31.335 31.482 8.674zm47.734-56.517 7.122-7.1221-6.08-6.0797-7.147 7.1474-30.171 30.674 6.13 6.029 30.146-30.649z"
+        ></path>
+      </svg>
+      <span>Iced</span>
       <svg class="framework-select__check" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
         <path d="m20 6-11 11-5-5"></path>
       </svg>
@@ -302,11 +325,24 @@ const label = 'Framework';
     gap: 0.4rem;
   }
 
-  :global(html:not([data-framework='gpui'])) .framework-select:not([data-selected]) .framework-select__value[data-framework-value='gpui'],
-  :global(html[data-framework='gpui']) .framework-select:not([data-selected]) .framework-select__value[data-framework-value='slint'],
-  .framework-select[data-selected='gpui'] .framework-select__value[data-framework-value='slint'],
-  .framework-select[data-selected='slint'] .framework-select__value[data-framework-value='gpui'] {
+  /* The trigger names the framework in force, and nothing else. Its own
+     `data-selected` is what the script writes; before that runs, the active
+     `html[data-framework]` stands in, so the label is right on the first paint
+     and a returning reader never sees it change. Everything is hidden first and
+     the one that is in force is shown, so another framework is one line here
+     rather than a pair with each of the others. */
+  .framework-select[data-selected] .framework-select__value,
+  .framework-select:not([data-selected]) .framework-select__value {
     display: none;
+  }
+
+  .framework-select[data-selected='gpui'] .framework-select__value[data-framework-value='gpui'],
+  .framework-select[data-selected='slint'] .framework-select__value[data-framework-value='slint'],
+  .framework-select[data-selected='iced'] .framework-select__value[data-framework-value='iced'],
+  :global(html[data-framework='gpui']) .framework-select:not([data-selected]) .framework-select__value[data-framework-value='gpui'],
+  :global(html[data-framework='slint']) .framework-select:not([data-selected]) .framework-select__value[data-framework-value='slint'],
+  :global(html[data-framework='iced']) .framework-select:not([data-selected]) .framework-select__value[data-framework-value='iced'] {
+    display: inline-flex;
   }
 
   .framework-select__logo {
@@ -372,10 +408,14 @@ const label = 'Framework';
     background: var(--secondary);
   }
 
-  :global(html[data-framework='gpui']) .framework-select:not([data-selected]) [data-framework-option='gpui'],
-  :global(html:not([data-framework='gpui'])) .framework-select:not([data-selected]) [data-framework-option='slint'],
+  /* The option in force carries the weight and the mark, keyed the same way as
+     the trigger's label. */
   .framework-select[data-selected='gpui'] [data-framework-option='gpui'],
-  .framework-select[data-selected='slint'] [data-framework-option='slint'] {
+  .framework-select[data-selected='slint'] [data-framework-option='slint'],
+  .framework-select[data-selected='iced'] [data-framework-option='iced'],
+  :global(html[data-framework='gpui']) .framework-select:not([data-selected]) [data-framework-option='gpui'],
+  :global(html[data-framework='slint']) .framework-select:not([data-selected]) [data-framework-option='slint'],
+  :global(html[data-framework='iced']) .framework-select:not([data-selected]) [data-framework-option='iced'] {
     background: var(--secondary);
     font-weight: 600;
   }
@@ -390,10 +430,12 @@ const label = 'Framework';
     opacity: 0;
   }
 
-  :global(html[data-framework='gpui']) .framework-select:not([data-selected]) [data-framework-option='gpui'] .framework-select__check,
-  :global(html:not([data-framework='gpui'])) .framework-select:not([data-selected]) [data-framework-option='slint'] .framework-select__check,
   .framework-select[data-selected='gpui'] [data-framework-option='gpui'] .framework-select__check,
-  .framework-select[data-selected='slint'] [data-framework-option='slint'] .framework-select__check {
+  .framework-select[data-selected='slint'] [data-framework-option='slint'] .framework-select__check,
+  .framework-select[data-selected='iced'] [data-framework-option='iced'] .framework-select__check,
+  :global(html[data-framework='gpui']) .framework-select:not([data-selected]) [data-framework-option='gpui'] .framework-select__check,
+  :global(html[data-framework='slint']) .framework-select:not([data-selected]) [data-framework-option='slint'] .framework-select__check,
+  :global(html[data-framework='iced']) .framework-select:not([data-selected]) [data-framework-option='iced'] .framework-select__check {
     opacity: 1;
   }
 

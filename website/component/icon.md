@@ -18,6 +18,8 @@ type. A legacy name converts into the shared name with `.into()`.
 For the new shared enum, use `Icon::new(name).view(cx)` when a component entity
 is needed, or import `gpui_kit::component::IconNameExt` to call `name.view(cx)`.
 
+<!-- framework: gpui -->
+
 :::note NOTE — Depending on the crate does not embed every icon
 
 **The complete catalog does not make existing applications embed every icon.**

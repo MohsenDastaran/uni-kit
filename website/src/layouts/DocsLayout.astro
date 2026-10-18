@@ -3,10 +3,9 @@ import BaseLayout from './BaseLayout.astro';
 import Nav from '../components/Nav.astro';
 import Sidebar from '../components/Sidebar.astro';
 import SiteFooter from '../components/SiteFooter.astro';
-import Toc from '../components/Toc.astro';
+import AnimatedToc from '../components/AnimatedToc.vue';
 import CodeBlock from '../components/CodeBlock.vue';
 import InstallCommand from '../components/InstallCommand.vue';
-import type { Heading } from '../components/Toc.astro';
 import type { SidebarItem } from '../lib/sidebar';
 import { fetchStarCount } from '../lib/github';
 import { SITE_URL } from '../lib/site';
@@ -15,7 +14,6 @@ export interface Props {
   title?: string;
   description?: string;
   sidebar?: SidebarItem[];
-  headings?: Heading[];
   frontmatter?: Record<string, any>;
   /** Extra class for the article, for a page whose content needs its own rules. */
   contentClass?: string;
@@ -27,7 +25,6 @@ const {
   title,
   description,
   sidebar = [],
-  headings = [],
   frontmatter = {},
   contentClass,
   contentData = {},
@@ -92,7 +89,7 @@ const structuredData = [
       <InstallCommand client:load />
     </main>
 
-    {hasSidebar && <Toc headings={headings} />}
+    {hasSidebar && <AnimatedToc client:load />}
   </div>
 
   <!-- Page-level, so it spans the shared content box rather than the

@@ -7,13 +7,13 @@ import { logoElement } from './toggle-logos.js';
 // block is GPUI. A block that only one framework has is omitted from the other
 // framework, including the heading that introduces nothing else.
 
-export const FRAMEWORKS = ['gpui', 'slint'];
+export const FRAMEWORKS = ['gpui', 'slint', 'iced'];
 
-const NAMES = { gpui: 'GPUI', slint: 'Slint' };
+const NAMES = { gpui: 'GPUI', slint: 'Slint', iced: 'Iced' };
 
 const COPY = {
   en: {
-    label: 'Framework',
+    label: 'Install',
     missing: (name) => `No ${name} version of this example yet.`,
     covered: (name) => `This example is GPUI-specific. The ${name} usage near the top of the page covers this component.`,
     status: (name) => `Showing ${name} code`,
@@ -26,7 +26,13 @@ const text = (value) => ({ type: 'text', value });
 const element = (tagName, properties, children = []) => ({ type: 'element', tagName, properties, children });
 
 function frameworkOf(pre) {
-  return pre.properties?.dataLanguage === 'slint' ? 'slint' : 'gpui';
+  // Each remark plugin names its fences: `slint` for Slint, `iced` for iced
+  // (aliased to Rust for the highlighter, because a language Shiki does not know
+  // loses the whole block). Everything else on a component page is the GPUI
+  // block the page was written around.
+  const language = pre.properties?.dataLanguage;
+  if (language === 'slint' || language === 'iced') return language;
+  return 'gpui';
 }
 
 function isBlank(node) {
@@ -46,6 +52,16 @@ function headingDepth(node) {
 
 function panelIsMissing(panel) {
   return (panel.children ?? []).some((child) => classNames(child).includes('framework-code__missing'));
+}
+
+// A panel with nothing of its framework in it: the missing note, or nothing at
+// all — iced's empty panel is how that framework says it has no sample here.
+function panelAbsent(panel) {
+  const content = (panel.children ?? []).filter((node) => !isBlank(node));
+  return (
+    content.length === 0 ||
+    content.every((node) => classNames(node).includes('framework-code__missing'))
+  );
 }
 
 // A sample that exists in only one framework, and a heading whose section is
@@ -132,24 +148,7 @@ function selector(copy, slug) {
       ),
     },
     [
-      element('span', { className: ['framework-bar__label'], id: 'framework-bar-label' }, [text(copy.label)]),
-      element('div', { className: ['framework-switch'], role: 'radiogroup', ariaLabelledBy: 'framework-bar-label' }, [
-        element('span', { className: ['framework-switch__thumb'], ariaHidden: 'true' }),
-        ...FRAMEWORKS.map((framework, index) =>
-          element(
-            'button',
-            {
-              type: 'button',
-              className: ['framework-switch__option'],
-              role: 'radio',
-              dataFrameworkOption: framework,
-              ariaChecked: index === 0 ? 'true' : 'false',
-              tabIndex: index === 0 ? 0 : -1,
-            },
-            [logoElement(framework), text(NAMES[framework])],
-          ),
-        ),
-      ]),
+      element('span', { className: ['framework-bar__label'] }, [text(copy.label)]),
       element('div', { className: ['install-command-host'], dataInstallSlug: slug }),
       element('span', { className: ['sr-only'], role: 'status', dataFrameworkStatus: '' }),
     ],
@@ -163,8 +162,8 @@ function isMdBlank(node) {
 }
 
 // `<!-- framework: gpui -->` before a heading keeps that section on one
-// framework. The marker is removed; the heading and the blocks under it carry
-// `data-framework-only`.
+// framework, and before any other block keeps just that block. The marker is
+// removed; the section — or the one block — carries `data-framework-only`.
 export function remarkFrameworkOnly() {
   return (tree) => {
     const visitNode = (node) => {
@@ -184,7 +183,17 @@ export function remarkFrameworkOnly() {
         let heading = index + 1;
         while (heading < children.length && isMdBlank(children[heading])) heading += 1;
         const head = children[heading];
-        if (!head || head.type !== 'heading') continue;
+        if (!head) continue;
+        if (head.type !== 'heading') {
+          // Not a section: the marker names the one block that follows it. A
+          // callout container is still markdown here — `remarkCallouts` runs
+          // after this plugin — so a note takes the mark on its opener
+          // paragraph, and that plugin moves it onto the `<aside>` it writes.
+          const data = (head.data ??= {});
+          const props = (data.hProperties ??= {});
+          props['data-framework-only'] = framework;
+          continue;
+        }
         let end = heading + 1;
         while (end < children.length) {
           const next = children[end];
@@ -204,6 +213,93 @@ export function remarkFrameworkOnly() {
   };
 }
 
+/**
+ * The heading a group belongs to, and the prose between them, take the group's
+ * `data-framework-missing` — the section goes together, or a heading would be left
+ * standing over nothing.
+ *
+ * The walk stops at anything that is not blank text or a paragraph, so it cannot
+ * reach into the section above and hide that too.
+ *
+ * A heading is only marked for the frameworks its *whole section* has no sample
+ * for. An iced sample is spliced directly under the heading it documents, so a
+ * page with prose between that heading and the page's own code leaves the iced
+ * group standing alone: reading only that group would hide a heading whose
+ * GPUI and Slint samples sit below the prose. The samples are collected from
+ * every group under the heading before the mark is written.
+ */
+function hideAbsentSections(tree) {
+  const visitNode = (node) => {
+    const children = node.children ?? [];
+    for (const child of children) visitNode(child);
+    children.forEach((child, index) => {
+      // A group with no sample for a framework: read from the panels themselves
+      // rather than guessed from the first block, because one framework can
+      // contribute several blocks to the same example.
+      if (classNames(child).includes('framework-code')) {
+        const absent = (child.children ?? [])
+          .filter((panel) => panel.properties?.dataFrameworkPanel)
+          // Blank nodes are layout, not content: a panel that holds whitespace
+          // and the note is still a panel with nothing in it.
+          .filter(panelAbsent)
+          .map((panel) => panel.properties.dataFrameworkPanel);
+        if (absent.length) {
+          child.properties = { ...child.properties, dataFrameworkMissing: absent.join(' ') };
+        }
+      }
+      const missingFrameworks = child.properties?.dataFrameworkMissing;
+      if (!missingFrameworks) return;
+      const prose = [];
+      for (let at = index - 1; at >= 0; at -= 1) {
+        const previous = children[at];
+        if (isBlank(previous)) continue;
+        if (previous.properties?.dataFrameworkCode) return;
+        if (previous.type !== 'element') return;
+        if (previous.tagName !== 'p') {
+          if (!isHeading(previous)) return;
+          // The heading's section decides what the framework really has, not
+          // the one group the walk started from.
+          const present = sectionFrameworks(children, at);
+          const absent = missingFrameworks
+            .split(' ')
+            .filter((framework) => !present.has(framework));
+          if (absent.length === 0) return;
+          const value = absent.join(' ');
+          for (const paragraph of prose) {
+            paragraph.properties = { ...paragraph.properties, dataFrameworkMissing: value };
+          }
+          previous.properties = { ...previous.properties, dataFrameworkMissing: value };
+          return;
+        }
+        prose.push(previous);
+      }
+    });
+  };
+  visitNode(tree);
+}
+
+/** The frameworks with a sample under the heading at `headingIndex`, up to the
+ *  next heading of the same or shallower depth. */
+function sectionFrameworks(children, headingIndex) {
+  const depth = headingDepth(children[headingIndex]);
+  const present = new Set();
+  for (let at = headingIndex + 1; at < children.length; at += 1) {
+    const node = children[at];
+    const nodeDepth = headingDepth(node);
+    if (nodeDepth && nodeDepth <= depth) break;
+    if (!classNames(node).includes('framework-code')) continue;
+    for (const panel of node.children ?? []) {
+      const framework = panel.properties?.dataFrameworkPanel;
+      if (framework && !panelAbsent(panel)) present.add(framework);
+    }
+  }
+  return present;
+}
+
+function isHeading(node) {
+  return /^h[1-6]$/.test(node.tagName ?? '');
+}
+
 export function rehypeFrameworkCode() {
   return (tree, file) => {
     const path = String(file?.path ?? file?.history?.[0] ?? '');
@@ -213,6 +309,8 @@ export function rehypeFrameworkCode() {
     const covered = {
       gpui: false,
       slint: Boolean(slug && hasSlintExample(slug) && !hasSlintUsage(slug)),
+      // Nothing stands in for an iced sample yet: a block without one says so.
+      iced: false,
     };
 
     const blocks = [];
@@ -223,18 +321,24 @@ export function rehypeFrameworkCode() {
     });
     if (blocks.length === 0) return;
 
+    // One control per example, holding every framework's version of it. The first
+    // block of a run opens the control; a block of a framework that has not spoken
+    // yet joins it, in whatever order the remark plugins inserted them — GPUI's
+    // Rust fence, then the Slint and iced samples they add.
     let open = null;
     for (const { node, parent } of blocks) {
       const framework = frameworkOf(node);
       const index = parent.children.indexOf(node);
-
-      if (
-        framework === 'slint' &&
+      const joins =
         open?.parent === parent &&
-        parent.children.slice(parent.children.indexOf(open.group) + 1, index).every(isBlank)
-      ) {
-        open.slint.children = open.filled ? [...open.slint.children, node] : [node];
-        open.filled = true;
+        !open.filled.has(framework) &&
+        parent.children.slice(parent.children.indexOf(open.group) + 1, index).every(isBlank);
+
+      if (joins) {
+        const panel = open.panels[framework];
+        panel.children = open.spoke.has(framework) ? [...panel.children, node] : [node];
+        open.spoke.add(framework);
+        open.filled.add(framework);
         parent.children.splice(index, 1);
         continue;
       }
@@ -242,9 +346,15 @@ export function rehypeFrameworkCode() {
       const panels = Object.fromEntries(
         FRAMEWORKS.map((name) => [
           name,
-          element('div', { className: ['framework-code__panel'], dataFrameworkPanel: name }, [
-            name === framework ? node : missing(copy, name, covered[name]),
-          ]),
+          element(
+            'div',
+            { className: ['framework-code__panel'], dataFrameworkPanel: name },
+            // A reader who chose iced gets the sample or an empty panel — no note
+            // saying the sample is missing, and never another framework's code. An
+            // empty panel is also what tells the pass below that this framework is
+            // absent here, so the whole section can be hidden under it.
+            name === framework ? [node] : name === 'iced' ? [] : [missing(copy, name, covered[name])],
+          ),
         ]),
       );
       const group = element(
@@ -253,10 +363,11 @@ export function rehypeFrameworkCode() {
         FRAMEWORKS.map((name) => panels[name]),
       );
       parent.children[index] = group;
-      open = framework === 'gpui' ? { group, parent, slint: panels.slint, filled: false } : null;
+      open = { group, parent, panels, spoke: new Set([framework]), filled: new Set([framework]) };
     }
 
     markSingleFramework(tree);
+    hideAbsentSections(tree);
 
     const title = tree.children.findIndex((node) => node.type === 'element' && node.tagName === 'h1');
     if (title === -1) return;

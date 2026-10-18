@@ -15,6 +15,13 @@ const base = `/${(process.env.SITE_TEST_BASE || '/').replace(/^\/+|\/+$/g, '')}/
 // neither in a versioned build nor expected to be.
 const SHARED_ROOT = /^\/(?:gallery|examples|apps|zh-CN\/apps)(?:[/?#]|$)/;
 
+// `website/docs` is not site content. The `/docs` guide section was removed and
+// the English guides are vendored under `skills/`, so a `/docs` link has no
+// page to reach; content that still links there is a content fix, not a build
+// failure. Component pages and their legacy `/docs/components/*` redirect
+// stubs are still checked by the SEO suite.
+const REMOVED_DOCS = /^\/docs(?:[/?#]|$)/;
+
 function htmlFiles(directory: string): string[] {
   return readdirSync(directory).flatMap((name) => {
     // The root build does not contain the versioned builds under it.
@@ -53,7 +60,7 @@ test('internal links stay in their version and reach a page', () => {
       // The version menu links the same page in every version on purpose.
       if (/\sdata-version-link[\s>=]/.test(tag)) continue;
       const url = decode(href);
-      if (SHARED_ROOT.test(url)) continue;
+      if (SHARED_ROOT.test(url) || REMOVED_DOCS.test(url)) continue;
 
       if (!url.startsWith(base) && `${url}/` !== base) {
         escaped.add(`${from} → ${url}`);

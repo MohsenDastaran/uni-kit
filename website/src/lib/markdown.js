@@ -22,7 +22,7 @@ export const shikiConfig = {
   },
   defaultColor: 'light',
   langs: ['rust', slint],
-  langAlias: { rs: 'rust' },
+  langAlias: { rs: 'rust', iced: 'rust' },
 };
 
 export const defaultHighlightLang = 'rust';

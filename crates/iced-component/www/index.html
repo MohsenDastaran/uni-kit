@@ -1,0 +1,110 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>uni-kit — iced</title>
+    <style>
+      html,
+      body {
+        margin: 0;
+        height: 100%;
+        overflow: hidden;
+        background: var(--gallery-background, #ffffff);
+        color: var(--gallery-foreground, #1f2328);
+        font: 13px/1.5 system-ui, -apple-system, sans-serif;
+      }
+      #note {
+        padding: 16px;
+        max-width: 42em;
+      }
+      code {
+        font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+      }
+    </style>
+    <script>
+      // The gallery is embedded in a component page, so it wears the host page's
+      // theme rather than the reader's system preference: a light frame inside a
+      // dark page is the one thing that always looks broken.
+      //
+      // The theme is read once, at load, because an iced application takes its
+      // theme when it starts. A later change on the host page therefore reloads
+      // this frame (see the observer below) — restarting the demo is honest,
+      // where repainting a canvas the application thinks is light is not.
+      (() => {
+        let dark;
+        try {
+          const embedded = window.parent !== window;
+          const root = embedded ? window.parent.document.documentElement : null;
+          const stored = localStorage.getItem('theme');
+          dark = root
+            ? root.classList.contains('dark')
+            : stored === 'dark' ||
+              (stored !== 'light' && matchMedia('(prefers-color-scheme: dark)').matches);
+          if (root) {
+            const style = window.parent.getComputedStyle(root);
+            const background = style.getPropertyValue('--background').trim();
+            const foreground = style.getPropertyValue('--foreground').trim();
+            if (background) document.documentElement.style.setProperty('--gallery-background', background);
+            if (foreground) document.documentElement.style.setProperty('--gallery-foreground', foreground);
+          }
+        } catch {
+          dark = false;
+        }
+        document.documentElement.dataset.theme = dark ? 'dark' : 'light';
+
+        // Watch the host page's palette, and start over when it changes. Two
+        // light palettes differ in `data-theme` alone, so a `class`-only
+        // observer would leave the frame sitting in the old one while the page
+        // changed around it. The pre-paint script on the page sets that
+        // attribute for a catalog palette and removes it for the plain light
+        // and dark choices, so both halves of the theme are watched here.
+        const root = window.parent !== window ? window.parent.document.documentElement : null;
+        if (root) {
+          const applied = `${root.classList.contains('dark')}:${root.dataset.theme ?? ''}`;
+          new MutationObserver(() => {
+            const now = `${root.classList.contains('dark')}:${root.dataset.theme ?? ''}`;
+            if (now !== applied) location.reload();
+          }).observe(root, { attributes: true, attributeFilter: ['class', 'data-theme'] });
+        }
+      })();
+    </script>
+  </head>
+  <body>
+    <div id="note">Starting the gallery…</div>
+    <script type="module">
+      // One module answers for every component, the way the GPUI gallery does:
+      // `?story=<registry key>` picks the demo, and the name is the same one the
+      // registry and the CLI use, so `message-role` is `message-role` here too.
+      const note = document.getElementById('note');
+      const story = new URLSearchParams(location.search).get('story') ?? '';
+      const dark = document.documentElement.dataset.theme === 'dark';
+
+      // The page is served at `/iced-gallery?story=…` — a path with no trailing
+      // slash, so `./iced_component.js` would resolve against the site root and
+      // 404. Asking for the module beside the *directory* the page is mounted at
+      // keeps this right under any prefix, including a project-site subpath.
+      const mounted = location.pathname.replace(/\/+$/, '') + '/';
+
+      try {
+        const { default: init, run } = await import(mounted + 'iced_component.js');
+        await init();
+        // Hidden rather than removed: `run` does not return until the window
+        // closes, so there is no moment after a successful start to clean up in,
+        // and a browser that cannot give the application a GPU surface traps
+        // inside that call. Leaving the element in place is what lets the catch
+        // below say so instead of showing a blank rectangle.
+        note.style.display = 'none';
+        run(story, dark);
+      } catch (error) {
+        note.style.display = '';
+        note.innerHTML =
+          'The iced gallery could not start: <code>' +
+          String(error) +
+          '</code><br />A browser with WebGPU or WebGL is needed; ' +
+          'in development, build it with <code>make dev:website-iced</code>.';
+        throw error;
+      }
+    </script>
+  </body>
+</html>

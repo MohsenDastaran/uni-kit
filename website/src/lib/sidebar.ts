@@ -1,9 +1,15 @@
 import { readdirSync, readFileSync, statSync } from 'node:fs';
 import { extname, join, relative } from 'node:path';
-import { exampleSourcesAvailable, galleryCounts, type GalleryCounts } from './example-counts';
+import {
+  exampleSourcesAvailable,
+  galleryCounts,
+  icedExampleSourcesAvailable,
+  type GalleryCounts,
+} from './example-counts';
+import { hasIcedPage } from './remark-iced-source.js';
 import { hasSlintPage } from './remark-slint-source.js';
 
-export type FrameworkText = Partial<Record<'gpui' | 'slint', string>>;
+export type FrameworkText = Partial<Record<'gpui' | 'slint' | 'iced', string>>;
 
 export interface SidebarItem {
   text: string;
@@ -20,11 +26,12 @@ export interface SidebarItem {
   /** Examples in the gallery window, per framework. Omitted when that window has none. */
   examples?: GalleryCounts;
   /**
-   * The page has no Slint example window, so the Slint sidebar has nothing to
-   * show beside its neighbours and hides it. It is a GPUI page, and the GPUI
-   * sidebar keeps it.
+   * The frameworks this page has a view in, space separated. The sidebar hides
+   * the row under a framework the page has no view of — a page with no iced
+   * implementation is not in the iced sidebar — and the framework switch sends
+   * the reader to the catalog rather than to a page with nothing to show.
    */
-  slintGap?: boolean;
+  frameworkAvailable?: string;
 }
 
 export interface SidebarGeneratorConfig {
@@ -114,9 +121,25 @@ interface FileEntry {
   examples?: GalleryCounts;
   /** The page has an example window and it paints nothing. */
   empty?: boolean;
-  /** The page has no Slint example window. */
-  slintGap?: boolean;
+  /** The frameworks the page has a view in, space separated. */
+  frameworkAvailable?: string;
   items?: FileEntry[];
+}
+
+/**
+ * The frameworks this page has a view in.
+ *
+ * Asked of the example sources rather than of the counts, so the answer is the
+ * same in a dev server, where nothing is counted. A framework whose sources are
+ * not on disk cannot be answered for at all and stays in the list: a missing
+ * tree is "unknown", never "missing", or one absent directory would empty that
+ * framework's whole navigation.
+ */
+function pageFrameworks(slug: string, example: string | false | undefined): string {
+  const frameworks = ['gpui'];
+  if (!exampleSourcesAvailable || hasSlintPage(slug, example)) frameworks.push('slint');
+  if (!icedExampleSourcesAvailable || hasIcedPage(slug, example)) frameworks.push('iced');
+  return frameworks.join(' ');
 }
 
 function scanDir(dir: string, baseDir: string, countExamples: boolean): FileEntry[] {
@@ -147,13 +170,7 @@ function scanDir(dir: string, baseDir: string, countExamples: boolean): FileEntr
         examples,
         // An opted-out page has no window to be empty.
         empty: countExamples && frontmatter.example !== false && !examples,
-        // Asked of the sources rather than of the counts, so the answer is the
-        // same in a dev server, where nothing is counted. A build without the
-        // source tree cannot answer it at all and hides nothing, or a trimmed
-        // context would drop the whole Slint navigation.
-        slintGap: exampleSourcesAvailable
-          ? !hasSlintPage(name.replace(/\.md$/, ''), frontmatter.example)
-          : false,
+        frameworkAvailable: pageFrameworks(name.replace(/\.md$/, ''), frontmatter.example),
       };
     }).filter(Boolean) as FileEntry[];
   } catch {
@@ -168,16 +185,30 @@ function itemFromFile(entry: FileEntry, baseUrl: string): SidebarItem {
     link: `${baseUrl}/${entry.path.replace(/\.md$/, '')}`,
     collapsed: false,
     examples: entry.examples,
-    slintGap: entry.slintGap,
+    frameworkAvailable: entry.frameworkAvailable,
   };
 }
+
+/**
+ * Pages that keep their URL, their links and their registry entry, but do not
+ * belong in the sidebar. `message-role` is a supporting component — `message`
+ * and `message-scroller` use it — so its page stays reachable by link or URL
+ * while the catalog list, and the previous/next walk cut from that same list,
+ * pass it over rather than send the reader to a row nobody can see.
+ */
+const SIDEBAR_HIDDEN_SLUGS = new Set(['message-role']);
 
 function entriesToSidebarItems(
   entries: FileEntry[],
   baseUrl: string,
   hideEmpty: boolean,
 ): SidebarItem[] {
-  const hidden = (entry: FileEntry) => hideEmpty && entry.empty === true;
+  // Two reasons a page leaves the sidebar: it is held out on purpose, or (in a
+  // published build) its example window paints nothing. The first is a flag of
+  // its own, so it holds in a dev server too, where nothing is counted.
+  const hidden = (entry: FileEntry) =>
+    SIDEBAR_HIDDEN_SLUGS.has(entry.name.replace(/\.md$/, '')) ||
+    (hideEmpty && entry.empty === true);
   const dirs = entries.filter((e) => e.isDir);
   const files = entries.filter((e) => !e.isDir && !hidden(e));
 
@@ -246,6 +277,75 @@ export function generateSidebar(config: SidebarGeneratorConfig): SidebarItem[] {
   return [rootGroup];
 }
 
+/**
+ * Every component page, in the order the sidebar lists them.
+ *
+ * The sidebar is the reader's own map of the catalog, so the previous/next
+ * navigation on a component page is cut from this list rather than sorted
+ * again: a page that moves in the sidebar moves here, and the two cannot
+ * disagree. Group labels and the catalog's own root link are not pages and are
+ * left out; nested groups are walked in place, so a future catalog directory
+ * keeps its sidebar order too.
+ */
+export function componentPages(sidebar: SidebarItem[]): SidebarItem[] {
+  const pages: SidebarItem[] = [];
+  const walk = (items: SidebarItem[] | undefined) => {
+    for (const item of items ?? []) {
+      if (item.items) walk(item.items);
+      else if (item.link && !item.rootLink) pages.push(item);
+    }
+  };
+  walk(sidebar);
+  return pages;
+}
+
+export interface ComponentNeighbours {
+  current?: SidebarItem;
+  previous?: SidebarItem;
+  next?: SidebarItem;
+}
+
+/**
+ * The component before and after `pathname` in the sidebar's own order. The
+ * ends of the list are honest: the first page has no `previous` and the last
+ * has no `next`, and the caller hides the missing link rather than inventing a
+ * wrap-around or a disabled row.
+ *
+ * `framework` walks past the pages that have no view in it: `theme` is a GPUI
+ * guide, so a reader on iced goes on to the next page that has a view instead
+ * of landing on one with nothing to show. The answer is the page's own
+ * `frameworkAvailable` — the list the sidebar hides rows by and the support
+ * tiles are built from — so the pager and the list beside it cannot disagree.
+ * No framework, or a page that does not say (a missing source tree), keeps the
+ * plain walk.
+ */
+export function componentNeighbours(
+  sidebar: SidebarItem[],
+  pathname: string,
+  framework?: string,
+): ComponentNeighbours {
+  const pages = componentPages(sidebar);
+  const index = pages.findIndex((page) => page.link === pathname);
+  if (index < 0) return {};
+
+  const hasView = (page: SidebarItem) =>
+    !framework ||
+    !page.frameworkAvailable ||
+    page.frameworkAvailable.split(/\s+/).includes(framework);
+  const step = (from: number, direction: -1 | 1): SidebarItem | undefined => {
+    for (let i = from + direction; i >= 0 && i < pages.length; i += direction) {
+      if (hasView(pages[i])) return pages[i];
+    }
+    return undefined;
+  };
+
+  return {
+    current: pages[index],
+    previous: step(index, -1),
+    next: step(index, 1),
+  };
+}
+
 // Pre-generate sidebars at build time.
 //
 // Not `import.meta.url`: Astro rearranges server assets during the build, so
@@ -271,7 +371,43 @@ export const enComponentSidebar = generateSidebar({
   // The catalog is the same source hand-written per framework, so the heading
   // names the one the reader has selected rather than always GPUI.
   rootGroupText: 'GPUI Component',
-  rootGroupTextByFramework: { gpui: 'GPUI Component', slint: 'Slint Component' },
+  rootGroupTextByFramework: {
+    gpui: 'GPUI Component',
+    slint: 'Slint Component',
+    iced: 'Iced Component',
+  },
   rootLinkText: 'Components',
   countExamples: true,
 });
+
+export interface CatalogTotals {
+  /** Component views across every framework the catalogue shows. */
+  components: number;
+  /** Example windows those views paint, across every framework. */
+  examples: number;
+}
+
+/**
+ * The catalogue's size, counted from the same page list the sidebar is cut
+ * from, so a figure the hero prints cannot drift from the catalogue beside it.
+ *
+ * A component counts once for every framework its page has a view in: the same
+ * component written for GPUI, Slint and iced is three catalogue entries, which
+ * is what "components across frameworks" means here. Examples are summed the
+ * same way -- each framework's window is its own sample -- so both totals rise
+ * when a page or a sample is added anywhere.
+ */
+export function catalogTotals(): CatalogTotals {
+  const pages = componentPages(enComponentSidebar);
+  let components = 0;
+  let examples = 0;
+  for (const page of pages) {
+    components += (page.frameworkAvailable ?? '')
+      .split(/\s+/)
+      .filter(Boolean).length;
+    for (const count of Object.values(page.examples ?? {})) {
+      examples += count;
+    }
+  }
+  return { components, examples };
+}

@@ -84,6 +84,7 @@ function pagesIn(pages: string): Record<string, Gallery> {
 export function gallerySizes(repo = resolve(process.cwd(), '..')): Record<string, Gallery> {
   return {
     gallery: modulesIn(join(repo, 'crates/story-web/www/dist')),
+    'iced-gallery': modulesIn(join(repo, 'crates/iced-component/www/dist')),
     'examples/base': modulesIn(join(repo, 'crates/base/examples/wasm/www/dist')),
     ...pagesIn(join(repo, 'crates/slint-component/www/dist/pages')),
   };

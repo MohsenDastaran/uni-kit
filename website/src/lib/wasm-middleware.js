@@ -15,6 +15,7 @@ export function wasmExamplesDevServer(base) {
     [`${prefix}/examples/base`, resolve('../crates/base/examples/wasm/www/dist')],
     [`${prefix}/gallery`, resolve('../crates/story-web/www/dist')],
     [`${prefix}/slint-gallery`, resolve('../crates/slint-component/www/dist')],
+    [`${prefix}/iced-gallery`, resolve('../crates/iced-component/www/dist')],
   ]);
 
   return {

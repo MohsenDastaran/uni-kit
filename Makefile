@@ -14,7 +14,8 @@ dev\:website:
 # start the site. Use `dev:website` instead once www/dist is already current and
 # only site files changed.
 #
-# The rebuild is capped in a cgroup (scripts/guard.sh) because a single rustc
+# The rebuild is capped in a cgroup (script/guard.sh, shared with the iced
+# gallery) because a single rustc
 # peaks near 13 GiB, which freezes the desktop before the kernel kills it. With
 # the cap the build dies on its own and the machine stays responsive.
 #
@@ -42,6 +43,68 @@ dev\:website-slint:
 	@SLUGS="$(SLUGS)" $(MAKE) build\:wasm-slint-dev
 	bun run --cwd website dev
 
+# The site serves crates/iced-component/www/dist at `/iced-gallery`, the folder
+# the iced build writes. One module answers for every component — `?story=<key>`
+# picks the demo — so unlike Slint there is nothing to build per page, and the
+# whole gallery is one bounded build.
+# Release, not debug: a debug iced module is about 90 MB against 7.8 MB, which is
+# not a preview anybody waits for. One build covers every component here, so the
+# release build is affordable — unlike Slint, whose catalogue has to be split by
+# page to fit in memory at all.
+#
+#   make dev:website-iced        after changing a demo or a component
+#   make dev:website-iced-page   after changing only the page or the sources
+dev\:website-iced:
+	$(MAKE) -C crates/iced-component build-wasm
+	bun run --cwd website dev
+
+# The same gallery without the module. The page, its source view and its themes
+# need no Rust at all — `scripts/build-page.sh` only copies files — so this is the
+# loop for working on them, and it is seconds rather than minutes. The module is
+# whatever the last build left in www/dist.
+dev\:website-iced-page:
+	$(MAKE) -C crates/iced-component build-page
+	bun run --cwd website dev
+
+# Release WASM for the iced gallery (`/iced-gallery`).
+build\:wasm-iced:
+	$(MAKE) -C crates/iced-component build-wasm
+
+# The page and the demo sources the gallery serves, without the module. The
+# release build writes them too; this writes them on their own.
+build\:page-iced:
+	$(MAKE) -C crates/iced-component build-page
+
+# The iced crate's own gate: the module lists, the library and every example,
+# theme parity with the Slint tokens, the feature list against the install hint,
+# the generated manifest, and the component checklist. The checklist is the one
+# step that fails while components are missing, which is the point of it.
+check\:iced:
+	$(MAKE) -C crates/iced-component check
+
+# The gallery natively, through the same dispatcher the browser module calls.
+# With no story it lists what there is.
+#
+#   make run:iced                  the list
+#   make run:iced STORY=button     one story
+#   make run:iced STORY=button DARK=1
+run\:iced:
+	$(MAKE) -C crates/iced-component run STORY="$(STORY)" DARK="$(DARK)"
+
+# Every story `?story=` takes, one per line, read from the demos themselves.
+stories\:iced:
+	@$(MAKE) -C crates/iced-component stories
+
+# The wasm-bindgen CLI the iced lockfile resolves, installed into a prefix of its
+# own. The workspace's galleries use a different version, and one binary cannot
+# serve both, so this leaves theirs alone.
+install\:iced-bindgen:
+	$(MAKE) -C crates/iced-component install-iced-bindgen
+
+# Remove the built gallery. Nothing outside crates/iced-component/www/dist.
+clean\:iced:
+	$(MAKE) -C crates/iced-component clean-wasm
+
 # Debug WASM for one page of the Slint gallery, memory-capped.
 #
 # The site serves each page from its own folder under `/slint-gallery/pages`,
@@ -61,7 +124,7 @@ build\:wasm-slint-dev:
 	if [ -z "$$slugs" ]; then echo "slint: nothing changed since the last build"; exit 0; fi; \
 	for slug in $$(echo "$$slugs" | tr ',' ' '); do \
 	  echo "slint: building $$slug"; \
-	  SLINT_GALLERY_ONLY="$$slug" ./scripts/guard.sh ./scripts/build.sh --out "www/dist/pages/$$slug" >/dev/null; \
+	  SLINT_GALLERY_ONLY="$$slug" ../../script/guard.sh ./scripts/build.sh --out "www/dist/pages/$$slug" >/dev/null; \
 	done; \
 	echo "slint: built $$(echo "$$slugs" | tr ',' ' ' | wc -w) page(s)"
 
@@ -75,7 +138,7 @@ build\:wasm-gpui:
 build\:wasm-slint-pages:
 	cd crates/slint-component && for slug in $$(./scripts/pages.sh); do \
 	  echo "slint: $$slug"; \
-	  SLINT_GALLERY_ONLY="$$slug" ./scripts/guard.sh ./scripts/build.sh --out "www/dist/pages/$$slug" >/dev/null || exit 1; \
+	  SLINT_GALLERY_ONLY="$$slug" ../../script/guard.sh ./scripts/build.sh --out "www/dist/pages/$$slug" >/dev/null || exit 1; \
 	done
 
 # Release WASM gallery bundle for Slint (`/slint-gallery`), every page in one
@@ -88,8 +151,8 @@ build\:wasm-slint:
 build\:wasm-base:
 	$(MAKE) -C crates/base/examples/wasm build-wasm
 
-# All website WASM targets (same three as release-docs CI).
-build\:wasms: build\:wasm-gpui build\:wasm-slint build\:wasm-base
+# All website WASM targets (the same four as release-website CI).
+build\:wasms: build\:wasm-gpui build\:wasm-slint build\:wasm-base build\:wasm-iced
 
 build\:website:
 	bun run --cwd website build

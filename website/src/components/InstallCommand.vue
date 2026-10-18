@@ -10,6 +10,10 @@ const baseUrl = import.meta.env.BASE_URL;
 const MANAGERS = ["npx", "pnpm", "bun"] as const;
 type Manager = (typeof MANAGERS)[number];
 
+/** The frameworks a command can name, in the order the bar shows them. */
+const FRAMEWORKS = ["gpui", "slint", "iced"] as const;
+type Framework = (typeof FRAMEWORKS)[number];
+
 /**
  * A component page lets the markdown pipeline decide both, so the bar carries
  * the command for that page. A block gallery renders one instance per block, so
@@ -22,7 +26,7 @@ type Manager = (typeof MANAGERS)[number];
  */
 const props = defineProps<{
   slug?: string;
-  slugs?: Partial<Record<"gpui" | "slint", string[]>>;
+  slugs?: Partial<Record<Framework, string[]>>;
   host?: string;
 }>();
 
@@ -45,10 +49,12 @@ const PACKAGE = "@dastaran/uni-kit@latest";
 // installs every name its framework needs (see `slugs`).
 const pageNames = ref<string[]>([]);
 const targets = computed(() =>
-  fromBlock.value ? (props.slugs?.[framework.value] ?? []) : pageNames.value,
+  (fromBlock.value ? (props.slugs?.[framework.value] ?? []) : pageNames.value).map(
+    registryName,
+  ),
 );
 const manager = ref<Manager>("npx");
-const framework = ref<"gpui" | "slint">("slint");
+const framework = ref<Framework>("slint");
 const copied = ref(false);
 const status = ref("");
 /**
@@ -82,6 +88,23 @@ const runner = computed(() =>
 
 const namesFor = (name: string) =>
   (catalog as Record<string, string[]>)[name] ?? [];
+
+/**
+ * The registry name a page slug installs under.
+ *
+ * A component page's slug is the page's own name, while the manifest names a
+ * component after its Rust module, with underscores written as hyphens: the page
+ * `dropdown_button` installs for iced as `dropdown-button`. A name the framework
+ * already lists wins first, because Slint's own key is the underscored
+ * `dropdown_button` and must keep installing under the spelling the CLI's
+ * `add slint` entry uses.
+ */
+const registryName = (name: string) => {
+  const names = namesFor(framework.value);
+  if (names.includes(name)) return name;
+  const hyphenated = name.replace(/_/g, "-");
+  return names.includes(hyphenated) ? hyphenated : name;
+};
 
 /** A registry entry copies files into the app. uni-kit itself is the crate. */
 const packaged = computed(
@@ -131,10 +154,14 @@ function readManager(): Manager {
   return isManager(stored) ? stored : "npx";
 }
 
-function readFramework() {
-  return document.documentElement.dataset.framework === "gpui"
-    ? "gpui"
-    : "slint";
+/**
+ * The framework the reader has chosen, which is what the command must name. It was
+ * a `gpui`-or-`slint` test, so every other choice — iced among them — installed the
+ * Slint files while the reader was looking at iced.
+ */
+function readFramework(): Framework {
+  const chosen = document.documentElement.dataset.framework;
+  return FRAMEWORKS.includes(chosen as Framework) ? (chosen as Framework) : "slint";
 }
 
 function onStorage(event: StorageEvent) {
@@ -312,11 +339,19 @@ async function copy() {
           :tabindex="manager === name ? 0 : -1"
           @click="select(name)"
         >
-          <!-- Bun's mark is the mascot, so it is an image rather than a path. -->
+          <!-- Bun's mark is the mascot, and pnpm ships a wordmark of its own:
+               each is an image rather than a path. -->
           <img
             v-if="name === 'bun'"
             class="framework-switch__logo framework-switch__logo--bun"
             :src="`${baseUrl}bun.png`"
+            alt=""
+            aria-hidden="true"
+          />
+          <img
+            v-else-if="name === 'pnpm'"
+            class="framework-switch__logo framework-switch__logo--pnpm"
+            :src="`${baseUrl}pnpm.svg`"
             alt=""
             aria-hidden="true"
           />

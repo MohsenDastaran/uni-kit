@@ -1,0 +1,1195 @@
+//! A floating surface anchored to a trigger. Mirrors GPUI Component's `Popover`
+//! and the Slint version beside it, and is the base the rest of the overlay
+//! family — `tooltip`, `menu`, `dropdown_button`, `select`, `combobox` and
+//! `date-picker` — is built on.
+//!
+//! # Why this is a widget and not a `stack!`
+//!
+//! A surface drawn inside the layout that owns the trigger is clipped by every
+//! scroll area between them, and it cannot escape a card: the Slint example says
+//! so in as many words ("The panel is a popup, so it is not clipped by this
+//! card"). iced 0.14 has no popover widget, but it does have the mechanism
+//! `pick_list`, `combo_box` and iced's own `tooltip` use: a `Widget` whose
+//! [`overlay`](iced::advanced::widget::Widget::overlay) returns an
+//! [`overlay::Element`] while it is open. The runtime lays that overlay out
+//! against the window, draws it after the whole tree, and gives it every event
+//! first, so the panel is neither clipped nor covered. That mechanism is what
+//! this file uses, and nothing here fakes position with padding inside a stack.
+//!
+//! # Why the overlay borrows instead of taking
+//!
+//! The runtime builds a widget's overlay **twice**: once while it processes the
+//! frame's events, and again in `UserInterface::draw`, because the overlay the
+//! events ran against is dropped before the frame is painted. A popover that
+//! moved its content out of `self` the first time therefore found nothing the
+//! second time and drew no panel at all. So the content stays in the popover and
+//! the overlay borrows it, which is what iced's own `tooltip` does with its
+//! tooltip and `pick_list` does with its menu.
+//!
+//! # The contract
+//!
+//! The caller owns `open`. [`Popover::open`] is what the panel is rendered from,
+//! and [`Popover::on_open_change`] is the only way the popover reports a change —
+//! a trigger click, an outside click, or Escape. A popover with no
+//! `on_open_change` cannot move its own state, because it has none; it still
+//! renders open whenever the caller says open.
+//!
+//! # The panel consumes the pointer events that land on it
+//!
+//! A press or release while the pointer is over the panel stops at the panel and
+//! does not also reach the tree behind it — the content is updated first, so the
+//! row, the button or the field under the pointer still acts, and then the
+//! overlay captures the event. Two gaps made this necessary: the panel's inset
+//! and its separator rows are not pointer targets, so a press on one fell
+//! through to the page under the panel; and a row that closed the panel on its
+//! press was gone by the release, which then landed on whatever the caller had
+//! layered behind the menu. The menu's rows now report a choice on the release
+//! (see [`Menu`](super::menu)), which keeps the panel under the pointer for that
+//! event and lets this capture it.
+//!
+//! # What Slint has that this does not
+//!
+//! - **The arrow.** GPUI's `Popover` has `.arrow(true)` and draws a triangle
+//!   between the surface and the trigger. The Slint component the catalog
+//!   exposes has no arrow property and its example never shows one, so this port
+//!   leaves it out rather than inventing a property the authority does not have.
+//!   The gap [`Popover::offset`] sets is where a later arrow would go.
+//! - **Slint's `open` can be left ahead of the panel.** The Slint file says a
+//!   click-outside dismissal is not written back through `open`, because of a
+//!   constant-propagation failure in its compiler. iced has no such problem:
+//!   every dismissal is reported, so `open` and the panel cannot disagree.
+//! - **A dismiss from inside.** GPUI's content closure gets a `PopoverState` and
+//!   can emit `DismissEvent`; Slint's example closes by setting its own `open`
+//!   property. Here the caller already holds the state the panel is rendered
+//!   from, so a control inside the panel closes it by sending the same message
+//!   an outside click would — the "Dismiss Popover manually" card does that.
+//!
+//! # Coordinates
+//!
+//! A popover lives inside whatever scrolls it, so the two rectangles it works
+//! with are read from the layout the runtime hands it and nothing is
+//! recomputed: `update` matches a press against `layout.bounds()`, which
+//! `scrollable` has already translated into the content coordinates its
+//! `Cursor` is in (it adds the scroll offset to the cursor before dispatching,
+//! `scrollable.rs:800`), and `overlay` places the panel at
+//! `layout.position() + translation`, the offset the runtime passes there for
+//! the same reason. iced's own overlays do exactly that — `pick_list` builds its
+//! menu from `layout.position() + translation` (`pick_list.rs:733`), and this
+//! crate's [`Tooltip`](super::tooltip) builds its trigger rectangle the same way
+//! — and the sign is the whole of the bug this once was: `scrollable` passes
+//! `translation - offset`, so a laid-out widget's window position is
+//! `position + translation`, and `position - translation` put the panel a
+//! further scroll offset *below* the trigger for every pixel the page scrolled.
+//!
+//! # Focus
+//!
+//! iced 0.14 has no focus trap and no focus handle a widget can take. The
+//! overlay is the topmost layer while it is open, so it sees every key — this
+//! component answers Escape — but it cannot stop Tab from reaching what is
+//! behind it, and it cannot move focus into the panel. A caller that wants the
+//! keyboard inside its content gives that content an `Id` and focuses it.
+
+// An application installs the components it uses, so the parts of this file it
+// does not call are not dead code in the way the compiler means — the file is a
+// library that arrived by copy. Without this, a project that wants one method
+// gets a warning for each one it does not want.
+#![allow(dead_code)]
+
+use iced::advanced::layout::{self, Layout};
+use iced::advanced::widget::{self, Tree, Widget};
+use iced::advanced::{overlay, renderer, Clipboard, Renderer as _, Shell};
+use iced::widget::container;
+use iced::{
+    keyboard, mouse, Border, Color, Element, Event, Length, Padding, Point, Rectangle, Shadow, Size,
+    Theme, Vector,
+};
+
+use super::theme::{self, Tokens};
+
+/// Which side of the trigger the panel prefers.
+///
+/// The names are the Slint `Placement` enum's, and so is the default. A side
+/// with no room for the panel flips to the opposite one — Slint's `PopupWindow`
+/// and GPUI's positioner both do this — and if neither side fits, the panel
+/// clamps into the window rather than leaving it.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
+pub enum Placement {
+    /// Under the trigger.
+    #[default]
+    Bottom,
+    /// Above the trigger.
+    Top,
+    /// To the left of the trigger.
+    Left,
+    /// To the right of the trigger.
+    Right,
+}
+
+/// Where an arrow sits along the edge the panel shares with the trigger.
+///
+/// It is [`Popover::arrow`]'s argument, and the triangle it draws is a mark on
+/// the panel in the panel's own fill rather than a widget in the flow, so the
+/// arrow and the surface cannot disagree about where the panel is.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
+pub enum Arrow {
+    /// No arrow. The Slint component the catalogue exposes has no arrow
+    /// property and its example never shows one, so this is the default.
+    #[default]
+    None,
+    /// The arrow at the start of the shared edge — the left of the edge for a
+    /// panel above or below the trigger, the top of it for a panel beside one.
+    Start,
+    /// The arrow at the middle of the shared edge.
+    Center,
+    /// The arrow at the end of the shared edge.
+    End,
+}
+
+/// Which edge of the panel faces the trigger, once the panel has been placed.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+enum Facing {
+    /// The panel is above the trigger; the arrow crosses the panel's bottom.
+    Above,
+    /// The panel is below the trigger; the arrow crosses the panel's top.
+    Below,
+    /// The panel is to the left; the arrow crosses its right edge.
+    Left,
+    /// The panel is to the right; the arrow crosses its left edge.
+    Right,
+}
+
+impl Facing {
+    /// Which edge of a placed panel faces the trigger it describes. A panel
+    /// that overlaps the trigger on both axes is inside it, which no placement
+    /// produces, and is treated as if it were below.
+    fn of(panel: Rectangle, trigger: Rectangle) -> Self {
+        if panel.y + panel.height <= trigger.y {
+            Self::Above
+        } else if panel.y >= trigger.y + trigger.height {
+            Self::Below
+        } else if panel.x + panel.width <= trigger.x {
+            Self::Left
+        } else {
+            Self::Right
+        }
+    }
+
+    /// Whether the arrow travels along the horizontal axis. Along a vertical
+    /// edge, "start" means the top.
+    fn horizontal(self) -> bool {
+        !matches!(self, Self::Left | Self::Right)
+    }
+
+    /// The point the arrow's base sits on: the middle of the edge it grows out
+    /// of, and on the surface itself so the join is not a seam. The base is the
+    /// arrow's widest row; the tip is a gap away, out at the trigger.
+    fn base(self, panel: Rectangle, at: f32) -> Point {
+        match self {
+            Self::Below => Point::new(panel.x + at, panel.y),
+            Self::Above => Point::new(panel.x + at, panel.y + panel.height),
+            Self::Right => Point::new(panel.x, panel.y + at),
+            Self::Left => Point::new(panel.x + panel.width, panel.y + at),
+        }
+    }
+
+    /// How long the edge the arrow slides along is.
+    fn edge_length(self, panel: Rectangle) -> f32 {
+        if self.horizontal() {
+            panel.width
+        } else {
+            panel.height
+        }
+    }
+}
+
+impl Arrow {
+    /// How far along the shared edge the arrow's tip sits, or `None` when there
+    /// is no arrow to place. The arrow is kept on the edge even when the end it
+    /// was asked for is round the corner.
+    fn along(self, edge_length: f32, gap: f32) -> Option<f32> {
+        let at = match self {
+            Self::None => return None,
+            Self::Start => gap / 2.0,
+            Self::Center => edge_length / 2.0,
+            Self::End => edge_length - gap / 2.0,
+        };
+        Some(at.clamp(gap, (edge_length - gap).max(gap)))
+    }
+
+    /// Draw the arrow, if there is one, between a placed panel and its trigger.
+    ///
+    /// iced 0.14's renderer draws rectangles ([`renderer::Quad`]) and text and
+    /// nothing else: `Quad` has no rotation and there is no triangle primitive,
+    /// so a triangle cannot be handed to it. This draws one out of the rows it
+    /// does take — a stepped triangle, `gap` quads tall and about `gap` wide —
+    /// which is the shape the eye reads at this size. The base sits on the panel
+    /// and is the arrow's widest row; the rows narrow from there towards the
+    /// trigger, where the tip is, so the arrow points away from the surface and
+    /// at the trigger for every placement. It is exact along the base and
+    /// stepped only along the two slanted sides.
+    pub fn draw(
+        self,
+        renderer: &mut iced::Renderer,
+        fill: Color,
+        panel: Rectangle,
+        trigger: Rectangle,
+        gap: f32,
+    ) {
+        let facing = Facing::of(panel, trigger);
+        let Some(at) = self.along(facing.edge_length(panel), gap) else {
+            return;
+        };
+        let base = facing.base(panel, at);
+        let half = gap / 2.0;
+
+        for step in 0..(gap.ceil() as i32).max(1) {
+            // How far this row has travelled from the surface: `0.0` at the
+            // base, which is on the panel, and `1.0` at the tip, at the trigger.
+            let along = (step as f32 + 0.5) / gap;
+            // Widest at the base and narrowing to a point at the tip. This
+            // sign is the whole of the taper: inverted, an arrow above a panel
+            // reads as pointing up into the surface instead of down at the
+            // trigger.
+            let spread = half * (1.0 - along);
+            // Each row steps away from the surface, toward the trigger.
+            let distance = if matches!(facing, Facing::Below | Facing::Right) {
+                -along * gap
+            } else {
+                along * gap
+            };
+            let rect = if facing.horizontal() {
+                Rectangle::new(
+                    Point::new(base.x - spread, base.y + distance),
+                    Size::new(spread * 2.0, 1.0),
+                )
+            } else {
+                Rectangle::new(
+                    Point::new(base.x + distance, base.y - spread),
+                    Size::new(1.0, spread * 2.0),
+                )
+            };
+            renderer.fill_quad(
+                renderer::Quad {
+                    bounds: rect,
+                    snap: false,
+                    ..renderer::Quad::default()
+                },
+                fill,
+            );
+        }
+    }
+}
+
+/// A floating panel anchored to a trigger, built with the methods below.
+///
+/// The trigger is laid out where the caller puts the popover, and is the only
+/// thing the popover measures. The panel is an overlay: it is laid out against
+/// the window, drawn after everything else, and never clipped by a scroll area
+/// or a card. See the module comment for the mechanism.
+pub struct Popover<'a, Message> {
+    trigger: Element<'a, Message>,
+    panel: Option<Element<'a, Message>>,
+    open: bool,
+    filled: bool,
+    placement: Placement,
+    offset: f32,
+    padding: f32,
+    panel_width: f32,
+    arrow: Arrow,
+    style: Box<dyn Fn(&Theme) -> PanelStyle + 'a>,
+    /// The theme the trigger was last drawn with. An overlay is built without
+    /// one — `layout`, `draw` and `update` are handed a theme and the overlay
+    /// constructor is not — but the base tree is drawn *before* the overlay is
+    /// built in `UserInterface::draw`, so [`Popover::draw`] has already recorded
+    /// the theme in force by the time the panel asks for it. That is why this
+    /// port is exact rather than a frame behind.
+    theme: std::cell::RefCell<Option<Theme>>,
+    on_open_change: Option<std::rc::Rc<dyn Fn(bool) -> Message + 'a>>,
+}
+
+impl<'a, Message> Popover<'a, Message> {
+    /// A popover whose trigger is `trigger` — any element, usually a
+    /// [`Button`](super::button::Button). It starts closed, because the caller's
+    /// own state says what is open.
+    pub fn new(trigger: impl Into<Element<'a, Message>>) -> Self {
+        Self {
+            trigger: trigger.into(),
+            panel: None,
+            open: false,
+            filled: false,
+            placement: Placement::default(),
+            offset: 8.0,
+            padding: theme::SPACING_MD,
+            panel_width: 260.0,
+            arrow: Arrow::default(),
+            style: Box::new(|theme: &Theme| PanelStyle::resolve(Tokens::of(theme))),
+            theme: std::cell::RefCell::new(None),
+            on_open_change: None,
+        }
+    }
+
+    /// The content of the panel. Any element: text, a column of rows, a form, a
+    /// list.
+    ///
+    /// This is the method `select`, `combobox` and `date-picker` build their
+    /// surfaces with, so it takes an element rather than a closure — the caller
+    /// has already built the content it wants to show, and rebuilding it in a
+    /// callback would be a second place for the same state to live.
+    ///
+    /// The content is laid out inside the panel's inset at the panel's width,
+    /// and the panel's surface is drawn around that inset when
+    /// [`filled`](Self::filled) asks for it — which is the Slint example's
+    /// `@children` slot inside the `Rectangle`'s `VerticalLayout { padding: 12px }`
+    /// and GPUI's `popover_style(cx).p_3()`. The panel's text colour is inherited
+    /// by everything in it, so bare text is all a caller needs.
+    ///
+    /// A caller that draws its **own** surface — a card, a second panel — wraps
+    /// the content with [`panel_container`] and takes the surface back from the
+    /// popover: that surface sits inside the panel's inset, so such a caller
+    /// passes [`padding`](Self::padding) `0.0` and adds its own inset inside the
+    /// container. [`notification`](super::notification) is the example. A caller
+    /// whose content fills the panel exactly — a list, a calendar — asks for
+    /// [`filled`](Self::filled) and leaves its content bare.
+    pub fn content(mut self, content: impl Into<Element<'a, Message>>) -> Self {
+        self.panel = Some(content.into());
+        self
+    }
+
+    /// Whether the panel is showing. The caller owns this: it is set from the
+    /// application's state, and [`on_open_change`](Self::on_open_change) is how
+    /// the application learns it should change.
+    pub fn open(mut self, open: bool) -> Self {
+        self.open = open;
+        self
+    }
+
+    /// The side of the trigger the panel prefers, [`Placement::Bottom`] by
+    /// default. A side without room flips to the opposite one.
+    pub fn placement(mut self, placement: Placement) -> Self {
+        self.placement = placement;
+        self
+    }
+
+    /// The gap between the trigger and the panel, 8px by default — the same
+    /// distance the Slint component uses (`host.height + 8px`).
+    pub fn offset(mut self, offset: f32) -> Self {
+        self.offset = offset;
+        self
+    }
+
+    /// The panel's inset, `SPACING_MD` (12px) by default, which is the Slint
+    /// panel's `padding: 12px` and GPUI's `p_3()`. It is drawn **inside** the
+    /// surface when the panel draws one ([`filled`](Self::filled)), so a plain
+    /// content panel gets its inset from here alone.
+    ///
+    /// A panel whose content draws its own surface — one wrapped with
+    /// [`panel_container`] — takes the surface away from the popover, and this
+    /// inset would fall outside it, leaving the content flush with the visible
+    /// edge. Such a caller passes `0.0` and insets the content itself. The menus
+    /// are the other caller that passes `0.0`: their rows carry the panel's own
+    /// 4px inset, and a panel-wide inset here would pull the highlight band away
+    /// from the panel's edges.
+    pub fn padding(mut self, padding: f32) -> Self {
+        self.padding = padding;
+        self
+    }
+
+    /// The panel's fixed width, 260px by default. A left or right placement
+    /// offsets by it, so the panel cannot be a fixed distance from the trigger —
+    /// which is what Slint's `panel-width` is for too.
+    pub fn panel_width(mut self, width: f32) -> Self {
+        self.panel_width = width;
+        self
+    }
+
+    /// An arrow between the surface and the trigger, in the panel's own fill.
+    ///
+    /// GPUI's `Popover` has `.arrow(true)` and draws a triangle between the
+    /// surface and the trigger; the Slint component the catalogue exposes has no
+    /// arrow property and its example never shows one. [`Arrow::None`] is
+    /// therefore the default, and the port's own [`Tooltip`](super::tooltip) is
+    /// the caller that asks for one.
+    ///
+    /// It is drawn inside the gap [`offset`](Self::offset) leaves, and the gap
+    /// is the arrow's length as well as the space it crosses, so a caller that
+    /// wants a longer arrow widens the gap with it.
+    pub fn arrow(mut self, arrow: Arrow) -> Self {
+        self.arrow = arrow;
+        self
+    }
+
+    /// The surface, resolved from the tokens by default: the popover fill, a
+    /// one-pixel border, `radius-lg` and the drop shadow. A caller that wants
+    /// its own states it as a function of the theme, which is Slint's
+    /// `panel-background`, `panel-radius` and `panel-border`:
+    ///
+    /// ```ignore
+    /// Popover::new(trigger).panel(|theme| {
+    ///     let tokens = Tokens::of(theme);
+    ///     PanelStyle::resolve(tokens)
+    ///         .fill(tokens.primary)
+    ///         .border(tokens.primary, 0.0)
+    /// })
+    /// ```
+    ///
+    /// It is a function rather than a value because the appearance is not known
+    /// where the panel is built — an overlay is constructed without a theme —
+    /// and a surface resolved for one appearance is the wrong colour in the
+    /// other. This crate's `input.rs` says the same thing about its frame.
+    pub fn panel(mut self, style: impl Fn(&Theme) -> PanelStyle + 'a) -> Self {
+        self.style = Box::new(style);
+        self
+    }
+
+    /// Draw the surface here, around the content, on top of
+    /// [`content`](Self::content).
+    ///
+    /// The content is drawn inside the surface and is not clipped by it, so a
+    /// caller whose content fills the panel exactly — a list, a form, a
+    /// calendar — asks for the surface here and leaves its content bare. The
+    /// gallery instead wraps its content with [`panel_container`], which is the
+    /// same surface with the inset and the inherited text colour.
+    pub fn filled(mut self, filled: bool) -> Self {
+        self.filled = filled;
+        self
+    }
+
+    /// Take the trigger back out of the popover.
+    ///
+    /// The popover owns its trigger, and iced's [`Element`] is not `Clone`, so a
+    /// widget that is built *around* a popover — one that has to lay the trigger
+    /// out itself and also wants the popover to place a panel against it, which
+    /// is exactly [`Tooltip`](super::tooltip) — lends the element and takes it
+    /// back. The trigger comes back only if the popover still has one; nothing
+    /// else removes it.
+    pub fn into_trigger(self) -> Option<Element<'a, Message>> {
+        self.trigger.into()
+    }
+
+    /// Take the panel's content back out of the popover, for the reason
+    /// [`into_trigger`](Self::into_trigger) takes the trigger back: an
+    /// [`Element`] is not `Clone`, so a widget that lends one lends it for one
+    /// build and asks for it again.
+    pub fn into_content(self) -> Option<Element<'a, Message>> {
+        self.panel.into()
+    }
+
+    /// Report every request to change the open state: a trigger click wants
+    /// `true`, an outside click or Escape wants `false`.
+    ///
+    /// This is the only way the popover speaks. It never opens or closes itself,
+    /// so a caller that wants the panel to move must answer with its own state —
+    /// which is also what makes an external control able to drive the same
+    /// popover.
+    pub fn on_open_change(mut self, on_open_change: impl Fn(bool) -> Message + 'a) -> Self {
+        self.on_open_change = Some(std::rc::Rc::new(on_open_change));
+        self
+    }
+}
+
+/// The colours and shape a panel draws itself with.
+///
+/// [`PanelStyle::resolve`] builds one from the theme tokens.
+/// [`Popover::panel`] draws the surface itself, and [`panel_container`] draws
+/// the same surface as a container around content, which is how a panel's text
+/// inherits its colour. The fields are private and read through methods, so this
+/// can grow without breaking a caller.
+#[derive(Debug, Clone, Copy, PartialEq)]
+pub struct PanelStyle {
+    fill: Color,
+    border: Color,
+    border_width: f32,
+    radius: f32,
+    shadow: Shadow,
+    text_color: Color,
+}
+
+impl PanelStyle {
+    /// The panel the tokens describe: the popover fill, the border token as a
+    /// one-pixel edge, `radius-lg` and the shadow token 4px below.
+    ///
+    /// The edge is the `border` token and not a fixed grey: the token is
+    /// `#e5e5e5` on white and `#262626` on near-black, so the edge exists in
+    /// both appearances. The fill is the `popover` token — white in the light
+    /// theme, `#171717` in the dark one, one step off the page's `#0a0a0a` — so
+    /// the surface separates from the page in both.
+    pub fn resolve(tokens: Tokens) -> Self {
+        Self {
+            fill: tokens.popover,
+            border: tokens.border,
+            border_width: 1.0,
+            radius: theme::RADIUS_LG,
+            // iced's blur is a Gaussian sigma where Slint's is a spread. A sigma
+            // of 12 would fade over 36px and read as fog; 8 in the dark theme
+            // and 4 in the light one carry the same weight as Slint's 12px at
+            // this offset, and match the other iced surfaces in this crate.
+            shadow: Shadow {
+                color: tokens.shadow,
+                offset: Vector::new(0.0, 4.0),
+                blur_radius: if tokens.dark { 8.0 } else { 4.0 },
+            },
+            text_color: tokens.foreground,
+        }
+    }
+
+    /// The panel fill.
+    pub fn fill(mut self, color: Color) -> Self {
+        self.fill = color;
+        self
+    }
+
+    /// The panel edge. A `width` of 0 draws no edge, which is Slint's
+    /// `panel-border: false`.
+    pub fn border(mut self, color: Color, width: f32) -> Self {
+        self.border = color;
+        self.border_width = width;
+        self
+    }
+
+    /// The corner radius — `radius-lg` (8px) by default.
+    pub fn radius(mut self, radius: f32) -> Self {
+        self.radius = radius;
+        self
+    }
+
+    /// The drop shadow. `Shadow::default()` draws none.
+    pub fn shadow(mut self, shadow: Shadow) -> Self {
+        self.shadow = shadow;
+        self
+    }
+
+    /// The colour text inside the panel inherits. The panel's fill would be
+    /// unreadable as ink — it is the surface the text sits on, not the text —
+    /// so this is the theme's foreground unless a caller says otherwise.
+    pub fn text_color(mut self, color: Color) -> Self {
+        self.text_color = color;
+        self
+    }
+
+    /// The colour text inside the panel inherits, for a caller drawing the
+    /// content itself.
+    pub fn content_color(&self) -> Color {
+        self.text_color
+    }
+
+    /// Draw the panel's surface into `bounds`: the fill, the edge, the radius
+    /// and the shadow. [`Popover::filled`] calls this on the overlay's root, so
+    /// the shadow is not clipped by an inner element.
+    pub fn draw(&self, renderer: &mut iced::Renderer, bounds: Rectangle) {
+        renderer.fill_quad(
+            renderer::Quad {
+                bounds,
+                border: Border {
+                    color: self.border,
+                    width: self.border_width,
+                    radius: self.radius.into(),
+                },
+                shadow: self.shadow,
+                ..renderer::Quad::default()
+            },
+            iced::Background::Color(self.fill),
+        );
+    }
+
+    /// The fill, the edge, the radius and the shadow as container styling, which
+    /// is what [`panel_container`] applies.
+    pub fn container_style(&self) -> container::Style {
+        container::Style {
+            background: Some(self.fill.into()),
+            border: Border {
+                color: self.border,
+                width: self.border_width,
+                radius: self.radius.into(),
+            },
+            shadow: self.shadow,
+            ..container::Style::default()
+        }
+    }
+
+    pub fn background(&self) -> Color {
+        self.fill
+    }
+
+    pub fn edge(&self) -> Color {
+        self.border
+    }
+
+    pub fn edge_width(&self) -> f32 {
+        self.border_width
+    }
+
+    pub fn corner_radius(&self) -> f32 {
+        self.radius
+    }
+
+    pub fn drop_shadow(&self) -> Shadow {
+        self.shadow
+    }
+}
+
+impl Default for PanelStyle {
+    /// The light theme's resting panel. A caller that wants the appearance in
+    /// force builds it with [`PanelStyle::resolve`] and
+    /// [`Tokens::of`](super::theme::Tokens::of).
+    fn default() -> Self {
+        Self::resolve(Tokens::of(&Theme::Light))
+    }
+}
+
+/// The panel's surface around `content`: the fill, the edge, the radius, the
+/// shadow and the panel's text colour, inherited by everything inside.
+///
+/// A caller wraps its content with this when it wants its own surface rather
+/// than the popover's — a notification card, a second panel. Like
+/// [`Popover::panel`] it takes a function of the theme, so the surface follows
+/// the appearance in force.
+///
+/// **It adds no inset.** The popover lays its [`padding`](Popover::padding) out
+/// *around* this container, so the surface here is drawn at the content's own
+/// bounds; an inset left on the popover would sit outside it and the text would
+/// meet the visible edge. A caller that uses this therefore passes
+/// `padding(0.0)` and insets the content itself, as
+/// [`notification`](super::notification) does. A caller that wants the popover's
+/// own surface and inset uses [`Popover::filled`] and leaves its content bare.
+///
+/// [`PanelStyle::container_style`] is the same styling, for a caller that builds
+/// the container itself; [`Popover::filled`] is the same surface drawn by the
+/// panel, for content that is already a surface.
+pub fn panel_container<'a, Message>(
+    content: impl Into<Element<'a, Message>>,
+    style: impl Fn(&Theme) -> PanelStyle + 'a,
+) -> Element<'a, Message>
+where
+    Message: 'a,
+{
+    container(content)
+        .width(Length::Fill)
+        .style(move |theme: &Theme| style(theme).container_style())
+        .into()
+}
+
+/// The panel's own sub-widget state: the tree the caller's content lives in,
+/// kept across frames so a field or a scroll position inside a panel does not
+/// reset every time the panel opens.
+struct State {
+    panel: Tree,
+}
+
+impl State {
+    fn new() -> Self {
+        Self {
+            panel: Tree::empty(),
+        }
+    }
+}
+
+/// Where the panel ends up, once the trigger and the window are known.
+///
+/// [`place`] is the whole of the popover's positioning and is public so that a
+/// widget built on the popover — [`Tooltip`](super::tooltip), which needs the
+/// same flip and clamp against a trigger it draws itself — borrows the rule
+/// instead of writing a second one that could drift.
+#[derive(Debug, Clone, Copy, PartialEq)]
+pub struct Placed {
+    /// The panel's top-left corner, in window coordinates.
+    origin: Point,
+}
+
+impl Placed {
+    /// The panel's top-left corner, in window coordinates.
+    pub fn origin(&self) -> Point {
+        self.origin
+    }
+
+    /// The panel's rectangle, for a panel of `size`.
+    pub fn bounds(&self, size: Size) -> Rectangle {
+        Rectangle::new(self.origin, size)
+    }
+
+    /// The panel's corner for a side, with no regard for the window.
+    fn corner(trigger: Rectangle, panel: Size, gap: f32, placement: Placement) -> Point {
+        match placement {
+            Placement::Bottom => Point::new(
+                trigger.x + (trigger.width - panel.width) / 2.0,
+                trigger.y + trigger.height + gap,
+            ),
+            Placement::Top => Point::new(
+                trigger.x + (trigger.width - panel.width) / 2.0,
+                trigger.y - panel.height - gap,
+            ),
+            Placement::Left => Point::new(
+                trigger.x - panel.width - gap,
+                trigger.y + (trigger.height - panel.height) / 2.0,
+            ),
+            Placement::Right => Point::new(
+                trigger.x + trigger.width + gap,
+                trigger.y + (trigger.height - panel.height) / 2.0,
+            ),
+        }
+    }
+
+    /// The opposite side.
+    fn flip(placement: Placement) -> Placement {
+        match placement {
+            Placement::Bottom => Placement::Top,
+            Placement::Top => Placement::Bottom,
+            Placement::Left => Placement::Right,
+            Placement::Right => Placement::Left,
+        }
+    }
+
+    /// Prefer `placement`, flip when it does not fit, and clamp the result into
+    /// the window. The trigger is in window coordinates.
+    pub fn resolve(
+        trigger: Rectangle,
+        panel: Size,
+        window: Size,
+        gap: f32,
+        placement: Placement,
+    ) -> Self {
+        let fits = match placement {
+            Placement::Bottom => {
+                trigger.y + trigger.height + gap + panel.height <= window.height
+            }
+            Placement::Top => trigger.y - gap - panel.height >= 0.0,
+            Placement::Left => trigger.x - gap - panel.width >= 0.0,
+            Placement::Right => {
+                trigger.x + trigger.width + gap + panel.width <= window.width
+            }
+        };
+        let side = if fits { placement } else { Self::flip(placement) };
+        let mut origin = Self::corner(trigger, panel, gap, side);
+        // A panel with no room on either side clamps to the edge rather than
+        // hanging out of the window.
+        origin.x = origin.x.clamp(0.0, (window.width - panel.width).max(0.0));
+        origin.y = origin.y.clamp(0.0, (window.height - panel.height).max(0.0));
+        Self { origin }
+    }
+}
+
+/// The overlay: it positions the caller's content against the trigger, draws the
+/// panel's surface around it, and answers the two dismissals.
+///
+/// It borrows the content rather than owning it. The runtime builds a widget's
+/// overlay twice per frame — once for the events, once for the paint — so an
+/// overlay that took the content would leave the second call with nothing to
+/// draw. See the module comment.
+struct Panel<'a, 'b, Message> {
+    content: &'b mut Element<'a, Message>,
+    tree: &'b mut Tree,
+    style: PanelStyle,
+    /// Whether the surface is drawn here, around the content.
+    filled: bool,
+    /// The arrow drawn between the surface and the trigger, in the surface's own
+    /// fill, or [`Arrow::None`].
+    arrow: Arrow,
+    /// The trigger, in window coordinates.
+    trigger: Rectangle,
+    gap: f32,
+    padding: f32,
+    width: f32,
+    placement: Placement,
+    /// Shared, not taken. The runtime builds a widget's overlay twice per frame,
+    /// so a callback that moved out of the popover on the first build would be
+    /// gone by the second — and the trigger's click would never reach the
+    /// application.
+    on_open_change: Option<std::rc::Rc<dyn Fn(bool) -> Message + 'a>>,
+}
+
+impl<Message> Panel<'_, '_, Message> {
+    /// Ask the caller to close, once per request.
+    fn dismiss(&self, shell: &mut Shell<'_, Message>) {
+        if let Some(on_open_change) = &self.on_open_change {
+            shell.publish(on_open_change(false));
+        }
+    }
+
+    /// The child layout the content is drawn at, inside the panel's bounds.
+    fn content_layout<'c>(layout: Layout<'c>) -> Layout<'c> {
+        layout
+            .children()
+            .next()
+            .expect("the panel lays out exactly one child")
+    }
+}
+
+/// Whether `event` is the press or release half of a pointer button — the
+/// events a panel consumes so they do not reach the tree behind it. Motion and
+/// the wheel are deliberately not here: the panel does not scroll-lock, and a
+/// pointer that moves over the panel still moves the page's cursor with it.
+fn is_pointer_button(event: &Event) -> bool {
+    matches!(
+        event,
+        Event::Mouse(
+            mouse::Event::ButtonPressed(
+                mouse::Button::Left | mouse::Button::Right | mouse::Button::Middle
+            ) | mouse::Event::ButtonReleased(
+                mouse::Button::Left | mouse::Button::Right | mouse::Button::Middle
+            )
+        ) | Event::Touch(
+            iced::touch::Event::FingerPressed { .. }
+                | iced::touch::Event::FingerLifted { .. }
+        )
+    )
+}
+
+impl<Message> overlay::Overlay<Message, Theme, iced::Renderer> for Panel<'_, '_, Message> {
+    fn layout(&mut self, renderer: &iced::Renderer, bounds: Size) -> layout::Node {
+        // The panel is a fixed width, and the content is laid out inside it at
+        // that width; `layout::padded` puts the panel's inset around whatever the
+        // content turns out to be, so the node it returns — the panel — is the
+        // surface the shadow and the fill are drawn into, and the content is not
+        // clipped by it.
+        let limits = layout::Limits::new(Size::ZERO, bounds)
+            .width(Length::Fixed(self.width))
+            .height(Length::Shrink);
+        let panel_limits = limits.shrink(Padding::new(self.padding));
+        let content = self.content
+            .as_widget_mut()
+            .layout(self.tree, renderer, &panel_limits);
+        let size = content.size().expand(Padding::new(self.padding));
+        let placed = Placed::resolve(self.trigger, size, bounds, self.gap, self.placement);
+        let node = if self.padding == 0.0 {
+            layout::Node::with_children(size, vec![content])
+        } else {
+            layout::Node::with_children(
+                size,
+                vec![content.move_to(Point::new(self.padding, self.padding))],
+            )
+        };
+        node.translate(Vector::new(placed.origin.x, placed.origin.y))
+    }
+
+    fn update(
+        &mut self,
+        event: &Event,
+        layout: Layout<'_>,
+        cursor: mouse::Cursor,
+        renderer: &iced::Renderer,
+        clipboard: &mut dyn Clipboard,
+        shell: &mut Shell<'_, Message>,
+    ) {
+        let bounds = layout.bounds();
+        let inside = cursor.is_over(bounds);
+
+        // The runtime gives an overlay the event before the widgets under it, so
+        // this sees an outside press first and can stop it there. That is what
+        // makes a press on the trigger while the panel is open close the panel
+        // instead of also reaching the trigger and reopening it in the same
+        // frame.
+        if let Event::Mouse(mouse::Event::ButtonPressed(mouse::Button::Left))
+        | Event::Touch(iced::touch::Event::FingerPressed { .. }) = event
+            && !inside
+            && !cursor.is_over(self.trigger)
+        {
+            self.dismiss(shell);
+            shell.capture_event();
+        }
+
+        if let Event::Keyboard(keyboard::Event::KeyPressed {
+            key: keyboard::Key::Named(keyboard::key::Named::Escape),
+            ..
+        }) = event
+        {
+            self.dismiss(shell);
+            shell.capture_event();
+        }
+
+        // The content is updated whether or not the pointer is over the panel.
+        // A `mouse_area` publishes its exit only when it is updated with the
+        // cursor outside its bounds, so gating this on `inside` meant a pointer
+        // that left a row for outside the panel in one move — or faster than a
+        // frame — was never delivered to the row and its hover never cleared.
+        // iced's own overlay menu always updates its list for the same reason,
+        // and every widget here guards its own hit test with
+        // `cursor.is_over(...)`; an outside press has already been answered and
+        // captured above.
+        //
+        // The content's node, not the panel's: `layout` is the surface, and the
+        // content was laid out as its single child. A container routes events to
+        // its children by zipping them against `layout.children()`, so passing
+        // the panel node would hand every event to the first child stretched
+        // over the whole panel and leave the rest of the content unreachable.
+        let content = Self::content_layout(layout);
+        self.content.as_widget_mut().update(
+            self.tree,
+            event,
+            content,
+            cursor,
+            renderer,
+            clipboard,
+            shell,
+            &bounds,
+        );
+
+        // The content has had its turn; now consume the event if it landed on
+        // the panel, because the panel is the topmost surface and the tree
+        // behind it must not also answer. A row or a field captures the press it
+        // takes, but the panel's inset and its rules capture nothing, and the
+        // release half of a click captures nothing at all — so a press on a rule
+        // reached the page under the panel, and a row that closed the panel on
+        // its press left the release to land on whatever was behind it. Both
+        // were real: a menu's bottom inset opened a second menu through the
+        // button under it. Consuming here, after the content, is what lets the
+        // content still act while the event stops at the panel.
+        if inside && is_pointer_button(event) {
+            shell.capture_event();
+        }
+    }
+
+    fn mouse_interaction(
+        &self,
+        layout: Layout<'_>,
+        cursor: mouse::Cursor,
+        renderer: &iced::Renderer,
+    ) -> mouse::Interaction {
+        let content = Self::content_layout(layout);
+        self.content
+            .as_widget()
+            .mouse_interaction(self.tree, content, cursor, &layout.bounds(), renderer)
+    }
+
+    fn draw(
+        &self,
+        renderer: &mut iced::Renderer,
+        theme: &Theme,
+        inherited: &renderer::Style,
+        layout: Layout<'_>,
+        cursor: mouse::Cursor,
+    ) {
+        let bounds = layout.bounds();
+        if self.filled {
+            self.style.draw(renderer, bounds);
+        }
+        // The arrow goes after the surface and before the content: it is a mark
+        // on the panel, so it has to be over the fill; and the panel is inside
+        // the window, so nothing overlaps it anyway.
+        self.arrow
+            .draw(renderer, self.style.background(), bounds, self.trigger, self.gap);
+
+        let mut style = *inherited;
+        style.text_color = self.style.text_color;
+        // The content's node, not the panel's. The panel node is the surface;
+        // the content was laid out as its single child. A container draws its
+        // children by zipping them against `layout.children()`, so handing it
+        // the panel node makes every nested column one level high and paints
+        // only its first child — a plausible-looking panel that silently drops
+        // the rest of its rows. `mouse_interaction` and `operate` already take
+        // this node.
+        let content = Self::content_layout(layout);
+        self.content
+            .as_widget()
+            .draw(self.tree, renderer, theme, &style, content, cursor, &bounds);
+    }
+
+    fn operate(
+        &mut self,
+        layout: Layout<'_>,
+        renderer: &iced::Renderer,
+        operation: &mut dyn widget::Operation,
+    ) {
+        operation.container(None, layout.bounds());
+        let content = Self::content_layout(layout);
+        operation.traverse(&mut |operation| {
+            self.content
+                .as_widget_mut()
+                .operate(self.tree, content, renderer, operation);
+        });
+    }
+}
+
+impl<Message> Widget<Message, Theme, iced::Renderer> for Popover<'_, Message>
+where
+    Message: Clone + 'static,
+{
+    fn tag(&self) -> widget::tree::Tag {
+        widget::tree::Tag::of::<State>()
+    }
+
+    fn state(&self) -> widget::tree::State {
+        widget::tree::State::new(State::new())
+    }
+
+    fn children(&self) -> Vec<Tree> {
+        vec![Tree::new(self.trigger.as_widget())]
+    }
+
+    fn diff(&self, tree: &mut Tree) {
+        tree.diff_children(&[self.trigger.as_widget()]);
+    }
+
+    fn size(&self) -> Size<Length> {
+        self.trigger.as_widget().size()
+    }
+
+    fn size_hint(&self) -> Size<Length> {
+        self.trigger.as_widget().size_hint()
+    }
+
+    fn layout(
+        &mut self,
+        tree: &mut Tree,
+        renderer: &iced::Renderer,
+        limits: &layout::Limits,
+    ) -> layout::Node {
+        self.trigger
+            .as_widget_mut()
+            .layout(&mut tree.children[0], renderer, limits)
+    }
+
+    fn draw(
+        &self,
+        tree: &Tree,
+        renderer: &mut iced::Renderer,
+        theme: &Theme,
+        style: &renderer::Style,
+        layout: Layout<'_>,
+        cursor: mouse::Cursor,
+        viewport: &Rectangle,
+    ) {
+        // The base tree is drawn before the overlay is built for the same frame,
+        // so this is the theme the panel about to be constructed belongs to.
+        *self.theme.borrow_mut() = Some(theme.clone());
+        self.trigger.as_widget().draw(
+            &tree.children[0],
+            renderer,
+            theme,
+            style,
+            layout,
+            cursor,
+            viewport,
+        );
+    }
+
+    fn update(
+        &mut self,
+        tree: &mut Tree,
+        event: &Event,
+        layout: Layout<'_>,
+        cursor: mouse::Cursor,
+        renderer: &iced::Renderer,
+        clipboard: &mut dyn Clipboard,
+        shell: &mut Shell<'_, Message>,
+        viewport: &Rectangle,
+    ) {
+        // The trigger opens the panel. The overlay leaves a press on the trigger
+        // to this method for exactly this reason: the press that opens the panel
+        // must reach the trigger, and the press that closes it must not.
+        //
+        // The hit test is against the bounds the runtime laid this widget out
+        // with, which inside a scroll area are the scroll content's coordinates,
+        // not the window's — this gallery's trigger reports y = 1399 there while
+        // the window shows it at y ~ 146. That is the same space the cursor is
+        // in: `scrollable` adds its offset to the cursor before dispatching
+        // (`scrollable.rs:800`), so `cursor.is_over(layout.bounds())` is exact
+        // at any scroll position, which is iced's own `pick_list` hit test too.
+        // See the module comment.
+        let trigger = layout.bounds();
+        if let Event::Mouse(mouse::Event::ButtonPressed(mouse::Button::Left))
+        | Event::Touch(iced::touch::Event::FingerPressed { .. }) = event
+            && cursor.is_over(trigger)
+            && !self.open
+            && let Some(on_open_change) = &self.on_open_change
+        {
+            shell.publish(on_open_change(true));
+        }
+        self.trigger.as_widget_mut().update(
+            &mut tree.children[0],
+            event,
+            layout,
+            cursor,
+            renderer,
+            clipboard,
+            shell,
+            viewport,
+        );
+    }
+
+    fn mouse_interaction(
+        &self,
+        tree: &Tree,
+        layout: Layout<'_>,
+        cursor: mouse::Cursor,
+        viewport: &Rectangle,
+        renderer: &iced::Renderer,
+    ) -> mouse::Interaction {
+        self.trigger.as_widget().mouse_interaction(
+            &tree.children[0],
+            layout,
+            cursor,
+            viewport,
+            renderer,
+        )
+    }
+
+    fn operate(
+        &mut self,
+        tree: &mut Tree,
+        layout: Layout<'_>,
+        renderer: &iced::Renderer,
+        operation: &mut dyn widget::Operation,
+    ) {
+        self.trigger
+            .as_widget_mut()
+            .operate(&mut tree.children[0], layout, renderer, operation);
+    }
+
+    fn overlay<'b>(
+        &'b mut self,
+        tree: &'b mut Tree,
+        layout: Layout<'b>,
+        _renderer: &iced::Renderer,
+        _viewport: &Rectangle,
+        translation: Vector,
+    ) -> Option<overlay::Element<'b, Message, Theme, iced::Renderer>> {
+        if !self.open {
+            return None;
+        }
+        let content = self.panel.as_mut()?;
+        let state = tree.state.downcast_mut::<State>();
+        let theme = self.theme.borrow().clone().unwrap_or(Theme::Light);
+        let style = (self.style)(&theme);
+        // The content's sub-tree is reconciled here, before the overlay is built
+        // from it: iced's own `overlay` builds its menu the same way. Without it
+        // the content's tree holds no widget state, and a text widget has no
+        // paragraph to measure with — it lays out at zero height and draws
+        // nothing.
+        state.panel.diff(content.as_widget());
+        // The overlay is laid out against the window, so the trigger has to be
+        // in window coordinates: its layout position is in the scroll area's
+        // content coordinates and `translation` is the window offset of that
+        // coordinate space, which the runtime hands `overlay` for exactly this.
+        // It is added, not subtracted — iced's own overlays do the same
+        // (`pick_list.rs:733`) — because `scrollable` passes `translation -
+        // offset`, so the window position of a laid-out widget is
+        // `position + translation`. The sign was wrong here once, and a panel
+        // inside a scrolled page rode one further scroll offset below its
+        // trigger; the module comment has the full account.
+        let trigger = Rectangle::new(
+            layout.position() + translation,
+            layout.bounds().size(),
+        );
+        Some(overlay::Element::new(Box::new(Panel {
+            content,
+            tree: &mut state.panel,
+            style,
+            filled: self.filled,
+            arrow: self.arrow,
+            trigger,
+            gap: self.offset,
+            padding: self.padding,
+            width: self.panel_width,
+            placement: self.placement,
+            on_open_change: self.on_open_change.clone(),
+        })))
+    }
+}
+
+impl<'a, Message> From<Popover<'a, Message>> for Element<'a, Message>
+where
+    Message: Clone + 'static,
+{
+    fn from(popover: Popover<'a, Message>) -> Self {
+        Element::new(popover)
+    }
+}

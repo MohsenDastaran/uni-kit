@@ -52,7 +52,7 @@ function renderItems(items: SidebarItem[], depth = 0): any[] {
                   <div class="sidebar-subgroup-title">{item.text}</div>
                   <ul class="sidebar-subgroup__items">
                     {item.items.map(sub => (
-                      <li data-framework-only={sub.slintGap ? 'gpui' : undefined}>
+                      <li data-framework-available={sub.frameworkAvailable}>
                         <a
                           href={sub.link}
                           class={`sidebar-item${sub.link && isActive(sub.link) ? ' active' : ''}`}
@@ -66,6 +66,11 @@ function renderItems(items: SidebarItem[], depth = 0): any[] {
                           {sub.examples?.slint ? (
                             <span class="sidebar-item__count" data-framework-count="slint">
                               {sub.examples.slint}<span class="sr-only"> examples</span>
+                            </span>
+                          ) : null}
+                          {sub.examples?.iced ? (
+                            <span class="sidebar-item__count" data-framework-count="iced">
+                              {sub.examples.iced}<span class="sr-only"> examples</span>
                             </span>
                           ) : null}
                         </a>
@@ -104,7 +109,7 @@ function renderItems(items: SidebarItem[], depth = 0): any[] {
                   </button>
                 </li>
               ) : (
-                <li data-framework-only={item.slintGap ? 'gpui' : undefined}>
+                <li data-framework-available={item.frameworkAvailable}>
                   <a
                     href={item.link}
                     class={`sidebar-item${item.link && isActive(item.link) ? ' active' : ''}`}
@@ -118,6 +123,11 @@ function renderItems(items: SidebarItem[], depth = 0): any[] {
                     {item.examples?.slint ? (
                       <span class="sidebar-item__count" data-framework-count="slint">
                         {item.examples.slint}<span class="sr-only"> examples</span>
+                      </span>
+                    ) : null}
+                    {item.examples?.iced ? (
+                      <span class="sidebar-item__count" data-framework-count="iced">
+                        {item.examples.iced}<span class="sr-only"> examples</span>
                       </span>
                     ) : null}
                   </a>
