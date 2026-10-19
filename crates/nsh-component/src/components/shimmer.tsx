@@ -3,6 +3,7 @@
 // UI thread; NSH's CSS has no mask, so the parent clips the gradient instead.
 import type { DimensionValue, JSX, StyleProp, TextStyle, ViewStyle } from 'nsh';
 import { effect, cleanup, Text, View } from 'nsh';
+import { Canvas } from 'nsh/canvas';
 import { Animated, createNativeValue, Easing } from 'nsh/animated';
 import { reduceMotion } from 'nsh/accessibility';
 import { alpha, FONT_SIZE_SM, RADIUS_MD, tokens } from './theme';
@@ -105,33 +106,56 @@ export function ShimmerText(props: {
     cleanup(() => loop.stop());
   });
   const text = typeof props.children === 'string' ? props.children : '';
-  const chars = Array.from(text);
+  const flat: any = Array.isArray(props.style) ? Object.assign({}, ...props.style.filter(Boolean)) : props.style;
+  const fontSize = flat?.fontSize ?? FONT_SIZE_SM;
+  const weight = flat?.fontWeight ?? '400';
+  const family = flat?.fontFamily ?? 'Inter, sans-serif';
+  const lineHeight = Math.ceil(fontSize * 1.6);
   const highlight = props.highlightColor ?? tokens.foreground;
   const base = tokens.mutedForeground;
-  const half = Math.max(0.03, Math.min(0.45, props.spread ?? 0.18));
-  const colors = chars.map((_, index) => {
-    const raw = chars.length <= 1 ? 0.5 : index / (chars.length - 1);
-    const at = props.direction === 'right' ? 1 - raw : raw;
-    const points = [...new Set([0, at, Math.max(0, at - half), Math.min(1, at + half), 1])].sort((a, b) => a - b);
-    return phase.interpolate({
-      inputRange: points.length > 1 ? points : [0, 1],
-      outputRange: (points.length > 1 ? points : [0, 1]).map((point) => (point === at ? highlight : base)),
-      extrapolate: 'clamp',
-    });
-  });
+  const half = Math.max(0.04, Math.min(0.45, props.spread ?? 0.18));
+
   if (!text) {
-    return (
-      <Text style={[{ fontSize: FONT_SIZE_SM, color: base }, props.style]}>
-        {props.children}
-      </Text>
-    );
+    return <Text style={[{ fontSize: FONT_SIZE_SM, color: base }, props.style]}>{props.children}</Text>;
   }
+
   return (
-    <Text style={[{ fontSize: FONT_SIZE_SM, color: base }, props.style]}>
-      {chars.map((char, index) => (
-        <Text style={{ color: colors[index] }}>{char === ' ' ? '\u00a0' : char}</Text>
-      ))}
-    </Text>
+    <Canvas
+      accessibilityLabel={text}
+      style={{ width: '100%', height: lineHeight }}
+      draw={(ctx, size) => {
+        ctx.font = `${weight} ${fontSize}px ${family}`;
+        ctx.textBaseline = 'middle';
+        ctx.textAlign = 'left';
+        const y = size.height / 2;
+        const textWidth = ctx.measureText(text).width;
+        ctx.fillStyle = base;
+        ctx.fillText(text, 0, y);
+        const band = Math.max(18, textWidth * half * 2);
+        const bandX = phase.interpolate({
+          inputRange: [0, 1],
+          outputRange: props.direction === 'right' ? [textWidth, -band] : [-band, textWidth],
+          extrapolate: 'clamp',
+        });
+        ctx.save();
+        // Move the band and its local gradient together, then draw the text
+        // back at its original position. The gradient fades at both edges so
+        // the highlight never begins or ends on a hard vertical seam.
+        ctx.translate(bandX, 0);
+        const shine = ctx.createLinearGradient(0, 0, band, 0);
+        shine.addColorStop(0, 'transparent');
+        shine.addColorStop(0.32, alpha(highlight, 0.55));
+        shine.addColorStop(0.5, highlight);
+        shine.addColorStop(0.68, alpha(highlight, 0.55));
+        shine.addColorStop(1, 'transparent');
+        ctx.beginPath();
+        ctx.rect(0, 0, band, size.height);
+        ctx.clip();
+        ctx.fillStyle = shine;
+        ctx.fillText(text, bandX.mul(-1), y);
+        ctx.restore();
+      }}
+    />
   );
 }
 
