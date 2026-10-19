@@ -358,14 +358,36 @@ export function remarkNshSource() {
       const only = node.data?.hProperties?.['data-framework-only'];
       return only && only !== 'nsh';
     };
+    // The demos are written in this pass's order, but a chapter page often keeps
+    // the type names together at the end (`### LineChart` ... `### SankeyChart`).
+    // Claim those shared names first, in the page's order, so the sample lands on
+    // its own heading instead of an earlier, looser match taking it and pushing
+    // this one down to a created heading.
+    const taken = new Set();
+    for (const node of children) {
+      if (node.type !== 'heading' || foreignOnly(node)) continue;
+      const title = headingText(node);
+      const at = sections.findIndex(
+        (section, index) => !taken.has(index) && sameNshTitle(section.title, title),
+      );
+      if (at !== -1) taken.add(at);
+    }
     for (const [index, section] of sections.entries()) {
       // A heading that belongs to another framework is not a home for the NSH
       // sample: the stylesheet hides it for every other framework, including
       // nsh. Leave it alone and write an nsh-only heading below.
-      const heading = [...byTitle]
-        .filter(([title]) => sameNshTitle(title, section.title))
-        .flatMap(([, nodes]) => nodes)
-        .find((node) => !foreignOnly(node));
+      const preferred = taken.has(index)
+        ? [...byTitle]
+            .filter(([title]) => sameNshTitle(title, section.title))
+            .flatMap(([, nodes]) => nodes)
+            .find((node) => !foreignOnly(node))
+        : undefined;
+      const heading =
+        preferred ??
+        [...byTitle]
+          .filter(([title]) => sameNshTitle(title, section.title))
+          .flatMap(([, nodes]) => nodes)
+          .find((node) => !foreignOnly(node));
       if (heading && !claims.has(heading)) {
         claims.set(heading, { count: 1, tail: null });
         tagNshHeading(heading, section.title);

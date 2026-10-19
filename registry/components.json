@@ -23907,10 +23907,6 @@
       ],
       "carousel": [
         {
-          "src": "crates/nsh-component/src/components/button.tsx",
-          "target": "button.tsx"
-        },
-        {
           "src": "crates/nsh-component/src/components/carousel.tsx",
           "target": "carousel.tsx"
         },

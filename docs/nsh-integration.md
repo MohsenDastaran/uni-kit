@@ -85,9 +85,9 @@ NSH-only sections under Usage.
 | `button` | `button.tsx` | yes | yes | yes | 285 | yes | yes |
 | `calendar` | `calendar.tsx` | yes | yes | yes | 526 | yes | yes |
 | `card` | `card.tsx` | yes | yes | yes | 218 | yes | yes |
-| `carousel` | `carousel.tsx` | yes | yes | yes | 251 | yes | yes |
-| `chart` | `chart.tsx` | yes | yes | yes | 185 | yes | yes |
-| `checkbox` | `checkbox.tsx` | yes | yes | yes | 71 | yes | yes |
+| `carousel` | `carousel.tsx` | yes | yes | yes | 243 | yes | yes |
+| `chart` | `chart.tsx` | yes | yes | yes | 576 | yes | yes |
+| `checkbox` | `checkbox.tsx` | yes | yes | yes | 211 | yes | yes |
 | `clipboard` | `clipboard.tsx` | yes | yes | yes | 49 | yes | yes |
 | `collapsible` | `collapsible.tsx` | yes | yes | yes | 224 | yes | yes |
 | `color-picker` | `color_picker.tsx` | yes | yes | yes | 77 | yes | yes |

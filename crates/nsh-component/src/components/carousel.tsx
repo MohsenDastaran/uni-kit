@@ -7,7 +7,7 @@
 import type { JSX, LayoutEvent, StyleProp, ViewStyle, YNode } from 'nsh';
 import { cleanup, effect, signal, Scroll, Text, View } from 'nsh';
 import { reduceMotion } from 'nsh/accessibility';
-import { Button } from './button';
+import { Icon } from './icon';
 import { alpha, isDark, RADIUS_LG, tokens } from './theme';
 
 export type CarouselOrientation = 'horizontal' | 'vertical';
@@ -81,66 +81,59 @@ export function Carousel(props: CarouselProps) {
     cleanup(() => clearInterval(id));
   });
 
-  const previousControl = (size: 'small' | 'xsmall' = 'small') => (
-    <Button
-      icon={vertical() ? 'chevron-up' : 'chevron-left'}
-      size={size}
-      variant="ghost"
-      rounded={16}
-      accessibilityLabel="Previous slide"
-      onPress={() => go(index() - 1)}
-    />
-  );
-
-  const nextControl = (size: 'small' | 'xsmall' = 'small') => (
-    <Button
-      icon={vertical() ? 'chevron-down' : 'chevron-right'}
-      size={size}
-      variant="ghost"
-      rounded={16}
-      accessibilityLabel="Next slide"
-      onPress={() => go(index() + 1)}
-    />
-  );
-
-  const overlayControls = () => {
-    const style: ViewStyle = {
-      position: 'absolute',
-      zIndex: 2,
-      width: 30,
-      height: 30,
-      borderRadius: 15,
-      backgroundColor: isDark() ? alpha(tokens.background, 0.72) : alpha(tokens.popover, 0.88),
-      borderWidth: 1,
-      borderColor: tokens.border,
-      alignItems: 'center',
-      justifyContent: 'center',
-    };
+  /**
+   * One control for every placement: a 30pt circle with a hairline, sitting
+   * inline when outside and floating over the viewport when not. The overlay
+   * positions it absolutely; the outside row flows it beside the slides.
+   */
+  const control = (direction: 'previous' | 'next') => {
+    const overlay = props.controlPlacement !== 'outside';
+    const back = direction === 'previous';
     return (
-      <>
-        <View
-          style={[
-            { ...style, left: vertical() ? '50%' : 8, top: vertical() ? 8 : '50%' },
-            vertical() ? { marginLeft: -15 } : { marginTop: -15 },
-          ]}
-        >
-          {previousControl('xsmall')}
-        </View>
-        <View
-          style={[
-            {
-              ...style,
-              right: vertical() ? undefined : 8,
-              left: vertical() ? '50%' : undefined,
-              bottom: vertical() ? 8 : undefined,
-              top: vertical() ? undefined : '50%',
-            },
-            vertical() ? { marginLeft: -15 } : { marginTop: -15 },
-          ]}
-        >
-          {nextControl('xsmall')}
-        </View>
-      </>
+      <View
+        accessibilityRole="button"
+        accessibilityLabel={back ? 'Previous slide' : 'Next slide'}
+        onPress={() => go(index() + (back ? -1 : 1))}
+        activeOpacity={0.85}
+        class="transition-colors duration-150 hover:bg-black/[0.04] dark:hover:bg-white/[0.08]"
+        style={{
+          alignItems: 'center',
+          justifyContent: 'center',
+          width: 30,
+          height: 30,
+          borderRadius: 15,
+          borderWidth: 1,
+          borderColor: tokens.border,
+          backgroundColor: overlay
+            ? isDark()
+              ? alpha(tokens.background, 0.72)
+              : alpha(tokens.popover, 0.88)
+            : tokens.background,
+          ...(overlay
+            ? vertical()
+              ? back
+                ? { position: 'absolute', top: 8, left: '50%', marginLeft: -15, zIndex: 2 }
+                : { position: 'absolute', bottom: 8, left: '50%', marginLeft: -15, zIndex: 2 }
+              : back
+                ? { position: 'absolute', left: 8, top: '50%', marginTop: -15, zIndex: 2 }
+                : { position: 'absolute', right: 8, top: '50%', marginTop: -15, zIndex: 2 }
+            : {}),
+        }}
+      >
+        <Icon
+          name={
+            vertical()
+              ? back
+                ? 'chevron-up'
+                : 'chevron-down'
+              : back
+                ? 'chevron-left'
+                : 'chevron-right'
+          }
+          size={14}
+          color={tokens.foreground}
+        />
+      </View>
     );
   };
 
@@ -203,26 +196,25 @@ export function Carousel(props: CarouselProps) {
 
   return (
     <View testID={props.testID} style={[{ gap: 8 }, props.style]}>
-      {outside() && vertical() ? (
-        <View style={{ alignItems: 'center' }}>{previousControl()}</View>
-      ) : null}
+      {outside() && vertical() ? <View style={{ alignItems: 'center' }}>{control('previous')}</View> : null}
       <View
         style={{
           position: 'relative',
           width: '100%',
-          ...(outside() && !vertical()
-            ? { flexDirection: 'row', alignItems: 'center', gap: 2 }
-            : {}),
+          ...(outside() && !vertical() ? { flexDirection: 'row', alignItems: 'center', gap: 4 } : {}),
         }}
       >
-        {outside() && !vertical() ? <View>{previousControl()}</View> : null}
+        {outside() && !vertical() ? control('previous') : null}
         {viewport}
-        {outside() && !vertical() ? <View>{nextControl()}</View> : null}
-        {!outside() && props.showControls !== false ? overlayControls() : null}
+        {outside() && !vertical() ? control('next') : null}
+        {outside() ? null : (
+          <>
+            {control('previous')}
+            {control('next')}
+          </>
+        )}
       </View>
-      {outside() && vertical() ? (
-        <View style={{ alignItems: 'center' }}>{nextControl()}</View>
-      ) : null}
+      {outside() && vertical() ? <View style={{ alignItems: 'center' }}>{control('next')}</View> : null}
       <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6 }}>
         {props.showDots === false
           ? null
