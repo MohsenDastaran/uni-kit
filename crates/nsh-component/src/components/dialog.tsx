@@ -1,6 +1,13 @@
 // A dialog over a dimmed backdrop, presented by NSH's native Modal.
+//
+// The native layer only fades as a whole, which read as a pop. The panel rides
+// a native value instead: it fades, rises and scales in on open, and replays
+// the reverse before the layer closes.
 import type { JSX, StyleProp, ViewStyle } from 'nsh';
-import { Text, View } from 'nsh';
+import { cleanup, effect, signal, Text, View } from 'nsh';
+import { reduceMotion } from 'nsh/accessibility';
+import { createNativeValue } from 'nsh/animated';
+import { keymap } from 'nsh/keymap';
 import { Modal } from 'nsh/ui/mobile';
 import { Icon } from './icon';
 import { type IconName } from './icons';
@@ -26,7 +33,34 @@ export interface DialogProps {
   testID?: string;
 }
 
+const ENTER_MS = 200;
+const EXIT_MS = 150;
+
 export function Dialog(props: DialogProps) {
+  // `mounted` keeps the modal presented through the exit; `enter` is the
+  // native value both the panel and the backdrop follow.
+  const mounted = signal(Boolean(props.open));
+  const enter = createNativeValue(props.open ? 1 : 0);
+  effect(() => {
+    if (props.open) {
+      mounted.set(true);
+      if (reduceMotion()) enter.set(1);
+      else enter.timing(1, { duration: ENTER_MS, easing: 'easeOut' });
+      return;
+    }
+    if (!mounted()) return;
+    const run = reduceMotion() ? Promise.resolve(false) : enter.timing(0, { duration: EXIT_MS, easing: 'easeIn' });
+    run.then(() => {
+      if (!props.open) mounted.set(false);
+    });
+  });
+  // Escape closes the dialog while it is presented; the binding is removed
+  // with the component and with each close.
+  effect(() => {
+    if (!mounted() || !props.onClose) return;
+    const unbind = keymap.bind('escape', () => props.onClose?.());
+    cleanup(() => unbind());
+  });
   const width = () => (props.size === 'small' ? 320 : props.size === 'large' ? 560 : 440);
   const tone = () => props.tone ?? 'default';
   const toneColor = () => {
@@ -48,9 +82,9 @@ export function Dialog(props: DialogProps) {
     Boolean(props.title || props.description || props.icon || showClose());
   return (
     <Modal
-      visible={Boolean(props.open)}
+      visible={mounted()}
       transparent
-      animationType="fade"
+      animationType={reduceMotion() ? 'fade' : 'none'}
       dismissible={props.overlayClosable}
       onRequestClose={props.onClose}
     >
@@ -61,6 +95,7 @@ export function Dialog(props: DialogProps) {
           alignItems: 'center',
           justifyContent: 'center',
           padding: 24,
+          ...(reduceMotion() ? {} : { opacity: enter }),
         }}
       >
         <View
@@ -76,6 +111,15 @@ export function Dialog(props: DialogProps) {
               borderColor: tokens.border,
               padding: 20,
               gap: SPACING_MD,
+              ...(reduceMotion()
+                ? {}
+                : {
+                    opacity: enter,
+                    transform: [
+                      { scale: enter.interpolate({ inputRange: [0, 1], outputRange: [0.96, 1] }) },
+                      { translateY: enter.interpolate({ inputRange: [0, 1], outputRange: [8, 0] }) },
+                    ],
+                  }),
             },
             props.style,
           ]}

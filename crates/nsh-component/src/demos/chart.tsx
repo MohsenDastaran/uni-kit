@@ -12,22 +12,22 @@ const marketA = [40, 72, 56, 44, 68, 80];
 const marketB = [30, 62, 48, 32, 58, 66];
 const sales = [28, 54, 38, 64, 48, 78, 56, 92, 66, 84, 60, 40];
 
-const dot = (color: string) => (
-  <View style={{ width: 7, height: 7, borderRadius: 4, backgroundColor: color }} />
-);
-
-const legend = (items: { label: string; color: string }[]) => (
-  <Row gap={10}>
-    {items.map((item) => (
-      <Row gap={4}>
-        {dot(item.color)}
-        <Text style={{ fontSize: 10, color: tokens.mutedForeground }}>{item.label}</Text>
-      </Row>
-    ))}
-  </Row>
-);
-
 export function Demo() {
+  const dot = (color: string) => (
+    <View style={{ width: 7, height: 7, borderRadius: 4, backgroundColor: color }} />
+  );
+
+  const legend = (items: { label: string; color: string }[]) => (
+    <Row gap={10}>
+      {items.map((item) => (
+        <Row gap={4}>
+          {dot(item.color)}
+          <Text style={{ fontSize: 10, color: tokens.mutedForeground }}>{item.label}</Text>
+        </Row>
+      ))}
+    </Row>
+  );
+
   // A monochrome series palette keeps the cards in the ReUI grayscale.
   const mono = [
     tokens.foreground,

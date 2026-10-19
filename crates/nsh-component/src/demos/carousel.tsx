@@ -7,51 +7,51 @@ import { Icon } from "../components/icon";
 import { alpha, inkOn, tokens } from "../components/theme";
 import { Caption, ExampleSection, Page } from "./ui";
 
-const gradient = (from: string, to: string) => ({
-  backgroundColor: from,
-  backgroundImage: `linear-gradient(135deg, ${alpha(from, 0.92)}, ${alpha(to, 0.72)})`,
-});
+export function Demo() {
+  const gradient = (from: string, to: string) => ({
+    backgroundColor: from,
+    backgroundImage: `linear-gradient(135deg, ${alpha(from, 0.92)}, ${alpha(to, 0.72)})`,
+  });
 
-const gradientSlide = (label: string, detail: string, from: string, to: string) => (
-  <View
-    style={{
-      flex: 1,
-      justifyContent: "flex-end",
-      padding: 16,
-      gap: 2,
-      ...gradient(from, to),
-    }}
-  >
-    <Text style={{ fontSize: 22, lineHeight: 28, fontWeight: "700", color: inkOn(from) }}>
-      {label}
-    </Text>
-    <Text style={{ fontSize: 12, lineHeight: 17, color: alpha(inkOn(from), 0.8) }}>
-      {detail}
-    </Text>
-  </View>
-);
-
-const coverSlide = (title: string, detail: string) => (
-  <View style={{ flex: 1, justifyContent: "flex-end", padding: 18 }}>
-    <Image src={cover} resizeMode="cover" style={{ position: "absolute", top: 0, left: 0, width: "100%", height: "100%" }} />
+  const gradientSlide = (label: string, detail: string, from: string, to: string) => (
     <View
       style={{
-        position: "absolute",
-        left: 0,
-        right: 0,
-        bottom: 0,
-        height: 140,
-        backgroundImage: `linear-gradient(to top, ${alpha(tokens.background, 0.9)}, ${alpha(tokens.background, 0)})`,
+        flex: 1,
+        justifyContent: "flex-end",
+        padding: 16,
+        gap: 2,
+        ...gradient(from, to),
       }}
-    />
-    <Text style={{ fontSize: 22, lineHeight: 28, fontWeight: "700", color: tokens.foreground }}>
-      {title}
-    </Text>
-    <Text style={{ fontSize: 12, lineHeight: 17, color: tokens.mutedForeground }}>{detail}</Text>
-  </View>
-);
+    >
+      <Text style={{ fontSize: 22, lineHeight: 28, fontWeight: "700", color: inkOn(from) }}>
+        {label}
+      </Text>
+      <Text style={{ fontSize: 12, lineHeight: 17, color: alpha(inkOn(from), 0.8) }}>
+        {detail}
+      </Text>
+    </View>
+  );
 
-export function Demo() {
+  const coverSlide = (title: string, detail: string) => (
+    <View style={{ flex: 1, justifyContent: "flex-end", padding: 18 }}>
+      <Image src={cover} resizeMode="cover" style={{ position: "absolute", top: 0, left: 0, width: "100%", height: "100%" }} />
+      <View
+        style={{
+          position: "absolute",
+          left: 0,
+          right: 0,
+          bottom: 0,
+          height: 140,
+          backgroundImage: `linear-gradient(to top, ${alpha(tokens.background, 0.9)}, ${alpha(tokens.background, 0)})`,
+        }}
+      />
+      <Text style={{ fontSize: 22, lineHeight: 28, fontWeight: "700", color: tokens.foreground }}>
+        {title}
+      </Text>
+      <Text style={{ fontSize: 12, lineHeight: 17, color: tokens.mutedForeground }}>{detail}</Text>
+    </View>
+  );
+
   // section: Usage
   const usage = (
     <Carousel

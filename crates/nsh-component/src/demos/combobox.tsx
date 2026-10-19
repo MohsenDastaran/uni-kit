@@ -30,32 +30,32 @@ const members: ComboboxOption[] = [
   { value: "david", label: "David Kim", description: "CTO" },
 ].map((item) => ({ ...item, leading: <Avatar name={item.label} size="xs" /> }));
 
-const priorities: ComboboxOption[] = [
-  { value: "none", label: "No Priority", icon: "ellipsis", tone: tokens.mutedForeground },
-  { value: "low", label: "Low", icon: "chart-column", tone: tokens.mutedForeground },
-  { value: "medium", label: "Medium", icon: "chart-column", tone: tokens.foreground },
-  { value: "high", label: "High", icon: "chart-column", tone: tokens.foreground },
-  { value: "urgent", label: "Urgent", icon: "triangle-alert", tone: tokens.warning },
-];
-
-const dates: ComboboxOption[] = [
-  { value: "none", label: "No date", icon: "calendar" },
-  { value: "tomorrow", label: "Tomorrow", icon: "calendar", note: "20/10/2026" },
-  { value: "week", label: "End of week", icon: "calendar", note: "25/10/2026" },
-  { value: "one-week", label: "In one week", icon: "calendar", note: "26/10/2026" },
-  { value: "month", label: "End of month", icon: "calendar", note: "31/10/2026" },
-  { value: "one-month", label: "In one month", icon: "calendar", note: "19/11/2026" },
-  { value: "custom", label: "Custom date…", icon: "calendar" },
-];
-
-const labels: ComboboxOption[] = [
-  { value: "bug", label: "Bug", icon: "circle", tone: tokens.danger },
-  { value: "design", label: "Design", icon: "circle", tone: tokens.info },
-  { value: "docs", label: "Docs", icon: "circle", tone: tokens.success },
-  { value: "feature", label: "Feature", icon: "circle", tone: tokens.warning },
-];
-
 export function Demo() {
+  const priorities: ComboboxOption[] = [
+    { value: "none", label: "No Priority", icon: "ellipsis", tone: tokens.mutedForeground },
+    { value: "low", label: "Low", icon: "chart-column", tone: tokens.mutedForeground },
+    { value: "medium", label: "Medium", icon: "chart-column", tone: tokens.foreground },
+    { value: "high", label: "High", icon: "chart-column", tone: tokens.foreground },
+    { value: "urgent", label: "Urgent", icon: "triangle-alert", tone: tokens.warning },
+  ];
+
+  const dates: ComboboxOption[] = [
+    { value: "none", label: "No date", icon: "calendar" },
+    { value: "tomorrow", label: "Tomorrow", icon: "calendar", note: "20/10/2026" },
+    { value: "week", label: "End of week", icon: "calendar", note: "25/10/2026" },
+    { value: "one-week", label: "In one week", icon: "calendar", note: "26/10/2026" },
+    { value: "month", label: "End of month", icon: "calendar", note: "31/10/2026" },
+    { value: "one-month", label: "In one month", icon: "calendar", note: "19/11/2026" },
+    { value: "custom", label: "Custom date…", icon: "calendar" },
+  ];
+
+  const labels: ComboboxOption[] = [
+    { value: "bug", label: "Bug", icon: "circle", tone: tokens.danger },
+    { value: "design", label: "Design", icon: "circle", tone: tokens.info },
+    { value: "docs", label: "Docs", icon: "circle", tone: tokens.success },
+    { value: "feature", label: "Feature", icon: "circle", tone: tokens.warning },
+  ];
+
   const single = signal("button");
   const multi = signal(["next", "nuxt"]);
   const member = signal("alex");

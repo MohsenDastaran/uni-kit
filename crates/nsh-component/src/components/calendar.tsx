@@ -270,7 +270,6 @@ export function Calendar(props: CalendarProps) {
     const start = state.rangeStart;
     const end = state.rangeEnd;
     const dim = state.disabled || outside;
-    const selectedInk = tokens.primaryForeground;
     const dayBackground = selected
       ? tokens.primary
       : inRange
@@ -309,7 +308,7 @@ export function Calendar(props: CalendarProps) {
             style={{
               fontSize: 13,
               fontWeight: selected ? '600' : '400',
-              color: selected ? selectedInk : outside ? tokens.mutedForeground : tokens.foreground,
+              color: selected ? tokens.primaryForeground : outside ? tokens.mutedForeground : tokens.foreground,
             }}
           >
             {date.getDate()}
@@ -323,7 +322,7 @@ export function Calendar(props: CalendarProps) {
               width: 3,
               height: 3,
               borderRadius: 2,
-              backgroundColor: selected ? selectedInk : tokens.primary,
+              backgroundColor: selected ? tokens.primaryForeground : tokens.primary,
             }}
           />
         ) : null}

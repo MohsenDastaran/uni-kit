@@ -8,9 +8,8 @@ import { Icon } from "../components/icon";
 import { tokens } from "../components/theme";
 import { Caption, Column, ExampleSection, Page, Row } from "./ui";
 
-const Info = () => <Icon name="info" size={12} color={tokens.mutedForeground} />;
-
 export function Demo() {
+  const Info = () => <Icon name="info" size={12} color={tokens.mutedForeground} />;
   const basicState = signal(true);
   const controlled = signal(false);
   const invalid = signal(false);
