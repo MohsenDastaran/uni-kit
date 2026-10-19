@@ -2,6 +2,7 @@
 
 NSH ?= nsh
 STORY ?=
+STORY_FILE = $(subst -,_,$(STORY))
 # The gallery's run target; override to preview a native backend.
 #   make run STORY=button TARGET=macos
 TARGET ?= web
@@ -32,7 +33,7 @@ check-incomplete:
 #   make run STORY=button TARGET=android  # device or emulator
 run:
 	@test -n "$(STORY)" || (echo "usage: make run STORY=<component>" >&2; exit 2)
-	$(NSH) run examples/$(STORY).tsx --target $(TARGET)
+	$(NSH) run examples/$(STORY_FILE).tsx --target $(TARGET)
 
 # Every story `?story=` accepts, one per line.
 stories:
