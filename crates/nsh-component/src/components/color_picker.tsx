@@ -6,6 +6,7 @@
 // shows; the rest of the chrome comes from the shared tokens.
 import type { JSX, StyleProp, ViewStyle } from 'nsh';
 import { LayoutEvent, signal, Text, View } from 'nsh';
+import { Clipboard } from 'nsh/clipboard';
 import { Input } from './input';
 import { Icon } from './icon';
 import { type IconName } from './icons';
@@ -124,6 +125,9 @@ export function ColorSwatch(props: { color: string; selected?: boolean; onPress?
 export function ColorPicker(props: ColorPickerProps) {
   const own = signal(props.defaultValue ?? '#171717');
   const open = signal(false);
+  const copied = signal(false);
+  const ownFormat = signal<ColorFormat>('hex');
+  const formatOpen = signal(false);
   const spectrumWidth = signal(0);
   const spectrumHeight = signal(0);
   const hueWidth = signal(1);
@@ -134,17 +138,31 @@ export function ColorPicker(props: ColorPickerProps) {
     if (props.value === undefined) own.set(next);
     props.onChange?.(next);
   };
-  const opacity = () => props.alpha ?? 1;
-  const format = () => props.format ?? 'hex';
-  const [h, s, v] = rgbToHsv(hexToRgb(value()));
-  const hueColor = (hsvToHex(h, 1, 1));
+  const ownAlpha = signal(1);
+  const opacity = () => props.alpha ?? ownAlpha();
+  const setAlpha = (next: number) => {
+    if (props.alpha === undefined) ownAlpha.set(next);
+    props.onAlphaChange?.(next);
+  };
+  const format = () => props.format ?? ownFormat();
+  const setFormat = (next: ColorFormat) => {
+    if (props.format === undefined) ownFormat.set(next);
+    props.onFormatChange?.(next);
+  };
+  // HSV is derived from the live value; keeping it as functions is what makes
+  // the spectrum marker and hue thumb move when the colour changes.
+  const hsv = () => rgbToHsv(hexToRgb(value()));
+  const hue = () => hsv()[0];
+  const saturation = () => hsv()[1];
+  const brightness = () => hsv()[2];
+  const hueColor = () => hsvToHex(hue(), 1, 1);
 
   const setFromSpectrum = (x: number, y: number) => {
     const w = Math.max(1, spectrumWidth());
     const height = Math.max(1, spectrumHeight());
-    const saturation = Math.max(0, Math.min(1, x / w));
-    const brightness = 1 - Math.max(0, Math.min(1, y / height));
-    set(hsvToHex(h, saturation, brightness));
+    const nextSaturation = Math.max(0, Math.min(1, x / w));
+    const nextBrightness = 1 - Math.max(0, Math.min(1, y / height));
+    set(hsvToHex(hue(), nextSaturation, nextBrightness));
   };
 
   const spectrum = () => (
@@ -161,7 +179,7 @@ export function ColorPicker(props: ColorPickerProps) {
           height: 150,
           borderRadius: 8,
           overflow: 'hidden',
-          backgroundColor: hueColor,
+          backgroundColor: hueColor(),
           backgroundImage: isDark()
             ? 'linear-gradient(to top, #000, transparent), linear-gradient(to right, #fff, transparent)'
             : 'linear-gradient(to top, #000, transparent), linear-gradient(to right, #fff, transparent)',
@@ -170,8 +188,8 @@ export function ColorPicker(props: ColorPickerProps) {
         <View
           style={{
             position: 'absolute',
-            left: `${s * 100}%`,
-            top: `${(1 - v) * 100}%`,
+            left: `${saturation() * 100}%`,
+            top: `${(1 - brightness()) * 100}%`,
             width: 12,
             height: 12,
             marginLeft: -6,
@@ -187,8 +205,8 @@ export function ColorPicker(props: ColorPickerProps) {
         <Icon name="pipette" size={14} color={tokens.mutedForeground} />
         <View
           onLayout={(event: LayoutEvent) => hueWidth.set(event.width)}
-          onTouchStart={(event) => set(hsvToHex(Math.max(0, Math.min(360, (event.locationX / Math.max(1, hueWidth())) * 360)), s, v))}
-          onTouchMove={(event) => set(hsvToHex(Math.max(0, Math.min(360, (event.locationX / Math.max(1, hueWidth())) * 360)), s, v))}
+          onTouchStart={(event) => set(hsvToHex(Math.max(0, Math.min(360, (event.locationX / Math.max(1, hueWidth())) * 360)), saturation(), brightness()))}
+          onTouchMove={(event) => set(hsvToHex(Math.max(0, Math.min(360, (event.locationX / Math.max(1, hueWidth())) * 360)), saturation(), brightness()))}
           style={{
             flex: 1,
             height: 12,
@@ -200,7 +218,7 @@ export function ColorPicker(props: ColorPickerProps) {
           <View
             style={{
               position: 'absolute',
-              left: `${(h / 360) * 100}%`,
+              left: `${(hue() / 360) * 100}%`,
               top: -2,
               width: 16,
               height: 16,
@@ -208,24 +226,28 @@ export function ColorPicker(props: ColorPickerProps) {
               borderRadius: 8,
               borderWidth: 2,
               borderColor: tokens.background,
-              backgroundColor: hueColor,
+              backgroundColor: hueColor(),
             }}
           />
         </View>
         <View
           accessibilityRole="button"
-          accessibilityLabel="Copy colour"
-          onPress={() => {}}
+          accessibilityLabel={copied() ? 'Copied' : 'Copy colour'}
+          onPress={() => {
+            Clipboard.setString(formatValue(value(), format(), opacity()));
+            copied.set(true);
+            setTimeout(() => copied.set(false), 1400);
+          }}
           class="transition-opacity duration-150 hover:opacity-70"
           style={{ width: 18, height: 18, alignItems: 'center', justifyContent: 'center' }}
         >
-          <Icon name="copy" size={13} color={tokens.mutedForeground} />
+          <Icon name={copied() ? 'check' : 'copy'} size={13} color={copied() ? tokens.success : tokens.mutedForeground} />
         </View>
       </View>
       <View
         onLayout={(event: LayoutEvent) => alphaWidth.set(event.width)}
-        onTouchStart={(event) => props.onAlphaChange?.(Math.max(0, Math.min(1, event.locationX / Math.max(1, alphaWidth()))))}
-        onTouchMove={(event) => props.onAlphaChange?.(Math.max(0, Math.min(1, event.locationX / Math.max(1, alphaWidth()))))}
+        onTouchStart={(event) => setAlpha(Math.max(0, Math.min(1, event.locationX / Math.max(1, alphaWidth()))))}
+        onTouchMove={(event) => setAlpha(Math.max(0, Math.min(1, event.locationX / Math.max(1, alphaWidth()))))}
         style={{
           height: 12,
           borderRadius: 6,
@@ -252,24 +274,74 @@ export function ColorPicker(props: ColorPickerProps) {
   );
 
   const field = () => (
-    <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
-      <View
-        accessibilityRole="button"
-        accessibilityLabel={`Format ${format().toUpperCase()}`}
-        onPress={() => props.onFormatChange?.(format() === 'hex' ? 'rgb' : format() === 'rgb' ? 'hsl' : 'hex')}
-        style={{
-          flexDirection: 'row',
-          alignItems: 'center',
-          gap: 2,
-          paddingHorizontal: 8,
-          height: 28,
-          borderRadius: 6,
-          borderWidth: 1,
-          borderColor: tokens.border,
-        }}
-      >
-        <Text style={{ fontSize: 10, fontWeight: '600', color: tokens.foreground }}>{format().toUpperCase()}</Text>
-        <Icon name="chevron-down" size={10} color={tokens.mutedForeground} />
+    <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, position: 'relative', zIndex: 2 }}>
+      <View style={{ position: 'relative', width: 72, flexShrink: 0 }}>
+        <View
+          accessibilityRole="button"
+          accessibilityLabel={`Format ${format().toUpperCase()}`}
+          accessibilityState={{ expanded: formatOpen() }}
+          onPress={() => formatOpen.set(!formatOpen())}
+          activeOpacity={0.9}
+          class="transition-colors duration-150 hover:bg-black/[0.04] dark:hover:bg-white/[0.06]"
+          style={{
+            flexDirection: 'row',
+            alignItems: 'center',
+            gap: 2,
+            paddingHorizontal: 7,
+            height: 28,
+            borderRadius: 6,
+            borderWidth: 1,
+            borderColor: formatOpen() ? tokens.ring : tokens.border,
+          }}
+        >
+          <Text style={{ flex: 1, fontSize: 10, fontWeight: '600', color: tokens.foreground }}>
+            {format().toUpperCase()}
+          </Text>
+          <Icon name="chevron-down" size={10} color={tokens.mutedForeground} />
+        </View>
+        {formatOpen() ? (
+          <View
+            style={{
+              position: 'absolute',
+              top: 32,
+              left: 0,
+              width: 72,
+              padding: 4,
+              gap: 1,
+              borderRadius: 8,
+              borderWidth: 1,
+              borderColor: tokens.border,
+              backgroundColor: tokens.popover,
+              zIndex: 5,
+            }}
+          >
+            {(['hex', 'rgb', 'hsl'] as ColorFormat[]).map((entry) => (
+              <View
+                accessibilityRole="button"
+                accessibilityLabel={entry.toUpperCase()}
+                onPress={() => {
+                  setFormat(entry);
+                  formatOpen.set(false);
+                }}
+                activeOpacity={0.85}
+                class="transition-colors duration-150 hover:bg-black/[0.04] dark:hover:bg-white/[0.06]"
+                style={{
+                  flexDirection: 'row',
+                  alignItems: 'center',
+                  gap: 4,
+                  paddingHorizontal: 6,
+                  paddingVertical: 4,
+                  borderRadius: 5,
+                }}
+              >
+                <Text style={{ flex: 1, fontSize: 10, color: tokens.foreground }}>
+                  {entry.toUpperCase()}
+                </Text>
+                {format() === entry ? <Icon name="check" size={10} color={tokens.foreground} /> : null}
+              </View>
+            ))}
+          </View>
+        ) : null}
       </View>
       <Input
         value={formatValue(value(), format(), opacity())}
@@ -279,7 +351,7 @@ export function ColorPicker(props: ColorPickerProps) {
         size="small"
         style={{ flex: 1 }}
       />
-      {props.onAlphaChange ? (
+      {props.showSpectrum !== false ? (
         <View
           style={{
             minWidth: 44,
