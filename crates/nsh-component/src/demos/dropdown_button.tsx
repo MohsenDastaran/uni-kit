@@ -12,6 +12,8 @@ export function Demo() {
     { label: "Duplicate", icon: "copy" as const, shortcut: "⌘D", onSelect: () => chosen.set("Duplicate") },
     { label: "Delete", icon: "trash" as const, onSelect: () => chosen.set("Delete") },
   ];
+  // section: Usage
+  const usage = <DropdownButton label="Actions" items={items} />;
   // section: Basic
   const basic = <DropdownButton label="Actions" items={items} />;
   // section: Variants
@@ -26,11 +28,12 @@ export function Demo() {
   return (
     <Page>
       <Caption>DropdownButton is a Button and a Menu; it owns the open state and nothing else.</Caption>
-      <ExampleSection index={0} title="Basic">{basic}</ExampleSection>
-      <ExampleSection index={1} title="Variants">{variants}</ExampleSection>
-      <ExampleSection index={2} title="With icons">{icons}</ExampleSection>
-      <ExampleSection index={3} title="Sizes">{sizes}</ExampleSection>
-      <ExampleSection index={4} title="Disabled">{disabled}</ExampleSection>
+      <ExampleSection index={0} title="Usage">{usage}</ExampleSection>
+      <ExampleSection index={1} title="Basic">{basic}</ExampleSection>
+      <ExampleSection index={2} title="Variants">{variants}</ExampleSection>
+      <ExampleSection index={3} title="With icons">{icons}</ExampleSection>
+      <ExampleSection index={4} title="Sizes">{sizes}</ExampleSection>
+      <ExampleSection index={5} title="Disabled">{disabled}</ExampleSection>
       <Status>{chosen()}</Status>
     </Page>
   );
