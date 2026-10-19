@@ -21,6 +21,7 @@ const COPY = {
 };
 
 const COMPONENT_PAGE = /[\\/]component[\\/]([^\\/]+)\.md$/;
+const NSH_NOT_PORTED = new Set(['popover', 'tooltip', 'hover-card']);
 
 const text = (value) => ({ type: 'text', value });
 const element = (tagName, properties, children = []) => ({ type: 'element', tagName, properties, children });
@@ -300,6 +301,29 @@ function isHeading(node) {
   return /^h[1-6]$/.test(node.tagName ?? '');
 }
 
+/**
+ * Intentionally unported pages keep GPUI, Slint and iced, but should not show
+ * a NSH "missing" panel or a heading marked NSH-missing. Remove the NSH panel
+ * and its missing tokens after the section passes have run.
+ */
+function omitNsh(tree) {
+  visit(tree, 'element', (node) => {
+    if (classNames(node).includes('framework-code')) {
+      node.children = (node.children ?? []).filter(
+        (child) => child.properties?.dataFrameworkPanel !== 'nsh',
+      );
+    }
+    const missing = node.properties?.dataFrameworkMissing;
+    if (missing) {
+      const next = String(missing).split(' ').filter((name) => name !== 'nsh').join(' ');
+      if (next) node.properties.dataFrameworkMissing = next;
+      else delete node.properties.dataFrameworkMissing;
+    }
+    const only = node.properties?.dataFrameworkOnly;
+    if (only === 'nsh') delete node.properties.dataFrameworkOnly;
+  });
+}
+
 export function rehypeFrameworkCode() {
   return (tree, file) => {
     const path = String(file?.path ?? file?.history?.[0] ?? '');
@@ -368,6 +392,7 @@ export function rehypeFrameworkCode() {
 
     markSingleFramework(tree);
     hideAbsentSections(tree);
+    if (slug && NSH_NOT_PORTED.has(slug)) omitNsh(tree);
 
     const title = tree.children.findIndex((node) => node.type === 'element' && node.tagName === 'h1');
     if (title === -1) return;
