@@ -86,6 +86,8 @@ const pagers = FRAMEWORKS.map((framework) => ({
   description={entry.data.description}
   sidebar={enComponentSidebar}
   contentClass={slug === 'index' ? 'doc-content--component-index' : undefined}
+  layoutClass={slug === 'index' ? undefined : 'docs-layout--component'}
+  mainClass={slug === 'index' ? undefined : 'docs-main--component'}
   contentData={contentData}
 >
   <Content />

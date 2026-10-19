@@ -17,6 +17,10 @@ export interface Props {
   frontmatter?: Record<string, any>;
   /** Extra class for the article, for a page whose content needs its own rules. */
   contentClass?: string;
+  /** Extra class for the layout row, e.g. a wider component-page shell. */
+  layoutClass?: string;
+  /** Extra class for the main column. */
+  mainClass?: string;
   /** Extra attributes for the article, for the same reason. */
   contentData?: Record<string, string | undefined>;
 }
@@ -27,6 +31,8 @@ const {
   sidebar = [],
   frontmatter = {},
   contentClass,
+  layoutClass,
+  mainClass,
   contentData = {},
 } = Astro.props;
 const hasSidebar = sidebar.length > 0;
@@ -70,10 +76,10 @@ const structuredData = [
 <BaseLayout title={title} description={description} lang="en" canonical={canonical} structuredData={structuredData}>
   <Nav currentPath={pathname} starCount={starCount} />
 
-  <div class="docs-layout">
+  <div class:list={['docs-layout', layoutClass]}>
     {hasSidebar && <Sidebar items={sidebar} currentPath={pathname} />}
 
-    <main class:list={['docs-main', { 'docs-main--full': !hasSidebar }]}>
+    <main class:list={['docs-main', { 'docs-main--full': !hasSidebar }, mainClass]}>
       <article
         class:list={['doc-content', contentClass]}
         data-pagefind-body

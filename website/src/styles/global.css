@@ -1710,6 +1710,22 @@ html[lang^="ja"] .sidebar-subgroup-title {
   max-width: 860px;
 }
 
+.docs-layout--component {
+  /* Component pages carry tables, galleries and code samples; give the article
+     more of the row than the guide pages need, and buy back the difference from
+     a slightly narrower outline column. */
+  width: min(100% - 3rem, 1720px);
+}
+
+.docs-main--component {
+  max-width: 1080px;
+  padding: 3rem 2rem 4rem;
+}
+
+.docs-layout--component .toc {
+  width: 320px;
+}
+
 /* ====================================================================
    On-this-page (docs layout)
    ==================================================================== */
@@ -2223,7 +2239,8 @@ html[lang^="ja"] .sidebar-group__title {
    900px wide, and narrower still below that. The bar keeps its own 767px
    breakpoint — its links fit far longer than the sidebar does. */
 @media (max-width: 959px) {
-  .docs-layout {
+  .docs-layout,
+  .docs-layout--component {
     flex-direction: column;
     width: calc(100% - 3rem);
   }
@@ -2239,7 +2256,8 @@ html[lang^="ja"] .sidebar-group__title {
   }
 
   .docs-main,
-  .docs-main--full {
+  .docs-main--full,
+  .docs-main--component {
     padding: 1.75rem 0 3rem;
   }
 }
