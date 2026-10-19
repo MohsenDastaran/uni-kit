@@ -24829,6 +24829,18 @@
       ],
       "otp-input": [
         {
+          "src": "crates/nsh-component/src/components/icon.tsx",
+          "target": "icon.tsx"
+        },
+        {
+          "src": "crates/nsh-component/src/components/icons.ts",
+          "target": "icons.ts"
+        },
+        {
+          "src": "crates/nsh-component/src/components/input.tsx",
+          "target": "input.tsx"
+        },
+        {
           "src": "crates/nsh-component/src/components/otp_input.tsx",
           "target": "otp_input.tsx"
         },

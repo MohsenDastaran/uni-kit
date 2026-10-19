@@ -73,6 +73,7 @@ export interface InputProps {
   onChangeText?: (text: string) => void;
   onChange?: (text: string) => void;
   onSubmit?: (text: string) => void;
+  onKeyPress?: (event: { key: string }) => void;
   onClear?: () => void;
   onFocus?: () => void;
   onBlur?: () => void;
@@ -212,6 +213,7 @@ export function Input(props: InputProps) {
         }}
         onKeyPress={(event) => {
           if (props.cleanOnEscape && event.key === 'Escape' && value() !== '') clear();
+          props.onKeyPress?.(event);
         }}
         style={{
           flex: 1,
