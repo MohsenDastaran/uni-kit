@@ -66,7 +66,7 @@ export function Slider(props: SliderProps) {
       <View
         style={{
           ...(props.vertical
-            ? { width: 6, height: '100%', borderRadius: 3, backgroundColor: tokens.muted }
+            ? { width: 6, height: '100%', borderRadius: 3, backgroundColor: tokens.muted, justifyContent: 'flex-end' }
             : { height: 6, width: '100%', borderRadius: 3, backgroundColor: tokens.muted }),
           overflow: 'hidden',
         }}
