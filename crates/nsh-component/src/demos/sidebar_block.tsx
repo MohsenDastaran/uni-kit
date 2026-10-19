@@ -5,6 +5,8 @@ import { Badge } from "../components/badge";
 import { Button } from "../components/button";
 import { Card } from "../components/card";
 import { Icon } from "../components/icon";
+import { MenuButton } from "../components/menu";
+import { Progress } from "../components/progress";
 import { Sidebar } from "../components/sidebar";
 import { tokens } from "../components/theme";
 
@@ -28,24 +30,38 @@ export function Demo() {
   return (
     <View style={{ flex: 1, flexDirection: "row", backgroundColor: tokens.background }}>
       <Sidebar
-        items={[
-          { id: "home", label: "Overview", icon: "layout-dashboard" },
-          { id: "inbox", label: "Inbox", icon: "inbox", badge: "8" },
-          { id: "projects", label: "Projects", icon: "folder" },
-          { id: "settings", label: "Settings", icon: "settings" },
+        sections={[
+          {
+            id: "workspace",
+            title: "Workspace",
+            items: [
+              { id: "home", label: "Overview", icon: "layout-dashboard" },
+              { id: "inbox", label: "Inbox", icon: "inbox", badge: "8" },
+              { id: "projects", label: "Projects", icon: "folder", children: [{ id: "checkout", label: "Checkout API", icon: "square" }, { id: "design", label: "Design system", icon: "palette" }] },
+              { id: "settings", label: "Settings", icon: "settings" },
+            ],
+          },
+          {
+            id: "teams",
+            title: "Teams",
+            items: [{ id: "engineering", label: "Engineering", icon: "users", badge: "12" }, { id: "design-team", label: "Design", icon: "palette" }],
+          },
         ]}
         active={active()}
         onSelect={navigate}
         width={224}
         header={
-          <View style={{ paddingHorizontal: 14, paddingVertical: 16, gap: 2 }}>
+          <View style={{ paddingHorizontal: 14, paddingVertical: 14 }}>
             <View style={{ flexDirection: "row", alignItems: "center", gap: 8 }}>
               <View style={{ width: 26, height: 26, borderRadius: 7, alignItems: "center", justifyContent: "center", backgroundColor: tokens.primary }}>
                 <Icon name="layers" size={14} color={tokens.primaryForeground} />
               </View>
-              <Text style={{ fontSize: 13, fontWeight: "600", color: tokens.foreground }}>Northstar</Text>
+              <View style={{ flex: 1, gap: 1 }}>
+                <Text style={{ fontSize: 13, fontWeight: "600", color: tokens.foreground }}>Northstar</Text>
+                <Text style={{ fontSize: 10, color: tokens.mutedForeground }}>Acme workspace</Text>
+              </View>
+              <MenuButton label="Switch workspace" items={[{ label: "Acme workspace", icon: "check" }, { label: "Personal", icon: "user" }, { label: "Create workspace", icon: "plus" }]} trigger={<View style={{ width: 20, height: 20, alignItems: "center", justifyContent: "center" }}><Icon name="chevrons-up-down" size={12} color={tokens.mutedForeground} /></View>} align="end" />
             </View>
-            <Text style={{ fontSize: 10, color: tokens.mutedForeground, paddingStart: 34 }}>Acme workspace</Text>
           </View>
         }
         footer={
@@ -106,6 +122,16 @@ export function Demo() {
                 </View>
               </Card>
             </View>
+            <Card title="Indexing" description="Search is rebuilding in the background.">
+              <View style={{ gap: 8 }}>
+                <Progress value={68} label="Search index" size="small" status="info" />
+                <View style={{ flexDirection: "row", alignItems: "center", gap: 8 }}>
+                  <Icon name="loader-circle" size={12} color={tokens.info} />
+                  <Text style={{ flex: 1, fontSize: 9, color: tokens.mutedForeground }}>About 3 minutes remaining</Text>
+                  <Button label="View job" size="xsmall" variant="ghost" onPress={() => {}} />
+                </View>
+              </View>
+            </Card>
             <Card title="Getting started" description="Three steps to finish the workspace setup." footer={<Button label="Continue setup" size="small" variant="primary" onPress={() => {}} />} footerAlign="start" footerBordered>
               <View style={{ gap: 7 }}>
                 {["Invite the rest of the team", "Connect the billing account", "Create the first project"].map((step, index) => (
