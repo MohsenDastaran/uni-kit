@@ -119,7 +119,7 @@ export function MenuButton(props: {
   const open = signal(false);
   const close = () => open.set(false);
   return (
-    <View style={[{ position: 'relative', alignSelf: 'flex-start', zIndex: open() ? 1000 : 0 }, props.style]}>
+    <View class={open() ? 'relative z-50' : 'relative'} style={[{ position: 'relative', alignSelf: 'flex-start' }, props.style]}>
       <Button
         label={props.label}
         variant={props.variant ?? 'secondary'}
@@ -132,7 +132,7 @@ export function MenuButton(props: {
         }}
       />
       {open() ? (
-        <View style={{ position: 'absolute', top: controlHeight(props.size ?? 'small') + 4, ...(props.align === 'end' ? { right: 0 } : { left: 0 }), zIndex: 1001 }}>
+        <View class="absolute z-50" style={{ position: 'absolute', top: controlHeight(props.size ?? 'small') + 4, ...(props.align === 'end' ? { right: 0 } : { left: 0 }) }}>
           <Menu
             items={props.items}
             width={props.width}
@@ -156,6 +156,7 @@ export function MenuBar(props: {
   const openIndex = signal(-1);
   return (
     <View
+      class={openIndex() >= 0 ? 'relative z-50' : 'relative'}
       style={[
         {
           flexDirection: 'row',
@@ -168,7 +169,6 @@ export function MenuBar(props: {
           backgroundColor: tokens.muted,
           alignSelf: 'flex-start',
           position: 'relative',
-          zIndex: openIndex() >= 0 ? 1000 : 0,
         },
         props.style,
       ]}
@@ -192,7 +192,7 @@ export function MenuBar(props: {
         </View>
       ))}
       {openIndex() >= 0 ? (
-        <View style={{ position: 'absolute', top: 34, left: 4, zIndex: 1001 }}>
+        <View class="absolute z-50" style={{ position: 'absolute', top: 34, left: 4 }}>
           <Menu
             items={props.menus[openIndex()]!.items}
             width={props.width}
@@ -217,6 +217,9 @@ export function ContextMenu(props: {
       onLongPress={() => open.set(!open())}
       onPress={() => open.set(!open())}
       activeOpacity={0.95}
+      accessibilityRole="button"
+      accessibilityLabel="Context menu target"
+      class={open() ? 'relative z-50' : 'relative'}
       style={[
         {
           position: 'relative',
@@ -226,7 +229,6 @@ export function ContextMenu(props: {
           borderWidth: 1,
           borderColor: tokens.border,
           backgroundColor: tokens.muted,
-          zIndex: open() ? 1000 : 0,
           cursor: 'context-menu',
         },
         props.style,
@@ -234,7 +236,7 @@ export function ContextMenu(props: {
     >
       {props.children}
       {open() ? (
-        <View style={{ position: 'absolute', top: 38, left: 10, zIndex: 1001 }}>
+        <View class="absolute z-50" style={{ position: 'absolute', top: '100%', left: 10 }}>
           <Menu items={props.items} width={props.width} onSelect={() => open.set(false)} />
         </View>
       ) : null}

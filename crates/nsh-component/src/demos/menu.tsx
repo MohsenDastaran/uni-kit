@@ -74,7 +74,7 @@ export function Demo() {
     >
       <View style={{ width: 210, gap: 4 }}>
         <Text style={{ fontSize: 12, fontWeight: "600", color: tokens.foreground }}>Project card</Text>
-        <Text style={{ fontSize: 10, color: tokens.mutedForeground }}>Click or long-press for actions.</Text>
+        <Text style={{ fontSize: 10, color: tokens.mutedForeground }}>Right-click for actions.</Text>
       </View>
     </ContextMenu>
   );
@@ -204,7 +204,7 @@ export function Demo() {
           { label: "Report", icon: "circle-alert", tone: "danger", onSelect: () => chosen.set("Report") },
         ]}
       >
-        <Text style={{ fontSize: 10, color: tokens.mutedForeground }}>Click or long-press the comment.</Text>
+        <Text style={{ fontSize: 10, color: tokens.mutedForeground }}>Right-click the comment.</Text>
       </ContextMenu>
     </View>
   );

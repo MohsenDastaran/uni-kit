@@ -10,6 +10,9 @@
     @media (prefers-color-scheme: dark) { html, body { background: #0a0a0a; } }
     html[data-embed="1"], html[data-embed="1"] body { background: transparent; }
     #app { position: fixed; inset: 0; }
+  /* NSH's web renderer drops inline z-index from popup panels. The menu
+     surfaces carry role=menu, so keep them above later gallery sections. */
+  [role="menu"] { z-index: 1000; }
     #loading {
       position: fixed; inset: 0; display: flex; align-items: center; justify-content: center;
       font: 13px -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
@@ -35,6 +38,28 @@
 // `./nsh.js` would resolve against the site root and 404.
 const mounted = location.pathname.replace(/\/+$/, '') + '/';
 const { createPlayer } = await import(mounted + 'nsh.js');
+
+// NSH has no secondary-click event. Forward a context-menu gesture on the
+// labelled ContextMenu target into the same pointer sequence a press uses.
+document.addEventListener('contextmenu', (event) => {
+  const zone = event.target?.closest?.('[aria-label="Context menu target"]');
+  if (!zone) return;
+  event.preventDefault();
+  const options = {
+    bubbles: true,
+    cancelable: true,
+    composed: true,
+    pointerId: 1,
+    pointerType: 'mouse',
+    isPrimary: true,
+    button: 0,
+    buttons: 1,
+    clientX: event.clientX,
+    clientY: event.clientY,
+  };
+  zone.dispatchEvent(new PointerEvent('pointerdown', options));
+  window.dispatchEvent(new PointerEvent('pointerup', { ...options, buttons: 0 }));
+}, true);
 
 const params = new URLSearchParams(location.search);
 const story = params.get('story') || decodeURIComponent(location.hash.slice(1)) || 'badge';
