@@ -46,7 +46,7 @@ tokens/tokens.json -> crates/slint-component/ui/theme.slint
 `tokens.background` in JSX and follows a light/dark switch. `theme.json` is
 generated for `nsh/ui/mobile`; `nsh.json` points at it. `scripts/theme-parity.mjs`
 checks every token against the Slint theme, `scripts/check-theme-usage.mjs`
-rejects fixed colours and module-level token reads. The 79 demos are checked at
+rejects fixed colours and module-level token reads. The 77 demos are checked at
 mount in both appearances and by switching the mounted demo live, including
 page surface, dark-on-dark text and light-on-light text.
 `nsh package` currently rejects the `theme` key, so the gallery uses `nsh build` and the player; that
@@ -136,17 +136,16 @@ platform-specific exception is `title-bar` (`nsh/desktop`, guarded by
 | `date-picker` | `date_picker.tsx` | yes | yes | yes | 165 | yes | yes |
 | `description-list` | `description_list.tsx` | yes | yes | yes | 168 | yes | yes |
 | `dialog` | `dialog.tsx` | yes | yes | yes | 195 | yes | yes |
-| `dock` | `dock.tsx` | yes | yes | yes | 54 | yes | yes |
-| `dropdown_button` | `dropdown_button.tsx` | yes | yes | yes | 48 | yes | yes |
+| `dock` | `dock.tsx` | yes | yes | yes | 143 | yes | yes |
+| `dropdown_button` | `dropdown_button.tsx` | yes | yes | yes | 95 | yes | yes |
 | `editor` | `editor.tsx` | yes | yes | yes | 86 | yes | yes |
-| `empty` | `empty.tsx` | yes | yes | yes | 94 | yes | yes |
-| `focus-trap` | `focus_trap.tsx` | yes | yes | yes | 24 | yes | yes |
-| `form` | `form.tsx` | yes | yes | yes | 68 | yes | yes |
-| `group-box` | `group_box.tsx` | yes | yes | yes | 50 | yes | yes |
-| `hover-card` | `hover_card.tsx` | yes | yes | yes | 71 | yes | yes |
+| `empty` | `empty.tsx` | yes | yes | yes | 103 | yes | yes |
+| `focus-trap` | `focus_trap.tsx` | yes | yes | yes | 60 | yes | yes |
+| `form` | `form.tsx` | yes | yes | yes | 189 | yes | yes |
+| `group-box` | `group_box.tsx` | yes | yes | yes | 94 | yes | yes |
 | `icon` | `icon.tsx` | yes | yes | yes | 73 | yes | yes |
 | `image` | `image.tsx` | yes | yes | yes | 59 | yes | yes |
-| `input` | `input.tsx` | yes | yes | yes | 217 | yes | yes |
+| `input` | `input.tsx` | yes | yes | yes | 222 | yes | yes |
 | `input-group` | `input_group.tsx` | yes | yes | yes | 66 | yes | yes |
 | `kbd` | `kbd.tsx` | yes | yes | yes | 79 | yes | yes |
 | `label` | `label.tsx` | yes | yes | yes | 73 | yes | yes |
@@ -165,7 +164,7 @@ platform-specific exception is `title-bar` (`nsh/desktop`, guarded by
 | `questionnaire` | `questionnaire.tsx` | yes | yes | yes | 94 | yes | yes |
 | `radio` | `radio.tsx` | yes | yes | yes | 104 | yes | yes |
 | `rating` | `rating.tsx` | yes | yes | yes | 52 | yes | yes |
-| `resizable` | `resizable.tsx` | yes | yes | yes | 59 | yes | yes |
+| `resizable` | `resizable.tsx` | yes | yes | yes | 87 | yes | yes |
 | `root` | `root.tsx` | yes | yes | yes | 30 | yes | yes |
 | `scrollable` | `scrollable.tsx` | yes | yes | yes | 13 | yes | yes |
 | `select` | `select.tsx` | yes | yes | yes | 133 | yes | yes |
@@ -190,19 +189,19 @@ platform-specific exception is `title-bar` (`nsh/desktop`, guarded by
 | `title-bar` | `title_bar.tsx` | yes | yes | yes | 93 | yes | yes |
 | `toggle` | `toggle.tsx` | yes | yes | yes | 73 | yes | yes |
 | `toolbar` | `toolbar.tsx` | yes | yes | yes | 63 | yes | yes |
-| `tooltip` | `tooltip.tsx` | yes | yes | yes | 66 | yes | yes |
 | `tree` | `tree.tsx` | yes | yes | yes | 66 | yes | yes |
 | `virtual-list` | `virtual_list.tsx` | yes | yes | yes | 31 | yes | yes |
 
-**79 / 79** components have an NSH source, an example and a registry entry.
+**77 / 77** components have an NSH source, an example and a registry entry.
 
 Every component in the Slint registry has an NSH implementation.
 <!-- nsh-checklist:end -->
 
 ## Partial ports and limits
 
-The checklist is complete: every Slint key has an NSH source, an example and a
-registry entry. The following are honest partial ports, not stubs:
+The checklist covers every remaining Slint key. **Tooltip** and **HoverCard**
+are intentionally not part of the NSH catalog. The following are honest partial
+ports, not stubs:
 
 | Area | What is complete | What is not |
 | --- | --- | --- |
@@ -212,7 +211,6 @@ registry entry. The following are honest partial ports, not stubs:
 | `chart` | Line, area, bar, pie, radar, candlestick and a simplified Sankey on Canvas | Tooltips, legends, and Sankey links (the flows are stacked bars). |
 | `dock` | Tabbed group and resizable split | Panel drag-and-drop, persistence and the full tree model. |
 | `resizable` | Two panes and a draggable divider | Constraint solvers and nested resizable trees. |
-| `tooltip`, `hover-card` | Hover on desktop, press/long press on the web | Web hover: the web backend does not raise `onHoverIn`/`onHoverOut`. |
 | `title-bar` | Desktop custom bar via `nsh/desktop`, preview elsewhere | Web/mobile window controls are the platform's, not drawn. |
 | `theme` | The shared token files and a swatch demo | The page is a guide (`example: false`), so the site shows its source panels but no live frame. |
 | `notification` | In-app toast host, variants, auto-dismiss | The OS notification centre. |

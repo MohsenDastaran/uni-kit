@@ -194,7 +194,6 @@
     "focus-trap",
     "form",
     "group-box",
-    "hover-card",
     "icon",
     "image",
     "input",
@@ -241,7 +240,6 @@
     "title-bar",
     "toggle",
     "toolbar",
-    "tooltip",
     "tree",
     "virtual-list"
   ],

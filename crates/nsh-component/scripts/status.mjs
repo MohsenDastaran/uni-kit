@@ -22,7 +22,12 @@ const pages = path.join(root, 'website/component');
 const doc = path.join(root, 'docs/nsh-integration.md');
 
 const registry = JSON.parse(fs.readFileSync(path.join(root, 'registry/components.json'), 'utf8'));
-const inventory = Object.keys(registry.slint.components).sort();
+// These two are intentionally absent from the NSH catalog. They are not
+// missing ports, so they do not belong in the completion checklist.
+const NOT_PORTED = new Set(['hover-card', 'tooltip']);
+const inventory = Object.keys(registry.slint.components)
+  .filter((name) => !NOT_PORTED.has(name))
+  .sort();
 const moduleOf = (name) => name.replace(/-/g, '_');
 const wired = new Set(Object.keys(registry.nsh?.components ?? {}).map(moduleOf));
 

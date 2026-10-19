@@ -24427,24 +24427,6 @@
           "target": "theme.json"
         }
       ],
-      "hover-card": [
-        {
-          "src": "crates/nsh-component/src/components/hover_card.tsx",
-          "target": "hover_card.tsx"
-        },
-        {
-          "src": "crates/nsh-component/src/components/theme.ts",
-          "target": "theme.ts"
-        },
-        {
-          "src": "crates/nsh-component/src/components/tokens.ts",
-          "target": "tokens.ts"
-        },
-        {
-          "src": "crates/nsh-component/src/components/theme.json",
-          "target": "theme.json"
-        }
-      ],
       "icon": [
         {
           "src": "crates/nsh-component/src/components/icon.tsx",
@@ -25509,24 +25491,6 @@
         {
           "src": "crates/nsh-component/src/components/toolbar.tsx",
           "target": "toolbar.tsx"
-        },
-        {
-          "src": "crates/nsh-component/src/components/theme.ts",
-          "target": "theme.ts"
-        },
-        {
-          "src": "crates/nsh-component/src/components/tokens.ts",
-          "target": "tokens.ts"
-        },
-        {
-          "src": "crates/nsh-component/src/components/theme.json",
-          "target": "theme.json"
-        }
-      ],
-      "tooltip": [
-        {
-          "src": "crates/nsh-component/src/components/tooltip.tsx",
-          "target": "tooltip.tsx"
         },
         {
           "src": "crates/nsh-component/src/components/theme.ts",
