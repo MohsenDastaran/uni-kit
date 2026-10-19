@@ -70,6 +70,16 @@ gallery: a 28 pt box around the 16 pt `code-xml` glyph, with 0.12 / 0.22 /
 second press target. Extra examples the page has no heading for are added as
 NSH-only sections under Usage.
 
+The website offers 36 palette variants, while the NSH catalog has two built-in
+palettes. When embedded, the player reads the host's resolved theme variables
+(`--background`, `--foreground`, `--popover`, `--primary`, `--border`, and the
+rest) into `--nsh-*`, then remaps the catalog's surface, ink and border colors
+after each render. The mapping is property-aware because a literal can be a
+surface in one component and ink in another; semantic tone colors and colour
+swatches keep their own values, and a final contrast pass keeps labels
+readable. It follows live palette and light/dark changes without reloading the
+iframe.
+
 ## Native previews
 
 The website gallery is the NSH **web** backend. That is why inspecting it shows

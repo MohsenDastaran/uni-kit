@@ -143,6 +143,173 @@ const observer = new MutationObserver(() => {
 });
 observer.observe(app, { childList: true });
 
+// ---------------------------------------------------------------------------
+// Website theme bridge.
+//
+// The website can run any of its palette files, while an NSH app uses the
+// component catalog's two built-in palettes. Read the parent page's resolved
+// theme variables into this document, then remap the catalog colors after each
+// render. The mapping is deliberately property-aware (background, text and
+// border separately): the same literal can mean primary ink in one place and a
+// surface in another. Values are kept as CSS variables so alpha variants can be
+// composed with color-mix without flattening them to the host palette.
+const THEME_VARS = [
+  'background', 'foreground', 'popover', 'primary', 'primary-foreground',
+  'secondary', 'secondary-foreground', 'muted', 'muted-foreground', 'accent',
+  'accent-foreground', 'border', 'input', 'ring', 'destructive', 'success',
+  'warning', 'sidebar', 'selection', 'data-1', 'data-2', 'data-3', 'data-4', 'data-5',
+];
+
+const DARK_BG = {
+  '10,10,10': 'background', '23,23,23': 'popover', '38,38,38': 'muted',
+  '250,250,250': 'primary', '47,47,47': 'input', '17,17,17': 'sidebar',
+};
+const DARK_FG = {
+  '250,250,250': 'foreground', '163,163,163': 'muted-foreground',
+  '23,23,23': 'primary-foreground', '245,245,245': 'foreground',
+  '96,165,250': 'primary',
+};
+const DARK_BORDER = {
+  '38,38,38': 'border', '47,47,47': 'input', '115,115,115': 'ring',
+  '250,250,250': 'primary',
+};
+const LIGHT_BG = {
+  '255,255,255': 'background', '245,245,245': 'muted', '250,250,250': 'popover',
+  '229,229,229': 'secondary', '23,23,23': 'primary', '235,235,235': 'muted',
+};
+const LIGHT_FG = {
+  '10,10,10': 'foreground', '115,115,115': 'muted-foreground',
+  '23,23,23': 'foreground', '37,99,235': 'primary',
+};
+const LIGHT_BORDER = {
+  '229,229,229': 'border', '163,163,163': 'ring', '23,23,23': 'primary',
+};
+
+const rgb = (value) => {
+  const match = String(value || '').match(/rgba?\(\s*([\d.]+)\s*,\s*([\d.]+)\s*,\s*([\d.]+)(?:\s*,\s*([\d.]+))?\s*\)/);
+  if (!match) return null;
+  return { key: `${Math.round(+match[1])},${Math.round(+match[2])},${Math.round(+match[3])}`, alpha: match[4] === undefined ? 1 : +match[4] };
+};
+const themed = (name, alpha) => `var(--nsh-${name})`;
+const paint = (value, map) => {
+  const parsed = rgb(value);
+  if (!parsed || parsed.alpha === 0) return null;
+  const name = map[parsed.key];
+  if (!name) return null;
+  if (parsed.alpha >= 0.999) return themed(name);
+  return `color-mix(in srgb, var(--nsh-${name}) ${Math.round(parsed.alpha * 100)}%, transparent)`;
+};
+
+function parentTheme() {
+  try {
+    if (window.parent === window) return null;
+    const parentRoot = window.parent.document.documentElement;
+    const style = getComputedStyle(parentRoot);
+    const values = {};
+    for (const name of THEME_VARS) {
+      const value = style.getPropertyValue(`--${name}`).trim();
+      if (value) values[name] = value;
+    }
+    return values.background
+      ? { values, dark: parentRoot.classList.contains('dark') }
+      : null;
+  } catch {
+    return null;
+  }
+}
+
+let themeFrame;
+let themeTimers = [];
+function scheduleTheme() {
+  if (!embedded) return;
+  cancelAnimationFrame(themeFrame);
+  themeFrame = requestAnimationFrame(syncTheme);
+  // A dark/light change makes the runtime rerender after it reports the new
+  // scheme; rerun after that pass as well as immediately.
+  for (const timer of themeTimers) clearTimeout(timer);
+  themeTimers = [60, 180, 420].map((delay) => setTimeout(syncTheme, delay));
+}
+
+function syncTheme() {
+  if (!embedded) return;
+  const parent = parentTheme();
+  if (!parent) return;
+  const root = document.documentElement;
+  for (const name of THEME_VARS) {
+    root.style.setProperty(`--nsh-${name}`, parent.values[name] ?? parent.values.background);
+  }
+  const bgMap = parent.dark ? DARK_BG : LIGHT_BG;
+  const fgMap = parent.dark ? DARK_FG : LIGHT_FG;
+  const borderMap = parent.dark ? DARK_BORDER : LIGHT_BORDER;
+  const appRoot = app.querySelector('.nsh-root');
+  if (!appRoot) return;
+  const elements = [appRoot, ...appRoot.querySelectorAll('*')];
+  for (const element of elements) {
+    // A featured colour is data, not chrome: keep the swatch's own colour.
+    if (element.tagName === 'CANVAS' || /^#[0-9a-f]{3,8}$/i.test(element.getAttribute('aria-label') || '')) continue;
+    const style = getComputedStyle(element);
+    const background = paint(style.backgroundColor, bgMap);
+    const foreground = paint(style.color, fgMap);
+    if (background) element.style.setProperty('background-color', background, 'important');
+    if (foreground) element.style.setProperty('color', foreground, 'important');
+    for (const side of ['Top', 'Right', 'Bottom', 'Left']) {
+      const border = paint(style[`border${side}Color`], borderMap);
+      if (border) element.style.setProperty(`border-${side.toLowerCase()}-color`, border, 'important');
+    }
+  }
+
+  // Some semantic inks are intentionally independent of a palette (a solid
+  // warning still has dark ink); after mapping surfaces, keep every label
+  // readable against the surface it actually sits on.
+  const probe = document.createElement('span');
+  probe.style.cssText = 'position:absolute;width:0;height:0;overflow:hidden;pointer-events:none';
+  appRoot.append(probe);
+  const resolve = (name) => {
+    probe.style.color = `var(--nsh-${name})`;
+    return getComputedStyle(probe).color;
+  };
+  const parse = (value) => {
+    const match = String(value || '').match(/rgba?\(\s*([\d.]+)\s*,\s*([\d.]+)\s*,\s*([\d.]+)(?:\s*,\s*([\d.]+))?\s*\)/);
+    if (!match) return null;
+    return { r: +match[1], g: +match[2], b: +match[3], a: match[4] === undefined ? 1 : +match[4] };
+  };
+  const luma = (color) => {
+    const channel = (value) => {
+      const v = value / 255;
+      return v <= 0.03928 ? v / 12.92 : ((v + 0.055) / 1.055) ** 2.4;
+    };
+    return 0.2126 * channel(color.r) + 0.7152 * channel(color.g) + 0.0722 * channel(color.b);
+  };
+  const ratio = (a, b) => {
+    const one = luma(a);
+    const two = luma(b);
+    return (Math.max(one, two) + 0.05) / (Math.min(one, two) + 0.05);
+  };
+  const fallback = resolve('foreground');
+  const alternative = resolve('background');
+  const fallbackColor = parse(fallback);
+  const alternativeColor = parse(alternative);
+  for (const element of appRoot.querySelectorAll('*')) {
+    if (element === probe || element.children.length || !(element.textContent || '').trim()) continue;
+    const foreground = parse(getComputedStyle(element).color);
+    if (!foreground) continue;
+    let cursor = element.parentElement;
+    let surface = null;
+    while (cursor && !surface) {
+      const candidate = parse(getComputedStyle(cursor).backgroundColor);
+      if (candidate && candidate.a > 0.5) surface = candidate;
+      cursor = cursor.parentElement;
+    }
+    if (!surface) surface = parse(resolve('background'));
+    if (!surface || ratio(foreground, surface) >= 3) continue;
+    let next = fallbackColor && fallbackColor.a > 0.5 && ratio(fallbackColor, surface) >= 3 ? 'var(--nsh-foreground)' : null;
+    if (!next && alternativeColor && alternativeColor.a > 0.5 && ratio(alternativeColor, surface) >= 3) next = 'var(--nsh-background)';
+    if (!next) next = luma(surface) > 0.45 ? '#0a0a0a' : '#fafafa';
+    element.style.setProperty('color', next, 'important');
+  }
+  probe.remove();
+}
+
 let player;
 try {
   player = await createPlayer(app, options);
@@ -152,6 +319,8 @@ try {
     return response.arrayBuffer();
   });
   player.run(code, { chunkBase: mounted + 'demos/' });
+  new MutationObserver(scheduleTheme).observe(app, { childList: true, subtree: true });
+  setTimeout(scheduleTheme, 30);
 } catch (error) {
   fail(error?.message ?? error);
 }
@@ -165,9 +334,10 @@ if (darkFromParent !== null) {
       const dark = parentIsDark() === true;
       applyChrome(dark);
       if (window.player) window.player.setDark(dark);
+      scheduleTheme();
     }).observe(window.parent.document.documentElement, {
       attributes: true,
-      attributeFilter: ['class'],
+      attributeFilter: ['class', 'data-theme'],
     });
   } catch {
     // A cross-origin parent cannot be inspected; the ?theme= query is the
@@ -180,6 +350,7 @@ addEventListener('message', (event) => {
   if ((next === 'dark' || next === 'light') && window.player) {
     applyChrome(next === 'dark');
     window.player.setDark(next === 'dark');
+    scheduleTheme();
   }
 });
 </script>
