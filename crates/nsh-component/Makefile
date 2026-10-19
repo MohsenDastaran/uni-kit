@@ -2,6 +2,9 @@
 
 NSH ?= nsh
 STORY ?=
+# The gallery's run target; override to preview a native backend.
+#   make run STORY=button TARGET=macos
+TARGET ?= web
 
 # Compile every demo and write the player the website serves.
 build gallery:
@@ -19,12 +22,17 @@ check:
 check-incomplete:
 	./scripts/check.sh --allow-incomplete
 
-# Run one demo in the NSH web host.
+# Run one demo in the NSH host. The website gallery uses `web`; a native
+# preview uses the matching host target.
 #
-#   make run STORY=button
+#   make run STORY=button                 # web
+#   make run STORY=button TARGET=linux    # GTK 4
+#   make run STORY=button TARGET=macos    # AppKit
+#   make run STORY=button TARGET=windows  # Win32 / Direct2D
+#   make run STORY=button TARGET=android  # device or emulator
 run:
 	@test -n "$(STORY)" || (echo "usage: make run STORY=<component>" >&2; exit 2)
-	$(NSH) run examples/$(STORY).tsx --target web
+	$(NSH) run examples/$(STORY).tsx --target $(TARGET)
 
 # Every story `?story=` accepts, one per line.
 stories:

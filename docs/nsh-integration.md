@@ -70,6 +70,36 @@ gallery: a 28 pt box around the 16 pt `code-xml` glyph, with 0.12 / 0.22 /
 second press target. Extra examples the page has no heading for are added as
 NSH-only sections under Usage.
 
+## Native previews
+
+The website gallery is the NSH **web** backend. That is why inspecting it shows
+HTML: the player at `www/index.html` is a browser shell, the compiled demo is a
+`.nshc` QuickJS bundle in `www/dist/demos/`, and `nsh.wasm` renders host
+elements as HTML and CSS. The component source is still TSX; native hosts map
+the same elements to UIKit, Android views, AppKit, GTK 4 or Win32/Direct2D.
+
+Run a demo on a native backend from `crates/nsh-component`:
+
+```sh
+make run STORY=button                 # web (the gallery target)
+make run STORY=button TARGET=linux    # GTK 4, on Linux
+make run STORY=button TARGET=macos    # AppKit, on macOS
+make run STORY=button TARGET=windows  # Win32/Direct2D, on Windows
+make run STORY=button TARGET=android  # attached device or emulator
+make run STORY=button TARGET=ios      # Xcode simulator
+make run STORY=button TARGET=gpui     # GPUI backend on macOS/Windows/Linux
+```
+
+`nsh run` opens a development host and hot-reloads the demo. The desktop
+targets must match the host (macOS cannot open the Linux or Windows host, and
+vice versa); Android needs the SDK plus a device or emulator; iOS needs macOS and
+Xcode. `nsh run` without `--target` picks the host's default desktop backend.
+Native visual verification is not part of this repository's Linux web gate:
+`check.sh` and the website player verify the web backend, and `nsh trace` verifies
+mounting. The source uses cross-platform elements and modules; the documented
+platform-specific exception is `title-bar` (`nsh/desktop`, guarded by
+`isAvailable`).
+
 ## Checklist
 
 <!-- nsh-checklist:start -->
@@ -94,8 +124,8 @@ NSH-only sections under Usage.
 | `combobox` | `combobox.tsx` | yes | yes | yes | 328 | yes | yes |
 | `command` | `command.tsx` | yes | yes | yes | 306 | yes | yes |
 | `data-table` | `data_table.tsx` | yes | yes | yes | 230 | yes | yes |
-| `date-picker` | `date_picker.tsx` | yes | yes | yes | 78 | yes | yes |
-| `description-list` | `description_list.tsx` | yes | yes | yes | 92 | yes | yes |
+| `date-picker` | `date_picker.tsx` | yes | yes | yes | 165 | yes | yes |
+| `description-list` | `description_list.tsx` | yes | yes | yes | 168 | yes | yes |
 | `dialog` | `dialog.tsx` | yes | yes | yes | 195 | yes | yes |
 | `dock` | `dock.tsx` | yes | yes | yes | 54 | yes | yes |
 | `dropdown_button` | `dropdown_button.tsx` | yes | yes | yes | 48 | yes | yes |
@@ -141,7 +171,7 @@ NSH-only sections under Usage.
 | `status-bar` | `status_bar.tsx` | yes | yes | yes | 53 | yes | yes |
 | `stepper` | `stepper.tsx` | yes | yes | yes | 36 | yes | yes |
 | `switch` | `switch.tsx` | yes | yes | yes | 65 | yes | yes |
-| `table` | `table.tsx` | yes | yes | yes | 169 | yes | yes |
+| `table` | `table.tsx` | yes | yes | yes | 175 | yes | yes |
 | `tabs` | `tabs.tsx` | yes | yes | yes | 65 | yes | yes |
 | `tag` | `tag.tsx` | yes | yes | yes | 119 | yes | yes |
 | `text-view` | `text_view.tsx` | yes | yes | yes | 60 | yes | yes |
