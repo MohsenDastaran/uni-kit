@@ -23,6 +23,26 @@ let target: Framework = isFramework(root.dataset.framework) ? root.dataset.frame
 let loadingTimer: number | undefined;
 let enterTimer: number | undefined;
 
+// Component pages are rendered with a GPUI suffix in their static title. Keep
+// the browser tab in the reader's chosen framework while leaving ordinary docs
+// pages, whose titles have no framework suffix, untouched.
+const TITLE_PATTERN = /^(.*?) — (GPUI|Slint|Iced|NSH) Component( · .*)?$/;
+const TITLE_MATCH = document.title.match(TITLE_PATTERN);
+const TITLE_BASE = TITLE_MATCH?.[1] ?? null;
+const TITLE_TAIL = TITLE_MATCH?.[3] ?? '';
+const TITLE_NAMES: Record<Framework, string> = {
+  gpui: 'GPUI Component',
+  slint: 'Slint Component',
+  iced: 'Iced Component',
+  nsh: 'NSH Component',
+};
+
+function syncTitle(framework: Framework) {
+  if (TITLE_BASE === null) return;
+  const next = `${TITLE_BASE} — ${TITLE_NAMES[framework]}${TITLE_TAIL}`;
+  if (document.title !== next) document.title = next;
+}
+
 function syncSwitches(framework: Framework) {
   document.querySelectorAll<HTMLElement>('.framework-switch').forEach((group) => {
     // The package-manager switch reuses this class for its look. It has no
@@ -144,6 +164,7 @@ function redirectToAvailable(framework: Framework, persist: boolean): boolean {
 
 function show(framework: Framework) {
   root.dataset.framework = framework;
+  syncTitle(framework);
   announce(framework);
   document.dispatchEvent(new Event('framework-change'));
 }
@@ -153,6 +174,7 @@ function select(framework: Framework, persist = true) {
   if (redirectToAvailable(framework, persist)) return;
   target = framework;
   syncSwitches(framework);
+  syncTitle(framework);
   syncUrl(framework);
   if (persist) localStorage.setItem(STORAGE_KEY, framework);
 
@@ -230,6 +252,7 @@ window.addEventListener('storage', (event) => {
 });
 
 syncSwitches(target);
+syncTitle(target);
 // A page loaded with the parameter, or with a stored choice, says so in the
 // address bar and carries it into its links.
 syncUrl(target);

@@ -157,6 +157,23 @@ const jsonLd = JSON.stringify(structuredData ?? defaultStructuredData).replace(
                     ? chosen
                     : "slint";
                 document.documentElement.dataset.framework = framework;
+                // The document title is rendered with the GPUI suffix in the
+                // static HTML. Rewrite it before paint so a reader whose stored
+                // or requested view is NSH (or Slint/iced) never sees the wrong
+                // framework named in the tab. Pages without that suffix keep
+                // their own title.
+                const titled = document.title.match(
+                    /^(.*?) — (GPUI|Slint|Iced|NSH) Component( · .*)?$/,
+                );
+                if (titled) {
+                    const name = {
+                        gpui: "GPUI Component",
+                        slint: "Slint Component",
+                        iced: "Iced Component",
+                        nsh: "NSH Component",
+                    }[framework];
+                    document.title = `${titled[1]} — ${name}${titled[3] ?? ""}`;
+                }
                 // A pinned view becomes the choice for the pages that follow it, so a
                 // link shared with the parameter keeps its meaning after a click.
                 if (FRAMEWORKS.includes(asked)) {
