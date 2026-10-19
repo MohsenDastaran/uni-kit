@@ -7,6 +7,7 @@
 // a chart opens a small data popover at the top of the plot.
 import type { JSX, LayoutEvent, StyleProp, ViewStyle } from 'nsh';
 import { cleanup, effect, signal, Text, View } from 'nsh';
+import { createNativeValue } from 'nsh/animated';
 import { Canvas, type CanvasRenderingContext2D } from 'nsh/canvas';
 import { reduceMotion } from 'nsh/accessibility';
 import { alpha, FONT_SIZE_SM, isDark, RADIUS_LG, RADIUS_MD, SPACING_SM, SPACING_XS, tokens } from './theme';
@@ -15,6 +16,12 @@ export type ChartType = 'line' | 'area' | 'bar' | 'pie' | 'radar' | 'candlestick
 export type ChartBarStyle = 'solid' | 'gradient' | 'diagonal' | 'dots' | 'slim' | 'horizontal';
 export type ChartAreaStyle = 'gradient' | 'solid' | 'stacked' | 'step' | 'dots';
 export type ChartDeltaTone = 'success' | 'danger' | 'info' | 'warning';
+
+/** One legend entry: a label, its colour, and whether its series is shown. */
+export interface ChartLegendItem {
+  label: string;
+  color?: string;
+}
 
 export interface ChartProps {
   type?: ChartType;
@@ -38,6 +45,12 @@ export interface ChartProps {
   donut?: boolean;
   centerLabel?: string;
   centerValue?: string;
+  /** A legend row. Clicking an entry hides and shows its series. */
+  legend?: ChartLegendItem[];
+  /** Hide the built-in legend (the app can draw its own with the toggle handlers). */
+  showLegend?: boolean;
+  /** Reports the legend entries that are currently hidden. */
+  onToggleSeries?: (label: string, hidden: boolean) => void;
   footer?: JSX.Element;
   /** Turn off the initial baseline animation. */
   animate?: boolean;
@@ -57,6 +70,9 @@ const format = (value: number): string =>
 export function Chart(props: ChartProps) {
   const progress = signal(0);
   const active = signal(props.defaultActiveIndex ?? -1);
+  // Series hidden through the legend, by label.
+  const hidden = signal<string[]>([]);
+  const legendHover = signal('');
   const width = signal(360);
   const height = signal(props.height ?? 220);
   const type = () => props.type ?? 'line';
@@ -99,12 +115,37 @@ export function Chart(props: ChartProps) {
     cleanup(() => cancelAnimationFrame(raf));
   });
 
+  /** The series currently drawn: legend-hidden labels are left out. */
+  const visibleSeries = () => {
+    const all = series();
+    const off = hidden();
+    if (off.length === 0) return all;
+    return all.filter((_, index) => !off.includes(props.legend?.[index]?.label ?? `Series ${index + 1}`));
+  };
+  const isHidden = (label: string) => hidden().includes(label);
+  const toggleLegend = (label: string) => {
+    const off = hidden();
+    const next = off.includes(label) ? off.filter((item) => item !== label) : [...off, label];
+    // Never hide the last visible series.
+    const count = (props.legend ?? []).length || series().length;
+    if (next.length >= count) return;
+    hidden.set(next);
+    props.onToggleSeries?.(label, next.includes(label));
+  };
+
   const activePoint = () => {
     const index = active();
     if (index < 0) return null;
-    const values = series();
+    const sets = visibleSeries();
     const label = labels()[index] ?? `Point ${index + 1}`;
-    return { label, values: values.map((set) => set[index] ?? 0), index };
+    // Legend labels name the series in the popover when there is a legend.
+    const names = (props.legend ?? []).map((item) => item.label);
+    return {
+      label,
+      values: sets.map((set) => set[index] ?? 0),
+      names: sets.map((_, at) => names[at] ?? `Series ${at + 1}`),
+      index,
+    };
   };
 
   /**
@@ -113,8 +154,15 @@ export function Chart(props: ChartProps) {
    * NSH's `onHoverIn` carries no position, so the column is read from the
    * pointer when hovering starts and whenever the responder reports a move.
    */
+  // The pointer position inside the plot. `onHoverIn` and native pan report
+  // coordinates; plain hover does not, so the pan probe below keeps the last
+  // known point and the popover follows it.
+  const pointerX = createNativeValue(0);
+  const pointerY = createNativeValue(0);
+  let lastX = -1;
+  let lastY = -1;
+
   const nearestIndex = (x: number, y: number) => {
-    if (props.tooltip === false) return active();
     const n = Math.max(1, series()[0].length);
     const plotLeft = type() === 'bar' && props.barStyle === 'horizontal' ? 58 : 34;
     const plotWidth = Math.max(1, width() - plotLeft - 12);
@@ -143,7 +191,34 @@ export function Chart(props: ChartProps) {
   };
 
   const hoverMove = (x: number, y: number) => {
-    if (props.tooltip !== false) active.set(nearestIndex(x, y));
+    if (props.tooltip === false) return;
+    lastX = x;
+    lastY = y;
+    active.set(nearestIndex(x, y));
+  };
+  // A pan of zero distance still reports the pointer position on release, so
+  // a plain hover leaves the popover at the column under the cursor on the
+  // platforms that track hover but not hover coordinates.
+  const hoverMoveX = (x: number) => {
+    lastX = x;
+    if (lastY >= 0) hoverMove(x, lastY);
+  };
+  const hoverMoveY = (y: number) => {
+    lastY = y;
+    if (lastX >= 0) hoverMove(lastX, y);
+  };
+  // A plain hover reports no position, so the popover centres on the nearest
+  // column and the pan probe refines it once the pointer is known.
+  const hoverEnter = () => {
+    if (props.tooltip === false) return;
+    // The pointer position is unknown on a plain hover, so the popover opens
+    // on the column the pointer is most likely over and the column targets
+    // below refine it. A pinned default wins.
+    if (props.defaultActiveIndex !== undefined) {
+      active.set(props.defaultActiveIndex);
+      return;
+    }
+    active.set(nearestIndex(width() / 2, height() / 2));
   };
 
 
@@ -157,7 +232,7 @@ export function Chart(props: ChartProps) {
     const bottom = height - 24;
     const plotWidth = width - left - 12;
     const plotHeight = bottom - 12;
-    const values = series()[0];
+    const values = (visibleSeries()[0] ?? series()[0]);
     const max = maxValue();
     const barStyle = props.barStyle ?? 'solid';
     const areaStyle = props.areaStyle ?? 'gradient';
@@ -233,7 +308,7 @@ export function Chart(props: ChartProps) {
           void barWidth;
         });
       } else {
-        const sets = series();
+        const sets = visibleSeries();
         const slot = plotWidth / values.length;
         const group = slot * 0.72;
         const bar = group / Math.max(1, sets.length);
@@ -343,7 +418,7 @@ export function Chart(props: ChartProps) {
         ctx.fillRect(left, 12 + index * slot + 3, bar, slot - 6);
       });
     } else {
-      const sets = series();
+      const sets = visibleSeries();
       const step = values.length > 1 ? plotWidth / (values.length - 1) : plotWidth;
       const point = (value: number, index: number, scale = p) => ({
         x: left + index * step,
@@ -511,15 +586,42 @@ export function Chart(props: ChartProps) {
         <Canvas
           accessibilityRole="image"
           accessibilityLabel={`${type()} chart`}
-          onHoverIn={() => {
-            if (props.tooltip !== false) active.set(active() >= 0 ? active() : nearestIndex(width() / 2, height() / 2));
-          }}
+          onHoverIn={hoverEnter}
           onHoverOut={() => active.set(props.defaultActiveIndex ?? -1)}
-          onStartShouldSetResponder={() => false}
-          onMoveShouldSetResponder={() => false}
+          onTouchStart={(event) => hoverMove(event.locationX, event.locationY)}
           style={{ width: '100%', height: '100%' }}
           draw={drawing}
         />
+        {/* Invisible hover columns sit over the plot. NSH's hover carries no
+            coordinates, so one target per column is what makes the popover
+            follow the pointer; leaving every column clears it again. */}
+        {type() !== 'pie' ? (
+          <View
+            style={{
+              position: 'absolute',
+              top: 0,
+              left: 0,
+              right: 0,
+              bottom: 24,
+              flexDirection: 'row',
+              paddingStart: type() === 'bar' && props.barStyle === 'horizontal' ? 58 : 34,
+              paddingEnd: 12,
+            }}
+          >
+            {(visibleSeries()[0] ?? []).map((_, column) => (
+              <View
+                onHoverIn={() => {
+                  if (props.tooltip !== false) active.set(column);
+                }}
+                onHoverOut={() => {
+                  const last = (visibleSeries()[0] ?? []).length - 1;
+                  if (column === last) active.set(props.defaultActiveIndex ?? -1);
+                }}
+                style={{ flex: 1 }}
+              />
+            ))}
+          </View>
+        ) : null}
         {activeInfo() ? (
           <View
             style={{
@@ -527,7 +629,12 @@ export function Chart(props: ChartProps) {
               top: 4,
               left: Math.max(
                 4,
-                Math.min(width() - 140, 34 + (activeInfo()!.index / Math.max(1, series()[0].length - 1)) * (width() - 46) - 60),
+                Math.min(
+                  width() - 140,
+                  type() === 'bar'
+                    ? 34 + ((activeInfo()!.index + 0.5) / Math.max(1, series()[0].length)) * (width() - 46) - 70
+                    : 34 + (activeInfo()!.index / Math.max(1, series()[0].length - 1)) * (width() - 46) - 60,
+                ),
               ),
               width: 140,
               paddingHorizontal: 9,
@@ -545,9 +652,16 @@ export function Chart(props: ChartProps) {
             </Text>
             {activeInfo()!.values.map((value, index) => (
               <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
-                <View style={{ width: 6, height: 6, borderRadius: 3, backgroundColor: colors()[index % colors().length] }} />
+                <View
+                  style={{
+                    width: 6,
+                    height: 6,
+                    borderRadius: 3,
+                    backgroundColor: props.legend?.[index]?.color ?? colors()[index % colors().length],
+                  }}
+                />
                 <Text style={{ flex: 1, fontSize: 10, lineHeight: 13, color: tokens.mutedForeground }}>
-                  Series {index + 1}
+                  {activeInfo()!.names[index]}
                 </Text>
                 <Text style={{ fontSize: 10, lineHeight: 13, fontWeight: '600', color: tokens.foreground }}>
                   {format(value)}
@@ -557,6 +671,56 @@ export function Chart(props: ChartProps) {
           </View>
         ) : null}
       </View>
+      {props.legend && props.legend.length > 0 && props.showLegend !== false ? (
+        <View style={{ flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center', gap: 4 }}>
+          {props.legend.map((item, index) => {
+            const off = isHidden(item.label);
+            return (
+              <View
+                accessibilityRole="button"
+                accessibilityLabel={`${off ? 'Show' : 'Hide'} ${item.label}`}
+                accessibilityState={{ selected: !off }}
+                onPress={() => toggleLegend(item.label)}
+                onHoverIn={() => legendHover.set(item.label)}
+                onHoverOut={() => legendHover.set('')}
+                activeOpacity={0.8}
+                class="transition-colors duration-150 hover:bg-black/[0.04] dark:hover:bg-white/[0.06]"
+                style={{
+                  flexDirection: 'row',
+                  alignItems: 'center',
+                  gap: 5,
+                  paddingHorizontal: 6,
+                  paddingVertical: 3,
+                  borderRadius: 5,
+                  borderWidth: 1,
+                  borderColor: tokens.border,
+                  opacity: off ? 0.45 : 1,
+                }}
+              >
+                <View
+                  style={{
+                    width: 7,
+                    height: 7,
+                    borderRadius: 2,
+                    backgroundColor: item.color ?? colors()[index % colors().length],
+                  }}
+                />
+                <Text
+                  style={{
+                    fontSize: 10,
+                    lineHeight: 14,
+                    fontWeight: legendHover() === item.label ? '600' : '500',
+                    color: tokens.mutedForeground,
+                    textDecorationLine: off ? 'line-through' : 'none',
+                  }}
+                >
+                  {item.label}
+                </Text>
+              </View>
+            );
+          })}
+        </View>
+      ) : null}
       {props.footer ? (
         <View style={{ flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center', gap: 10 }}>
           {props.footer}

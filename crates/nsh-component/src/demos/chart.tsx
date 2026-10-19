@@ -1,6 +1,6 @@
 //! `chart` — ReUI-style chart cards with animated Canvas draws and a data
 //! popover on tap/click.
-import { Text, View } from "nsh";
+import { signal, Text, View } from "nsh";
 import { Chart } from "../components/chart";
 import { alpha, tokens } from "../components/theme";
 import { Caption, ExampleSection, Page, Row } from "./ui";
@@ -13,19 +13,10 @@ const marketB = [30, 62, 48, 32, 58, 66];
 const sales = [28, 54, 38, 64, 48, 78, 56, 92, 66, 84, 60, 40];
 
 export function Demo() {
+  // Clickable legends: each hides and shows its series.
+  const areaHidden = signal<string[]>([]);
   const dot = (color: string) => (
     <View style={{ width: 7, height: 7, borderRadius: 4, backgroundColor: color }} />
-  );
-
-  const legend = (items: { label: string; color: string }[]) => (
-    <Row gap={10}>
-      {items.map((item) => (
-        <Row gap={4}>
-          {dot(item.color)}
-          <Text style={{ fontSize: 10, color: tokens.mutedForeground }}>{item.label}</Text>
-        </Row>
-      ))}
-    </Row>
   );
 
   // A monochrome series palette keeps the cards in the ReUI grayscale.
@@ -47,6 +38,7 @@ export function Demo() {
       data={revenue}
       labels={months}
       height={240}
+      legend={[{ label: 'Revenue' }]}
       style={{ maxWidth: 380 }}
     />
   );
@@ -95,10 +87,10 @@ export function Demo() {
       series={[marketA, marketB]}
       labels={shortMonths}
       height={240}
-      footer={legend([
+      legend={[
         { label: "This year", color: mono[0] },
         { label: "Last year", color: mono[1] },
-      ])}
+      ]}
       style={{ maxWidth: 380 }}
     />
   );
@@ -206,11 +198,14 @@ export function Demo() {
       ]}
       labels={shortMonths}
       height={240}
-      footer={legend([
+      legend={[
         { label: "Direct", color: mono[0] },
         { label: "Search", color: mono[1] },
         { label: "Social", color: mono[2] },
-      ])}
+      ]}
+      onToggleSeries={(label, off) =>
+        areaHidden.update((current) => (off ? [...current, label] : current.filter((item) => item !== label)))
+      }
       style={{ maxWidth: 380 }}
     />
   );
@@ -246,12 +241,12 @@ export function Demo() {
       centerValue="13.9k"
       centerLabel="Total Visits"
       height={240}
-      footer={legend([
+      legend={[
         { label: "Direct", color: mono[0] },
         { label: "Search", color: mono[1] },
         { label: "Social", color: mono[2] },
-        { label: "Referral", color: tokens.chart4 },
-      ])}
+        { label: "Referral", color: mono[3] },
+      ]}
       style={{ maxWidth: 380 }}
     />
   );
