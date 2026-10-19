@@ -87,6 +87,7 @@ export function Demo() {
   const badgeActive = signal("inbox");
   const collapseActive = signal("overview");
   const collapsed = signal(false);
+  const responsiveCollapsed = signal(true);
   const widthActive = signal("checkout");
   const contextActive = signal("deployments");
   const fileActive = signal("src");
@@ -95,8 +96,20 @@ export function Demo() {
   const headerActive = signal("overview");
   const rightActive = signal("overview");
 
-  const frame = (sidebar: any, contentTitle: string, width = 720, reverse = false) => (
-    <View style={{ width, maxWidth: "100%", height: 430, flexDirection: "row", borderWidth: 1, borderColor: tokens.border, borderRadius: 12, overflow: "hidden", backgroundColor: tokens.background }}>
+  const railToggle = (current: () => boolean, set: (next: boolean) => void, title: string) => (
+    <View
+      accessibilityRole="button"
+      accessibilityLabel={current() ? `Expand ${title}` : `Collapse ${title}`}
+      onPress={() => set(!current())}
+      activeOpacity={0.8}
+      style={{ flexDirection: "row", alignItems: "center", gap: 5, paddingHorizontal: 7, paddingVertical: 5, borderRadius: 6, backgroundColor: tokens.muted }}
+    >
+      <Icon name="panel-left" size={12} color={tokens.mutedForeground} />
+      {!current() ? <Text style={{ fontSize: 9, fontWeight: "500", color: tokens.mutedForeground }}>Collapse</Text> : null}
+    </View>
+  );
+  const frame = (sidebar: any, contentTitle: string, width = 860, reverse = false) => (
+    <View style={{ width, maxWidth: "100%", height: 520, flexDirection: "row", borderWidth: 1, borderColor: tokens.border, borderRadius: 12, overflow: "hidden", backgroundColor: tokens.background }}>
       {!reverse ? sidebar : null}
       <View style={{ flex: 1, padding: 18, gap: 10 }}>
         <View style={{ flexDirection: "row", alignItems: "center", gap: 6 }}>
@@ -123,7 +136,7 @@ export function Demo() {
 
   // section: Usage
   const usage = (
-    <View style={{ width: 240, height: 380, borderWidth: 1, borderColor: tokens.border, borderRadius: 12, overflow: "hidden" }}>
+    <View style={{ width: 280, height: 500, borderWidth: 1, borderColor: tokens.border, borderRadius: 12, overflow: "hidden" }}>
       <Sidebar
         sections={[{ id: "usage", title: "Workspace", items: [{ id: "overview", label: "Overview", icon: "layout-dashboard" }, { id: "inbox", label: "Inbox", icon: "inbox", badge: "12" }, { id: "deployments", label: "Deployments", icon: "send" }, { id: "settings", label: "Settings", icon: "settings" }] }]}
         active={basicActive()}
@@ -135,7 +148,7 @@ export function Demo() {
   );
   // section: Basic Sidebar
   const basic = (
-    <View style={{ width: 240, height: 400, borderWidth: 1, borderColor: tokens.border, borderRadius: 12, overflow: "hidden" }}>
+    <View style={{ width: 280, height: 500, borderWidth: 1, borderColor: tokens.border, borderRadius: 12, overflow: "hidden" }}>
       <Sidebar sections={[{ id: "main", items: [{ id: "overview", label: "Overview", icon: "layout-dashboard" }, { id: "deployments", label: "Deployments", icon: "send" }, { id: "analytics", label: "Analytics", icon: "chart-column" }, { id: "settings", label: "Settings", icon: "settings" }] }]} active={basicActive()} onSelect={(next) => basicActive.set(next)} header={brand()} footer={accountFooter()} />
     </View>
   );
@@ -149,9 +162,7 @@ export function Demo() {
       header={
         <View style={{ padding: 10, flexDirection: "row", alignItems: "center", justifyContent: collapsed() ? "center" : "space-between", gap: 8 }}>
           {!collapsed() ? <Text style={{ fontSize: 11, fontWeight: "600", color: tokens.foreground }}>Platform</Text> : null}
-          <View accessibilityRole="button" accessibilityLabel="Toggle sidebar" onPress={() => collapsed.set(!collapsed())} style={{ width: 22, height: 22, alignItems: "center", justifyContent: "center", borderRadius: 5, backgroundColor: tokens.muted }}>
-            <Icon name="panel-left" size={12} color={tokens.mutedForeground} />
-          </View>
+          {railToggle(collapsed, (next) => collapsed.set(next), "sidebar")}
         </View>
       }
       footer={!collapsed() ? accountFooter : <View style={{ padding: 10, alignItems: "center" }}><Avatar name="Nadia Rahman" size="sm" /></View>}
@@ -204,13 +215,13 @@ export function Demo() {
   );
   // section: Custom Width and Styling
   const custom = (
-    <View style={{ width: 260, height: 380, borderWidth: 1, borderColor: tokens.border, borderRadius: 12, overflow: "hidden", backgroundColor: tokens.popover }}>
+    <View style={{ width: 300, height: 500, borderWidth: 1, borderColor: tokens.border, borderRadius: 12, overflow: "hidden", backgroundColor: tokens.popover }}>
       <Sidebar
         sections={[{ id: "projects", title: "Projects", items: [{ id: "checkout", label: "Checkout API", icon: "square" }, { id: "design", label: "Design system", icon: "palette" }, { id: "edge", label: "Edge cache", icon: "layers" }] }]}
         active={widthActive()}
         onSelect={(next) => widthActive.set(next)}
         width={260}
-        style={{ width: 260, backgroundColor: tokens.muted, borderRightWidth: 0 }}
+        style={{ width: 260, height: "100%", backgroundColor: tokens.muted, borderRightWidth: 0 }}
         header={brand("ReUI Labs", "8 projects")}
       />
     </View>
@@ -234,9 +245,26 @@ export function Demo() {
     "Workspace",
   );
   // section: Footer with User Information
-  const footer = frame(<Sidebar sections={platform.slice(0, 1)} active={settingsActive()} onSelect={(next) => settingsActive.set(next)} width={224} footer={accountFooter()} />, "Account", 660);
+  const footer = frame(<Sidebar sections={platform.slice(0, 1)} active={settingsActive()} onSelect={(next) => settingsActive.set(next)} width={224} footer={accountFooter()} />, "Account", 780);
   // section: Responsive Sidebar
-  const responsive = frame(<Sidebar sections={platform} active={collapseActive()} onSelect={(next) => collapseActive.set(next)} collapsed width={224} footer={<View style={{ padding: 10, alignItems: "center" }}><Avatar name="Nadia Rahman" size="sm" /></View>} />, "Collapsed rail", 660);
+  const responsive = frame(
+    <Sidebar
+      sections={platform}
+      active={collapseActive()}
+      onSelect={(next) => collapseActive.set(next)}
+      collapsed={responsiveCollapsed()}
+      width={240}
+      header={
+        <View style={{ padding: 10, flexDirection: "row", alignItems: "center", justifyContent: responsiveCollapsed() ? "center" : "space-between", gap: 8 }}>
+          {!responsiveCollapsed() ? <Text style={{ fontSize: 11, fontWeight: "600", color: tokens.foreground }}>Rail</Text> : null}
+          {railToggle(responsiveCollapsed, (next) => responsiveCollapsed.set(next), "rail")}
+        </View>
+      }
+      footer={responsiveCollapsed() ? <View style={{ padding: 10, alignItems: "center" }}><Avatar name="Nadia Rahman" size="sm" /></View> : accountFooter()}
+    />,
+    "Responsive rail",
+    780,
+  );
   // section: File Explorer Sidebar
   const fileExplorer = frame(
     <Sidebar
@@ -253,7 +281,7 @@ export function Demo() {
     "src",
   );
   // section: Admin Dashboard Sidebar
-  const admin = frame(<Sidebar sections={platform.map((section) => ({ ...section, title: "Administration" }))} active={adminActive()} onSelect={(next) => adminActive.set(next)} width={224} header={brand("Admin", "Operations")} footer={accountFooter()} />, "Operations", 720);
+  const admin = frame(<Sidebar sections={platform.map((section) => ({ ...section, title: "Administration" }))} active={adminActive()} onSelect={(next) => adminActive.set(next)} width={224} header={brand("Admin", "Operations")} footer={accountFooter()} />, "Operations", 860);
   // section: Settings Sidebar
   const settings = frame(
     <Sidebar
