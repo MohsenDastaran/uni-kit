@@ -610,7 +610,12 @@ export function Chart(props: ChartProps) {
           >
             {(visibleSeries()[0] ?? []).map((_, column) => (
               <View
+                accessibilityRole="button"
+                accessibilityLabel={`Inspect ${labels()[column] ?? `point ${column + 1}`}`}
                 onHoverIn={() => {
+                  if (props.tooltip !== false) active.set(column);
+                }}
+                onPress={() => {
                   if (props.tooltip !== false) active.set(column);
                 }}
                 onHoverOut={() => {

@@ -304,12 +304,11 @@ export function Demo() {
       type="bar"
       card
       title="Engagement Metrics"
-      description="Tap a column to inspect the data"
+      description="Click a column to inspect the data"
       delta="+2.4%"
       data={[22, 48, 34, 56, 40, 68, 52, 76, 58, 72, 50, 36]}
       labels={months}
       height={240}
-      defaultActiveIndex={5}
       style={{ maxWidth: 380 }}
     />
   );
