@@ -146,7 +146,7 @@ export function Button(props: ButtonProps) {
       return variant() === 'secondary' ? tokens.accent : alpha(tokens.primary, 0.1);
     }
     if (transparentFill()) return alpha(tokens.primary, 0.1);
-    return tokens.secondary;
+    return alpha(tokens.primary, isDark() ? 0.28 : 0.12);
   };
   const pressFill = () => {
     if (variant() === 'ghost') return mix(tokens.input, tokens.background, 0.3);
@@ -183,6 +183,9 @@ export function Button(props: ButtonProps) {
   const motion = () => {
     if (!interactive()) return undefined;
     const base = 'transition-all duration-150 ease-out';
+    // Grouped buttons must stay on the same baseline: no lift or scale that
+    // would open a seam against the neighbour sharing their border.
+    if (grouped()) return `${base} hover:opacity-90 active:opacity-80`;
     if (variant() === 'link') return `${base} hover:opacity-75 hover:underline active:opacity-60`;
     if (transparentFill()) return `${base} hover:opacity-75 active:scale-[0.98] active:opacity-60`;
     if (props.outline) return `${base} hover:-translate-y-0.5 hover:shadow-sm active:translate-y-0 active:scale-[0.98]`;
@@ -192,6 +195,12 @@ export function Button(props: ButtonProps) {
     return `${base} hover:-translate-y-0.5 hover:shadow-sm active:translate-y-0 active:scale-[0.98]`;
   };
   const radius = () => props.rounded ?? RADIUS_MD;
+  const grouped = () => Boolean(props.groupStart || props.groupEnd || props.groupVertical);
+  // A group's first button has only `groupEnd` (its trailing edge meets the
+  // next one); every later button sets `groupStart`. The button before the
+  // first is the only one that must not eat its neighbour's border.
+  const firstInGroup = () => Boolean(props.groupEnd && !props.groupStart);
+  const groupOverlap = () => (grouped() && !firstInGroup() ? -1 : 0);
   const corner = (side: 'start' | 'end') =>
     side === 'start' ? (props.groupStart ? 0 : radius()) : props.groupEnd ? 0 : radius();
 
@@ -223,6 +232,8 @@ export function Button(props: ButtonProps) {
           justifyContent: 'center',
           gap: gap(),
           alignSelf: props.width === 'full' ? 'stretch' : 'flex-start',
+          ...(props.groupVertical ? { marginTop: groupOverlap() } : { marginStart: groupOverlap() }),
+          zIndex: pressing() || hovering() || props.selected ? 1 : 0,
           ...(props.width === 'full' ? { width: '100%' as const } : typeof props.width === 'number' ? { width: props.width } : {}),
           borderTopLeftRadius: corner('start'),
           borderTopRightRadius: corner('end'),

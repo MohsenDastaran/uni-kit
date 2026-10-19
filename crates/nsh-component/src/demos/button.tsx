@@ -82,9 +82,9 @@ export function Demo() {
   // section: Button group
   const group = (
     <Row gap={0}>
-      <Button label="Day" groupStart onPress={() => report("Day")} />
+      <Button label="Day" groupEnd onPress={() => report("Day")} />
       <Button label="Week" groupStart groupEnd onPress={() => report("Week")} />
-      <Button label="Month" groupEnd onPress={() => report("Month")} />
+      <Button label="Month" groupStart onPress={() => report("Month")} />
     </Row>
   );
 
@@ -197,9 +197,9 @@ export function Demo() {
   // section: Toggle Button Group
   const toggleGroup = (
     <Row gap={0}>
-      <Button label="Bold" groupStart selected={pressed() === "Bold"} onPress={() => report("Bold")} />
-      <Button label="Italic" selected={pressed() === "Italic"} onPress={() => report("Italic")} />
-      <Button label="Underline" groupEnd selected={pressed() === "Underline"} onPress={() => report("Underline")} />
+      <Button label="Bold" groupEnd selected={pressed() === "Bold"} onPress={() => report("Bold")} />
+      <Button label="Italic" groupStart groupEnd selected={pressed() === "Italic"} onPress={() => report("Italic")} />
+      <Button label="Underline" groupStart selected={pressed() === "Underline"} onPress={() => report("Underline")} />
     </Row>
   );
 

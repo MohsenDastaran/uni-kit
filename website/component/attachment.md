@@ -35,7 +35,14 @@ use gpui_kit::component::{
 };
 ```
 
-## Anatomy and basic usage
+## Usage
+
+`Attachment` is one item in a conversation, composer, or upload queue: a
+preview, a filename, a small metadata line, and the controls that belong to its
+current state. The samples below show the same card across densities, states,
+and layouts.
+
+### Anatomy and basic usage
 
 The typed builders make the common file shape explicit:
 
@@ -87,7 +94,7 @@ The default state is:
 `Attachment` never owns a product-level file model. Keep the file ID and state
 in the parent view, then render the current record into this element.
 
-## Media and image previews
+### Media and image previews
 
 Use children for an icon-style media slot and `src(...)` for an image preview:
 
@@ -151,7 +158,7 @@ attachment makes the media full width and square by default; the media's own
 style can replace that geometry when the application has a different preview
 design.
 
-## Lifecycle states
+### Lifecycle states
 
 `AttachmentStatus` has five explicit states. The parent status is passed to the
 typed title, description, media, and action layout during rendering:
@@ -196,7 +203,7 @@ match status {
 `is_complete()`, and `is_in_progress()` are pure readers. They do not update
 the attachment or the application upload task.
 
-## Status inheritance and overrides
+### Status inheritance and overrides
 
 Titles and descriptions added through their typed builders inherit the parent
 status. An explicit child status wins over the inherited value:
@@ -243,7 +250,7 @@ AttachmentTitle::new("transcript.pdf")
 explicit or inherited `Failed` status. The words in the description should
 still state what happened; color is a supporting cue.
 
-## Sizes and axes
+### Sizes and axes
 
 `Attachment` implements `Sizable`. The convenience builders map to `Size`:
 
@@ -297,7 +304,7 @@ the content needs a landscape preview. `AttachmentContent` and
 `AttachmentActions` remain independent slots, so an application can omit one
 or place additional controls in either.
 
-## Content and actions
+### Content and actions
 
 `AttachmentContent` keeps titles and descriptions in a vertical metadata stack.
 It also accepts custom children for progress, badges, or a second line:
@@ -323,7 +330,7 @@ focusable, clickable, or disabled. A tooltip is supplemental; the current
 use a visible label when an action must have a named accessible control. An
 icon-only button with only `.tooltip(...)` is not a substitute for that label.
 
-## Whole-card click
+### Whole-card click
 
 Set `.id(...)` and `.on_click(...)` to make the whole card activate, e.g. to
 open a preview. The click layer is painted below `AttachmentActions`, so action
@@ -355,7 +362,7 @@ and offer the card's primary action as a `Button` or `Link` somewhere reachable
 from the keyboard: the click layer itself is a pointer convenience and takes no
 focus.
 
-## Remove and retry controls
+### Remove and retry controls
 
 A composer removes attachments and retries failed uploads. Both controls are
 built in, so they look the same in every product and need no wrapper:
@@ -409,7 +416,7 @@ a thin primary bar along a horizontal card's bottom edge, and appends
 `tooltip(text)` shows the text while the card is hovered, which is where the
 reason for a failure or a rejection belongs.
 
-## Groups
+### Groups
 
 `AttachmentGroup` provides a horizontally scrollable row with the shared group
 gap. Its ID is required because it owns GPUI's element-local scroll state:
@@ -443,7 +450,7 @@ the attachments and take no pointer events. `track_scroll(&handle)` replaces
 the group's own scroll state with the caller's `ScrollHandle`, so the
 application can move the row and read its offset.
 
-## Custom styling and theme tokens
+### Custom styling and theme tokens
 
 `Attachment`, `AttachmentGroup`, and every named slot implement `Styled`.
 Refinements are applied after component defaults, which gives developers control
@@ -480,7 +487,7 @@ metadata, `.child(...)` for arbitrary custom content, child `.status(...)` for
 an explicit override, `AttachmentTitle::with_shimmer_style(...)` for loading
 motion, and `AttachmentMedia::overlay(...)` for controls above an image.
 
-## Accessibility and state guidance
+### Accessibility and state guidance
 
 - Include the file name and useful type/size information in text. An icon-only
   media preview is not enough to identify the attachment.
@@ -498,7 +505,7 @@ motion, and `AttachmentMedia::overlay(...)` for controls above an image.
 - Ensure a vertical overlay action remains reachable from the keyboard; it must
   not be available only through image hover.
 
-## Component boundaries
+### Component boundaries
 
 These boundaries are deliberate:
 

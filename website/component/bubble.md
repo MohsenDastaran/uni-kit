@@ -11,10 +11,12 @@ region. `BubbleContent` owns the visible surface. Keeping those responsibilities
 separate lets an application replace the content layout without reimplementing
 message alignment.
 
-`Bubble` is a presentational element. It does not own a message record, a
-collapsed state, a reaction model, or a click action. Compose those behaviors
-with application state and existing controls such as `Button`, `Link`,
-`Collapsible`, `Tooltip`, and `Popover`.
+`Bubble` is a presentational element. It does not own a message record or a
+reaction model. The GPUI and Slint ports also leave collapsed state and click
+actions to the application; compose those behaviors with application state and
+existing controls such as `Button`, `Link`, `Collapsible`, `Tooltip`, and
+`Popover`. The NSH port adds optional folding and a pressable surface as
+additive props, described under Usage.
 
 ## Import
 
@@ -30,6 +32,25 @@ use gpui_kit::component::{
     message::MessageAlignment,
 };
 ```
+
+## Usage
+
+Compose a bubble with its alignment and variant, then place it in the
+conversation layout. The application keeps the message record, the timestamp
+formatting and the commands behind an action.
+
+```rust
+Bubble::new()
+    .alignment(MessageAlignment::Start)
+    .with_variant(BubbleVariant::Filled)
+    .child("Can you review the Q3 invoice draft?")
+```
+
+The NSH port keeps the same surface and adds optional sender metadata (`name`,
+`avatar`, `timestamp`, `meta`), folding (`foldable`, `collapsedLines`, `clamp`,
+`expanded`, `defaultExpanded`, `onExpandedChange`), a pressable surface
+(`onPress`) and typed reaction chips (`BubbleReactions`). The NSH samples below
+show those additions.
 
 ## Anatomy and basic usage
 
@@ -170,9 +191,11 @@ per-variant style.
 
 For a long response, keep the child `min_w_0()` and choose wrapping or
 truncation at the content boundary. `Bubble` does not truncate arbitrary
-children. An application layout can expose a `Show more` affordance by
-wrapping the content in `Collapsible`; the bubble itself has no hidden-text
-state.
+children in the GPUI and Slint ports. An application layout can expose a `Show
+more` affordance by wrapping the content in `Collapsible`; those bubbles have no
+hidden-text state. The NSH component has an opt-in `foldable` string body: it
+shows the first paragraph while collapsed and reveals the rest through its own
+Show more control.
 
 ```rust
 // The state and trigger belong to the application. The same Bubble can be
@@ -359,8 +382,10 @@ BubbleReactions::new()
   communicate reactions and actions. Color and a bubble variant are not
   sufficient status announcements.
 - Keep keyboard actions inside `Button`, `Link`, `Collapsible`, `Tooltip`, or
-  `Popover`. `Bubble` and `BubbleReactions` are layout elements and do not
-  create focus targets themselves.
+  `Popover`. In the GPUI and Slint ports, `Bubble` and `BubbleReactions` are
+  layout elements and do not create focus targets themselves. In NSH, a bubble
+  with `onPress` and a reaction chip with a handler are buttons and expose the
+  corresponding accessibility role; a bubble without a handler stays layout.
 - Preserve readable contrast when overriding a surface. Pair a custom
   background with the matching semantic foreground token or an explicitly
   verified theme role.

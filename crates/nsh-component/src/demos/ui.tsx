@@ -60,7 +60,17 @@ export function ExampleSection(props: ExampleSectionProps) {
     'dark:border-white/[0.35] dark:bg-white/[0.12] dark:hover:border-white/[0.55] dark:hover:bg-white/[0.22] ' +
     'dark:active:border-white/[0.7] dark:active:bg-white/[0.34]';
   return (
-    <View style={[{ gap: SPACING_MD }, props.style]}>
+    <View
+      style={[
+        {
+          gap: SPACING_MD,
+          ...(props.index > 0
+            ? { borderTopWidth: 1, borderTopColor: tokens.border, paddingTop: SPACING_LG }
+            : {}),
+        },
+        props.style,
+      ]}
+    >
       <View style={{ flexDirection: 'row', alignItems: 'center', gap: SPACING_SM }}>
         <View
           accessibilityRole="button"
