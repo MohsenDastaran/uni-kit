@@ -31,6 +31,12 @@ use gpui_kit::component::{
 };
 ```
 
+## Usage
+
+A message is one conversation turn. Pass the role, sender and content, then use
+`showHeader={false}` for continuation turns that share the same sender. The
+bubble surface is the default; `plain` removes it for assistant prose.
+
 ## Anatomy and basic usage
 
 All named slots are optional, so a minimal message can contain only a body:

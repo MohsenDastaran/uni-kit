@@ -33,6 +33,12 @@ use gpui_kit::component::{
 };
 ```
 
+## Usage
+
+MessageScroller is the viewport around a conversation. Give it a bounded height,
+pass the message array, and it follows the newest turn. Appending and prepending
+are application operations on that array.
+
 ## Create state and choose the starting position
 
 Create the state beside the application-owned message vector. The constructor

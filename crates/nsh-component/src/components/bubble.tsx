@@ -71,6 +71,8 @@ export interface BubbleProps {
   avatar?: string | { uri: string };
   /** A caller-drawn avatar or mark; wins over `avatar` and `name`. */
   leading?: JSX.Element;
+  /** Hide the sender avatar while keeping the name. */
+  showAvatar?: boolean;
   /** Compact metadata beside the name. */
   timestamp?: string;
   /** A second piece of compact metadata, after the timestamp. */
@@ -390,6 +392,7 @@ export function Bubble(props: BubbleProps) {
     Boolean(props.header || props.leading || props.avatar || props.name || props.timestamp || props.meta);
 
   const avatarNode = () => {
+    if (props.showAvatar === false) return null;
     if (props.leading) return props.leading;
     if (props.avatar) return <Avatar src={props.avatar} name={props.name} size="sm" />;
     if (props.name) return <Avatar name={props.name} size="sm" />;
@@ -433,7 +436,7 @@ export function Bubble(props: BubbleProps) {
             }}
           >
             {avatarNode()}
-            <View style={{ alignItems: end() ? 'flex-end' : 'flex-start', gap: 1 }}>
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 5 }}>
               {props.name ? (
                 <Text style={{ fontSize: 12, lineHeight: 16, fontWeight: '600', color: tokens.foreground }}>
                   {props.name}
