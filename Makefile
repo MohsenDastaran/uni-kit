@@ -99,11 +99,15 @@ build\:page-nsh:
 check\:nsh:
 	$(MAKE) -C crates/nsh-component check
 
-# The gallery natively, through the web host.
+# One NSH demo in a development host.
 #
-#   make run:nsh STORY=button
+#   make run:nsh STORY=button                  web
+#   make run:nsh STORY=button TARGET=linux     GTK 4
+#   make run:nsh STORY=button TARGET=macos     AppKit
+#   make run:nsh STORY=button TARGET=windows   Win32 / Direct2D
+#   make run:nsh STORY=button TARGET=android   device or emulator
 run\:nsh:
-	$(MAKE) -C crates/nsh-component run STORY="$(STORY)"
+	$(MAKE) -C crates/nsh-component run STORY="$(STORY)" TARGET="$(or $(TARGET),web)"
 
 # Every story `?story=` takes, one per line.
 stories\:nsh:

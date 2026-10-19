@@ -78,16 +78,25 @@ HTML: the player at `www/index.html` is a browser shell, the compiled demo is a
 elements as HTML and CSS. The component source is still TSX; native hosts map
 the same elements to UIKit, Android views, AppKit, GTK 4 or Win32/Direct2D.
 
-Run a demo on a native backend from `crates/nsh-component`:
+Run a demo from the repository root with `run:nsh` (the unqualified `run`
+target belongs to the crate, not the root Makefile):
 
 ```sh
-make run STORY=button                 # web (the gallery target)
-make run STORY=button TARGET=linux    # GTK 4, on Linux
-make run STORY=button TARGET=macos    # AppKit, on macOS
-make run STORY=button TARGET=windows  # Win32/Direct2D, on Windows
-make run STORY=button TARGET=android  # attached device or emulator
-make run STORY=button TARGET=ios      # Xcode simulator
-make run STORY=button TARGET=gpui     # GPUI backend on macOS/Windows/Linux
+make run:nsh STORY=button                 # web (the gallery target)
+make run:nsh STORY=button TARGET=linux    # GTK 4, on Linux
+make run:nsh STORY=button TARGET=macos    # AppKit, on macOS
+make run:nsh STORY=button TARGET=windows  # Win32/Direct2D, on Windows
+make run:nsh STORY=button TARGET=android  # attached device or emulator
+make run:nsh STORY=button TARGET=ios      # Xcode simulator
+make run:nsh STORY=button TARGET=gpui     # GPUI backend on macOS/Windows/Linux
+```
+
+From `crates/nsh-component`, the short form works because that directory has the
+`run` target:
+
+```sh
+cd crates/nsh-component
+make run STORY=button TARGET=linux
 ```
 
 `nsh run` opens a development host and hot-reloads the demo. The desktop
