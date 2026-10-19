@@ -13,6 +13,14 @@ const initial: MessageProps[] = [
   { role: "user", name: "You", time: "09:39", content: "Hold it. The billing migration has to go out in the same release." },
   { role: "assistant", name: "Release bot", time: "09:40", content: "Understood. The migration lands after the 2pm review." },
   { role: "user", name: "You", time: "09:41", content: "Then I will cut the tag straight after." },
+  { role: "assistant", name: "Release bot", time: "09:42", content: "I have opened the release checklist and attached the migration notes." },
+  { role: "user", name: "You", time: "09:44", content: "Add the migration owner and the rollback window to the checklist." },
+  { role: "assistant", name: "Release bot", time: "09:45", content: "Done. The owner is Sofia and the rollback window is 14:00–14:30." },
+  { role: "user", name: "You", time: "09:47", content: "Any blockers left before we promote?" },
+  { role: "assistant", name: "Release bot", time: "09:48", content: "One: billing wants the invoice template deployed first so the VAT line is present." },
+  { role: "assistant", name: "Release bot", time: "09:49", content: "Two: the search index rebuild takes about eight minutes after the deploy." },
+  { role: "user", name: "You", time: "09:51", content: "Let's wait for the 2pm review, then promote both services together." },
+  { role: "assistant", name: "Release bot", time: "09:53", content: "Queued. I will post the release URL here as soon as the tag is cut." },
 ];
 
 export function Demo() {
@@ -20,12 +28,14 @@ export function Demo() {
     { role: "assistant", name: "Assistant", content: "Hello! What are we working on?" },
     { role: "user", content: "The NSH port of the catalog." },
     { role: "assistant", content: "The gallery is looking good." },
+    { role: "user", content: "Can you stream the next few updates into this thread?" },
+    { role: "assistant", content: "Sure. Each appended message follows the newest row." },
   ]);
   const earlier = signal<MessageProps[]>([...initial]);
   const follow = signal(true);
 
-  const card = (children: JSX.Element, title: string, subtitle?: string, height = 420) => (
-    <View style={{ width: 560, maxWidth: "100%", height, borderRadius: 10, borderWidth: 1, borderColor: tokens.border, backgroundColor: tokens.popover, overflow: "hidden" }}>
+  const card = (children: JSX.Element, title: string, subtitle?: string, height = 500) => (
+    <View style={{ width: 700, maxWidth: "100%", height, borderRadius: 10, borderWidth: 1, borderColor: tokens.border, backgroundColor: tokens.popover, overflow: "hidden" }}>
       <View style={{ paddingHorizontal: 14, paddingVertical: 10, flexDirection: "row", alignItems: "center", gap: 8, borderBottomWidth: 1, borderBottomColor: tokens.border }}>
         <View style={{ flex: 1, gap: 1 }}>
           <Text style={{ fontSize: 12, fontWeight: "600", color: tokens.foreground }}>{title}</Text>
@@ -39,7 +49,7 @@ export function Demo() {
 
   // section: Usage
   const usage = (
-    <View style={{ height: 280, width: 520, maxWidth: "100%", borderRadius: 10, borderWidth: 1, borderColor: tokens.border, overflow: "hidden" }}>
+    <View style={{ height: 340, width: 640, maxWidth: "100%", borderRadius: 10, borderWidth: 1, borderColor: tokens.border, overflow: "hidden" }}>
       <MessageScroller messages={initial} style={{ flex: 1 }} />
     </View>
   );
@@ -48,13 +58,13 @@ export function Demo() {
   const basic = card(
     <MessageScroller messages={initial} style={{ flex: 1 }} />,
     "Release coordination",
-    "4 messages",
-    380,
+    "12 messages",
+    500,
   );
 
   // section: Append, streaming, and follow-tail behavior
   const append = (
-    <View style={{ width: 560, maxWidth: "100%", gap: 8 }}>
+    <View style={{ width: 700, maxWidth: "100%", gap: 8 }}>
       {card(
         <MessageScroller
           messages={streamed()}
@@ -72,14 +82,14 @@ export function Demo() {
         />,
         "Streaming conversation",
         "Follows the newest row",
-        380,
+        500,
       )}
     </View>
   );
 
   // section: Prepend earlier history
   const prepend = (
-    <View style={{ width: 560, maxWidth: "100%", gap: 8 }}>
+    <View style={{ width: 700, maxWidth: "100%", gap: 8 }}>
       {card(
         <MessageScroller
           messages={earlier()}
@@ -97,14 +107,14 @@ export function Demo() {
         />,
         "Support escalation",
         "Prepends earlier history",
-        400,
+        520,
       )}
     </View>
   );
 
   // section: Jump-to-latest behavior
   const jump = (
-    <View style={{ width: 560, maxWidth: "100%", gap: 8 }}>
+    <View style={{ width: 700, maxWidth: "100%", gap: 8 }}>
       {card(
         <MessageScroller
           messages={initial}
@@ -119,14 +129,14 @@ export function Demo() {
         />,
         "Follow-tail behavior",
         "A jump to the latest row",
-        360,
+        460,
       )}
     </View>
   );
 
   // section: Empty state
   const empty = (
-    <View style={{ height: 240, width: 520, maxWidth: "100%", borderRadius: 10, borderWidth: 1, borderColor: tokens.border, overflow: "hidden" }}>
+    <View style={{ height: 280, width: 640, maxWidth: "100%", borderRadius: 10, borderWidth: 1, borderColor: tokens.border, overflow: "hidden" }}>
       <MessageScroller
         messages={[]}
         empty={
@@ -151,6 +161,8 @@ export function Demo() {
         { role: "assistant", showHeader: false, content: "Every slow request goes through the tax service." },
         { role: "assistant", showHeader: false, content: "It is a retry loop, not the database. Two retries at 400ms each." },
         { role: "user", name: "You", time: "14:07", content: "That lines up with the 14:04 deploy. Rolling the tax client back." },
+        { role: "assistant", name: "Alex Johnson", time: "14:09", content: "I will watch the p95 for the next twenty minutes and post an update here." },
+        { role: "assistant", showHeader: false, content: "The retry storm has stopped. p95 is back under 300ms." },
       ]}
       style={{ flex: 1 }}
     />,
