@@ -2,7 +2,8 @@
 // press context area. The panel is an absolute child of its trigger, never a
 // modal.
 import type { JSX, StyleProp, ViewStyle } from 'nsh';
-import { signal, Text, View } from 'nsh';
+import { signal, Text, View, type YNode } from 'nsh';
+import { Modal } from 'nsh/ui/mobile';
 import { Button, type ButtonVariant } from './button';
 import { Icon } from './icon';
 import { type IconName } from './icons';
@@ -204,7 +205,7 @@ export function MenuBar(props: {
   );
 }
 
-/** A card whose press/long press opens a context menu in place. */
+/** A card whose press/right-click opens a context menu above the page. */
 export function ContextMenu(props: {
   items: MenuItem[];
   children?: JSX.Element;
@@ -212,35 +213,52 @@ export function ContextMenu(props: {
   style?: StyleProp<ViewStyle>;
 }) {
   const open = signal(false);
+  const anchor = signal({ x: 0, y: 0, height: 0 });
+  let node: YNode | undefined;
+  const show = async () => {
+    const box = await node?.measure();
+    if (box) anchor.set({ x: box.pageX, y: box.pageY, height: box.height });
+    open.set(true);
+  };
+  const close = () => open.set(false);
   return (
-    <View
-      onLongPress={() => open.set(!open())}
-      onPress={() => open.set(!open())}
-      activeOpacity={0.95}
-      accessibilityRole="button"
-      accessibilityLabel="Context menu target"
-      class={open() ? 'relative z-50' : 'relative'}
-      style={[
-        {
-          position: 'relative',
-          alignSelf: 'flex-start',
-          padding: 14,
-          borderRadius: 10,
-          borderWidth: 1,
-          borderColor: tokens.border,
-          backgroundColor: tokens.muted,
-          cursor: 'context-menu',
-        },
-        props.style,
-      ]}
-    >
-      {props.children}
-      {open() ? (
-        <View class="absolute z-50" style={{ position: 'absolute', top: '100%', left: 10 }}>
-          <Menu items={props.items} width={props.width} onSelect={() => open.set(false)} />
+    <>
+      <View
+        ref={(next) => (node = next)}
+        onLongPress={show}
+        onPress={show}
+        activeOpacity={0.95}
+        accessibilityRole="button"
+        accessibilityLabel="Context menu target"
+        style={[
+          {
+            position: 'relative',
+            alignSelf: 'flex-start',
+            padding: 14,
+            borderRadius: 10,
+            borderWidth: 1,
+            borderColor: tokens.border,
+            backgroundColor: tokens.muted,
+            cursor: 'context-menu',
+          },
+          props.style,
+        ]}
+      >
+        {props.children}
+      </View>
+      <Modal visible={open()} transparent animationType="fade" onRequestClose={close}>
+        <View style={{ flex: 1, backgroundColor: 'transparent' }} onPress={close}>
+          <View
+            onTouchStart={(event) => event.stopPropagation()}
+            onPress={() => {}}
+            class="absolute z-50"
+            style={{ position: 'absolute', left: anchor().x, top: anchor().y + anchor().height + 6 }}
+          >
+            <Menu items={props.items} width={props.width} onSelect={close} />
+          </View>
         </View>
-      ) : null}
-    </View>
+      </Modal>
+    </>
   );
 }
 
