@@ -5,7 +5,7 @@
 // (its own native module, a web bridge, or a script in a demo). This is a
 // partial port and is recorded as such in docs/nsh-integration.md.
 import type { StyleProp, ViewStyle } from 'nsh';
-import { signal, Text, View } from 'nsh';
+import { cleanup, effect, signal, Text, View } from 'nsh';
 import { Button } from './button';
 import { Icon } from './icon';
 import { RADIUS_MD, tokens } from './theme';
@@ -20,17 +20,51 @@ export interface SpeechProps {
   recognizer?: SpeechRecognizer;
   transcript?: string;
   listening?: boolean;
+  /** Show the live level bars above the transcript (default true). */
+  waveform?: boolean;
   onTranscript?: (text: string, final: boolean) => void;
   onListeningChange?: (listening: boolean) => void;
   style?: StyleProp<ViewStyle>;
   testID?: string;
 }
 
+export function SpeechWaveform(props: { levels?: number[]; capturing?: boolean }) {
+  const bars = props.levels ?? Array.from({ length: 18 }, () => 0.18);
+  return (
+    <View style={{ height: 30, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 3, paddingHorizontal: 4 }}>
+      {bars.map((level) => (
+        <View style={{ width: 3, height: 3 + level * 24, borderRadius: 2, backgroundColor: props.capturing ? tokens.primary : tokens.mutedForeground, opacity: props.capturing ? 0.9 : 0.45 }} />
+      ))}
+    </View>
+  );
+}
+
 export function Speech(props: SpeechProps) {
   const ownListening = signal(Boolean(props.listening));
   const ownTranscript = signal('');
+  const levels = signal<number[]>(Array.from({ length: 18 }, () => 0.18));
   const listening = () => props.listening ?? ownListening();
   const transcript = () => props.transcript ?? ownTranscript();
+  effect(() => {
+    if (!listening()) {
+      levels.set(Array.from({ length: 18 }, () => 0.18));
+      return;
+    }
+    let tick = 0;
+    const advance = () => {
+      tick += 1;
+      levels.set(
+        Array.from({ length: 18 }, (_, index) => {
+          const wave = Math.abs(Math.sin(tick * 0.55 + index * 0.62));
+          const detail = Math.abs(Math.sin(tick * 0.21 + index * 1.7));
+          return Math.max(0.14, Math.min(1, 0.18 + wave * 0.58 + detail * 0.2));
+        }),
+      );
+    };
+    advance();
+    const timer = setInterval(advance, 90);
+    cleanup(() => clearInterval(timer));
+  });
   const start = () => {
     const recognizer = props.recognizer;
     const onText = (text: string, final: boolean) => {
@@ -90,6 +124,25 @@ export function Speech(props: SpeechProps) {
         </View>
         <Button label={listening() ? 'Stop' : 'Start'} variant={listening() ? 'danger' : 'primary'} onPress={listening() ? stop : start} />
       </View>
+      {props.waveform === false ? null : (
+        <View
+          accessibilityRole="progressbar"
+          accessibilityLabel={listening() ? 'Microphone level' : 'Microphone idle'}
+          style={{ height: 30, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 3, paddingHorizontal: 4 }}
+        >
+          {levels().map((level) => (
+            <View
+              style={{
+                width: 3,
+                height: 3 + level * 24,
+                borderRadius: 2,
+                backgroundColor: listening() ? tokens.primary : tokens.mutedForeground,
+                opacity: listening() ? 0.9 : 0.45,
+              }}
+            />
+          ))}
+        </View>
+      )}
       <View style={{ minHeight: 48, padding: 10, borderRadius: RADIUS_MD, backgroundColor: tokens.muted }}>
         <Text style={{ fontSize: 13, color: transcript() ? tokens.foreground : tokens.mutedForeground }}>
           {transcript() || 'The transcript will appear here.'}
