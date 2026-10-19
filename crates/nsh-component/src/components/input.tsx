@@ -49,6 +49,8 @@ export interface InputProps {
   autoCapitalize?: 'none' | 'sentences' | 'words' | 'characters';
   autoFocus?: boolean;
   maxLength?: number;
+  /** Receives the native input node, so a parent can move focus to it. */
+  ref?: (node: YNode) => void;
   onChangeText?: (text: string) => void;
   onChange?: (text: string) => void;
   onSubmit?: (text: string) => void;
@@ -133,7 +135,10 @@ export function Input(props: InputProps) {
         </Text>
       ) : null}
       <NativeInput
-        ref={(node) => (field = node)}
+        ref={(node) => {
+          field = node;
+          props.ref?.(node);
+        }}
         value={value()}
         placeholder={props.placeholder}
         placeholderTextColor={tokens.mutedForeground}
