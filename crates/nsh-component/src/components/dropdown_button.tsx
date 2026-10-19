@@ -12,6 +12,8 @@ export interface DropdownButtonProps {
   variant?: ButtonVariant;
   size?: ControlSize;
   disabled?: boolean;
+  /** The main half's action. The menu opens only from the arrow half. */
+  onPress?: () => void;
   /** Align the panel with the button's start or end edge. */
   align?: 'start' | 'end';
   /** A wider menu than the button. */
@@ -31,23 +33,35 @@ export function DropdownButton(props: DropdownButtonProps) {
         {
           alignSelf: 'flex-start',
           position: 'relative',
-          zIndex: open() ? 50 : 0,
+          zIndex: open() ? 1000 : 0,
         },
         props.style,
       ]}
     >
-      <Button
-        label={props.label}
-        variant={props.variant ?? 'secondary'}
-        size={props.size}
-        disabled={props.disabled}
-        suffixIcon="chevron-down"
-        onPress={() => {
-          const next = !open();
-          open.set(next);
-          props.onOpenChange?.(next);
-        }}
-      />
+      <View style={{ flexDirection: 'row' }}>
+        <Button
+          label={props.label}
+          variant={props.variant ?? 'secondary'}
+          size={props.size}
+          disabled={props.disabled}
+          groupEnd
+          onPress={props.onPress}
+        />
+        <View style={{ width: 1, height: controlHeight(props.size ?? 'medium'), marginLeft: -1, marginRight: -1, backgroundColor: tokens.border, zIndex: 2 }} />
+        <Button
+          icon="chevron-down"
+          variant={props.variant ?? 'secondary'}
+          size={props.size}
+          disabled={props.disabled}
+          groupStart
+          accessibilityLabel="Open menu"
+          onPress={() => {
+            const next = !open();
+            open.set(next);
+            props.onOpenChange?.(next);
+          }}
+        />
+      </View>
       {open() ? (
         <View
           class="shadow-2xl"
@@ -57,7 +71,7 @@ export function DropdownButton(props: DropdownButtonProps) {
             ...(props.align === 'end' ? { right: 0 } : { left: 0 }),
             width: props.menuWidth ?? 240,
             maxWidth: '100%',
-            zIndex: 60,
+            zIndex: 1001,
             borderRadius: RADIUS_LG,
             borderWidth: 1,
             borderColor: tokens.border,

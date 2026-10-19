@@ -13,21 +13,21 @@ export function Demo() {
     { label: "Delete", icon: "trash" as const, onSelect: () => chosen.set("Delete") },
   ];
   // section: Usage
-  const usage = <DropdownButton label="Actions" items={items} />;
+  const usage = <DropdownButton label="Actions" items={items} onPress={() => chosen.set("Actions")} />;
   // section: Basic
-  const basic = <DropdownButton label="Actions" items={items} />;
+  const basic = <DropdownButton label="Actions" items={items} onPress={() => chosen.set("Actions")} />;
   // section: Variants
-  const variants = <Row gap={8}><DropdownButton label="Primary" variant="primary" items={items} /><DropdownButton label="Secondary" variant="secondary" items={items} /><DropdownButton label="Ghost" variant="ghost" items={items} /></Row>;
+  const variants = <Row gap={8}><DropdownButton label="Primary" variant="primary" items={items} onPress={() => chosen.set("Primary action")} /><DropdownButton label="Secondary" variant="secondary" items={items} onPress={() => chosen.set("Secondary action")} /><DropdownButton label="Ghost" variant="ghost" items={items} onPress={() => chosen.set("Ghost action")} /></Row>;
   // section: With icons
-  const icons = <DropdownButton label="With icons" items={items} />;
+  const icons = <DropdownButton label="With icons" items={items} onPress={() => chosen.set("Icons action")} />;
   // section: Sizes
-  const sizes = <Row gap={8}><DropdownButton label="Small" size="small" items={items} /><DropdownButton label="Large" size="large" items={items} /></Row>;
+  const sizes = <Row gap={8}><DropdownButton label="Small" size="small" items={items} onPress={() => chosen.set("Small action")} /><DropdownButton label="Large" size="large" items={items} onPress={() => chosen.set("Large action")} /></Row>;
   // section: Disabled
-  const disabled = <DropdownButton label="Disabled" disabled items={items} />;
+  const disabled = <DropdownButton label="Disabled" disabled items={items} onPress={() => chosen.set("Disabled action")} />;
   // section: end
   return (
     <Page>
-      <Caption>DropdownButton is a Button and a Menu; it owns the open state and nothing else.</Caption>
+      <Caption>DropdownButton has a split trigger: the label runs its action, and only the arrow opens the menu.</Caption>
       <ExampleSection index={0} title="Usage">{usage}</ExampleSection>
       <ExampleSection index={1} title="Basic">{basic}</ExampleSection>
       <ExampleSection index={2} title="Variants">{variants}</ExampleSection>
