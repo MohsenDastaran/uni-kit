@@ -6,6 +6,7 @@ import { type IconName } from './icons';
 import { FONT_SIZE_SM, RADIUS_LG, SPACING_MD, tokens } from './theme';
 
 export type EmptyVariant = 'default' | 'outline' | 'background';
+export type EmptySize = 'small' | 'medium' | 'large';
 
 export interface EmptyProps {
   icon?: IconName;
@@ -14,6 +15,9 @@ export interface EmptyProps {
   description?: string;
   action?: JSX.Element;
   variant?: EmptyVariant;
+  size?: EmptySize;
+  /** Draw an outline variant with a dashed border. */
+  dashed?: boolean;
   children?: JSX.Element;
   style?: StyleProp<ViewStyle>;
   testID?: string;
@@ -21,6 +25,10 @@ export interface EmptyProps {
 
 export function Empty(props: EmptyProps) {
   const variant = () => props.variant ?? 'default';
+  const size = () => props.size ?? 'medium';
+  const titleSize = () => (size() === 'small' ? 13 : size() === 'large' ? 17 : 14);
+  const bodySize = () => (size() === 'small' ? 11 : size() === 'large' ? 13 : 12);
+  const pad = () => (size() === 'small' ? 20 : size() === 'large' ? 36 : 28);
   return (
     <View
       testID={props.testID}
@@ -28,11 +36,12 @@ export function Empty(props: EmptyProps) {
         {
           alignItems: 'center',
           justifyContent: 'center',
-          gap: SPACING_MD,
-          padding: 32,
+          gap: size() === 'small' ? 8 : size() === 'large' ? 14 : 10,
+          padding: pad(),
           borderRadius: RADIUS_LG,
           borderWidth: variant() === 'outline' ? 1 : 0,
           borderColor: tokens.border,
+          borderStyle: props.dashed ? 'dashed' : 'solid',
           backgroundColor: variant() === 'background' ? tokens.muted : 'transparent',
         },
         props.style,
@@ -54,17 +63,17 @@ export function Empty(props: EmptyProps) {
           </View>
         ) : null)}
       <View style={{ alignItems: 'center', gap: 4 }}>
-        <Text style={{ fontSize: 17, fontWeight: '600', color: tokens.foreground, textAlign: 'center' }}>
+        <Text style={{ fontSize: titleSize(), lineHeight: titleSize() + 4, fontWeight: '600', color: tokens.foreground, textAlign: 'center' }}>
           {props.title ?? 'Nothing here yet'}
         </Text>
         {props.description ? (
-          <Text style={{ fontSize: FONT_SIZE_SM, color: tokens.mutedForeground, textAlign: 'center' }}>
+          <Text style={{ fontSize: bodySize(), lineHeight: bodySize() + 5, color: tokens.mutedForeground, textAlign: 'center' }}>
             {props.description}
           </Text>
         ) : null}
       </View>
-      {props.action}
-      {props.children}
+      {props.action ? <View style={{ alignItems: 'center' }}>{props.action}</View> : null}
+      {props.children ? <View style={{ alignItems: 'center' }}>{props.children}</View> : null}
     </View>
   );
 }
