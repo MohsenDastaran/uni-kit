@@ -20,6 +20,12 @@ export function Demo() {
   const token = signal("");
   const email = signal("");
   const filter = signal("Components");
+  const apiKey = signal("9f82afc4b7e243d8a6c9f1e2a3b4c5d6");
+  const middle = signal("Alexander");
+  const secure = signal("");
+  const security = signal("");
+  const pulse = signal("");
+  const score = () => [secure().length >= 8, /[0-9]/.test(secure()), /[a-z]/.test(secure()), /[A-Z]/.test(secure()), /[^A-Za-z0-9]/.test(secure())].filter(Boolean).length;
 
   // section: Usage
   const usage = (
@@ -273,6 +279,138 @@ export function Demo() {
     </View>
   );
 
+  // section: Input label with badge
+  const labelBadge = (
+    <Input
+      label="API Key"
+      badge="New"
+      value={apiKey()}
+      onChangeText={(next) => apiKey.set(next)}
+      style={{ width: 360, maxWidth: "100%" }}
+    />
+  );
+
+  // section: Input label with optional badge
+  const labelOptional = (
+    <Input
+      label="Middle Name"
+      optional
+      value={middle()}
+      onChangeText={(next) => middle.set(next)}
+      placeholder="Alexander"
+      style={{ width: 360, maxWidth: "100%" }}
+    />
+  );
+
+  // section: Link and visibility toggle
+  const labelAction = (
+    <Input
+      label="Password"
+      labelAction={<Text style={{ fontSize: 10, color: tokens.primary }}>Forgot password?</Text>}
+      value={password()}
+      onChangeText={(next) => password.set(next)}
+      placeholder="Enter your password"
+      masked
+      maskToggle
+      style={{ width: 360, maxWidth: "100%" }}
+    />
+  );
+
+  // section: Input with horizontal orientation
+  const horizontal = (
+    <Input
+      label="Name"
+      orientation="horizontal"
+      labelWidth={70}
+      value="John Doe"
+      onChangeText={() => {}}
+      style={{ width: 380, maxWidth: "100%" }}
+    />
+  );
+
+  // section: Simple error messages
+  const errorMessages = (
+    <View style={{ width: 360, maxWidth: "100%", gap: 7 }}>
+      <Input
+        label="Security Code"
+        invalid
+        value={security()}
+        onChangeText={(next) => security.set(next)}
+        placeholder="Enter your security code"
+      />
+      <View style={{ gap: 3 }}>
+        {[
+          "Code must be at least 12 characters long",
+          "Code must contain at least one uppercase letter",
+          "Code cannot include common words or patterns",
+        ].map((line) => (
+          <Row gap={4} style={{ alignItems: "center" }}>
+            <Text style={{ fontSize: 10, color: tokens.danger }}>●</Text>
+            <Text style={{ fontSize: 10, lineHeight: 14, color: tokens.danger }}>{line}</Text>
+          </Row>
+        ))}
+      </View>
+    </View>
+  );
+
+  // section: Password strength
+  const strength = (
+    <View style={{ width: 380, maxWidth: "100%", gap: 8 }}>
+      <Input
+        label="Secure Password"
+        value={secure()}
+        onChangeText={(next) => secure.set(next)}
+        placeholder="Create a strong password"
+        masked
+        maskToggle
+      />
+      <View style={{ flexDirection: "row", gap: 4 }}>
+        {[0, 1, 2, 3].map((index) => (
+          <View style={{ flex: 1, height: 3, borderRadius: 2, backgroundColor: index < Math.min(4, Math.ceil(score() * 0.8)) ? (score() >= 4 ? tokens.success : tokens.warning) : tokens.muted }} />
+        ))}
+      </View>
+      <View style={{ flexDirection: "row", alignItems: "center" }}>
+        <Text style={{ flex: 1, fontSize: 11, fontWeight: "500", color: tokens.foreground }}>Enter a password</Text>
+        <Text style={{ fontSize: 9, color: tokens.mutedForeground }}>{score()}/5 requirements met</Text>
+      </View>
+      <View style={{ gap: 3 }}>
+        {[
+          { label: "At least 8 characters", met: secure().length >= 8 },
+          { label: "At least 1 number", met: /[0-9]/.test(secure()) },
+          { label: "At least 1 lowercase letter", met: /[a-z]/.test(secure()) },
+          { label: "At least 1 uppercase letter", met: /[A-Z]/.test(secure()) },
+          { label: "At least 1 special character", met: /[^A-Za-z0-9]/.test(secure()) },
+        ].map((item) => (
+          <Row gap={5} style={{ alignItems: "center" }}>
+            <Text style={{ fontSize: 10, color: item.met ? tokens.success : tokens.danger }}>{item.met ? "✓" : "✕"}</Text>
+            <Text style={{ fontSize: 10, color: item.met ? tokens.mutedForeground : tokens.danger }}>{item.label}</Text>
+          </Row>
+        ))}
+      </View>
+    </View>
+  );
+
+  // section: Pulsing background
+  const pulsing = (
+    <Input
+      label="Pulsing Background"
+      pulse
+      value={pulse()}
+      onChangeText={(next) => pulse.set(next)}
+      placeholder="Animation stops on focus…"
+      style={{ width: 360, maxWidth: "100%" }}
+    />
+  );
+
+  // section: Input types
+  const types = (
+    <View style={{ width: 380, maxWidth: "100%", gap: 10 }}>
+      <Input label="Email" keyboardType="email-address" placeholder="name@example.com" prefixIcon="mail" />
+      <Input label="URL" keyboardType="url" placeholder="https://example.com" prefixIcon="globe" />
+      <Input label="Number" keyboardType="numeric" placeholder="123" />
+    </View>
+  );
+
   // section: end
 
   return (
@@ -326,6 +464,14 @@ export function Demo() {
       <ExampleSection index={14} title="Form with Multiple Inputs">
         {form}
       </ExampleSection>
+      <ExampleSection index={15} title="Input label with badge">{labelBadge}</ExampleSection>
+      <ExampleSection index={16} title="Input label with optional badge">{labelOptional}</ExampleSection>
+      <ExampleSection index={17} title="Link and visibility toggle">{labelAction}</ExampleSection>
+      <ExampleSection index={18} title="Input with horizontal orientation">{horizontal}</ExampleSection>
+      <ExampleSection index={19} title="Simple error messages">{errorMessages}</ExampleSection>
+      <ExampleSection index={20} title="Password strength">{strength}</ExampleSection>
+      <ExampleSection index={21} title="Pulsing background">{pulsing}</ExampleSection>
+      <ExampleSection index={22} title="Input types">{types}</ExampleSection>
       <Status>
         <Text style={{ fontSize: 13, color: tokens.mutedForeground }}>{events()}</Text>
       </Status>

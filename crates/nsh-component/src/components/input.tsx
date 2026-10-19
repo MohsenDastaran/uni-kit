@@ -29,6 +29,25 @@ export interface InputProps {
   disabled?: boolean;
   readOnly?: boolean;
   invalid?: boolean;
+  /** A field label drawn above, or beside, the control. */
+  label?: string;
+  required?: boolean;
+  optional?: boolean;
+  /** A compact badge after the label, e.g. New. */
+  badge?: string;
+  /** Supporting text under the field. */
+  description?: string;
+  /** An error message replacing the description. */
+  error?: string;
+  /** A small info affordance beside the label. */
+  help?: boolean;
+  /** A trailing label action, such as "Forgot password?". */
+  labelAction?: JSX.Element;
+  /** Put the label in a fixed left column. */
+  orientation?: 'vertical' | 'horizontal';
+  labelWidth?: number;
+  /** A soft background pulse that stops while the field is focused. */
+  pulse?: boolean;
   /** Hide the value as a password. */
   masked?: boolean;
   /** Show the eye a masked field uses to reveal what is typed. */
@@ -88,8 +107,35 @@ export function Input(props: InputProps) {
     focused() && props.appearance !== false && !props.disabled
       ? `0 0 0 3px ${alpha(props.invalid ? tokens.danger : tokens.ring, 0.18)}`
       : undefined;
+  const hasLabel = Boolean(
+    props.label || props.required || props.optional || props.badge || props.description || props.error || props.labelAction,
+  );
+  const feedback = props.error ? (
+    <Text style={{ fontSize: 10, lineHeight: 14, color: tokens.danger }}>{props.error}</Text>
+  ) : props.description ? (
+    <Text style={{ fontSize: 10, lineHeight: 14, color: tokens.mutedForeground }}>{props.description}</Text>
+  ) : null;
+  const labelRow = (
+    <View style={{ flexDirection: 'row', alignItems: 'center', gap: 5, minWidth: 0 }}>
+      {props.label ? (
+        <Text style={{ fontSize: 11, fontWeight: '500', color: tokens.foreground }}>
+          {props.label}
+          {props.required ? <Text style={{ color: tokens.danger }}> *</Text> : null}
+        </Text>
+      ) : null}
+      {props.badge ? (
+        <View style={{ paddingHorizontal: 5, paddingVertical: 1, borderRadius: 4, backgroundColor: alpha(tokens.success, 0.14), borderWidth: 1, borderColor: alpha(tokens.success, 0.3) }}>
+          <Text style={{ fontSize: 8, lineHeight: 12, fontWeight: '600', color: tokens.success }}>{props.badge}</Text>
+        </View>
+      ) : null}
+      {props.optional ? <Text style={{ fontSize: 9, color: tokens.mutedForeground }}>Optional</Text> : null}
+      {props.help ? <Icon name="info" size={10} color={tokens.mutedForeground} /> : null}
+      <View style={{ flex: 1 }} />
+      {props.labelAction}
+    </View>
+  );
 
-  return (
+  const inputField = (
     <View
       testID={props.testID}
       accessibilityLabel={props.accessibilityLabel ?? props.placeholder}
@@ -99,7 +145,9 @@ export function Input(props: InputProps) {
       class={
         props.appearance === false || props.disabled
           ? undefined
-          : 'transition-all duration-200 ease-out hover:shadow-sm'
+          : props.pulse && !focused()
+            ? 'animate-pulse transition-all duration-200 ease-out hover:shadow-sm'
+            : 'transition-all duration-200 ease-out hover:shadow-sm'
       }
       style={[
         {
@@ -116,14 +164,16 @@ export function Input(props: InputProps) {
               ? 'transparent'
               : props.disabled
                 ? tokens.muted
-                : tokens.background,
+                : props.pulse && !focused()
+                  ? tokens.muted
+                  : tokens.background,
           opacity: props.disabled ? 0.5 : 1,
           boxShadow: focusRing(),
           transitionProperty: 'border-color, box-shadow, background-color, opacity',
           transitionDuration: 180,
           transitionTimingFunction: 'ease-out',
         },
-        props.style,
+        hasLabel ? { width: '100%' } : props.style,
       ]}
     >
       {props.prefixIcon ? (
@@ -217,6 +267,28 @@ export function Input(props: InputProps) {
         </View>
       ) : null}
       {props.children}
+    </View>
+  );
+  if (!hasLabel) return inputField;
+  if (props.orientation === 'horizontal') {
+    return (
+      <View
+        testID={props.testID ? `${props.testID}-field` : undefined}
+        style={[{ width: '100%', flexDirection: 'row', alignItems: 'flex-start', gap: 12 }, props.style]}
+      >
+        <View style={{ width: props.labelWidth ?? 130, flexShrink: 0, paddingTop: 9 }}>{labelRow}</View>
+        <View style={{ flex: 1, minWidth: 0, gap: 5 }}>
+          {inputField}
+          {feedback}
+        </View>
+      </View>
+    );
+  }
+  return (
+    <View style={[{ width: '100%', gap: 6 }, props.style]}>
+      {labelRow}
+      {inputField}
+      {feedback}
     </View>
   );
 }
