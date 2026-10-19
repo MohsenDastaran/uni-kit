@@ -120,7 +120,7 @@ platform-specific exception is `title-bar` (`nsh/desktop`, guarded by
 | `attachment` | `attachment.tsx` | yes | yes | yes | 546 | yes | yes |
 | `avatar` | `avatar.tsx` | yes | yes | yes | 348 | yes | yes |
 | `badge` | `badge.tsx` | yes | yes | yes | 431 | yes | yes |
-| `bubble` | `bubble.tsx` | yes | yes | yes | 551 | yes | yes |
+| `bubble` | `bubble.tsx` | yes | yes | yes | 554 | yes | yes |
 | `button` | `button.tsx` | yes | yes | yes | 285 | yes | yes |
 | `calendar` | `calendar.tsx` | yes | yes | yes | 525 | yes | yes |
 | `card` | `card.tsx` | yes | yes | yes | 218 | yes | yes |
@@ -145,21 +145,20 @@ platform-specific exception is `title-bar` (`nsh/desktop`, guarded by
 | `group-box` | `group_box.tsx` | yes | yes | yes | 94 | yes | yes |
 | `icon` | `icon.tsx` | yes | yes | yes | 73 | yes | yes |
 | `image` | `image.tsx` | yes | yes | yes | 59 | yes | yes |
-| `input` | `input.tsx` | yes | yes | yes | 222 | yes | yes |
-| `input-group` | `input_group.tsx` | yes | yes | yes | 66 | yes | yes |
-| `kbd` | `kbd.tsx` | yes | yes | yes | 79 | yes | yes |
+| `input` | `input.tsx` | yes | yes | yes | 299 | yes | yes |
+| `input-group` | `input_group.tsx` | yes | yes | yes | 146 | yes | yes |
+| `kbd` | `kbd.tsx` | yes | yes | yes | 135 | yes | yes |
 | `label` | `label.tsx` | yes | yes | yes | 73 | yes | yes |
-| `list` | `list.tsx` | yes | yes | yes | 46 | yes | yes |
-| `marker` | `marker.tsx` | yes | yes | yes | 70 | yes | yes |
-| `menu` | `menu.tsx` | yes | yes | yes | 81 | yes | yes |
-| `message` | `message.tsx` | yes | yes | yes | 48 | yes | yes |
+| `list` | `list.tsx` | yes | yes | yes | 211 | yes | yes |
+| `marker` | `marker.tsx` | yes | yes | yes | 192 | yes | yes |
+| `menu` | `menu.tsx` | yes | yes | yes | 280 | yes | yes |
+| `message` | `message.tsx` | yes | yes | yes | 98 | yes | yes |
 | `message-role` | `message_role.tsx` | yes | yes | yes | 32 | yes | yes |
-| `message-scroller` | `message_scroller.tsx` | yes | yes | yes | 28 | yes | yes |
+| `message-scroller` | `message_scroller.tsx` | yes | yes | yes | 69 | yes | yes |
 | `notification` | `notification.tsx` | yes | yes | yes | 97 | yes | yes |
 | `number-input` | `number_input.tsx` | yes | yes | yes | 61 | yes | yes |
-| `otp-input` | `otp_input.tsx` | yes | yes | yes | 50 | yes | yes |
-| `pagination` | `pagination.tsx` | yes | yes | yes | 40 | yes | yes |
-| `popover` | `popover.tsx` | yes | yes | yes | 41 | yes | yes |
+| `otp-input` | `otp_input.tsx` | yes | yes | yes | 135 | yes | yes |
+| `pagination` | `pagination.tsx` | yes | yes | yes | 238 | yes | yes |
 | `progress` | `progress.tsx` | yes | yes | yes | 116 | yes | yes |
 | `questionnaire` | `questionnaire.tsx` | yes | yes | yes | 94 | yes | yes |
 | `radio` | `radio.tsx` | yes | yes | yes | 104 | yes | yes |
@@ -167,7 +166,7 @@ platform-specific exception is `title-bar` (`nsh/desktop`, guarded by
 | `resizable` | `resizable.tsx` | yes | yes | yes | 87 | yes | yes |
 | `root` | `root.tsx` | yes | yes | yes | 30 | yes | yes |
 | `scrollable` | `scrollable.tsx` | yes | yes | yes | 13 | yes | yes |
-| `select` | `select.tsx` | yes | yes | yes | 133 | yes | yes |
+| `select` | `select.tsx` | yes | yes | yes | 135 | yes | yes |
 | `settings` | `settings.tsx` | yes | yes | yes | 94 | yes | yes |
 | `sheet` | `sheet.tsx` | yes | yes | yes | 30 | yes | yes |
 | `shimmer` | `shimmer.tsx` | yes | yes | yes | 62 | yes | yes |
@@ -190,18 +189,18 @@ platform-specific exception is `title-bar` (`nsh/desktop`, guarded by
 | `toggle` | `toggle.tsx` | yes | yes | yes | 73 | yes | yes |
 | `toolbar` | `toolbar.tsx` | yes | yes | yes | 63 | yes | yes |
 | `tree` | `tree.tsx` | yes | yes | yes | 66 | yes | yes |
-| `virtual-list` | `virtual_list.tsx` | yes | yes | yes | 31 | yes | yes |
+| `virtual-list` | `virtual_list.tsx` | yes | yes | yes | 58 | yes | yes |
 
-**77 / 77** components have an NSH source, an example and a registry entry.
+**76 / 76** components have an NSH source, an example and a registry entry.
 
-Every component in the Slint registry has an NSH implementation.
+Every remaining component in the Slint registry has an NSH implementation. **Tooltip**, **HoverCard** and **Popover** are intentionally not ported.
 <!-- nsh-checklist:end -->
 
 ## Partial ports and limits
 
-The checklist covers every remaining Slint key. **Tooltip** and **HoverCard**
-are intentionally not part of the NSH catalog. The following are honest partial
-ports, not stubs:
+The checklist covers every remaining Slint key. **Tooltip**, **HoverCard** and
+**Popover** are intentionally not part of the NSH catalog. The following are
+honest partial ports, not stubs:
 
 | Area | What is complete | What is not |
 | --- | --- | --- |

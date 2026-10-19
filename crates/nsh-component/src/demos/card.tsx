@@ -9,7 +9,7 @@ import { Card } from "../components/card";
 import { Icon } from "../components/icon";
 import { Input } from "../components/input";
 import { Menu, type MenuItem } from "../components/menu";
-import { Popover } from "../components/popover";
+import { MenuButton } from "../components/menu";
 import { alpha, tokens } from "../components/theme";
 import { Caption, Column, ExampleSection, Page, Row, Status } from "./ui";
 
@@ -164,9 +164,10 @@ export function Demo() {
       title="Need a help in Claim?"
       description="Go to this step by step guideline process on how to certify for your weekly benefits:"
       actions={
-        <Popover
-          open={menuOpen()}
-          onOpenChange={(next) => menuOpen.set(next)}
+        <MenuButton
+          label="Card actions"
+          items={menuItems}
+          width={180}
           trigger={
             <View
               accessibilityLabel="Card actions"
@@ -175,9 +176,7 @@ export function Demo() {
               <Icon name="ellipsis" size={16} color={tokens.mutedForeground} />
             </View>
           }
-        >
-          <Menu items={menuItems} style={{ minWidth: 180 }} />
-        </Popover>
+        />
       }
       footer={
         <Badge

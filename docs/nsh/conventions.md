@@ -119,10 +119,10 @@ working in `crates/nsh-component`; the complete reference is vendored under
   slash, so the player computes that base explicitly; `assetBase` must be built
   from that base too, or `asset:/assets/...` resolves against the site root.
 - Overlays use `Modal` (transparent) when they must escape a scrolling page:
-  Select, Combobox, DatePicker, DropdownButton and Popover. An absolute panel
+  Select, Combobox, DatePicker and DropdownButton. An absolute panel
   inside a `Scroll` can be painted under the next section on the web, which is
-  why the clipped cases are modals. Tooltip and HoverCard are not part of the
-  NSH catalog.
+  why the clipped cases are modals. Tooltip, HoverCard and Popover are not part
+  of the NSH catalog.
 
 ## Commands
 

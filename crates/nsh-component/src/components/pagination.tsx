@@ -1,7 +1,7 @@
 // Page navigation: labels, numbers, ellipsis, first/last, page info, a rows-per-
 // page select, a page selector and a go-to-page field.
 import type { StyleProp, ViewStyle } from 'nsh';
-import { signal, Text, View } from 'nsh';
+import { effect, signal, Text, View } from 'nsh';
 import { Button } from './button';
 import { Input } from './input';
 import { Select } from './select';
@@ -48,6 +48,7 @@ export interface PaginationProps {
 export function Pagination(props: PaginationProps) {
   const page = () => Math.max(1, Math.min(Math.max(1, props.totalPages), props.page ?? 1));
   const go = signal(String(page()));
+  effect(() => go.set(String(page())));
   const disabled = () => Boolean(props.disabled);
   const shape = () => props.shape ?? 'square';
   const rounded = () => (shape() === 'circle' ? 999 : 7);

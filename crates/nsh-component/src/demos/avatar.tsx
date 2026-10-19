@@ -7,7 +7,7 @@ import { Button } from "../components/button";
 import { Empty } from "../components/empty";
 import { Icon } from "../components/icon";
 import { Menu, type MenuItem } from "../components/menu";
-import { Popover } from "../components/popover";
+import { MenuButton } from "../components/menu";
 import { tokens } from "../components/theme";
 import { Caption, ExampleSection, Page, Row, Status } from "./ui";
 
@@ -123,9 +123,10 @@ export function Demo() {
     { label: "Sign out", icon: "log-out", onSelect: () => choose("Sign out") },
   ];
   const dropdown = (
-    <Popover
-      open={dropdownOpen()}
-      onOpenChange={(next) => dropdownOpen.set(next)}
+    <MenuButton
+      label="Ada Lovelace"
+      items={menuItems}
+      width={220}
       trigger={
         <View
           style={{
@@ -146,9 +147,7 @@ export function Demo() {
           <Icon name="chevron-down" size={14} color={tokens.mutedForeground} />
         </View>
       }
-    >
-      <Menu style={{ minWidth: 220, borderWidth: 0, paddingVertical: 0 }} items={menuItems} />
-    </Popover>
+    />
   );
   // section: Avatar with custom badge
   const customBadge = (

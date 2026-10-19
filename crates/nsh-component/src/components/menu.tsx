@@ -113,25 +113,34 @@ export function MenuButton(props: {
   align?: 'start' | 'end';
   width?: number;
   disabled?: boolean;
+  /** Draw a custom trigger instead of the standard labelled button. */
+  trigger?: JSX.Element;
   onSelect?: (index: number) => void;
   onPress?: () => void;
   style?: StyleProp<ViewStyle>;
 }) {
   const open = signal(false);
   const close = () => open.set(false);
+  const toggle = () => {
+    open.set(!open());
+    props.onPress?.();
+  };
   return (
     <View class={open() ? 'relative z-50' : 'relative'} style={[{ position: 'relative', alignSelf: 'flex-start' }, props.style]}>
-      <Button
-        label={props.label}
-        variant={props.variant ?? 'secondary'}
-        size={props.size ?? 'small'}
-        disabled={props.disabled}
-        suffixIcon="chevron-down"
-        onPress={() => {
-          open.set(!open());
-          props.onPress?.();
-        }}
-      />
+      {props.trigger ? (
+        <View accessibilityRole="button" accessibilityLabel={props.label} onPress={props.disabled ? undefined : toggle}>
+          {props.trigger}
+        </View>
+      ) : (
+        <Button
+          label={props.label}
+          variant={props.variant ?? 'secondary'}
+          size={props.size ?? 'small'}
+          disabled={props.disabled}
+          suffixIcon="chevron-down"
+          onPress={toggle}
+        />
+      )}
       {open() ? (
         <View class="absolute z-50" style={{ position: 'absolute', top: controlHeight(props.size ?? 'small') + 4, ...(props.align === 'end' ? { right: 0 } : { left: 0 }) }}>
           <Menu

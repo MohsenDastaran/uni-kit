@@ -37,30 +37,30 @@ export function OtpInput(props: OtpInputProps) {
       ? text.replace(/[^A-Za-z0-9]/g, '').toUpperCase()
       : text.replace(/\D/g, '');
 
-  const commit = (next: string) => {
-    const joined = next.slice(0, length());
+  const blank = () => Array.from({ length: length() }, (_, index) => value()[index] ?? ' ');
+  const commit = (cells: string[]) => {
+    const joined = cells.join('').slice(0, length()).replace(/\s+$/, '');
     if (props.value === undefined) own.set(joined);
     props.onChange?.(joined);
-    if (joined.length === length() && joined.split('').every(Boolean)) props.onComplete?.(joined);
+    if (joined.length === length() && joined.split('').every((char) => char && char !== ' ')) props.onComplete?.(joined);
   };
 
   const setAt = (index: number, text: string) => {
     const chars = clean(text).split('');
+    const next = blank();
     if (chars.length === 0) {
-      const next = value().split('');
-      next[index] = '';
-      commit(next.join(''));
+      next[index] = ' ';
+      commit(next);
       if (index > 0) refs[index - 1]?.focus();
       return;
     }
-    const next = value().split('');
     let cursor = index;
     for (const char of chars) {
       if (cursor >= length()) break;
       next[cursor] = char;
       cursor += 1;
     }
-    commit(next.join(''));
+    commit(next);
     if (cursor < length()) refs[cursor]?.focus();
   };
 
@@ -104,7 +104,7 @@ export function OtpInput(props: OtpInputProps) {
           {group.map((index) => (
             <Input
               ref={(node) => (refs[index] = node)}
-              value={props.masked && value()[index] ? '•' : value()[index] ?? ''}
+              value={props.masked && value()[index] && value()[index] !== ' ' ? '•' : value()[index] === ' ' ? '' : value()[index] ?? ''}
               disabled={props.disabled}
               keyboardType={props.type === 'alphanumeric' ? 'default' : 'number-pad'}
               maxLength={1}
@@ -115,9 +115,9 @@ export function OtpInput(props: OtpInputProps) {
               onChangeText={(text) => setAt(index, text)}
               onKeyPress={(event) => {
                 if (event.key === 'Backspace' && !value()[index] && index > 0) {
-                  const next = value().split('');
-                  next[index - 1] = '';
-                  commit(next.join(''));
+                  const next = blank();
+                  next[index - 1] = ' ';
+                  commit(next);
                   refs[index - 1]?.focus();
                 }
               }}

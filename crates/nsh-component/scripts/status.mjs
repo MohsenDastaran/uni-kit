@@ -22,9 +22,9 @@ const pages = path.join(root, 'website/component');
 const doc = path.join(root, 'docs/nsh-integration.md');
 
 const registry = JSON.parse(fs.readFileSync(path.join(root, 'registry/components.json'), 'utf8'));
-// These two are intentionally absent from the NSH catalog. They are not
-// missing ports, so they do not belong in the completion checklist.
-const NOT_PORTED = new Set(['hover-card', 'tooltip']);
+// These are intentionally absent from the NSH catalog. They are not missing
+// ports, so they do not belong in the completion checklist.
+const NOT_PORTED = new Set(['hover-card', 'tooltip', 'popover']);
 const inventory = Object.keys(registry.slint.components)
   .filter((name) => !NOT_PORTED.has(name))
   .sort();
@@ -85,7 +85,7 @@ const table = [
   ...(stubbed.length ? [`**Stubs, which do not count:** ${stubbed.map((name) => `\`${name}\``).join(', ')}.`] : []),
   ...(missing.length
     ? [`Still to do: ${missing.map((name) => `\`${name}\``).join(', ')}.`]
-    : ['Every component in the Slint registry has an NSH implementation.']),
+    : ['Every remaining component in the Slint registry has an NSH implementation. **Tooltip**, **HoverCard** and **Popover** are intentionally not ported.']),
 ].join('\n');
 
 if (process.argv.includes('--write')) {

@@ -24899,24 +24899,6 @@
           "target": "theme.json"
         }
       ],
-      "popover": [
-        {
-          "src": "crates/nsh-component/src/components/popover.tsx",
-          "target": "popover.tsx"
-        },
-        {
-          "src": "crates/nsh-component/src/components/theme.ts",
-          "target": "theme.ts"
-        },
-        {
-          "src": "crates/nsh-component/src/components/tokens.ts",
-          "target": "tokens.ts"
-        },
-        {
-          "src": "crates/nsh-component/src/components/theme.json",
-          "target": "theme.json"
-        }
-      ],
       "progress": [
         {
           "src": "crates/nsh-component/src/components/progress.tsx",
