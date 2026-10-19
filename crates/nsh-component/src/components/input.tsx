@@ -48,6 +48,8 @@ export interface InputProps {
   labelWidth?: number;
   /** A soft background pulse that stops while the field is focused. */
   pulse?: boolean;
+  /** Select the current text on focus, so typing replaces it. */
+  selectOnFocus?: boolean;
   /** Hide the value as a password. */
   masked?: boolean;
   /** Show the eye a masked field uses to reveal what is typed. */
@@ -205,6 +207,7 @@ export function Input(props: InputProps) {
         onSubmitEditing={(event) => props.onSubmit?.(event.text)}
         onFocus={() => {
           focused.set(true);
+          if (props.selectOnFocus) field?.setSelection(0, value().length);
           props.onFocus?.();
         }}
         onBlur={() => {

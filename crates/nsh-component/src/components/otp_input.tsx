@@ -108,6 +108,7 @@ export function OtpInput(props: OtpInputProps) {
               disabled={props.disabled}
               keyboardType={props.type === 'alphanumeric' ? 'default' : 'number-pad'}
               maxLength={1}
+              selectOnFocus
               autoFocus={props.autoFocus && index === 0}
               accessibilityLabel={`Character ${index + 1}`}
               horizontalAlignment="center"
@@ -121,7 +122,7 @@ export function OtpInput(props: OtpInputProps) {
                 }
               }}
               style={{
-                width: inputHeight(props.size ?? 'medium') + 12,
+                width: inputHeight(props.size ?? 'medium'),
                 height: inputHeight(props.size ?? 'medium'),
                 borderColor: edge(),
               }}
