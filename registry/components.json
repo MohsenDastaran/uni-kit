@@ -24033,10 +24033,6 @@
       ],
       "color-picker": [
         {
-          "src": "crates/nsh-component/src/components/button.tsx",
-          "target": "button.tsx"
-        },
-        {
           "src": "crates/nsh-component/src/components/color_picker.tsx",
           "target": "color_picker.tsx"
         },
