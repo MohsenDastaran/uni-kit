@@ -101,6 +101,7 @@ export function Settings(props: SettingsProps) {
   const own = signal(props.sections[0]?.id ?? '');
   const active = () => props.active ?? own();
   const shown = () => props.sections.find((section) => section.id === active());
+  const showRail = () => (props.sidebarWidth ?? 190) > 0;
   return (
     <View testID={props.testID} style={[{ width: '100%', gap: 14 }, props.style]}>
       {props.title || props.description ? (
@@ -109,8 +110,8 @@ export function Settings(props: SettingsProps) {
           {props.description ? <Text style={{ fontSize: 12, lineHeight: 17, color: tokens.mutedForeground }}>{props.description}</Text> : null}
         </View>
       ) : null}
-      <View style={{ flexDirection: 'row', alignItems: 'flex-start', gap: 18 }}>
-        <View style={{ width: props.sidebarWidth ?? 190, flexShrink: 0, gap: 2 }}>
+      <View style={{ flexDirection: 'row', alignItems: 'flex-start', gap: showRail() ? 18 : 0 }}>
+        {showRail() ? <View style={{ width: props.sidebarWidth ?? 190, flexShrink: 0, gap: 2 }}>
           {props.sections.map((section) => {
             const selected = section.id === active();
             return (
@@ -141,7 +142,7 @@ export function Settings(props: SettingsProps) {
               </View>
             );
           })}
-        </View>
+        </View> : null}
         <View style={{ flex: 1, minWidth: 0, gap: 10 }}>
           <View style={{ gap: 2 }}>
             <Text style={{ fontSize: 15, fontWeight: '600', color: tokens.foreground }}>{shown()?.title ?? 'Settings'}</Text>
