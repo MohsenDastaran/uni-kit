@@ -25457,10 +25457,6 @@
       ],
       "time-field": [
         {
-          "src": "crates/nsh-component/src/components/button.tsx",
-          "target": "button.tsx"
-        },
-        {
           "src": "crates/nsh-component/src/components/date.ts",
           "target": "date.ts"
         },
@@ -25471,10 +25467,6 @@
         {
           "src": "crates/nsh-component/src/components/icons.ts",
           "target": "icons.ts"
-        },
-        {
-          "src": "crates/nsh-component/src/components/input.tsx",
-          "target": "input.tsx"
         },
         {
           "src": "crates/nsh-component/src/components/time_field.tsx",
