@@ -25369,6 +25369,14 @@
       ],
       "tabs": [
         {
+          "src": "crates/nsh-component/src/components/icon.tsx",
+          "target": "icon.tsx"
+        },
+        {
+          "src": "crates/nsh-component/src/components/icons.ts",
+          "target": "icons.ts"
+        },
+        {
           "src": "crates/nsh-component/src/components/tabs.tsx",
           "target": "tabs.tsx"
         },
