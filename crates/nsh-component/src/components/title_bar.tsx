@@ -6,11 +6,20 @@ import { Text, View } from 'nsh';
 import { isAvailable, Menu, titleBar, Window } from 'nsh/desktop';
 import { FONT_SIZE_SM, SPACING_SM, tokens } from './theme';
 
+export interface TitleBarMenuItem {
+  label: string;
+  onPress?: () => void;
+  active?: boolean;
+}
+
 export interface TitleBarProps {
   title?: string;
   leading?: JSX.Element;
   trailing?: JSX.Element;
+  /** Draw the application menu bar. */
   menu?: boolean;
+  /** Menu entries for the bar; defaults to File / Edit / View. */
+  menuItems?: TitleBarMenuItem[];
   height?: number;
   styled?: boolean;
   showControls?: boolean;
@@ -28,6 +37,16 @@ export function TitleBar(props: TitleBarProps) {
     if (!isAvailable) return { height: 0, left: 0, right: 0 };
     return titleBar();
   };
+  const menuItems = () => {
+    const base = props.menuItems ?? [
+      { label: 'File' },
+      { label: 'Edit' },
+      { label: 'View' },
+    ];
+    if (!props.title) return base;
+    // With a menu bar the title is the active application entry, as in macOS.
+    return [...base, { label: props.title, active: true }];
+  };
   return (
     <View
       testID={props.testID}
@@ -38,8 +57,8 @@ export function TitleBar(props: TitleBarProps) {
           flexDirection: 'row',
           alignItems: 'center',
           gap: SPACING_SM,
-          paddingLeft: isAvailable ? insets().left + 8 : 12,
-          paddingRight: isAvailable ? insets().right + 8 : 12,
+          paddingLeft: isAvailable ? insets().left + 10 : 12,
+          paddingRight: isAvailable ? insets().right + 10 : 12,
           borderBottomWidth: props.styled === false ? 0 : 1,
           borderBottomColor: tokens.border,
           backgroundColor: tokens.background,
@@ -48,39 +67,57 @@ export function TitleBar(props: TitleBarProps) {
       ]}
     >
       {props.showControls ? (
-        <View style={{ flexDirection: 'row', gap: 6 }}>
-          <View style={{ width: 12, height: 12, borderRadius: 6, backgroundColor: tokens.danger }} />
-          <View style={{ width: 12, height: 12, borderRadius: 6, backgroundColor: tokens.warning }} />
-          <View style={{ width: 12, height: 12, borderRadius: 6, backgroundColor: tokens.success }} />
+        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 7, height: 28 }}>
+          <View style={{ width: 11, height: 11, borderRadius: 6, backgroundColor: tokens.danger }} />
+          <View style={{ width: 11, height: 11, borderRadius: 6, backgroundColor: tokens.warning }} />
+          <View style={{ width: 11, height: 11, borderRadius: 6, backgroundColor: tokens.success }} />
         </View>
       ) : null}
       {props.leading}
-      {props.menu ? (
-        <View style={{ flexDirection: 'row', gap: 10 }}>
-          <Text style={{ fontSize: FONT_SIZE_SM, color: tokens.mutedForeground }}>File</Text>
-          <Text style={{ fontSize: FONT_SIZE_SM, color: tokens.mutedForeground }}>Edit</Text>
-          <Text style={{ fontSize: FONT_SIZE_SM, color: tokens.mutedForeground }}>View</Text>
-        </View>
-      ) : null}
-      <Text style={{ flex: 1, fontSize: FONT_SIZE_SM, fontWeight: '500', color: tokens.foreground }}>
-        {props.title ?? ''}
-      </Text>
+      {props.menu ? <TitleBarMenu items={menuItems()} /> : null}
+      {!props.menu ? (
+        <Text style={{ flex: 1, fontSize: FONT_SIZE_SM, fontWeight: '500', color: tokens.foreground }} numberOfLines={1}>
+          {props.title ?? ''}
+        </Text>
+      ) : (
+        <View style={{ flex: 1 }} />
+      )}
       {props.children}
-      {props.trailing}
+      {props.trailing ? <View style={{ alignItems: 'center' }}>{props.trailing}</View> : null}
     </View>
   );
 }
 
-export function TitleBarMenu(props: { items?: { label: string; onPress?: () => void }[] }) {
+export function TitleBarMenu(props: { items?: TitleBarMenuItem[] }) {
   return (
-    <View style={{ flexDirection: 'row', gap: 10 }}>
+    <View style={{ flexDirection: 'row', alignItems: 'center', gap: 2, height: 28 }}>
       {(props.items ?? []).map((item) => (
-        <Text
+        <View
+          accessibilityRole={item.onPress ? 'button' : undefined}
+          accessibilityLabel={item.label}
           onPress={item.onPress}
-          style={{ fontSize: FONT_SIZE_SM, color: tokens.mutedForeground }}
+          activeOpacity={0.8}
+          class="transition-colors duration-150 hover:bg-black/[0.05] dark:hover:bg-white/[0.06]"
+          style={{
+            height: 26,
+            paddingHorizontal: 8,
+            alignItems: 'center',
+            justifyContent: 'center',
+            borderRadius: 5,
+            backgroundColor: item.active ? tokens.accent : 'transparent',
+          }}
         >
-          {item.label}
-        </Text>
+          <Text
+            style={{
+              fontSize: 11,
+              lineHeight: 16,
+              fontWeight: item.active ? '600' : '400',
+              color: item.active ? tokens.foreground : tokens.mutedForeground,
+            }}
+          >
+            {item.label}
+          </Text>
+        </View>
       ))}
     </View>
   );
