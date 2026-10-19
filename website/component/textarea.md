@@ -15,6 +15,11 @@ code.
 use gpui_kit::component::input::{Textarea, TextareaState};
 ```
 
+## Usage
+
+A textarea is a labelled multi-line field; keep the validation message and
+description with the field.
+
 ## Basic usage
 
 ```rust
