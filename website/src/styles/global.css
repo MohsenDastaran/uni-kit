@@ -1714,16 +1714,16 @@ html[lang^="ja"] .sidebar-subgroup-title {
   /* Component pages carry tables, galleries and code samples; give the article
      more of the row than the guide pages need, and buy back the difference from
      a slightly narrower outline column. */
-  width: min(100% - 3rem, 1720px);
+  width: min(100% - 3rem, 1560px);
 }
 
 .docs-main--component {
-  max-width: 1080px;
-  padding: 3rem 2rem 4rem;
+  max-width: 960px;
+  padding: 3rem 2.5rem 4rem;
 }
 
 .docs-layout--component .toc {
-  width: 320px;
+  width: 340px;
 }
 
 /* ====================================================================
