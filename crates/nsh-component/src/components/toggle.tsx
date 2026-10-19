@@ -2,6 +2,7 @@
 import type { JSX, StyleProp, ViewStyle } from 'nsh';
 import { signal, View } from 'nsh';
 import { Button, type ButtonVariant } from './button';
+import { type IconName } from './icons';
 import { type ControlSize, tokens } from './theme';
 import { SPACING_XS } from './theme';
 
@@ -14,6 +15,9 @@ export interface ToggleProps {
   disabled?: boolean;
   children?: JSX.Element;
   label?: string;
+  /** An icon-only toggle; pair it with an accessibility label. */
+  icon?: IconName;
+  accessibilityLabel?: string;
   style?: StyleProp<ViewStyle>;
   testID?: string;
 }
@@ -24,6 +28,8 @@ export function Toggle(props: ToggleProps) {
   return (
     <Button
       label={props.label}
+      icon={props.icon}
+      accessibilityLabel={props.accessibilityLabel ?? props.label}
       variant={props.variant ?? 'default'}
       size={props.size}
       selected={pressed()}
