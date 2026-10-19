@@ -24523,6 +24523,10 @@
           "target": "input_group.tsx"
         },
         {
+          "src": "crates/nsh-component/src/components/select.tsx",
+          "target": "select.tsx"
+        },
+        {
           "src": "crates/nsh-component/src/components/theme.ts",
           "target": "theme.ts"
         },

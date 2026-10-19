@@ -22,6 +22,8 @@ export interface SelectProps {
   disabled?: boolean;
   cleanable?: boolean;
   searchable?: boolean;
+  /** Drop the frame when the Select sits inside an InputGroup. */
+  appearance?: boolean;
   emptyText?: string;
   onChange?: (value: string) => void;
   style?: StyleProp<ViewStyle>;
@@ -59,14 +61,14 @@ export function Select(props: SelectProps) {
         activeOpacity={0.9}
         style={{
           height: inputHeight(props.size ?? 'medium'),
-          paddingHorizontal: 10,
+          paddingHorizontal: props.appearance === false ? 0 : 10,
           flexDirection: 'row',
           alignItems: 'center',
           gap: 8,
           borderRadius: RADIUS_MD,
-          borderWidth: 1,
+          borderWidth: props.appearance === false ? 0 : 1,
           borderColor: open() ? tokens.ring : tokens.input,
-          backgroundColor: tokens.background,
+          backgroundColor: props.appearance === false ? 'transparent' : tokens.background,
           opacity: props.disabled ? 0.5 : 1,
         }}
       >

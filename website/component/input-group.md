@@ -11,6 +11,13 @@ textarea inside one frame. For a simple prefix or suffix, use [Input](./input.md
 The examples below define views for an initialized uni-kit application. See
 [Getting Started](/starter) for application setup.
 
+## Usage
+
+An input group wraps one input or textarea in a single frame so the text,
+selector or action at either edge reads as part of the field. Use the group when
+the addon changes the meaning of the value, such as a currency, country code or
+category; a plain prefix with no control belongs in [Input](./input.md).
+
 ## Input with a clear button
 
 Create an `InputState` once in your view and pass it to `InputGroupInput`.
