@@ -24093,6 +24093,10 @@
       ],
       "command": [
         {
+          "src": "crates/nsh-component/src/components/avatar.tsx",
+          "target": "avatar.tsx"
+        },
+        {
           "src": "crates/nsh-component/src/components/command.tsx",
           "target": "command.tsx"
         },
