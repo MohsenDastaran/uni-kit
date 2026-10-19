@@ -22,18 +22,24 @@ const card = (children: any) => (
 export function Demo() {
   // section: Usage
   const usage = (
-    <View style={{ width: 420, maxWidth: "100%", gap: 9 }}>
-      {[100, 100, 65].map((width) => <ShimmerBlock width={`${width}%`} height={11} />)}
+    <View style={{ width: 420, maxWidth: "100%", gap: 6 }}>
+      <ShimmerText>Preparing your workspace…</ShimmerText>
+      <ShimmerText duration={1100}>Loading recent activity…</ShimmerText>
+      <ShimmerText duration={1700}>Almost there.</ShimmerText>
     </View>
   );
   // section: Basic usage
   const basic = <ShimmerText>Loading the catalog…</ShimmerText>;
   // section: Duration
   const duration = (
-    <View style={{ width: 420, maxWidth: "100%", gap: 10 }}>
-      {[700, 1400, 2200].map((ms) => (
-        <View style={{ gap: 4 }}>
-          <ShimmerBlock width="100%" height={10} duration={ms} />
+    <View style={{ width: 420, maxWidth: "100%", gap: 8 }}>
+      {[
+        [700, "A quick sweep"],
+        [1400, "The default pace"],
+        [2200, "A slow, quiet sweep"],
+      ].map(([ms, label]) => (
+        <View style={{ gap: 2 }}>
+          <ShimmerText duration={ms as number}>{label as string}</ShimmerText>
           <Text style={{ fontSize: 9, color: tokens.mutedForeground }}>{ms}ms</Text>
         </View>
       ))}
@@ -41,62 +47,59 @@ export function Demo() {
   );
   // section: Highlight color
   const highlight = (
-    <View style={{ width: 420, maxWidth: "100%", gap: 9 }}>
-      <ShimmerBlock width="100%" height={12} highlightColor={tokens.primary} />
-      <ShimmerBlock width="100%" height={12} highlightColor={tokens.success} />
-      <ShimmerBlock width="100%" height={12} highlightColor={tokens.warning} />
+    <View style={{ width: 420, maxWidth: "100%", gap: 7 }}>
+      <ShimmerText highlightColor={tokens.primary}>Syncing with the primary accent…</ShimmerText>
+      <ShimmerText highlightColor={tokens.success}>Search index is ready.</ShimmerText>
+      <ShimmerText highlightColor={tokens.warning}>Reviewing pending changes…</ShimmerText>
     </View>
   );
   // section: Spread
   const spread = (
-    <View style={{ width: 420, maxWidth: "100%", gap: 9 }}>
-      <ShimmerBlock width="100%" height={12} spread={48} />
-      <ShimmerBlock width="100%" height={12} spread={140} />
-      <ShimmerBlock width="100%" height={12} spread={260} />
+    <View style={{ width: 420, maxWidth: "100%", gap: 7 }}>
+      <ShimmerText spread={0.08}>A narrow highlight band</ShimmerText>
+      <ShimmerText spread={0.18}>The default highlight band</ShimmerText>
+      <ShimmerText spread={0.34}>A wide highlight band</ShimmerText>
     </View>
   );
   // section: Direction and play-once
   const direction = (
-    <View style={{ width: 420, maxWidth: "100%", gap: 9 }}>
-      <ShimmerBlock width="100%" height={12} direction="right" />
-      <ShimmerBlock width="100%" height={12} playOnce />
+    <View style={{ width: 420, maxWidth: "100%", gap: 7 }}>
+      <ShimmerText direction="right">Sweeping in from the right</ShimmerText>
+      <ShimmerText direction="left">Sweeping in from the left</ShimmerText>
+      <ShimmerText playOnce>One sweep, then the text rests</ShimmerText>
     </View>
   );
   // section: Compose with Marker
-  const marker = <Marker loading><Text style={{ fontSize: 13, color: tokens.mutedForeground }}>Searching…</Text></Marker>;
+  const marker = <Marker loading><ShimmerText>Searching the catalog…</ShimmerText></Marker>;
   // section: Compose with Attachment
   const attachment = (
-    <Shimmer style={{ width: 320, maxWidth: "100%" }}>
-      <View style={{ width: 320, maxWidth: "100%", padding: 10, borderWidth: 1, borderColor: tokens.border, borderRadius: 9, flexDirection: "row", alignItems: "center", gap: 10, backgroundColor: tokens.popover }}>
+    <View style={{ width: 320, maxWidth: "100%", padding: 10, borderWidth: 1, borderColor: tokens.border, borderRadius: 9, flexDirection: "row", alignItems: "center", gap: 10, backgroundColor: tokens.popover }}>
         <View style={{ width: 34, height: 34, borderRadius: 7, alignItems: "center", justifyContent: "center", backgroundColor: tokens.muted }}>
           <Icon name="file-text" size={15} color={tokens.mutedForeground} />
         </View>
-        <View style={{ flex: 1, gap: 5 }}>
-          {bar("70%")}
-          {bar("45%", 8)}
+        <View style={{ flex: 1, gap: 3 }}>
+          <ShimmerText>report.pdf</ShimmerText>
+          <ShimmerText duration={1100} style={{ fontSize: 9 }}>Uploading · 2.4 MB</ShimmerText>
         </View>
-        <View style={{ width: 20, height: 20, borderRadius: 10, backgroundColor: tokens.muted }} />
-      </View>
-    </Shimmer>
+      <View style={{ width: 20, height: 20, borderRadius: 10, backgroundColor: tokens.muted }} />
+    </View>
   );
   // section: Use with messages and bubbles
   const bubble = (
-    <Shimmer style={{ width: 360, maxWidth: "100%" }}>
-      <View style={{ width: 360, maxWidth: "100%", gap: 8 }}>
+    <View style={{ width: 360, maxWidth: "100%", gap: 8 }}>
         <View style={{ flexDirection: "row", alignItems: "flex-start", gap: 8 }}>
           {circle(30)}
           <View style={{ flex: 1, gap: 5, padding: 10, borderRadius: 9, backgroundColor: tokens.muted }}>
-            {bar("30%", 7)}
-            {bar("86%", 9)}
-            {bar("62%", 9)}
+            <ShimmerText>Loading the conversation…</ShimmerText>
+            <ShimmerText duration={1100}>Fetching the latest messages…</ShimmerText>
+            <ShimmerText duration={1800}>Preparing attachments…</ShimmerText>
           </View>
         </View>
-        <View style={{ alignSelf: "flex-end", width: 180, padding: 10, borderRadius: 9, backgroundColor: tokens.muted, gap: 5 }}>
-          {bar("70%", 8)}
-          {bar("40%", 8)}
-        </View>
+      <View style={{ alignSelf: "flex-end", width: 210, padding: 10, borderRadius: 9, backgroundColor: tokens.muted, gap: 4 }}>
+        <ShimmerText duration={900}>Sending your reply…</ShimmerText>
+        <ShimmerText duration={1500} style={{ fontSize: 9 }}>Waiting for the workspace…</ShimmerText>
       </View>
-    </Shimmer>
+    </View>
   );
   // section: Styling, theme, and reduced motion
   const styling = (
