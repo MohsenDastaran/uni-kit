@@ -86,12 +86,12 @@ NSH-only sections under Usage.
 | `calendar` | `calendar.tsx` | yes | yes | yes | 526 | yes | yes |
 | `card` | `card.tsx` | yes | yes | yes | 218 | yes | yes |
 | `carousel` | `carousel.tsx` | yes | yes | yes | 243 | yes | yes |
-| `chart` | `chart.tsx` | yes | yes | yes | 576 | yes | yes |
+| `chart` | `chart.tsx` | yes | yes | yes | 590 | yes | yes |
 | `checkbox` | `checkbox.tsx` | yes | yes | yes | 211 | yes | yes |
 | `clipboard` | `clipboard.tsx` | yes | yes | yes | 49 | yes | yes |
 | `collapsible` | `collapsible.tsx` | yes | yes | yes | 224 | yes | yes |
 | `color-picker` | `color_picker.tsx` | yes | yes | yes | 77 | yes | yes |
-| `combobox` | `combobox.tsx` | yes | yes | yes | 104 | yes | yes |
+| `combobox` | `combobox.tsx` | yes | yes | yes | 328 | yes | yes |
 | `command` | `command.tsx` | yes | yes | yes | 112 | yes | yes |
 | `data-table` | `data_table.tsx` | yes | yes | yes | 59 | yes | yes |
 | `date-picker` | `date_picker.tsx` | yes | yes | yes | 78 | yes | yes |
