@@ -11,6 +11,10 @@ export interface ProgressProps {
   size?: ControlSize;
   status?: 'default' | 'info' | 'success' | 'warning' | 'danger';
   label?: string;
+  /** Supporting copy under the bar. */
+  description?: string;
+  /** A round thumb at the filled edge. */
+  thumb?: boolean;
   showValue?: boolean;
   circle?: boolean;
   innerContent?: JSX.Element;
@@ -93,9 +97,10 @@ export function Progress(props: ProgressProps) {
         accessibilityValue={{ min: 0, max: props.max ?? 100, now: props.value ?? 0 }}
         style={{
           height: heightOf(size()),
+          position: 'relative',
           borderRadius: RADIUS_MD,
           backgroundColor: tokens.muted,
-          overflow: 'hidden',
+          overflow: props.thumb ? 'visible' : 'hidden',
         }}
       >
         <View
@@ -106,7 +111,27 @@ export function Progress(props: ProgressProps) {
             backgroundColor: color(),
           }}
         />
+        {props.thumb ? (
+          <View
+            style={{
+              position: 'absolute',
+              top: '50%',
+              left: `${fraction() * 100}%`,
+              width: heightOf(size()) + 6,
+              height: heightOf(size()) + 6,
+              marginTop: -(heightOf(size()) + 6) / 2,
+              marginLeft: -(heightOf(size()) + 6) / 2,
+              borderRadius: 999,
+              borderWidth: 2,
+              borderColor: tokens.background,
+              backgroundColor: color(),
+            }}
+          />
+        ) : null}
       </View>
+      {props.description ? (
+        <Text style={{ fontSize: 10, lineHeight: 14, color: tokens.mutedForeground }}>{props.description}</Text>
+      ) : null}
     </View>
   );
 }

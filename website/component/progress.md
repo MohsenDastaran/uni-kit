@@ -13,7 +13,7 @@ Progress components visually represent the completion percentage of a task. The 
 Both components feature smooth transition animations when the value changes, a loading (indeterminate) animation mode, customizable colors, and automatic styling that adapts to the current theme.
 
 ## Usage
-### Progress
+### Progress basics
 
 ```rust
 struct FileUpload {
@@ -113,7 +113,7 @@ impl Install {
 ### Progress circle
 The live preview above is this sample.
 
-## Progress
+## Progress API
 
 ```rust
 use gpui_kit::component::progress::Progress;
