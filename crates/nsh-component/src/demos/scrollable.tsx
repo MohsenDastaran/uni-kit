@@ -48,8 +48,27 @@ const messages = [
   ["Alex", "The tag is cut and the URL is posted."],
 ];
 
+const bothPane = (width: number, height: number, contentWidth: number, rowCount: number) => (
+  <Scrollable horizontal variant="card" style={{ width, height }}>
+    <View style={{ width: contentWidth }}>
+      <Scrollable padding={6} style={{ width: contentWidth, height }}>
+        <View style={{ gap: 8 }}>
+          {Array.from({ length: rowCount }, (_, row) => (
+            <View style={{ flexDirection: "row", gap: 8 }}>
+              {Array.from({ length: 8 }, (_, column) => (
+                <View style={{ width: 120, height: 64, borderRadius: 8, borderWidth: 1, borderColor: tokens.border, backgroundColor: tokens.muted, alignItems: "center", justifyContent: "center" }}>
+                  <Text style={{ fontSize: 11, color: tokens.foreground }}>{row + 1},{column + 1}</Text>
+                </View>
+              ))}
+            </View>
+          ))}
+        </View>
+      </Scrollable>
+    </View>
+  </Scrollable>
+);
+
 export function Demo() {
-  const usageY = signal(0);
   const virtualY = signal(0);
   const first = () => Math.floor(virtualY() / (ROW_HEIGHT + ROW_GAP)) + 1;
   const visible = Math.ceil(160 / (ROW_HEIGHT + ROW_GAP));
@@ -72,17 +91,7 @@ export function Demo() {
       {cards(10)}
     </Scrollable>
   );
-  const both = (
-    <Scrollable variant="card" padding={6} style={{ width: 260, height: 180 }} onScroll={(event) => usageY.set(event.y)}>
-      <View style={{ gap: 8 }}>
-        {[0, 1, 2, 3, 4].map((row) => (
-          <Scrollable horizontal style={{ height: 64 }} indicator={false}>
-            {cards(8)}
-          </Scrollable>
-        ))}
-      </View>
-    </Scrollable>
-  );
+  const both = bothPane(260, 180, 720, 4);
 
   // section: Usage
   const usage = (
@@ -92,7 +101,7 @@ export function Demo() {
         {sample("Horizontal", horizontal)}
         {sample("Both", both)}
       </Row>
-      <Text style={{ fontSize: 10, color: tokens.mutedForeground }}>Vertical area at y {Math.round(usageY())}; the nested rows scroll sideways.</Text>
+      <Text style={{ fontSize: 10, color: tokens.mutedForeground }}>One horizontal bar moves every row; the inner area scrolls vertically.</Text>
     </View>
   );
 
@@ -124,15 +133,7 @@ export function Demo() {
   // section: Both Directions
   const bothStory = (
     <View style={{ width: 460, maxWidth: "100%" }}>
-      <Scrollable variant="card" padding={8} style={{ height: 220 }}>
-        <View style={{ gap: 8 }}>
-          {[1, 2, 3, 4, 5, 6].map((line) => (
-            <Scrollable horizontal style={{ height: 72 }} indicator={false}>
-              {cards(8)}
-            </Scrollable>
-          ))}
-        </View>
-      </Scrollable>
+      {bothPane(460, 220, 1080, 6)}
     </View>
   );
 
