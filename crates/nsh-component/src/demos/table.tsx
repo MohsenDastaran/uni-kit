@@ -28,15 +28,15 @@ export function Demo() {
     return <Badge label={value} variant={tone as never} />;
   };
 
-  const member = (name: string, role: string, status: string) => (
-    <View style={{ flexDirection: "row", alignItems: "center", gap: 7 }}>
+  const member = (name: string, role: string, status?: string) => (
+    <View style={{ flexDirection: "row", alignItems: "center", gap: 7, minWidth: 0 }}>
       <Avatar name={name} size="xs" />
-      <View style={{ gap: 1 }}>
-        <Text style={{ fontSize: 11, fontWeight: "500", color: tokens.foreground }}>{name}</Text>
-        <Text style={{ fontSize: 9, color: tokens.mutedForeground }}>{role}</Text>
+      <View style={{ flexShrink: 1, gap: 1 }}>
+        <Text style={{ fontSize: 11, fontWeight: "500", color: tokens.foreground }} numberOfLines={1}>{name}</Text>
+        <Text style={{ fontSize: 9, color: tokens.mutedForeground }} numberOfLines={1}>{role}</Text>
       </View>
-      <View style={{ flex: 1 }} />
-      {statusBadge(status)}
+      {status ? <View style={{ flex: 1 }} /> : null}
+      {status ? statusBadge(status) : null}
     </View>
   );
 
@@ -144,8 +144,9 @@ export function Demo() {
 
   // section: Team members table
   const teamColumns: TableColumn[] = [
-    { key: "member", label: "Member", render: (_, row) => member(row.name, row.email, row.status) },
-    { key: "role", label: "Role", render: (value) => <Badge label={value} variant="secondary" /> },
+    { key: "member", label: "Member", width: 220, render: (_, row) => member(row.name, row.email) },
+    { key: "role", label: "Role", width: 90, render: (value) => <Badge label={value} variant="secondary" /> },
+    { key: "status", label: "Status", width: 74, render: statusBadge },
   ];
   const team = (
     <Table
@@ -166,6 +167,7 @@ export function Demo() {
     {
       key: "project",
       label: "Project",
+      width: 230,
       render: (_, row) => (
         <View style={{ flexDirection: "row", alignItems: "center", gap: 6 }}>
           <Icon name="folder" size={13} color={tokens.mutedForeground} />
@@ -176,10 +178,11 @@ export function Demo() {
         </View>
       ),
     },
-    { key: "status", label: "Status", render: (value) => <Badge label={value} variant={value === "Completed" ? "success" : value === "Review" ? "warning" : "info"} /> },
+    { key: "status", label: "Status", width: 100, render: (value) => <Badge label={value} variant={value === "Completed" ? "success" : value === "Review" ? "warning" : "info"} /> },
     {
       key: "team",
       label: "Team",
+      width: 120,
       render: (_, row) => (
         <View style={{ flexDirection: "row", alignItems: "center", gap: -4 }}>
           {row.members.split(",").map((name) => (
@@ -191,7 +194,7 @@ export function Demo() {
         </View>
       ),
     },
-    { key: "due", label: "Due", align: "end" },
+    { key: "due", label: "Due", width: 62, align: "end" },
   ];
   const projects = (
     <Table
@@ -208,10 +211,10 @@ export function Demo() {
 
   // section: Activity log table
   const activityColumns: TableColumn[] = [
-    { key: "user", label: "User", render: (_, row) => member(row.user, "Member", row.status) },
-    { key: "action", label: "Action", render: (value) => <Badge label={value} variant="outline" /> },
-    { key: "target", label: "Target", render: (value) => <Text style={{ fontSize: 10, fontFamily: "monospace", color: tokens.mutedForeground }}>{value}</Text> },
-    { key: "time", label: "Time", align: "end" },
+    { key: "user", label: "User", width: 170, render: (_, row) => member(row.user, "Member") },
+    { key: "action", label: "Action", width: 110, render: (value) => <Badge label={value} variant="outline" /> },
+    { key: "target", label: "Target", width: 150, render: (value) => <Text style={{ fontSize: 10, fontFamily: "monospace", color: tokens.mutedForeground }} numberOfLines={1}>{value}</Text> },
+    { key: "time", label: "Time", width: 100, align: "end" },
   ];
   const activity = (
     <Table
@@ -251,11 +254,11 @@ export function Demo() {
 
   // section: Inventory table
   const inventoryColumns: TableColumn[] = [
-    { key: "product", label: "Product", render: (_, row) => <View style={{ flexDirection: "row", alignItems: "center", gap: 6 }}><View style={{ width: 22, height: 22, borderRadius: 6, backgroundColor: tokens.muted, alignItems: "center", justifyContent: "center" }}><Icon name="package" size={12} color={tokens.mutedForeground} /></View><View style={{ gap: 1 }}><Text style={{ fontSize: 11, fontWeight: "500", color: tokens.foreground }}>{row.product}</Text><Text style={{ fontSize: 9, color: tokens.mutedForeground }}>{row.sku}</Text></View></View> },
-    { key: "category", label: "Category" },
-    { key: "stock", label: "Stock", render: (_, row) => <View style={{ flexDirection: "row", alignItems: "center", gap: 4 }}>{statusBadge(row.stock)}{row.count ? <Text style={{ fontSize: 9, color: tokens.mutedForeground }}>({row.count})</Text> : null}</View> },
-    { key: "price", label: "Price", align: "end" },
-    { key: "actions", label: "", align: "end", render: () => <Button icon="ellipsis" size="xsmall" variant="ghost" accessibilityLabel="Actions" onPress={() => {}} /> },
+    { key: "product", label: "Product", width: 210, render: (_, row) => <View style={{ flexDirection: "row", alignItems: "center", gap: 6, minWidth: 0 }}><View style={{ width: 22, height: 22, borderRadius: 6, backgroundColor: tokens.muted, alignItems: "center", justifyContent: "center" }}><Icon name="package" size={12} color={tokens.mutedForeground} /></View><View style={{ gap: 1 }}><Text style={{ fontSize: 11, fontWeight: "500", color: tokens.foreground }}>{row.product}</Text><Text style={{ fontSize: 9, color: tokens.mutedForeground }}>{row.sku}</Text></View></View> },
+    { key: "category", label: "Category", width: 84 },
+    { key: "stock", label: "Stock", width: 112, render: (_, row) => <View style={{ flexDirection: "row", alignItems: "center", gap: 4 }}>{statusBadge(row.stock)}{row.count ? <Text style={{ fontSize: 9, color: tokens.mutedForeground }}>({row.count})</Text> : null}</View> },
+    { key: "price", label: "Price", width: 76, align: "end" },
+    { key: "actions", label: "", width: 28, align: "end", render: () => <Button icon="ellipsis" size="xsmall" variant="ghost" accessibilityLabel="Actions" onPress={() => {}} /> },
   ];
   const inventory = (
     <Table
@@ -273,11 +276,11 @@ export function Demo() {
 
   // section: API keys table
   const keyColumns: TableColumn[] = [
-    { key: "name", label: "Name", render: (_, row) => <View style={{ gap: 1 }}><Text style={{ fontSize: 11, fontWeight: "500", color: tokens.foreground }}>{row.name}</Text><Text style={{ fontSize: 9, color: tokens.mutedForeground }}>{row.used}</Text></View> },
-    { key: "key", label: "Key", render: (value) => <Text style={{ fontSize: 10, fontFamily: "monospace", color: tokens.mutedForeground }}>{value}</Text> },
-    { key: "permissions", label: "Permissions", render: (_, row) => <View style={{ flexDirection: "row", gap: 3 }}>{row.permissions.split(",").map((item) => <Badge label={item} variant="outline" />)}</View> },
-    { key: "status", label: "Status", render: statusBadge },
-    { key: "actions", label: "", align: "end", render: () => <View style={{ flexDirection: "row", justifyContent: "flex-end", gap: 2 }}><Button icon="copy" size="xsmall" variant="ghost" accessibilityLabel="Copy key" onPress={() => {}} /><Button icon="refresh-cw" size="xsmall" variant="ghost" accessibilityLabel="Regenerate key" onPress={() => {}} /></View> },
+    { key: "name", label: "Name", width: 170, render: (_, row) => <View style={{ gap: 1 }}><Text style={{ fontSize: 11, fontWeight: "500", color: tokens.foreground }}>{row.name}</Text><Text style={{ fontSize: 9, color: tokens.mutedForeground }}>{row.used}</Text></View> },
+    { key: "key", label: "Key", width: 150, render: (value) => <Text style={{ fontSize: 10, fontFamily: "monospace", color: tokens.mutedForeground }}>{value}</Text> },
+    { key: "permissions", label: "Permissions", width: 150, render: (_, row) => <View style={{ flexDirection: "row", gap: 3 }}>{row.permissions.split(",").map((item) => <Badge label={item} variant="outline" />)}</View> },
+    { key: "status", label: "Status", width: 70, render: statusBadge },
+    { key: "actions", label: "", width: 40, align: "end", render: () => <View style={{ flexDirection: "row", justifyContent: "flex-end", gap: 2 }}><Button icon="copy" size="xsmall" variant="ghost" accessibilityLabel="Copy key" onPress={() => {}} /><Button icon="refresh-cw" size="xsmall" variant="ghost" accessibilityLabel="Regenerate key" onPress={() => {}} /></View> },
   ];
   const keys = (
     <Table
@@ -289,17 +292,17 @@ export function Demo() {
         { name: "Legacy Integration", used: "Last used: 30 days ago", key: "sk_old_••••••••7a5f", permissions: "read,write", status: "Expired" },
       ]}
       card
-      style={{ maxWidth: 620 }}
+      style={{ maxWidth: 680 }}
     />
   );
 
   // section: Files table
   const fileColumns: TableColumn[] = [
-    { key: "name", label: "Name", render: (_, row) => <View style={{ flexDirection: "row", alignItems: "center", gap: 6 }}><Icon name={row.kind === "folder" ? "folder" : "file-text"} size={13} color={tokens.mutedForeground} /><Text style={{ fontSize: 11, color: tokens.foreground }}>{row.name}</Text></View> },
-    { key: "owner", label: "Owner", render: (value) => <View style={{ flexDirection: "row", alignItems: "center", gap: 4 }}><Avatar name={value} size="xs" /><Text style={{ fontSize: 10, color: tokens.foreground }}>{value}</Text></View> },
-    { key: "sharing", label: "Sharing", render: (value) => <Badge label={value} variant="secondary" /> },
-    { key: "size", label: "Size", align: "end" },
-    { key: "modified", label: "Modified", align: "end" },
+    { key: "name", label: "Name", width: 230, render: (_, row) => <View style={{ flexDirection: "row", alignItems: "center", gap: 6 }}><Icon name={row.kind === "folder" ? "folder" : "file-text"} size={13} color={tokens.mutedForeground} /><Text style={{ fontSize: 11, color: tokens.foreground }}>{row.name}</Text></View> },
+    { key: "owner", label: "Owner", width: 130, render: (value) => <View style={{ flexDirection: "row", alignItems: "center", gap: 4 }}><Avatar name={value} size="xs" /><Text style={{ fontSize: 10, color: tokens.foreground }}>{value}</Text></View> },
+    { key: "sharing", label: "Sharing", width: 76, render: (value) => <Badge label={value} variant="secondary" /> },
+    { key: "size", label: "Size", width: 70, align: "end" },
+    { key: "modified", label: "Modified", width: 100, align: "end" },
   ];
   const files = (
     <Table
@@ -311,16 +314,16 @@ export function Demo() {
         { kind: "folder", name: "App Screenshots", owner: "David Kim", sharing: "Team", size: "48.2 MB", modified: "1 week ago" },
       ]}
       card
-      style={{ maxWidth: 620 }}
+      style={{ maxWidth: 700 }}
     />
   );
 
   // section: Issues table
   const issueColumns: TableColumn[] = [
-    { key: "id", label: "ID", render: (value) => <Text style={{ fontSize: 9, fontFamily: "monospace", color: tokens.mutedForeground }}>{value}</Text> },
-    { key: "issue", label: "Issue", render: (_, row) => <View style={{ gap: 1 }}><Text style={{ fontSize: 11, fontWeight: "500", color: tokens.foreground }}>{row.issue}</Text><Badge label={row.label} variant="outline" /></View> },
-    { key: "assignee", label: "Assignee", render: (value) => <View style={{ flexDirection: "row", alignItems: "center", gap: 4 }}><Avatar name={value} size="xs" /><Text style={{ fontSize: 10, color: tokens.foreground }}>{value}</Text></View> },
-    { key: "status", label: "Status", render: statusBadge },
+    { key: "id", label: "ID", width: 56, render: (value) => <Text style={{ fontSize: 9, fontFamily: "monospace", color: tokens.mutedForeground }}>{value}</Text> },
+    { key: "issue", label: "Issue", width: 220, render: (_, row) => <View style={{ gap: 1 }}><Text style={{ fontSize: 11, fontWeight: "500", color: tokens.foreground }}>{row.issue}</Text><Badge label={row.label} variant="outline" /></View> },
+    { key: "assignee", label: "Assignee", width: 120, render: (value) => <View style={{ flexDirection: "row", alignItems: "center", gap: 4 }}><Avatar name={value} size="xs" /><Text style={{ fontSize: 10, color: tokens.foreground }}>{value}</Text></View> },
+    { key: "status", label: "Status", width: 90, render: statusBadge },
   ];
   const issues = (
     <Table

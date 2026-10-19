@@ -47,6 +47,13 @@ export function Table(props: TableProps) {
     fontSize: FONT_SIZE_SM,
     color: tokens.foreground,
   });
+  // A fixed column keeps its width; the rest share the remainder. `minWidth: 0`
+  // and clipping are what stop a badge or avatar row from painting over its
+  // neighbour when the content is wider than the column.
+  const layout = (column: TableColumn) =>
+    column.width !== undefined
+      ? { flexGrow: 0, flexShrink: 0, flexBasis: column.width, width: column.width, minWidth: 0 }
+      : { flex: 1, minWidth: 0 };
   return (
     <View
       testID={props.testID}
@@ -76,7 +83,7 @@ export function Table(props: TableProps) {
             accessibilityRole={column.sortable ? 'button' : undefined}
             accessibilityLabel={column.sortable ? `Sort by ${column.label}` : undefined}
             onPress={column.sortable ? () => props.onSort?.(column.key) : undefined}
-            style={{ flex: 1, minWidth: 0, width: column.width, flexDirection: 'row', alignItems: 'center', gap: 2 }}
+            style={{ ...layout(column), flexDirection: 'row', alignItems: 'center', gap: 2, overflow: 'hidden' }}
           >
             <Text
               style={{
@@ -85,7 +92,6 @@ export function Table(props: TableProps) {
                 fontWeight: '500',
                 fontSize: 11,
                 color: tokens.mutedForeground,
-                width: column.width,
               }}
             >
               {column.label}
@@ -126,7 +132,7 @@ export function Table(props: TableProps) {
               }}
             >
               {props.columns.map((column) => (
-                <View style={{ flex: 1, minWidth: 0, width: column.width }}>
+                <View style={{ ...layout(column), overflow: 'hidden' }}>
                   {column.render ? (
                     column.render(row[column.key] ?? '', row, index)
                   ) : (
@@ -153,7 +159,7 @@ export function Table(props: TableProps) {
           }}
         >
           {props.columns.map((column) => (
-            <Text style={{ ...cellStyle(column.align), width: column.width, fontWeight: '600' }}>
+            <Text style={{ ...cellStyle(column.align), ...layout(column), fontWeight: '600' }}>
               {props.footer?.[column.key] ?? ''}
             </Text>
           ))}
