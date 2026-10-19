@@ -17,6 +17,16 @@ export function Demo() {
   const language = signal("english");
   const plan = signal("pro");
   const iconChoice = signal("payments");
+  const settingsChoice = signal("dark");
+  const descriptionChoice = signal("comfortable");
+  const invalidChoice = signal("");
+  const coloredChoice = signal("blue");
+  const batteryChoice = signal("medium");
+  const planChoice = signal("plus");
+  const contactChoice = signal("email");
+  const badgeChoice = signal("stable");
+  const personChoice = signal("emma");
+  const customChoice = signal("daily");
   const choose = (next: string) => value.set(next);
   const stage = (children: JSX.Element, width = 420) => (
     <View style={{ width, maxWidth: "100%", padding: 16, borderWidth: 1, borderColor: tokens.border, borderRadius: 12, backgroundColor: tokens.popover }}>
@@ -43,7 +53,8 @@ export function Demo() {
   const settings = stage(
     <RadioGroup
       options={[{ value: "light", label: "Light" }, { value: "dark", label: "Dark" }, { value: "system", label: "System" }]}
-      value="dark"
+      value={settingsChoice()}
+      onChange={(next) => settingsChoice.set(next)}
       orientation="horizontal"
     />,
   );
@@ -55,7 +66,8 @@ export function Demo() {
           { value: "comfortable", label: "Comfortable", description: "More space between elements." },
           { value: "compact", label: "Compact", description: "Minimal spacing for dense layouts." },
         ]}
-        value="comfortable"
+        value={descriptionChoice()}
+        onChange={(next) => descriptionChoice.set(next)}
       />,
     460,
   );
@@ -63,7 +75,9 @@ export function Demo() {
   const invalid = stage(
     <RadioGroup
         options={[{ value: "email", label: "Email only" }, { value: "sms", label: "SMS only" }]}
-        invalid
+        value={invalidChoice()}
+        onChange={(next) => invalidChoice.set(next)}
+        invalid={!invalidChoice()}
         error="Choose where we should send the code."
       />,
   );
@@ -75,7 +89,8 @@ export function Demo() {
           { value: "green", label: "Green", tone: "success" },
           { value: "yellow", label: "Yellow", tone: "warning" },
         ]}
-        value="blue"
+        value={coloredChoice()}
+        onChange={(next) => coloredChoice.set(next)}
       />,
   );
   // section: Radio group with legend and description
@@ -85,7 +100,8 @@ export function Demo() {
         legend="Battery Level"
         description="Choose your preferred battery level."
         options={[{ value: "high", label: "High" }, { value: "medium", label: "Medium" }, { value: "low", label: "Low" }]}
-        value="medium"
+        value={batteryChoice()}
+        onChange={(next) => batteryChoice.set(next)}
         variant="card"
         controlPosition="end"
       />
@@ -99,7 +115,8 @@ export function Demo() {
           { value: "plus", label: "Plus", description: "For individuals and small teams." },
           { value: "pro", label: "Pro", description: "For growing businesses." },
         ]}
-        value="plus"
+        value={planChoice()}
+        onChange={(next) => planChoice.set(next)}
         variant="card"
         controlPosition="end"
       />
@@ -129,7 +146,8 @@ export function Demo() {
           { value: "phone", label: "Phone", icon: "phone" },
           { value: "chat", label: "Chat", icon: "message-circle" },
         ]}
-        value="email"
+        value={contactChoice()}
+        onChange={(next) => contactChoice.set(next)}
         variant="card"
         controlPosition="end"
       />
@@ -177,7 +195,8 @@ export function Demo() {
           { value: "beta", label: "Beta", badge: "NEW", badgeTone: "info" },
           { value: "canary", label: "Canary" },
         ]}
-        value="stable"
+        value={badgeChoice()}
+        onChange={(next) => badgeChoice.set(next)}
       />,
   );
   // section: Pricing radio group
@@ -206,7 +225,8 @@ export function Demo() {
           { value: "emma", label: "Emma Wilson", description: "@emmawilson", leading: <Avatar name="Emma Wilson" size="sm" /> },
           { value: "john", label: "John Doe", description: "@johndoe", leading: <Avatar name="John Doe" size="sm" /> },
         ]}
-        value="emma"
+        value={personChoice()}
+        onChange={(next) => personChoice.set(next)}
       />
     </View>
   );
@@ -225,7 +245,8 @@ export function Demo() {
           { value: "daily", label: "Daily digest" },
           { value: "weekly", label: "Weekly digest" },
         ]}
-        value="daily"
+        value={customChoice()}
+        onChange={(next) => customChoice.set(next)}
         variant="segmented"
       />
     </View>

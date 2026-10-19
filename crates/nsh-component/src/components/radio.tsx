@@ -1,7 +1,7 @@
 // A radio group: one choice among several. A plain row is the default; card,
 // segmented and grid layouts cover settings, pricing and icon pickers.
 import type { JSX, StyleProp, ViewStyle } from 'nsh';
-import { Text, View } from 'nsh';
+import { signal, Text, View } from 'nsh';
 import { Icon } from './icon';
 import { type ControlSize, controlFontSize, RADIUS_MD, tokens } from './theme';
 
@@ -70,9 +70,11 @@ const toneColor = (tone: RadioTone | undefined, fallback: string): string => {
 };
 
 export function RadioGroup(props: RadioGroupProps) {
-  const value = () => props.value ?? props.defaultValue ?? '';
+  const own = signal(props.defaultValue ?? '');
+  const value = () => props.value ?? own();
   const choose = (next: string) => {
     if (props.disabled) return;
+    if (props.value === undefined) own.set(next);
     props.onChange?.(next);
   };
   const variant = () => props.variant ?? 'plain';
