@@ -24143,6 +24143,10 @@
           "target": "icons.ts"
         },
         {
+          "src": "crates/nsh-component/src/components/input.tsx",
+          "target": "input.tsx"
+        },
+        {
           "src": "crates/nsh-component/src/components/pagination.tsx",
           "target": "pagination.tsx"
         },
@@ -25302,6 +25306,14 @@
         }
       ],
       "table": [
+        {
+          "src": "crates/nsh-component/src/components/icon.tsx",
+          "target": "icon.tsx"
+        },
+        {
+          "src": "crates/nsh-component/src/components/icons.ts",
+          "target": "icons.ts"
+        },
         {
           "src": "crates/nsh-component/src/components/table.tsx",
           "target": "table.tsx"
