@@ -1,8 +1,6 @@
-// A trigger and a list of options, presented in a transparent modal so the list
-// is never clipped by a scrolling page.
+// A trigger and an anchored list of options, like the MenuButton panel.
 import type { StyleProp, ViewStyle } from 'nsh';
 import { signal, Text, View, Scroll } from 'nsh';
-import { Modal } from 'nsh/ui/mobile';
 import { Icon } from './icon';
 import { Input } from './input';
 import { type ControlSize, controlFontSize, inputHeight, RADIUS_LG, RADIUS_MD, tokens } from './theme';
@@ -30,6 +28,8 @@ export interface SelectProps {
   testID?: string;
 }
 
+let closeActive: (() => void) | undefined;
+
 export function Select(props: SelectProps) {
   const open = signal(false);
   const own = signal(props.defaultValue ?? '');
@@ -43,6 +43,16 @@ export function Select(props: SelectProps) {
   const close = () => {
     open.set(false);
     query.set('');
+    if (closeActive === close) closeActive = undefined;
+  };
+  const toggle = () => {
+    if (open()) {
+      close();
+      return;
+    }
+    closeActive?.();
+    closeActive = close;
+    open.set(true);
   };
   const choose = (option: SelectOption) => {
     if (option.disabled) return;
@@ -51,12 +61,12 @@ export function Select(props: SelectProps) {
     close();
   };
   return (
-    <View testID={props.testID} style={[{ gap: 4 }, props.style]}>
+    <View testID={props.testID} style={[{ position: 'relative', gap: 4 }, props.style]}>
       <View
         accessibilityRole="combobox"
         accessibilityLabel={chosen()?.label ?? props.placeholder ?? 'Select'}
         accessibilityState={{ expanded: open(), disabled: Boolean(props.disabled) }}
-        onPress={() => !props.disabled && open.set(true)}
+        onPress={() => !props.disabled && toggle()}
         disabled={props.disabled}
         activeOpacity={0.9}
         style={{
@@ -82,45 +92,58 @@ export function Select(props: SelectProps) {
         ) : null}
         <Icon name="chevron-down" size={14} color={tokens.mutedForeground} />
       </View>
-      <Modal visible={open()} transparent animationType="fade" onRequestClose={close}>
-        <View style={{ flex: 1, backgroundColor: tokens.overlay, alignItems: 'center', justifyContent: 'center', padding: 24 }}>
-          <View class="shadow-2xl" style={{ width: 360, maxWidth: '100%', maxHeight: 440, borderRadius: RADIUS_LG, borderWidth: 1, borderColor: tokens.border, backgroundColor: tokens.popover, overflow: 'hidden' }}>
-            {props.searchable ? (
-              <View style={{ padding: 8, borderBottomWidth: 1, borderBottomColor: tokens.border }}>
-                <Input value={query()} placeholder="Search" onChangeText={(next) => query.set(next)} cleanable style={{ width: '100%' }} />
-              </View>
-            ) : null}
-            <Scroll style={{ maxHeight: 380 }}>
-              {shown().length === 0 ? (
-                <Text style={{ padding: 14, fontSize: 13, color: tokens.mutedForeground }}>{props.emptyText ?? 'No options'}</Text>
-              ) : (
-                shown().map((option) => (
-                  <View
-                    accessibilityRole="button"
-                    accessibilityLabel={option.label}
-                    accessibilityState={{ selected: option.value === value(), disabled: Boolean(option.disabled) }}
-                    onPress={() => choose(option)}
-                    disabled={option.disabled}
-                    activeOpacity={0.8}
-                    style={{
-                      flexDirection: 'row',
-                      alignItems: 'center',
-                      gap: 8,
-                      paddingHorizontal: 12,
-                      paddingVertical: 10,
-                      backgroundColor: option.value === value() ? tokens.accent : tokens.popover,
-                      opacity: option.disabled ? 0.5 : 1,
-                    }}
-                  >
-                    <Text style={{ flex: 1, fontSize: 14, color: tokens.foreground }}>{option.label}</Text>
-                    {option.value === value() ? <Icon name="check" size={14} color={tokens.primary} /> : null}
-                  </View>
-                ))
-              )}
-            </Scroll>
-          </View>
+      {open() ? (
+        <View
+          accessibilityRole="menu"
+          class="absolute z-50 shadow-2xl"
+          style={{
+            position: 'absolute',
+            top: inputHeight(props.size ?? 'medium') + 4,
+            left: 0,
+            right: 0,
+            maxHeight: 340,
+            borderRadius: RADIUS_LG,
+            borderWidth: 1,
+            borderColor: tokens.border,
+            backgroundColor: tokens.popover,
+            overflow: 'hidden',
+          }}
+        >
+          {props.searchable ? (
+            <View style={{ padding: 8, borderBottomWidth: 1, borderBottomColor: tokens.border }}>
+              <Input value={query()} placeholder="Search" onChangeText={(next) => query.set(next)} cleanable style={{ width: '100%' }} />
+            </View>
+          ) : null}
+          <Scroll style={{ maxHeight: 300 }}>
+            {shown().length === 0 ? (
+              <Text style={{ padding: 14, fontSize: 13, color: tokens.mutedForeground }}>{props.emptyText ?? 'No options'}</Text>
+            ) : (
+              shown().map((option) => (
+                <View
+                  accessibilityRole="button"
+                  accessibilityLabel={option.label}
+                  accessibilityState={{ selected: option.value === value(), disabled: Boolean(option.disabled) }}
+                  onPress={() => choose(option)}
+                  disabled={option.disabled}
+                  activeOpacity={0.8}
+                  style={{
+                    flexDirection: 'row',
+                    alignItems: 'center',
+                    gap: 8,
+                    paddingHorizontal: 12,
+                    paddingVertical: 10,
+                    backgroundColor: option.value === value() ? tokens.accent : tokens.popover,
+                    opacity: option.disabled ? 0.5 : 1,
+                  }}
+                >
+                  <Text style={{ flex: 1, fontSize: 14, color: tokens.foreground }}>{option.label}</Text>
+                  {option.value === value() ? <Icon name="check" size={14} color={tokens.primary} /> : null}
+                </View>
+              ))
+            )}
+          </Scroll>
         </View>
-      </Modal>
+      ) : null}
     </View>
   );
 }
