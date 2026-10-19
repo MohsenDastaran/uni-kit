@@ -59,7 +59,7 @@ function RangeField(props: {
           backgroundColor: tokens.background,
         }}
       >
-        <Icon name="calendar-range" size={14} color={tokens.mutedForeground} />
+        <Icon name="calendar" size={14} color={tokens.mutedForeground} />
         <Text style={{ flex: 1, fontSize: 12, color: props.range().start ? tokens.foreground : tokens.mutedForeground }}>
           {label()}
         </Text>
