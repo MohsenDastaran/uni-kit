@@ -13,7 +13,7 @@ let highlighter;
 async function get() {
   highlighter ??= await createHighlighter({
     themes: [themes.light, themes.dark],
-    langs: ['rust', slint],
+    langs: ['rust', slint, 'tsx'],
   });
   return highlighter;
 }

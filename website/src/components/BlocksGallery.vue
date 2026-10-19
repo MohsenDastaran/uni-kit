@@ -55,9 +55,9 @@ export interface Block {
    * fetched only when they ask to run it.
    */
   /** Highlighted HTML, for display. */
-  code?: { gpui?: string; slint?: string; iced?: string };
+  code?: { gpui?: string; slint?: string; iced?: string; nsh?: string };
   /** The same source as plain text, for the prompt. */
-  text?: { gpui?: string; slint?: string; iced?: string };
+  text?: { gpui?: string; slint?: string; iced?: string; nsh?: string };
 }
 
 const props = defineProps<{
@@ -564,7 +564,7 @@ function buildPrompt(block: Block) {
           : "The screen is written against the gpui-kit crate; the controls it composes come from `gpui_kit::component`.",
     "",
     "## Source",
-    slint ? installableSource(source) : source,
+    slint ? installableSource(source) : nsh ? source.replace(/from "\.\.\/components\//g, 'from "./') : source,
   ].join("\n");
 }
 
