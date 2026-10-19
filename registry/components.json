@@ -25295,6 +25295,18 @@
       ],
       "stepper": [
         {
+          "src": "crates/nsh-component/src/components/button.tsx",
+          "target": "button.tsx"
+        },
+        {
+          "src": "crates/nsh-component/src/components/icon.tsx",
+          "target": "icon.tsx"
+        },
+        {
+          "src": "crates/nsh-component/src/components/icons.ts",
+          "target": "icons.ts"
+        },
+        {
           "src": "crates/nsh-component/src/components/stepper.tsx",
           "target": "stepper.tsx"
         },
