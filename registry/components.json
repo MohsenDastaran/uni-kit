@@ -24577,6 +24577,14 @@
       ],
       "list": [
         {
+          "src": "crates/nsh-component/src/components/icon.tsx",
+          "target": "icon.tsx"
+        },
+        {
+          "src": "crates/nsh-component/src/components/icons.ts",
+          "target": "icons.ts"
+        },
+        {
           "src": "crates/nsh-component/src/components/list.tsx",
           "target": "list.tsx"
         },
@@ -25536,6 +25544,18 @@
         }
       ],
       "virtual-list": [
+        {
+          "src": "crates/nsh-component/src/components/icon.tsx",
+          "target": "icon.tsx"
+        },
+        {
+          "src": "crates/nsh-component/src/components/icons.ts",
+          "target": "icons.ts"
+        },
+        {
+          "src": "crates/nsh-component/src/components/list.tsx",
+          "target": "list.tsx"
+        },
         {
           "src": "crates/nsh-component/src/components/virtual_list.tsx",
           "target": "virtual_list.tsx"
