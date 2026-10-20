@@ -668,7 +668,10 @@ function reload(block: Block) {
         </button>
       </div>
 
-      <div class="block__frame">
+      <div
+        class="block__frame"
+        :class="{ 'block__frame--nsh': framework === 'nsh' }"
+      >
         <div class="block__sizer" :style="{ maxWidth: widthFor(block) }">
           <!-- The frame boots behind the picture, out of sight, so the
                gallery's own plain "Loading…" is never what the reader sees. -->
@@ -909,11 +912,17 @@ function reload(block: Block) {
 
 
 .block__frame {
-  height: clamp(26rem, 62vh, 44rem);
+  height: clamp(30rem, 72vh, 52rem);
   overflow: hidden;
   border: 1px solid var(--border);
   border-radius: var(--radius-surface);
   background: var(--card);
+}
+
+/* NSH screens are full application shells with a header, content and a footer;
+   they need more vertical room than a toolbar-and-table composition. */
+.block__frame--nsh {
+  height: clamp(36rem, 88vh, 64rem);
 }
 
 /* Centred, so a narrow device width reads as a device rather than as a frame
