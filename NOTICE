@@ -12,7 +12,8 @@ The `gpui-pre-*` crates are snapshots of GPUI, published with Zed's license
 and notices intact.
 
 The Native Shell documentation vendored under `docs/nsh/` is from
-Native Shell <https://nsh.dev> and remains the copyright of its authors. It is
+Native Shell <https://nsh.dev/> and its source is at
+<https://github.com/longbridge/nsh>. It remains the copyright of its authors. It is
 included for reference and is not relicensed by this repository. The NSH
 component source in `crates/nsh-component` is this repository's own work under
 the Apache-2.0 license.

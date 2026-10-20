@@ -113,9 +113,11 @@ theirs.
 - **[Lucide](https://lucide.dev)** — the icons.
 - **[iced](https://iced.rs)** — the framework the iced components are written
   against, and the widgets and styling model they are built from.
-- **[Native Shell](https://nsh.dev)** — the TSX runtime the NSH port is written
-  against. Its documentation is vendored under `docs/nsh/` for offline reference
-  and remains the upstream copyright.
+- **[Native Shell](https://nsh.dev/)** — the TSX runtime the NSH port is written
+  against. Its source is at
+  **[longbridge/nsh](https://github.com/longbridge/nsh)**, and its documentation
+  is vendored under `docs/nsh/` for offline reference and remains the upstream
+  copyright.
 
 ## License
 

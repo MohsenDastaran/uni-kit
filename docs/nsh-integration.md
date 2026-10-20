@@ -1,6 +1,7 @@
 # NSH integration
 
-NSH (Native Shell, <https://nsh.dev>) is the fourth port beside GPUI, Slint and
+NSH (Native Shell, <https://nsh.dev/>; source
+<https://github.com/longbridge/nsh>) is the fourth port beside GPUI, Slint and
 iced. It is **source-shipped**: `npx @dastaran/uni-kit add nsh <component>`
 writes TSX into the application's `src/components/`, with the shared token file,
 the mobile theme and the icon map. There is no crate to depend on; the NSH
