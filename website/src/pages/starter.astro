@@ -2,10 +2,11 @@
 import FolderAnimation from '../components/FolderAnimation.astro';
 import DocsLayout from '../layouts/DocsLayout.astro';
 
-// Starters, one set per framework: the two Slint templates to fork, and the
-// GPUI Kit guide, which is where GPUI Kit itself says to begin. Both sets are
-// rendered and the framework selector's own CSS shows one — the same mechanism
-// the rest of the site uses, so the right set is there before any script runs.
+// Starters, one set per framework: a blank NSH app, the two Slint templates to
+// fork, and the GPUI Kit guide, which is where GPUI Kit itself says to begin.
+// Every set is rendered and the framework selector's own CSS shows one — the
+// same mechanism the rest of the site uses, so the right set is there before
+// any script runs.
 //
 // `repo` is shown as written, `href` is where the card leads.
 const slintTemplates = [
@@ -33,6 +34,20 @@ const slintTemplates = [
   },
 ];
 
+const nshTemplates = [
+  {
+    id: 'blank',
+    title: 'Blank template',
+    repo: 'MohsenDastaran/nsh-blank-template',
+    repoHref: 'https://github.com/MohsenDastaran/nsh-blank-template',
+    href: 'https://github.com/MohsenDastaran/nsh-blank-template',
+    label: 'Use this template',
+    external: true,
+    description:
+      'One window, the system light/dark palette, and one action to replace. The smallest NSH app that runs, with nothing to delete first.',
+  },
+];
+
 const gpuiStart = {
   repo: 'gpui-kit.com',
   repoHref: 'https://gpui-kit.com/',
@@ -46,7 +61,7 @@ const gpuiStart = {
 
 <DocsLayout
   title="Starter — uni-kit"
-  description="Starters for the framework you are reading: Slint templates to fork, and the GPUI Kit getting-started guide."
+  description="Starters for the framework you are reading: blank NSH and Slint templates, and the GPUI Kit getting-started guide."
 >
   <h1>Starter</h1>
   <p data-framework-only="slint">
@@ -58,10 +73,16 @@ const gpuiStart = {
     GPUI Kit starts from its own guide rather than a fork: the crate is
     published, so a project adds it and follows along.
   </p>
+  <p data-framework-only="nsh">
+    A blank Native Shell application. It has one window and no components to
+    remove; add catalog components with <code>npx @dastaran/uni-kit add nsh</code>
+    when you are ready.
+  </p>
 
   <section class="starter">
     <h2 data-framework-only="slint">Start from a template</h2>
     <h2 data-framework-only="gpui">Start from the guide</h2>
+    <h2 data-framework-only="nsh">Start from a template</h2>
     <p data-framework-only="slint">
       Fork one and you have a Slint application already wired: <code>cargo run</code>
       opens a window, so the first change you make is your own rather than a
@@ -70,6 +91,10 @@ const gpuiStart = {
     <p data-framework-only="gpui">
       Add <code>gpui-kit</code> and follow the guide: there is nothing to fork,
       and nothing to delete first.
+    </p>
+    <p data-framework-only="nsh">
+      Clone or download the blank app, run <code>nsh run</code>, and replace
+      <code>App.tsx</code> with your first screen.
     </p>
 
     <div class="starter__grid">
@@ -96,6 +121,34 @@ const gpuiStart = {
           </svg>
         </a>
       </article>
+
+      {
+        nshTemplates.map((template) => (
+          <article class="starter-card" data-framework-only="nsh">
+            <FolderAnimation />
+            <a
+              class="starter-card__meta"
+              href={template.repoHref}
+              target="_blank"
+              rel="noopener noreferrer">{template.repo}</a
+            >
+            <h3 class="starter-card__title">{template.title}</h3>
+            <p class="starter-card__body">{template.description}</p>
+            <a
+              class="starter-card__link"
+              href={template.href}
+              target="_blank"
+              rel="noopener noreferrer"
+            >
+              {template.label}
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <path d="M5 12h14" />
+                <path d="m12 5 7 7-7 7" />
+              </svg>
+            </a>
+          </article>
+        ))
+      }
 
       {
         slintTemplates.map((template) => (
