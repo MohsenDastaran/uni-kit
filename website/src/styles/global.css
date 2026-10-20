@@ -2910,6 +2910,47 @@ html[data-framework="nsh"] .starter__grid {
   outline-offset: 2px;
 }
 
+.starter-card__actions {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin: 1.25rem 0.75rem 0.75rem;
+  margin-top: auto;
+}
+
+.starter-card__actions .starter-card__link {
+  margin: 0;
+}
+
+/* A compact way to open the repository itself, beside the fork action. */
+.starter-card__repo {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 2rem;
+  height: 2rem;
+  flex: none;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-control);
+  background: var(--background);
+  color: var(--muted-foreground);
+  transition:
+    background 150ms ease,
+    border-color 150ms ease,
+    color 150ms ease;
+}
+
+.starter-card__repo:hover {
+  border-color: var(--brand);
+  background: var(--secondary);
+  color: var(--foreground);
+}
+
+.starter-card__repo:focus-visible {
+  outline: 2px solid var(--brand);
+  outline-offset: 2px;
+}
+
 /* The illustration. Its resting frame is the folder closed and centred; the
    cycle plays only while the stage is hovered or focused. */
 
