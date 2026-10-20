@@ -102,10 +102,13 @@ function onFrameworkChange() {
   startQueue();
 }
 
-/** Puts the first unfetched block in line, which begins the chain. */
+/**
+ * Puts every visible block in line. The queue still downloads one at a time,
+ * but a block cannot be left behind if the previous block's completion path
+ * changes: the waiting list is the source of truth, not a single first item.
+ */
 function startQueue() {
-  const first = nextInLine();
-  if (first) enqueue(first);
+  for (const block of visible.value) enqueue(block);
 }
 
 onMounted(() => {
