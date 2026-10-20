@@ -1,5 +1,7 @@
 ---
 import FolderAnimation from '../components/FolderAnimation.astro';
+
+const base = import.meta.env.BASE_URL;
 import DocsLayout from '../layouts/DocsLayout.astro';
 
 // Starters, one set per framework: a blank NSH app, the two Slint templates to
@@ -44,7 +46,45 @@ const nshTemplates = [
     label: 'Use this template',
     external: true,
     description:
-      'One window, a theme picker for all 36 website palettes, and one action to replace. The smallest NSH app that runs, with nothing to delete first.',
+      'One window, one action, and nothing to delete first. The smallest NSH app that runs.',
+  },
+  {
+    id: 'theme',
+    title: 'Theme template',
+    repo: 'MohsenDastaran/nsh-theme-template',
+    repoHref: 'https://github.com/MohsenDastaran/nsh-theme-template',
+    href: 'https://github.com/MohsenDastaran/nsh-theme-template',
+    label: 'Use this template',
+    external: true,
+    description:
+      'The blank app with the website theme picker built in: all 36 palettes, System follow, and a live top-right control.',
+    images: [
+      {
+        src: 'starter/nsh-theme-dark.webp',
+        alt: 'NSH theme template in a dark theme',
+      },
+      {
+        src: 'starter/nsh-theme-light.webp',
+        alt: 'NSH theme template in Everforest Light with the theme control visible',
+      },
+    ],
+  },
+  {
+    id: 'sidebar',
+    title: 'Sidebar example',
+    repo: 'MohsenDastaran/nsh-sidebar-template',
+    repoHref: 'https://github.com/MohsenDastaran/nsh-sidebar-template',
+    href: 'https://github.com/MohsenDastaran/nsh-sidebar-template',
+    label: 'Use this template',
+    external: true,
+    description:
+      'The workspace shell: grouped navigation beside the content it controls, with the catalog components already in place.',
+    images: [
+      {
+        src: 'starter/nsh-sidebar.webp',
+        alt: 'NSH sidebar template showing the Northstar workspace overview',
+      },
+    ],
   },
 ];
 
@@ -61,7 +101,7 @@ const gpuiStart = {
 
 <DocsLayout
   title="Starter — uni-kit"
-  description="Starters for the framework you are reading: blank NSH and Slint templates, and the GPUI Kit getting-started guide."
+  description="Starters for the framework you are reading: NSH and Slint templates, and the GPUI Kit getting-started guide."
 >
   <h1>Starter</h1>
   <p data-framework-only="slint">
@@ -74,9 +114,9 @@ const gpuiStart = {
     published, so a project adds it and follows along.
   </p>
   <p data-framework-only="nsh">
-    A blank Native Shell application. It has one window and no components to
-    remove; add catalog components with <code>npx @dastaran/uni-kit add nsh</code>
-    when you are ready.
+    Three Native Shell applications: a blank window, the same app with the
+    website theme picker, and a workspace shell. Fork one and replace its screen
+    with your own.
   </p>
 
   <section class="starter">
@@ -93,7 +133,7 @@ const gpuiStart = {
       and nothing to delete first.
     </p>
     <p data-framework-only="nsh">
-      Clone or download the blank app, run <code>nsh run</code>, and replace
+      Clone or download a starter, run <code>nsh run</code>, and replace
       <code>App.tsx</code> with your first screen.
     </p>
 
@@ -125,7 +165,24 @@ const gpuiStart = {
       {
         nshTemplates.map((template) => (
           <article class="starter-card" data-framework-only="nsh">
-            <FolderAnimation />
+            {template.images?.length ? (
+              <div
+                class:list={[
+                  'starter-card__preview',
+                  { 'starter-card__preview--pair': template.images.length > 1 },
+                ]}
+              >
+                {template.images.map((image) => (
+                  <img
+                    src={`${base}${image.src}`}
+                    alt={image.alt}
+                    loading="lazy"
+                  />
+                ))}
+              </div>
+            ) : (
+              <FolderAnimation />
+            )}
             <a
               class="starter-card__meta"
               href={template.repoHref}
