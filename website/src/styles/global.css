@@ -2799,21 +2799,15 @@ html[data-framework="nsh"] .framework-api__panel[data-framework-panel="nsh"] {
   box-shadow: var(--shadow-panel);
 }
 
-/* A template's own screen, rather than the shared folder illustration. The
-   theme sample pairs dark and light so the picker is visible at card size; a
-   single image fills the same frame. */
+/* A template's own screen, rather than the shared folder illustration. */
 .starter-card__preview {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr);
-  gap: 1px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
   height: 12rem;
   overflow: hidden;
   border-radius: var(--radius-card);
   background: var(--muted);
-}
-
-.starter-card__preview--pair {
-  grid-template-columns: repeat(2, minmax(0, 1fr));
 }
 
 .starter-card__preview img {
@@ -2821,15 +2815,22 @@ html[data-framework="nsh"] .framework-api__panel[data-framework-panel="nsh"] {
   width: 100%;
   height: 100%;
   min-width: 0;
-  object-fit: cover;
   object-position: top center;
   background: var(--muted);
 }
 
-/* A pair is a before/after strip: show each whole screen rather than cropping
-   two differently shaped captures into each other. */
-.starter-card__preview--pair img {
-  object-fit: contain;
+/* The theme starter is a phone-sized window, so show the whole screen rather
+   than cropping its header away. */
+.starter-card__preview--portrait {
+  height: 15rem;
+  padding-block: 0.6rem;
+}
+
+.starter-card__preview--portrait img {
+  width: auto;
+  max-width: 100%;
+  height: 100%;
+  border-radius: 0.35rem;
 }
 
 .starter-card__meta {

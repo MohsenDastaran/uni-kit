@@ -47,6 +47,11 @@ const nshTemplates = [
     external: true,
     description:
       'One window, one action, and nothing to delete first. The smallest NSH app that runs.',
+    image: {
+      src: 'starter/nsh-theme-dark.webp',
+      alt: 'NSH blank template in a dark theme',
+      fit: 'contain',
+    },
   },
   {
     id: 'theme',
@@ -58,16 +63,12 @@ const nshTemplates = [
     external: true,
     description:
       'The blank app with the website theme picker built in: all 36 palettes, System follow, and a live top-right control.',
-    images: [
-      {
-        src: 'starter/nsh-theme-dark.webp',
-        alt: 'NSH theme template in a dark theme',
-      },
-      {
-        src: 'starter/nsh-theme-light.webp',
-        alt: 'NSH theme template in Everforest Light with the theme control visible',
-      },
-    ],
+    image: {
+      src: 'starter/nsh-theme-light-crop.webp',
+      alt: 'NSH theme template in Everforest Light with the theme control',
+      fit: 'contain',
+      portrait: true,
+    },
   },
   {
     id: 'sidebar',
@@ -79,12 +80,11 @@ const nshTemplates = [
     external: true,
     description:
       'The workspace shell: grouped navigation beside the content it controls, with the catalog components already in place.',
-    images: [
-      {
-        src: 'starter/nsh-sidebar.webp',
-        alt: 'NSH sidebar template showing the Northstar workspace overview',
-      },
-    ],
+    image: {
+      src: 'starter/nsh-sidebar.webp',
+      alt: 'NSH sidebar template showing the Northstar workspace overview',
+      fit: 'cover',
+    },
   },
 ];
 
@@ -165,20 +165,22 @@ const gpuiStart = {
       {
         nshTemplates.map((template) => (
           <article class="starter-card" data-framework-only="nsh">
-            {template.images?.length ? (
+            {template.image ? (
               <div
                 class:list={[
                   'starter-card__preview',
-                  { 'starter-card__preview--pair': template.images.length > 1 },
+                  {
+                    'starter-card__preview--portrait':
+                      template.image.portrait,
+                  },
                 ]}
               >
-                {template.images.map((image) => (
-                  <img
-                    src={`${base}${image.src}`}
-                    alt={image.alt}
-                    loading="lazy"
-                  />
-                ))}
+                <img
+                  src={`${base}${template.image.src}`}
+                  alt={template.image.alt}
+                  loading="lazy"
+                  style={{ objectFit: template.image.fit }}
+                />
               </div>
             ) : (
               <FolderAnimation />
