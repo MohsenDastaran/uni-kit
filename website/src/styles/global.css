@@ -2776,6 +2776,18 @@ html[data-framework="nsh"] .framework-api__panel[data-framework-panel="nsh"] {
   margin: 1.75rem 0 0;
 }
 
+/* NSH has three starters. Three equal columns keep their previews and actions
+   together instead of one card stretching beside a tall neighbour. */
+html[data-framework="nsh"] .starter__grid {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+@media (max-width: 1120px) {
+  html[data-framework="nsh"] .starter__grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
 @media (max-width: 760px) {
   .starter__grid {
     grid-template-columns: minmax(0, 1fr);
@@ -2804,7 +2816,7 @@ html[data-framework="nsh"] .framework-api__panel[data-framework-panel="nsh"] {
   display: flex;
   align-items: center;
   justify-content: center;
-  height: 12rem;
+  height: 13rem;
   overflow: hidden;
   border-radius: var(--radius-card);
   background: var(--muted);
@@ -2817,19 +2829,18 @@ html[data-framework="nsh"] .framework-api__panel[data-framework-panel="nsh"] {
   min-width: 0;
   object-position: top center;
   background: var(--muted);
+  border: 1px solid var(--border);
+  border-radius: calc(var(--radius-card) - 1px);
+  box-shadow: var(--shadow-hairline);
 }
 
 /* The theme starter is a phone-sized window, so show the whole screen rather
    than cropping its header away. */
-.starter-card__preview--portrait {
-  height: 15rem;
-  padding-block: 0.6rem;
-}
-
 .starter-card__preview--portrait img {
   width: auto;
   max-width: 100%;
-  height: 100%;
+  height: calc(100% - 1rem);
+  margin-block: 0.5rem;
   border-radius: 0.35rem;
 }
 
@@ -2874,6 +2885,7 @@ html[data-framework="nsh"] .framework-api__panel[data-framework-panel="nsh"] {
   gap: 0.45rem;
   min-height: 2.25rem;
   margin: 1.25rem 0.75rem 0.75rem;
+  margin-top: auto;
   padding: 0 0.9rem;
   border: 1px solid var(--brand);
   border-radius: var(--radius-control);
