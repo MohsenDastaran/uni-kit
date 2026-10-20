@@ -78,9 +78,9 @@ export function Demo() {
       <View style={{ flex: 1 }}>
         <View style={{ height: 56, paddingHorizontal: 22, flexDirection: "row", alignItems: "center", gap: 10, borderBottomWidth: 1, borderBottomColor: tokens.border }}>
           <Text style={{ fontSize: 14, fontWeight: "600", color: tokens.foreground }}>{title()}</Text>
-          <Badge label="Live" variant="secondary" />
+          <Badge label="Live" variant="secondary" style={{ alignSelf: "center" }} />
           <View style={{ flex: 1 }} />
-          <Button label="New project" size="small" variant="primary" icon="plus" onPress={() => {}} />
+          <Button label="New project" size="small" variant="primary" icon="plus" onPress={() => {}} style={{ alignSelf: "center" }} />
         </View>
         <Scroll style={{ flex: 1 }}>
           <View style={{ padding: 22, gap: 18 }}>
