@@ -182,17 +182,14 @@ export function Button(props: ButtonProps) {
   const gap = () => (size() === 'xsmall' || size() === 'small' ? 4 : 8);
   const motion = () => {
     if (!interactive()) return undefined;
-    const base = 'transition-all duration-150 ease-out';
-    // Grouped buttons must stay on the same baseline: no lift or scale that
-    // would open a seam against the neighbour sharing their border.
-    if (grouped()) return `${base} hover:opacity-90 active:opacity-80`;
-    if (variant() === 'link') return `${base} hover:opacity-75 hover:underline active:opacity-60`;
-    if (transparentFill()) return `${base} hover:opacity-75 active:scale-[0.98] active:opacity-60`;
-    if (props.outline) return `${base} hover:-translate-y-0.5 hover:shadow-sm active:translate-y-0 active:scale-[0.98]`;
-    if (variant() === 'primary' || statusVariant()) {
-      return `${base} hover:-translate-y-0.5 hover:shadow-md active:translate-y-0 active:scale-[0.98]`;
-    }
-    return `${base} hover:-translate-y-0.5 hover:shadow-sm active:translate-y-0 active:scale-[0.98]`;
+    // Hover changes the fill; it must not lift, scale or shadow the control.
+    // Keeping the baseline fixed also stops a button from visibly moving under
+    // the pointer while its inline background is changing.
+    const base = 'transition-colors duration-150 ease-out';
+    if (grouped()) return base;
+    if (variant() === 'link') return `${base} hover:underline`;
+    if (transparentFill()) return `${base} hover:opacity-75`;
+    return base;
   };
   const radius = () => props.rounded ?? RADIUS_MD;
   const grouped = () => Boolean(props.groupStart || props.groupEnd || props.groupVertical);
