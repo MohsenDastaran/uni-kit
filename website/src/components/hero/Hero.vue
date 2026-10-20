@@ -28,6 +28,7 @@ const props = defineProps<{
     componentCount: number;
     exampleCount: number;
     installCommand: string;
+    platforms: string;
 }>();
 
 const installSnippet = ["[dependencies]", props.installCommand].join("\n");
@@ -96,7 +97,7 @@ onBeforeUnmount(() => clearTimeout(copyTimer));
                         }}
                     </li>
 
-                    <li><Monitor :size="14" /> {{ copy.signalPlatforms }}</li>
+                    <li><Monitor :size="14" /> {{ platforms }}</li>
                 </ul>
             </div>
 

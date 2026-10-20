@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { computed, onBeforeUnmount, onMounted, ref } from "vue";
 import {
     Braces,
     Gauge,
@@ -17,6 +18,33 @@ const props = defineProps<{
     exampleCount: number;
     base: string;
 }>();
+
+const PLATFORMS: Record<string, string> = {
+    gpui: "macOS, Windows, Linux",
+    slint: "macOS, Windows, Linux",
+    iced: "macOS, Windows, Linux",
+    nsh: "iOS, Android, macOS, Windows, Linux, GPUI, Web",
+};
+
+const framework = ref("slint");
+const platforms = computed(
+    () => PLATFORMS[framework.value] ?? PLATFORMS.slint,
+);
+
+let frameworkObserver: MutationObserver | undefined;
+onMounted(() => {
+    const root = document.documentElement;
+    const sync = () => {
+        framework.value = root.dataset.framework ?? "slint";
+    };
+    sync();
+    frameworkObserver = new MutationObserver(sync);
+    frameworkObserver.observe(root, {
+        attributes: true,
+        attributeFilter: ["data-framework"],
+    });
+});
+onBeforeUnmount(() => frameworkObserver?.disconnect());
 
 function url(path: string) {
     const b = props.base.replace(/\/$/, "");
@@ -72,7 +100,6 @@ const copy = {
     signalExample: "example",
     signalExamples: "examples",
     signalLicense: "Apache-2.0",
-    signalPlatforms: "macOS, Windows, Linux",
     capsKicker: "Capabilities",
     capsTitle: "Built for information-dense software.",
     capsDescription:
@@ -163,6 +190,7 @@ const copy = {
             :component-count="componentCount"
             :example-count="exampleCount"
             :install-command="installCommand"
+            :platforms="platforms"
         />
 
         <section class="band">
