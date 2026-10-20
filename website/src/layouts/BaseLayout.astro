@@ -53,7 +53,7 @@ const jsonLd = JSON.stringify(structuredData ?? defaultStructuredData).replace(
 ---
 
 <!doctype html>
-<html lang={lang} data-framework="slint">
+<html lang={lang} data-framework="nsh">
     <head>
         <meta charset="UTF-8" />
         <meta name="viewport" content="width=device-width, initial-scale=1.0" />
@@ -141,7 +141,7 @@ const jsonLd = JSON.stringify(structuredData ?? defaultStructuredData).replace(
         <!-- Framework: pick the code blocks before paint so they never flash.
          A `?framework=` in the address bar is the view being asked for, which
          is what makes one shareable and citable; the stored choice is what the
-         reader last asked for; Slint is what a first visit gets. -->
+         reader last asked for; NSH is what a first visit gets. -->
         <script is:inline>
             (function () {
                 const FRAMEWORKS = ["gpui", "slint", "iced", "nsh"];
@@ -155,7 +155,7 @@ const jsonLd = JSON.stringify(structuredData ?? defaultStructuredData).replace(
                 const chosen = FRAMEWORKS.includes(asked) ? asked : stored;
                 const framework = FRAMEWORKS.includes(chosen)
                     ? chosen
-                    : "slint";
+                    : "nsh";
                 document.documentElement.dataset.framework = framework;
                 // The document title is rendered with the GPUI suffix in the
                 // static HTML. Rewrite it before paint so a reader whose stored

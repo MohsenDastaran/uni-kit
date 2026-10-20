@@ -4,7 +4,7 @@ type Framework = (typeof FRAMEWORKS)[number];
 
 // The framework a first visit gets, and the one the address bar does not need
 // to name. A parameter is written for anything else.
-const DEFAULT_FRAMEWORK: Framework = 'slint';
+const DEFAULT_FRAMEWORK: Framework = 'nsh';
 const FRAMEWORK_PARAM = 'framework';
 
 // The loading beat is long enough to read as a reload of the page's code, and
@@ -118,7 +118,7 @@ const progress = (() => {
  * the URL is the only part of the page a search engine or an assistant can cite
  * — and the only way a reader can hand the same view to someone else.
  *
- * The default is left out: `?framework=slint` says nothing that a clean URL
+ * The default is left out: `?framework=nsh` says nothing that a clean URL
  * does not, and every page's canonical points at the clean one.
  */
 function syncUrl(framework: Framework) {

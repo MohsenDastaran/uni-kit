@@ -54,7 +54,7 @@ const targets = computed(() =>
   ),
 );
 const manager = ref<Manager>("npx");
-const framework = ref<Framework>("slint");
+const framework = ref<Framework>("nsh");
 const copied = ref(false);
 const status = ref("");
 /**
@@ -161,7 +161,7 @@ function readManager(): Manager {
  */
 function readFramework(): Framework {
   const chosen = document.documentElement.dataset.framework;
-  return FRAMEWORKS.includes(chosen as Framework) ? (chosen as Framework) : "slint";
+  return FRAMEWORKS.includes(chosen as Framework) ? (chosen as Framework) : "nsh";
 }
 
 function onStorage(event: StorageEvent) {

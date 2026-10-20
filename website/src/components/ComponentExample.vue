@@ -165,12 +165,12 @@ const frameworkList: Record<string, Framework> = {
 
 const readFramework = () => {
   // The server render has no document. Its markup is inert until hydration, and
-  // the framework in force is a client-only fact, so Slint is the honest answer
+  // the framework in force is a client-only fact, so NSH is the honest answer
   // there; the setup below runs again on the client, where it can read the real
   // one.
-  if (typeof document === "undefined") return "slint";
-  const value = document.documentElement.dataset.framework ?? "slint";
-  return value in frameworkList ? value : "slint";
+  if (typeof document === "undefined") return "nsh";
+  const value = document.documentElement.dataset.framework ?? "nsh";
+  return value in frameworkList ? value : "nsh";
 };
 
 // `html[data-framework]` is written by the inline script in the page head, so

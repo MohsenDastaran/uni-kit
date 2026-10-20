@@ -26,16 +26,16 @@ const PLATFORMS: Record<string, string> = {
     nsh: "iOS, Android, macOS, Windows, Linux, GPUI, Web",
 };
 
-const framework = ref("slint");
+const framework = ref("nsh");
 const platforms = computed(
-    () => PLATFORMS[framework.value] ?? PLATFORMS.slint,
+    () => PLATFORMS[framework.value] ?? PLATFORMS.nsh,
 );
 
 let frameworkObserver: MutationObserver | undefined;
 onMounted(() => {
     const root = document.documentElement;
     const sync = () => {
-        framework.value = root.dataset.framework ?? "slint";
+        framework.value = root.dataset.framework ?? "nsh";
     };
     sync();
     frameworkObserver = new MutationObserver(sync);

@@ -72,12 +72,12 @@ const base = props.baseUrl.replace(/\/$/, "");
 const FRAMEWORKS = ["gpui", "slint", "iced", "nsh"] as const;
 type Framework = (typeof FRAMEWORKS)[number];
 
-const framework = ref<Framework>("slint");
+const framework = ref<Framework>("nsh");
 const readFramework = (): Framework => {
   const value = document.documentElement.dataset.framework;
   return FRAMEWORKS.includes(value as Framework)
     ? (value as Framework)
-    : "slint";
+    : "nsh";
 };
 
 
