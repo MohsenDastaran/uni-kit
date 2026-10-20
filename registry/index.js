@@ -7,7 +7,8 @@ import { fileURLToPath } from 'node:url';
 
 const REGISTRY_URL =
   'https://raw.githubusercontent.com/MohsenDastaran/uni-kit/main/registry/components.json';
-const RAW_REPO_BASE = 'https://raw.githubusercontent.com/MohsenDastaran/uni-kit/main';
+const RAW_REPO_ROOT = 'https://raw.githubusercontent.com/MohsenDastaran/uni-kit';
+const RAW_REPO_BASE = `${RAW_REPO_ROOT}/main`;
 
 const here = path.dirname(fileURLToPath(import.meta.url));
 const localRegistry = path.resolve(here, 'components.json');
@@ -45,6 +46,32 @@ function bundledRegistry() {
     : null;
 }
 
+/**
+ * The manifest on `main` is the shared registry, but a framework can be ready
+ * before that branch is: the bundled copy is then the only place its entries
+ * exist. Merge per framework and per component, keeping the remote copy's newer
+ * fields while filling anything it does not know about from the package.
+ */
+function mergeRegistry(remote) {
+  const bundled = bundledRegistry();
+  if (!bundled) return remote;
+  const merged = { ...remote };
+  for (const [name, config] of Object.entries(bundled)) {
+    const current = remote[name];
+    merged[name] = current
+      ? {
+          ...config,
+          ...current,
+          components: {
+            ...(config.components ?? {}),
+            ...(current.components ?? {}),
+          },
+        }
+      : config;
+  }
+  return merged;
+}
+
 async function loadRegistry() {
   if (process.env.UNI_KIT_REGISTRY) {
     const given = process.env.UNI_KIT_REGISTRY;
@@ -62,7 +89,7 @@ async function loadRegistry() {
     return bundledRegistry() ?? JSON.parse((await fetchBuffer(REGISTRY_URL)).toString('utf8'));
   }
   try {
-    return JSON.parse((await fetchBuffer(REGISTRY_URL)).toString('utf8'));
+    return mergeRegistry(JSON.parse((await fetchBuffer(REGISTRY_URL)).toString('utf8')));
   } catch (error) {
     const bundled = bundledRegistry();
     if (!bundled) throw error;
@@ -74,14 +101,18 @@ async function loadRegistry() {
 // Reads one source and returns its bytes. Nothing is written here: the caller
 // collects every file first, so a missing source stops the install instead of
 // leaving half a screen behind.
-async function readSource(item) {
+async function readSource(item, sourceRef = 'main') {
   const root = process.env.UNI_KIT_ROOT;
   if (root) return fs.readFileSync(path.join(root, item.src));
   if (localRoot) {
     const local = path.join(localRoot, item.src);
     if (fs.existsSync(local)) return fs.readFileSync(local);
   }
-  const base = process.env.UNI_KIT_RAW ?? RAW_REPO_BASE;
+  // Published packages carry the NSH sources in `sources/`, so an installed
+  // command does not depend on a branch or on GitHub being reachable.
+  const packaged = path.join(here, 'sources', item.src);
+  if (fs.existsSync(packaged)) return fs.readFileSync(packaged);
+  const base = process.env.UNI_KIT_RAW ?? `${RAW_REPO_ROOT}/${sourceRef}`;
   return await fetchBuffer(`${base}/${item.src}`);
 }
 
@@ -162,6 +193,7 @@ function usage() {
   console.log('Examples:');
   console.log('  npx uni-kit add slint alert-dialog');
   console.log('  npx uni-kit add iced button');
+  console.log('  npx uni-kit add nsh button');
   console.log('  npx uni-kit add gpui sidebar');
   console.log('  npx uni-kit add egui alert-dialog');
   console.log('  npx uni-kit add quickgui button');
@@ -170,7 +202,7 @@ function usage() {
   console.log('share are written once:');
   console.log('  npx uni-kit add slint sidebar card button table');
   console.log('');
-  console.log('iced and Slint components are source the app owns; the GPUI blocks');
+  console.log('Slint, iced and NSH components are source the app owns; the GPUI blocks');
   console.log('compose controls that ship in the gpui-kit crate:');
   console.log('  npx uni-kit add gpui sidebar dock settings');
 }
@@ -230,6 +262,29 @@ function ensureIcedDependency(components = [], frameworkConfig = {}) {
         `  ${owners.join(', ')} implements the widget trait directly, so it also needs: ${crate} = "${version}"`,
       );
     }
+  }
+}
+
+// NSH components import `nsh` and `nsh/ui/mobile`, which the runtime provides;
+// there is no crate to add. The theme file is optional (the mobile components
+// have their own default), but pointing `nsh.json` at the installed one makes
+// them wear the same palette as the hand-written components. `nsh package`
+// currently rejects the `theme` key, so the hint says which commands use it.
+function ensureNshDependency() {
+  const manifest = path.join(process.cwd(), 'nsh.json');
+  if (!fs.existsSync(manifest)) {
+    console.log('  Create an NSH app with `nsh init`; its runtime provides `nsh` and `nsh/ui/mobile`.');
+    console.log('  Then set "theme": "src/components/theme.json" in nsh.json so the mobile components share the tokens.');
+    return;
+  }
+  try {
+    const settings = JSON.parse(fs.readFileSync(manifest, 'utf8'));
+    if (!settings.theme) {
+      console.log('  Set "theme": "src/components/theme.json" in nsh.json so nsh/ui/mobile shares the design tokens.');
+      console.log('  (nsh build and nsh run read it; nsh package does not accept the key yet.)');
+    }
+  } catch (error) {
+    console.log(`  Could not read nsh.json (${error.message}); set "theme": "src/components/theme.json" by hand.`);
   }
 }
 
@@ -316,7 +371,7 @@ async function main() {
   for (const { item, destination } of plan) {
     let data;
     try {
-      data = await readSource(item);
+      data = await readSource(item, frameworkConfig.source_ref);
     } catch (error) {
       throw new Error(`Could not read ${item.src}: ${error.message}`);
     }
@@ -343,6 +398,7 @@ async function main() {
 
   if (framework === 'slint') ensureSlintIncludePath(baseTargetDir);
   if (framework === 'iced') ensureIcedDependency(components, frameworkConfig);
+  if (framework === 'nsh') ensureNshDependency();
 
   // The `pub mod` line only makes the file reachable from the directory's own
   // module; the crate still has to declare that module, and nothing else will

@@ -21,8 +21,8 @@ export const shikiConfig = {
     dark: theme('dark'),
   },
   defaultColor: 'light',
-  langs: ['rust', slint],
-  langAlias: { rs: 'rust', iced: 'rust' },
+  langs: ['rust', slint, 'tsx'],
+  langAlias: { rs: 'rust', iced: 'rust', nsh: 'tsx' },
 };
 
 export const defaultHighlightLang = 'rust';

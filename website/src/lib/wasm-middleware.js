@@ -16,6 +16,7 @@ export function wasmExamplesDevServer(base) {
     [`${prefix}/gallery`, resolve('../crates/story-web/www/dist')],
     [`${prefix}/slint-gallery`, resolve('../crates/slint-component/www/dist')],
     [`${prefix}/iced-gallery`, resolve('../crates/iced-component/www/dist')],
+    [`${prefix}/nsh-gallery`, resolve('../crates/nsh-component/www/dist')],
   ]);
 
   return {
@@ -50,6 +51,23 @@ export function wasmExamplesDevServer(base) {
             `The Slint example for "${page[1]}" is not built.\n` +
               `Run: make build:wasm-slint-dev SLUGS=${page[1]}\n`,
           );
+          return;
+        }
+
+        // A missing file with an extension is a missing build artifact, not a
+        // folder request: falling back to index.html would hand the frame HTML
+        // where it asked for bytecode or a module.
+        if (!existsSync(file) && extname(relative)) {
+          res.statusCode = 503;
+          res.setHeader('Content-Type', 'text/plain; charset=utf-8');
+          const build = prefix.includes('nsh')
+            ? 'make build:wasm-nsh'
+            : prefix.includes('iced')
+              ? 'make build:wasm-iced'
+              : prefix.includes('slint')
+                ? 'make build:wasm-slint-pages'
+                : 'make build:wasm-gpui';
+          res.end(`The gallery file "${relative}" is not built.\nRun: ${build}\n`);
           return;
         }
 

@@ -13,7 +13,7 @@ project as source you own — so the first thing you change is the thing you wan
 to change.
 
 uni-kit carries the [GPUI Kit](https://github.com/longbridge/gpui-kit) catalog
-past a single framework. GPUI, Slint and iced are all in it today, with the same
+past a single framework. GPUI, Slint, iced and NSH are all in it today, with the same
 pages and the same components; egui, QuickGUI and others join them as their
 components are written. The [roadmap](docs/roadmap.md) tracks it.
 
@@ -24,6 +24,7 @@ components are written. The [roadmap](docs/roadmap.md) tracks it.
 | [GPUI](https://github.com/zed-industries/zed) | Depend on the `gpui-kit` crate for the controls; `npx uni-kit add gpui <block>` copies a composed screen into `src/components/`. |
 | [Slint](https://slint.dev)                    | `npx uni-kit add slint <component>` copies the `.slint` files into `ui/components/`.                                             |
 | [iced](https://iced.rs)                      | `npx uni-kit add iced <component>` copies the `.rs` files into `src/components/`.                     |
+| [NSH](https://nsh.dev)                        | `npx uni-kit add nsh <component>` copies the `.tsx` files into `src/components/`; the NSH runtime provides `nsh` and `nsh/ui/mobile`. |
 | egui, QuickGUI, others                        | The same pages, once the source exists. [Roadmap](docs/roadmap.md).                                                              |
 
 iced is a third port of the same catalogue, in
@@ -32,6 +33,11 @@ components, with 80 demos, written against iced 0.14 and sharing the same design
 tokens and documentation site. Its source is copied like Slint's, not depended
 on.
 
+NSH is the fourth port, in [`crates/nsh-component`](crates/nsh-component): all
+79 catalog components written in TSX against Native Shell, with a per-component
+demo and a web gallery the site embeds at `/nsh-gallery`. Its source is copied
+like Slint's and iced's, not depended on.
+
 > **Not published from `main` yet.** iced support lives on the `iced` branch, and
 > `main`'s `registry/components.json` has no `iced` key. The CLI reads that
 > manifest — the copy bundled in the npm package is only an offline fallback — so
@@ -39,6 +45,9 @@ on.
 > `Framework "iced" is not in the registry`. It starts working once the branch is
 > merged and the registry is published; until then, copy the source from
 > [`crates/iced-component/src/components`](crates/iced-component/src/components).
+>
+> NSH is on the `nsh` branch in the same way; its install command starts
+> working once that branch is merged and the registry is published.
 
 ## What is in this repository
 
@@ -51,6 +60,7 @@ crates/component-shell  The styled catalog for that host
 crates/blocks           Composed GPUI screens the CLI installs
 crates/slint-component  The same catalog, written for Slint 1.17
 crates/iced-component   The same catalog, written for iced 0.14
+crates/nsh-component    The same catalog, written in TSX for Native Shell
 crates/story            The component gallery, as a native application
 crates/story-web        The same gallery, built for the browser
 registry/               The uni-kit CLI and the manifest it installs from
@@ -61,8 +71,10 @@ website/                The documentation site and its live examples
 is a `Root`. Architecture of the GPUI crates is in
 [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md). Slint components are source you
 copy, not a crate from this repository: take `theme.slint`, the component, the
-files it imports, and the `icons/` folder beside `icon.slint`. Adding a framework
-port is in [docs/adding-a-framework.md](docs/adding-a-framework.md).
+files it imports, and the `icons/` folder beside `icon.slint`. NSH is copied the
+same way, in TSX. Adding a framework port is in
+[docs/adding-a-framework.md](docs/adding-a-framework.md); the NSH resources for
+agents start at [docs/nsh/conventions.md](docs/nsh/conventions.md).
 
 ## Development
 
@@ -70,6 +82,7 @@ port is in [docs/adding-a-framework.md](docs/adding-a-framework.md).
 cargo run              # the GPUI component gallery
 make dev:website       # the site, served from a production build
 make dev               # the site, rebuilding the Slint gallery first
+make dev:website-nsh   # the site with the NSH gallery rebuilt
 ```
 
 `make dev` is the one for Slint work: it rebuilds the gallery wasm and then starts  
@@ -100,6 +113,11 @@ theirs.
 - **[Lucide](https://lucide.dev)** — the icons.
 - **[iced](https://iced.rs)** — the framework the iced components are written
   against, and the widgets and styling model they are built from.
+- **[Native Shell](https://nsh.dev/)** — the TSX runtime the NSH port is written
+  against. Its source is at
+  **[longbridge/nsh](https://github.com/longbridge/nsh)**, and its documentation
+  is vendored under `docs/nsh/` for offline reference and remains the upstream
+  copyright.
 
 ## License
 

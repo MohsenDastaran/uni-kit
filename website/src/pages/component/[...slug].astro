@@ -5,6 +5,7 @@ import ComponentPageFooter from '../../components/ComponentPageFooter.astro';
 import { componentNeighbours, enComponentSidebar } from '../../lib/sidebar';
 import ComponentExample from '../../components/ComponentExample.vue';
 import { hasIcedExample, hasIcedPage } from '../../lib/remark-iced-source.js';
+import { hasNshExample, hasNshPage } from '../../lib/remark-nsh-source.js';
 import { hasSlintExample, hasSlintPage } from '../../lib/remark-slint-source.js';
 import { FRAMEWORKS } from '../../lib/rehype-framework-code.js';
 import { gallerySizes } from '../../lib/gallery-sizes';
@@ -26,6 +27,7 @@ const slug = entry.id.replace(/\.md$/, '');
 const frameworks = [
   ...(hasSlintExample(slug) ? ['slint'] : []),
   ...(hasIcedExample(slug) ? ['iced'] : []),
+  ...(hasNshExample(slug) ? ['nsh'] : []),
 ];
 const pathname = Astro.url.pathname;
 // The current main checkout owns the single WASM deployment at the site root.
@@ -39,6 +41,7 @@ const sizes = (() => {
   return {
     gallery: all.gallery,
     ...(slug === 'index' ? {} : { [`slint-gallery/pages/${slug}`]: all[`slint-gallery/pages/${slug}`] }),
+    ...(slug === 'index' ? {} : { 'nsh-gallery': all['nsh-gallery'] }),
   };
 })();
 const seoTitle = entry.id.replace(/\.md$/, '') === 'index' ? entry.data.title : `${entry.data.title} — GPUI Component`;
@@ -50,11 +53,13 @@ const seoTitle = entry.id.replace(/\.md$/, '') === 'index' ? entry.data.title : 
 // framework it does not have always has an answer.
 const slintPage = slug === 'index' || hasSlintPage(slug, entry.data.example);
 const icedPage = hasIcedPage(slug, entry.data.example);
+const nshPage = slug === 'index' || hasNshPage(slug, entry.data.example);
 const contentData = {
   'data-framework-available': [
     'gpui',
     ...(slintPage ? ['slint'] : []),
     ...(icedPage ? ['iced'] : []),
+    ...(nshPage ? ['nsh'] : []),
   ].join(' '),
   'data-framework-fallback': `${import.meta.env.BASE_URL}component`,
 };
@@ -81,6 +86,8 @@ const pagers = FRAMEWORKS.map((framework) => ({
   description={entry.data.description}
   sidebar={enComponentSidebar}
   contentClass={slug === 'index' ? 'doc-content--component-index' : undefined}
+  layoutClass={slug === 'index' ? undefined : 'docs-layout--component'}
+  mainClass={slug === 'index' ? undefined : 'docs-main--component'}
   contentData={contentData}
 >
   <Content />

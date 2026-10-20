@@ -1,6 +1,6 @@
 # Adding a UI framework to uni-kit
 
-This is the guide for adding a fourth port beside GPUI, Slint and iced. It
+This is the guide for adding another port beside GPUI, Slint, iced and NSH. It
 describes the contract the repository actually implements, in the order a reader
 has to do the work. The iced port is the worked example: its plan, conventions
 and verification log are in [iced-integration.md](iced-integration.md), and the
@@ -18,10 +18,10 @@ There are two shapes a port can take:
 
 | Shape | How it ships | Examples |
 | --- | --- | --- |
-| Source-shipped | Every component is a file the CLI copies into the application, together with the shared theme. | Slint, iced |
+| Source-shipped | Every component is a file the CLI copies into the application, together with the shared theme. | Slint, iced, NSH |
 | Crate-shipped | The controls live in a crate the application depends on; the registry only copies composed screens. | GPUI |
 
-A fourth port should normally be source-shipped. GPUI's shape works because the
+A new port should normally be source-shipped. GPUI's shape works because the
 controls already ship in `gpui-kit`; if a new framework cannot be copied as
 source, only the registry section changes (entries become blocks), and the rest
 of this guide still applies.
@@ -491,7 +491,7 @@ It writes two files:
 - `website/src/lib/registry-slugs.json` — the same keys, as sorted string
   arrays, for the site. Do not edit it by hand.
 
-The current top level is `slint`, `egui`, `gpui`, `iced`, `quickgui`; `egui` and
+The current top level is `slint`, `egui`, `gpui`, `iced`, `nsh`, `quickgui`; `egui` and
 `quickgui` are placeholders with empty component maps. A new framework starts
 the same way if you want to reserve the key, but it must not appear in the
 website's `FRAMEWORKS` or selector until at least one component is real. The
@@ -1388,7 +1388,7 @@ For a new framework the sequence is:
 `README.md`; the component sources are fetched from GitHub, not bundled. That is
 why adding a component needs no release, while changing the CLI does.
 
-## Appendix: the files a fourth port touches
+## Appendix: the files a new port touches
 
 For a quick estimate, this is the whole surface, grouped by the order above.
 

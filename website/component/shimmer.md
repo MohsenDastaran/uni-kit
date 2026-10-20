@@ -36,6 +36,15 @@ use gpui_kit::component::{
 };
 ```
 
+## Usage
+
+Wrap the placeholder in a shimmer and give the shape the size it will occupy
+when the content arrives:
+
+```rust
+Shimmer::new().child(placeholder())
+```
+
 ## Basic usage
 
 Use the default theme-aware shimmer for a loading label:

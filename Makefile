@@ -75,6 +75,52 @@ build\:wasm-iced:
 build\:page-iced:
 	$(MAKE) -C crates/iced-component build-page
 
+# NSH (Native Shell): one TSX app per component, compiled by the `nsh` CLI into
+# `/nsh-gallery?story=<key>`. The crate keeps its own app root under examples/;
+# the site serves `crates/nsh-component/www/dist` through the same middleware.
+dev\:website-nsh:
+	$(MAKE) -C crates/nsh-component gallery
+	bun run --cwd website dev
+
+# The player and its runtime without compiling a demo.
+dev\:website-nsh-page:
+	$(MAKE) -C crates/nsh-component gallery-page
+	bun run --cwd website dev
+
+# Release gallery for `/nsh-gallery`.
+build\:wasm-nsh:
+	$(MAKE) -C crates/nsh-component gallery
+
+build\:page-nsh:
+	$(MAKE) -C crates/nsh-component gallery-page
+
+# The NSH crate gate: generated icons/theme, theme parity, type check, every
+# demo rendered headlessly, the gallery build, the manifest and the checklist.
+check\:nsh:
+	$(MAKE) -C crates/nsh-component check
+
+# One NSH demo in a development host.
+#
+#   make run:nsh STORY=button                  web
+#   make run:nsh STORY=button TARGET=linux     GTK 4
+#   make run:nsh STORY=button TARGET=macos     AppKit
+#   make run:nsh STORY=button TARGET=windows   Win32 / Direct2D
+#   make run:nsh STORY=button TARGET=android   device or emulator
+run\:nsh:
+	$(MAKE) -C crates/nsh-component run STORY="$(STORY)" TARGET="$(or $(TARGET),web)"
+
+# Every story `?story=` takes, one per line.
+stories\:nsh:
+	@$(MAKE) -C crates/nsh-component stories
+
+# Remove the built gallery.
+clean\:nsh:
+	$(MAKE) -C crates/nsh-component clean
+
+# The pinned NSH CLI and its runtimes.
+install\:nsh:
+	script/install-nsh.sh
+
 # The iced crate's own gate: the module lists, the library and every example,
 # theme parity with the Slint tokens, the feature list against the install hint,
 # the generated manifest, and the component checklist. The checklist is the one
@@ -151,8 +197,8 @@ build\:wasm-slint:
 build\:wasm-base:
 	$(MAKE) -C crates/base/examples/wasm build-wasm
 
-# All website WASM targets (the same four as release-website CI).
-build\:wasms: build\:wasm-gpui build\:wasm-slint build\:wasm-base build\:wasm-iced
+# All website WASM targets (the same five as release-website CI).
+build\:wasms: build\:wasm-gpui build\:wasm-slint build\:wasm-base build\:wasm-iced build\:wasm-nsh
 
 build\:website:
 	bun run --cwd website build

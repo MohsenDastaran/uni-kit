@@ -1,0 +1,8 @@
+{
+  "name": "uni-kit NSH Gallery",
+  "id": "com.example.unikitnsh",
+  "version": "0.1.0",
+  "build": 1,
+  "appearance": "system",
+  "theme": "../src/components/theme.json"
+}

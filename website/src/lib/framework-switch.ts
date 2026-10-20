@@ -1,10 +1,10 @@
 const STORAGE_KEY = 'selected-framework';
-const FRAMEWORKS = ['gpui', 'slint', 'iced'] as const;
+const FRAMEWORKS = ['gpui', 'slint', 'iced', 'nsh'] as const;
 type Framework = (typeof FRAMEWORKS)[number];
 
 // The framework a first visit gets, and the one the address bar does not need
 // to name. A parameter is written for anything else.
-const DEFAULT_FRAMEWORK: Framework = 'slint';
+const DEFAULT_FRAMEWORK: Framework = 'nsh';
 const FRAMEWORK_PARAM = 'framework';
 
 // The loading beat is long enough to read as a reload of the page's code, and
@@ -22,6 +22,26 @@ const isFramework = (value: unknown): value is Framework =>
 let target: Framework = isFramework(root.dataset.framework) ? root.dataset.framework : DEFAULT_FRAMEWORK;
 let loadingTimer: number | undefined;
 let enterTimer: number | undefined;
+
+// Component pages are rendered with a GPUI suffix in their static title. Keep
+// the browser tab in the reader's chosen framework while leaving ordinary docs
+// pages, whose titles have no framework suffix, untouched.
+const TITLE_PATTERN = /^(.*?) — (GPUI|Slint|Iced|NSH) Component( · .*)?$/;
+const TITLE_MATCH = document.title.match(TITLE_PATTERN);
+const TITLE_BASE = TITLE_MATCH?.[1] ?? null;
+const TITLE_TAIL = TITLE_MATCH?.[3] ?? '';
+const TITLE_NAMES: Record<Framework, string> = {
+  gpui: 'GPUI Component',
+  slint: 'Slint Component',
+  iced: 'Iced Component',
+  nsh: 'NSH Component',
+};
+
+function syncTitle(framework: Framework) {
+  if (TITLE_BASE === null) return;
+  const next = `${TITLE_BASE} — ${TITLE_NAMES[framework]}${TITLE_TAIL}`;
+  if (document.title !== next) document.title = next;
+}
 
 function syncSwitches(framework: Framework) {
   document.querySelectorAll<HTMLElement>('.framework-switch').forEach((group) => {
@@ -98,7 +118,7 @@ const progress = (() => {
  * the URL is the only part of the page a search engine or an assistant can cite
  * — and the only way a reader can hand the same view to someone else.
  *
- * The default is left out: `?framework=slint` says nothing that a clean URL
+ * The default is left out: `?framework=nsh` says nothing that a clean URL
  * does not, and every page's canonical points at the clean one.
  */
 function syncUrl(framework: Framework) {
@@ -144,6 +164,7 @@ function redirectToAvailable(framework: Framework, persist: boolean): boolean {
 
 function show(framework: Framework) {
   root.dataset.framework = framework;
+  syncTitle(framework);
   announce(framework);
   document.dispatchEvent(new Event('framework-change'));
 }
@@ -153,6 +174,7 @@ function select(framework: Framework, persist = true) {
   if (redirectToAvailable(framework, persist)) return;
   target = framework;
   syncSwitches(framework);
+  syncTitle(framework);
   syncUrl(framework);
   if (persist) localStorage.setItem(STORAGE_KEY, framework);
 
@@ -230,6 +252,7 @@ window.addEventListener('storage', (event) => {
 });
 
 syncSwitches(target);
+syncTitle(target);
 // A page loaded with the parameter, or with a stored choice, says so in the
 // address bar and carries it into its links.
 syncUrl(target);

@@ -33,6 +33,13 @@ use gpui_kit::component::{
 Import the component through `gpui_kit::component::empty`; GPUI's own
 `gpui_kit::Empty` is a separate element that renders nothing.
 
+## Usage
+
+Use an empty state when a surface has no content to show. It should explain what
+is missing, why, and the next action. Pass a title and description, then give the
+empty state an action; the media slot takes an icon, an illustration or a custom
+node.
+
 ## Basic usage
 
 ```rust

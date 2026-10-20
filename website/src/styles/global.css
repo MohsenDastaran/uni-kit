@@ -586,8 +586,10 @@ html[lang^="ja"] .example-prompt {
    follows the palette rather than the light or dark pair above. */
 .component-example--component iframe.component-example__frame--slint,
 .component-example--component iframe.component-example__frame--iced,
+.component-example--component iframe.component-example__frame--nsh,
 .dark .component-example--component iframe.component-example__frame--slint,
-.dark .component-example--component iframe.component-example__frame--iced {
+.dark .component-example--component iframe.component-example__frame--iced,
+.dark .component-example--component iframe.component-example__frame--nsh {
   background: var(--background);
 }
 
@@ -1608,7 +1610,9 @@ html:not([data-framework="gpui"])
 html:not([data-framework="slint"])
   .sidebar-item__count[data-framework-count="slint"],
 html:not([data-framework="iced"])
-  .sidebar-item__count[data-framework-count="iced"] {
+  .sidebar-item__count[data-framework-count="iced"],
+html:not([data-framework="nsh"])
+  .sidebar-item__count[data-framework-count="nsh"] {
   display: none;
 }
 
@@ -1626,7 +1630,10 @@ html[data-framework="slint"]
   [data-framework-available]:not([data-framework-available~="slint"]),
 html[data-framework="iced"]
   .docs-sidebar
-  [data-framework-available]:not([data-framework-available~="iced"]) {
+  [data-framework-available]:not([data-framework-available~="iced"]),
+html[data-framework="nsh"]
+  .docs-sidebar
+  [data-framework-available]:not([data-framework-available~="nsh"]) {
   display: none;
 }
 
@@ -1634,7 +1641,8 @@ html[data-framework="iced"]
    framework-scoped count. */
 html:not([data-framework="gpui"]) .site-nav__link[data-framework-link="gpui"],
 html:not([data-framework="slint"]) .site-nav__link[data-framework-link="slint"],
-html:not([data-framework="iced"]) .site-nav__link[data-framework-link="iced"] {
+html:not([data-framework="iced"]) .site-nav__link[data-framework-link="iced"],
+html:not([data-framework="nsh"]) .site-nav__link[data-framework-link="nsh"] {
   display: none;
 }
 
@@ -1700,6 +1708,22 @@ html[lang^="ja"] .sidebar-subgroup-title {
   min-width: 0;
   padding: 3rem 3.5rem 4rem;
   max-width: 860px;
+}
+
+.docs-layout--component {
+  /* Component pages carry tables, galleries and code samples; give the article
+     more of the row than the guide pages need, and buy back the difference from
+     a slightly narrower outline column. */
+  width: min(100% - 3rem, 1560px);
+}
+
+.docs-main--component {
+  max-width: 960px;
+  padding: 3rem 2.5rem 4rem;
+}
+
+.docs-layout--component .toc {
+  width: 340px;
 }
 
 /* ====================================================================
@@ -2215,7 +2239,8 @@ html[lang^="ja"] .sidebar-group__title {
    900px wide, and narrower still below that. The bar keeps its own 767px
    breakpoint — its links fit far longer than the sidebar does. */
 @media (max-width: 959px) {
-  .docs-layout {
+  .docs-layout,
+  .docs-layout--component {
     flex-direction: column;
     width: calc(100% - 3rem);
   }
@@ -2231,7 +2256,8 @@ html[lang^="ja"] .sidebar-group__title {
   }
 
   .docs-main,
-  .docs-main--full {
+  .docs-main--full,
+  .docs-main--component {
     padding: 1.75rem 0 3rem;
   }
 }
@@ -2449,7 +2475,9 @@ html[data-framework="gpui"] .framework-code__panel[data-framework-panel="gpui"],
 html[data-framework="slint"]
   .framework-code__panel[data-framework-panel="slint"],
 html[data-framework="iced"]
-  .framework-code__panel[data-framework-panel="iced"] {
+  .framework-code__panel[data-framework-panel="iced"],
+html[data-framework="nsh"]
+  .framework-code__panel[data-framework-panel="nsh"] {
   display: block;
 }
 
@@ -2459,7 +2487,8 @@ html[data-framework="iced"]
    chosen is left out rather than shown with a note saying it is missing. */
 html[data-framework="gpui"] [data-framework-missing~="gpui"],
 html[data-framework="slint"] [data-framework-missing~="slint"],
-html[data-framework="iced"] [data-framework-missing~="iced"] {
+html[data-framework="iced"] [data-framework-missing~="iced"],
+html[data-framework="nsh"] [data-framework-missing~="nsh"] {
   /* `!important`, because the group carries its own `display` a few rules down
      and a section that is left out has to stay left out. */
   display: none !important;
@@ -2468,9 +2497,11 @@ html[data-framework="iced"] [data-framework-missing~="iced"] {
 html[data-framework="gpui"] [data-framework-missing~="gpui"],
 html[data-framework="slint"] [data-framework-missing~="slint"],
 html[data-framework="iced"] [data-framework-missing~="iced"],
+html[data-framework="nsh"] [data-framework-missing~="nsh"],
 html:not([data-framework="gpui"]) [data-framework-only="gpui"],
 html:not([data-framework="slint"]) [data-framework-only="slint"],
-html:not([data-framework="iced"]) [data-framework-only="iced"] {
+html:not([data-framework="iced"]) [data-framework-only="iced"],
+html:not([data-framework="nsh"]) [data-framework-only="nsh"] {
   display: none;
 }
 
@@ -2481,7 +2512,8 @@ html:not([data-framework="iced"]) [data-framework-only="iced"] {
 html[data-framework="gpui"] .framework-api__panel[data-framework-panel="gpui"],
 html[data-framework="slint"]
   .framework-api__panel[data-framework-panel="slint"],
-html[data-framework="iced"] .framework-api__panel[data-framework-panel="iced"] {
+html[data-framework="iced"] .framework-api__panel[data-framework-panel="iced"],
+html[data-framework="nsh"] .framework-api__panel[data-framework-panel="nsh"] {
   display: block;
 }
 
@@ -2744,6 +2776,18 @@ html[data-framework="iced"] .framework-api__panel[data-framework-panel="iced"] {
   margin: 1.75rem 0 0;
 }
 
+/* NSH has three starters. Three equal columns keep their previews and actions
+   together instead of one card stretching beside a tall neighbour. */
+html[data-framework="nsh"] .starter__grid {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+@media (max-width: 1120px) {
+  html[data-framework="nsh"] .starter__grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
 @media (max-width: 760px) {
   .starter__grid {
     grid-template-columns: minmax(0, 1fr);
@@ -2765,6 +2809,39 @@ html[data-framework="iced"] .framework-api__panel[data-framework-panel="iced"] {
 .starter-card:hover {
   border-color: var(--border-hover);
   box-shadow: var(--shadow-panel);
+}
+
+/* A template's own screen, rather than the shared folder illustration. */
+.starter-card__preview {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 13rem;
+  overflow: hidden;
+  border-radius: var(--radius-card);
+  background: var(--muted);
+}
+
+.starter-card__preview img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  min-width: 0;
+  object-position: top center;
+  background: var(--muted);
+  border: 1px solid var(--border);
+  border-radius: calc(var(--radius-card) - 1px);
+  box-shadow: var(--shadow-hairline);
+}
+
+/* The theme starter is a phone-sized window, so show the whole screen rather
+   than cropping its header away. */
+.starter-card__preview--portrait img {
+  width: auto;
+  max-width: 100%;
+  height: calc(100% - 1rem);
+  margin-block: 0.5rem;
+  border-radius: 0.35rem;
 }
 
 .starter-card__meta {
@@ -2808,6 +2885,7 @@ html[data-framework="iced"] .framework-api__panel[data-framework-panel="iced"] {
   gap: 0.45rem;
   min-height: 2.25rem;
   margin: 1.25rem 0.75rem 0.75rem;
+  margin-top: auto;
   padding: 0 0.9rem;
   border: 1px solid var(--brand);
   border-radius: var(--radius-control);
@@ -2828,6 +2906,47 @@ html[data-framework="iced"] .framework-api__panel[data-framework-panel="iced"] {
 }
 
 .starter-card__link:focus-visible {
+  outline: 2px solid var(--brand);
+  outline-offset: 2px;
+}
+
+.starter-card__actions {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin: 1.25rem 0.75rem 0.75rem;
+  margin-top: auto;
+}
+
+.starter-card__actions .starter-card__link {
+  margin: 0;
+}
+
+/* A compact way to open the repository itself, beside the fork action. */
+.starter-card__repo {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 2rem;
+  height: 2rem;
+  flex: none;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-control);
+  background: var(--background);
+  color: var(--muted-foreground);
+  transition:
+    background 150ms ease,
+    border-color 150ms ease,
+    color 150ms ease;
+}
+
+.starter-card__repo:hover {
+  border-color: var(--brand);
+  background: var(--secondary);
+  color: var(--foreground);
+}
+
+.starter-card__repo:focus-visible {
   outline: 2px solid var(--brand);
   outline-offset: 2px;
 }

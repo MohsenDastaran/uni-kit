@@ -34,6 +34,20 @@ export const toggleLogos = {
       },
     ],
   },
+  nsh: {
+    // The arch and dot of Native Shell's mark, as a filled path.
+    viewBox: '0 0 128 128',
+    paths: [
+      {
+        d: 'M30 100V58a34 34 0 0 1 68 0v42h-14V58a20 20 0 0 0-40 0v42Z',
+        fill: 'currentColor',
+      },
+      {
+        d: 'M64 65a11 11 0 1 0 0 22 11 11 0 0 0 0-22Z',
+        fill: 'currentColor',
+      },
+    ],
+  },
   npx: {
     viewBox: '0 0 24 24',
     paths: [

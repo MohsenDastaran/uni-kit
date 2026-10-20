@@ -2,11 +2,27 @@
 
 # The component previews are WebAssembly, and the site only serves them when the
 # built galleries sit inside its own output: `/gallery`, `/examples/base`,
-# `/slint-gallery` and `/iced-gallery` are Vite dev-server middleware in
+# `/slint-gallery`, `/iced-gallery` and `/nsh-gallery` are Vite dev-server middleware in
 # development, so a production build has to carry the files. Building them needs
 # the wasm toolchain, and the Slint catalog's own script says a full compile
 # wants more than a 14 GiB machine. That is why this image is built in CI and
 # Coolify only pulls it.
+
+# ---- NSH gallery -----------------------------------------------------------
+# The prebuilt `nsh` CLI needs glibc 2.39 and the main stage is Debian bookworm
+# (2.36), so the TSX gallery is compiled in an Ubuntu 24.04 stage and copied in.
+# Only the output crosses the stage boundary; the 85 MB distribution does not
+# reach the runtime image.
+FROM ubuntu:24.04 AS nsh-gallery
+RUN apt-get update \
+ && apt-get install -y --no-install-recommends ca-certificates curl nodejs \
+ && rm -rf /var/lib/apt/lists/*
+ENV NSH_VERSION=v0.1.1
+RUN sh -c "$(curl -fsSL https://nsh.dev/install.sh)"
+ENV PATH="/root/.local/bin:${PATH}"
+WORKDIR /src
+COPY crates/nsh-component crates/nsh-component
+RUN node crates/nsh-component/scripts/build-gallery.mjs
 
 # ---- galleries and site ----------------------------------------------------
 FROM rust:1-bookworm AS build
@@ -74,6 +90,7 @@ RUN --mount=type=cache,target=/usr/local/cargo/registry \
 
 WORKDIR /src
 COPY . .
+COPY --from=nsh-gallery /src/crates/nsh-component/www/dist crates/nsh-component/www/dist
 
 RUN --mount=type=cache,target=/usr/local/cargo/registry \
     --mount=type=cache,target=/src/target \
@@ -122,10 +139,11 @@ RUN node website/scripts/precompress-wasm.mjs \
       crates/story-web/www/dist \
       crates/base/examples/wasm/www/dist \
       crates/slint-component/www/dist \
-      crates/iced-component/www/dist
+      crates/iced-component/www/dist \
+      crates/nsh-component/www/dist
 
-# The site reads the Story, Slint and iced sources from the repository root to
-# count examples and to render the Slint and iced samples, so it has to build
+# The site reads the Story, Slint, iced and NSH sources from the repository root
+# to count examples and to render their samples, so it has to build
 # from here rather than from `website/` alone. The copies mirror
 # release-website.yml.
 #
@@ -151,7 +169,8 @@ RUN --mount=type=secret,id=github_token \
       ../crates/story-web/www/dist:gallery \
       ../crates/base/examples/wasm/www/dist:examples/base \
       ../crates/slint-component/www/dist:slint-gallery \
-      ../crates/iced-component/www/dist:iced-gallery; do \
+      ../crates/iced-component/www/dist:iced-gallery \
+      ../crates/nsh-component/www/dist:nsh-gallery; do \
       source_dir="${gallery%%:*}"; target_dir="${gallery#*:}"; \
       if { [ ! -f "$source_dir/index.html" ] && [ ! -d "$source_dir/pages" ]; } || \
          ! find "$source_dir" -name '*.wasm' -print -quit | grep -q .; then \

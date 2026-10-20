@@ -42,6 +42,15 @@ jobs:
             --component rustfmt --component clippy
           rustup target add wasm32-unknown-unknown --toolchain nightly-2026-10-10
 
+      - name: Install NSH
+        # The pinned CLI and its prebuilt web runtime; it needs glibc 2.39, which
+        # ubuntu-latest has. The gallery is TSX bytecode, not Rust.
+        run: |
+          script/install-nsh.sh
+          echo "$HOME/.local/bin" >> "$GITHUB_PATH"
+        env:
+          NSH_VERSION: v0.1.1
+
       - name: Install wasm-bindgen-cli
         # Keep the CLI version in sync with the `wasm-bindgen` crate in Cargo.lock
         run: |
@@ -89,6 +98,10 @@ jobs:
         run: |
           PATH="$HOME/.wasm-bindgen-iced/bin:$PATH" make build-wasm
 
+      - name: Build NSH gallery
+        run: |
+          make -C crates/nsh-component gallery
+
       - name: Build Website
         working-directory: website
         env:
@@ -107,6 +120,8 @@ jobs:
           cp -r crates/slint-component/www/dist/* website/dist/slint-gallery/
           mkdir -p website/dist/iced-gallery
           cp -r crates/iced-component/www/dist/* website/dist/iced-gallery/
+          mkdir -p website/dist/nsh-gallery
+          cp -r crates/nsh-component/www/dist/* website/dist/nsh-gallery/
 
       - name: Setup Pages
         uses: actions/configure-pages@v5

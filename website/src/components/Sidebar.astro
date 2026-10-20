@@ -73,6 +73,11 @@ function renderItems(items: SidebarItem[], depth = 0): any[] {
                               {sub.examples.iced}<span class="sr-only"> examples</span>
                             </span>
                           ) : null}
+                          {sub.examples?.nsh ? (
+                            <span class="sidebar-item__count" data-framework-count="nsh">
+                              {sub.examples.nsh}<span class="sr-only"> examples</span>
+                            </span>
+                          ) : null}
                         </a>
                       </li>
                     ))}
@@ -128,6 +133,11 @@ function renderItems(items: SidebarItem[], depth = 0): any[] {
                     {item.examples?.iced ? (
                       <span class="sidebar-item__count" data-framework-count="iced">
                         {item.examples.iced}<span class="sr-only"> examples</span>
+                      </span>
+                    ) : null}
+                    {item.examples?.nsh ? (
+                      <span class="sidebar-item__count" data-framework-count="nsh">
+                        {item.examples.nsh}<span class="sr-only"> examples</span>
                       </span>
                     ) : null}
                   </a>

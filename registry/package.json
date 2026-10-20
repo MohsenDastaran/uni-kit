@@ -1,7 +1,7 @@
 {
   "name": "@dastaran/uni-kit",
-  "version": "0.4.0",
-  "description": "Copy Uni Kit components into a Rust app. One command for Slint, iced & GPUI.",
+  "version": "0.5.1",
+  "description": "Copy Uni Kit components into a Rust or NSH app. One command for Slint, iced, GPUI & NSH.",
   "type": "module",
   "bin": {
     "uni-kit": "index.js"
@@ -9,7 +9,8 @@
   "files": [
     "index.js",
     "components.json",
-    "README.md"
+    "README.md",
+    "sources"
   ],
   "engines": {
     "node": ">=18"
@@ -19,5 +20,9 @@
     "type": "git",
     "url": "git+https://github.com/MohsenDastaran/uni-kit.git",
     "directory": "registry"
+  },
+  "scripts": {
+    "prepack": "node pack-sources.mjs",
+    "postpack": "node -e \"require('node:fs').rmSync('sources',{recursive:true,force:true})\""
   }
 }

@@ -33,6 +33,12 @@ use gpui_kit::component::{
 use std::time::Duration;
 ```
 
+## Usage
+
+A marker separates or labels content inside a conversation, a list, or an agent
+run. Use a plain marker for a note, a separator for a phase, and a bordered
+marker when the note needs its own surface.
+
 ## Anatomy and basic usage
 
 The typed form keeps icon and content style targets independent:

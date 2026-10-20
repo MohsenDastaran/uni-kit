@@ -24,6 +24,25 @@ Keep established framework, component, and API names in their canonical English
 form when translation would reduce precision; write the surrounding Chinese as
 natural Chinese rather than word-for-word translation.
 
+## Native Shell (NSH)
+
+The NSH port is source-shipped TSX in `crates/nsh-component`. Read these before
+writing or changing NSH code:
+
+- [NSH conventions](docs/nsh/conventions.md) - the short guide to NSH's model,
+  styling, gallery contract, commands and gotchas.
+- [Vendored NSH documentation](docs/nsh/README.md) - `docs/nsh/llms.txt` and the
+  pages it links to, kept offline for agents. Start at `llms.txt` for the
+  element, component or module reference you need.
+- [NSH integration](docs/nsh-integration.md) - the port's structure, token
+  chain, gallery/player and generated checklist.
+
+NSH is not a Cargo crate and must not be added to the root workspace. Build it
+with the pinned CLI (`script/install-nsh.sh`, `nsh build`), and gate it with
+`crates/nsh-component/scripts/check.sh`. The components use only NSH host
+elements and `nsh/ui/mobile`; `nsh package` currently rejects the `theme` key,
+so the gallery uses `nsh build` and its own player.
+
 ## Project Overview
 
 GPUI Kit is a Rust desktop application framework built on GPUI, published at <https://gpui-kit.com>. It ships as three crates: `gpui-base` (unstyled behavior and infrastructure), `gpui-shell` (JavaScript extensions for a Rust host), and `gpui-component` (GPUI Component, the styled component library with 60+ cross-platform desktop UI components, inspired by macOS/Windows controls and combined with shadcn/ui design). Applications depend on the umbrella crate `gpui-kit` (`crates/kit`), which pins the matching `gpui-pre-*` snapshot of GPUI and puts GPUI at its root (`use gpui_kit::*;`) with `gpui_kit::platform`, `gpui_kit::base`, `gpui_kit::component` and `gpui_kit::assets` reachable by name, so they never list GPUI itself. `gpui-shell` is not part of `gpui-kit` and is not published yet (its `llrt_*` dependencies are git-only); use it as a git dependency.
@@ -37,6 +56,7 @@ This is a Rust workspace project with the following main crates:
 - `crates/component-macros` - Procedural macros (`IntoPlot` derive)
 - `crates/assets` - Static assets
 - `crates/webview` - WebView component support
+- `crates/slint-component`, `crates/iced-component`, `crates/nsh-component` - The same catalog as source-shipped ports (Slint, iced, NSH), each with its own gallery
 - `examples/` - Various example applications
 
 ## Common Commands

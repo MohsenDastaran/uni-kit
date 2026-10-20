@@ -12,6 +12,13 @@ Dock builds application workspaces from draggable tab groups, nested splits, and
 
 For the renderer-independent architecture and custom-renderer API, see Dock — gpui-base.
 
+## Usage
+
+A dock workspace starts with a dock area, adds panels to it, and describes the
+initial split. The layout tree belongs to the application; the dock area renders
+it. The NSH composition below uses `Dock` for a tabbed group and `DockSplit` for
+a horizontal or vertical seam.
+
 ## Create a dock area
 
 Create the area through `DockSkin`. Keep the returned skin if you want to change its appearance later.

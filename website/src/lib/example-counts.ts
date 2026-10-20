@@ -1,6 +1,7 @@
 import { existsSync, readFileSync, readdirSync, statSync } from 'node:fs';
 import { join } from 'node:path';
 import { hasIcedExample, icedSections } from './remark-iced-source.js';
+import { hasNshExample, nshSections } from './remark-nsh-source.js';
 
 // Counts the examples the gallery window actually paints, one per framework.
 // GPUI stories mark each example with `section(...)`. Slint examples mark each
@@ -13,6 +14,7 @@ const ROOT = process.cwd();
 const STORIES = join(ROOT, '../crates/story/src/stories');
 const SLINT_EXAMPLES = join(ROOT, '../crates/slint-component/ui/examples');
 const ICED_EXAMPLES = join(ROOT, '../crates/iced-component/examples');
+const NSH_EXAMPLES = join(ROOT, '../crates/nsh-component/examples');
 const GALLERY = join(ROOT, '../crates/story/src/gallery.rs');
 const SANKEY = join(ROOT, '../crates/story/src/fixtures/tsla-income-statement.json');
 
@@ -71,10 +73,14 @@ if (!exampleSourcesAvailable) {
  */
 export const icedExampleSourcesAvailable = existsSync(ICED_EXAMPLES);
 
+/** Whether the NSH example sources are on disk. A missing tree is unknown, not empty. */
+export const nshExampleSourcesAvailable = existsSync(NSH_EXAMPLES);
+
 export interface GalleryCounts {
   gpui?: number;
   slint?: number;
   iced?: number;
+  nsh?: number;
 }
 
 function titleCase(value: string): string {
@@ -184,6 +190,13 @@ function countIced(slug: string): number {
   return sections.length > 0 ? sections.length : 1;
 }
 
+function countNsh(slug: string): number {
+  if (!nshExampleSourcesAvailable) return 0;
+  if (!hasNshExample(slug)) return 0;
+  const sections = nshSections(slug, ROOT);
+  return sections.length > 0 ? sections.length : 1;
+}
+
 function countGpui(component: string): number {
   const title = STORY_TITLES[component] ?? titleCase(component);
   const stem = title === 'Introduction' ? 'welcome' : stemFromTitle(title);
@@ -206,10 +219,12 @@ export function galleryCounts(
   const gpui = countGpui(example ?? slug);
   const slint = countSlint(slug);
   const iced = countIced(slug);
-  if (!gpui && !slint && !iced) return undefined;
+  const nsh = countNsh(slug);
+  if (!gpui && !slint && !iced && !nsh) return undefined;
   return {
     ...(gpui > 0 ? { gpui } : {}),
     ...(slint > 0 ? { slint } : {}),
     ...(iced > 0 ? { iced } : {}),
+    ...(nsh > 0 ? { nsh } : {}),
   };
 }

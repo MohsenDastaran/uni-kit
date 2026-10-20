@@ -85,6 +85,9 @@ const titleCase = (value: string) =>
  */
 const icedRegistryKey = (slug: string) => slug.replace(/_/g, "-");
 
+/** NSH keys use the same hyphenated spelling as iced. */
+const nshRegistryKey = (slug: string) => slug.replace(/_/g, "-");
+
 const storyName = computed(() =>
   component.value
     ? (storyNames[component.value] ?? titleCase(component.value))
@@ -148,16 +151,26 @@ const frameworkList: Record<string, Framework> = {
       return `${base}/iced-gallery?story=${encodeURIComponent(icedRegistryKey(component.value))}`;
     },
   },
+  nsh: {
+    name: "NSH",
+    live: "TSX & NSH",
+    library: "nsh-component",
+    src: () => {
+      if (!component.value) return undefined;
+      const base = props.baseUrl.replace(/\/$/, "");
+      return `${base}/nsh-gallery?story=${encodeURIComponent(nshRegistryKey(component.value))}&embed=1`;
+    },
+  },
 };
 
 const readFramework = () => {
   // The server render has no document. Its markup is inert until hydration, and
-  // the framework in force is a client-only fact, so Slint is the honest answer
+  // the framework in force is a client-only fact, so NSH is the honest answer
   // there; the setup below runs again on the client, where it can read the real
   // one.
-  if (typeof document === "undefined") return "slint";
-  const value = document.documentElement.dataset.framework ?? "slint";
-  return value in frameworkList ? value : "slint";
+  if (typeof document === "undefined") return "nsh";
+  const value = document.documentElement.dataset.framework ?? "nsh";
+  return value in frameworkList ? value : "nsh";
 };
 
 // `html[data-framework]` is written by the inline script in the page head, so
@@ -357,7 +370,7 @@ function codeLanguage(pre: HTMLElement, name: string) {
     .querySelector("code")
     ?.className.match(/language-([\w+-]+)/);
   if (match) return match[1];
-  return name === "slint" ? "slint" : "rust";
+  return name === "slint" ? "slint" : name === "nsh" ? "nsh" : "rust";
 }
 
 function samplePre(node: HTMLElement, name: string) {
@@ -428,6 +441,10 @@ function pathsIn(code: string, name: string) {
       paths.add(`icons/${match[1]}.svg`);
     }
     for (const match of code.matchAll(/from\s+"([^"]+\.slint)"/g)) {
+      paths.add(match[1]);
+    }
+  } else if (name === "nsh") {
+    for (const match of code.matchAll(/from\s+"(nsh(?:\/[^"]+)?|\.\/[^"]+)"/g)) {
       paths.add(match[1]);
     }
   } else {
@@ -543,9 +560,9 @@ function installCommand() {
 function installedFile(name: string) {
   const slug = pageSlug.value ?? component.value;
   if (!slug) return "";
-  return name === "slint"
-    ? `ui/components/${slug}.slint`
-    : `src/components/${slug.replaceAll("-", "_")}.rs`;
+  if (name === "slint") return `ui/components/${slug}.slint`;
+  if (name === "nsh") return `src/components/${slug.replaceAll("-", "_")}.tsx`;
+  return `src/components/${slug.replaceAll("-", "_")}.rs`;
 }
 
 function buildPrompt(samples: ExampleSample[], name: string) {
@@ -590,6 +607,11 @@ function buildPrompt(samples: ExampleSample[], name: string) {
       '- Installed components live in `ui/components`. That directory is on the Slint include path, so import by file name, for example `import { Button } from "button.slint";`.',
       "- Copy `icon.slint` together with an `icons/` folder. An icon name such as `search` loads `icons/search.svg`.",
     );
+  } else if (name === "nsh") {
+    lines.push(
+      "- Installed components live in `src/components` and import their siblings as `./theme`, `./icon` and `./icons`. The runtime provides `nsh` and `nsh/ui/mobile`; there is no dependency to add.",
+      '- Set `"theme": "src/components/theme.json"` in `nsh.json` so `nsh/ui/mobile` uses the same tokens. `nsh run` and `nsh build` read it; `nsh package` currently rejects the key.',
+    );
   } else {
     lines.push(
       `- Render the sample below. Its \`use\` lines are the modules it needs.`,
@@ -602,6 +624,11 @@ function buildPrompt(samples: ExampleSample[], name: string) {
     lines.push(
       "- Component file: `ui/components/<name>.slint`.",
       '- Icons and images: `icons/<name>.svg` beside `icon.slint`, referenced as `@image-url("icons/<name>.svg")`.',
+    );
+  } else if (name === "nsh") {
+    lines.push(
+      "- Component file: `src/components/<name>.tsx`, with `theme.ts`, `tokens.ts`, `theme.json`, `icon.tsx` and `icons.ts` beside it.",
+      "- The icon map is drawn with `Canvas` and `Path2D`; an app does not need SVG files for the catalog icons.",
     );
   } else {
     lines.push(
@@ -635,6 +662,11 @@ function buildPrompt(samples: ExampleSample[], name: string) {
     lines.push(
       "- Import installed components by file name from `ui/components`.",
       "- Keep icon SVGs in `icons/` next to `icon.slint`.",
+    );
+  } else if (name === "nsh") {
+    lines.push(
+      "- Import installed components from `./<name>` beside `src/components/theme.ts`.",
+      "- Create the app with `nsh init`; the runtime provides `nsh` and `nsh/ui/mobile`.",
     );
   } else {
     lines.push(
@@ -735,17 +767,19 @@ function exampleHeadings(): HTMLElement[] {
   return headings;
 }
 
-function codeAfter(heading: HTMLElement): HTMLElement | null {
+function codeAfter(heading: HTMLElement, framework: string): HTMLElement | null {
+  const panel = (group: HTMLElement) =>
+    group.querySelector<HTMLElement>(
+      `[data-framework-panel="${framework}"]`,
+    ) ?? group;
   let node = heading.nextElementSibling;
   while (node && !/^H[2-6]$/.test(node.tagName)) {
-    if (
-      node.classList.contains("framework-code") ||
-      node.tagName === "PRE"
-    ) {
-      return node;
-    }
-    const nested = node.querySelector<HTMLElement>(".framework-code, pre");
-    if (nested) return nested;
+    if (node.classList.contains("framework-code")) return panel(node);
+    if (node.tagName === "PRE") return node;
+    const group = node.querySelector<HTMLElement>(".framework-code");
+    if (group) return panel(group);
+    const pre = node.querySelector<HTMLElement>("pre");
+    if (pre) return pre;
     node = node.nextElementSibling;
   }
   return null;
@@ -790,7 +824,7 @@ function showExample(title: string, index?: number | null) {
   const match = findExampleHeading(described, title, framework.value, index);
   const heading = match ? headings[described.indexOf(match)] : undefined;
   if (!heading) return;
-  const code = codeAfter(heading);
+  const code = codeAfter(heading, framework.value);
   markSource(heading, code ?? heading);
   scrollToSource(heading);
 }
@@ -817,7 +851,7 @@ function onExampleMessage(event: MessageEvent) {
   // Which galleries may ask the page to reveal a source section. GPUI posts
   // `gpui-kit`; iced posts the library name it is listed under. Anything else is
   // ignored, so a stray frame cannot scroll the reader's page.
-  const galleries = new Set(["gpui-kit", "iced-component"]);
+  const galleries = new Set(["gpui-kit", "iced-component", "nsh-component"]);
   if (!payload || !galleries.has(payload.source)) return;
   const title = typeof payload.title === "string" ? payload.title : "";
   const index = typeof payload.index === "number" ? payload.index : null;

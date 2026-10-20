@@ -34,7 +34,7 @@ const { frameworks, pagers } = Astro.props;
 // the frameworks the site ships and title-cased from the key otherwise; the mark
 // falls back to a lettermark, so an unknown key still gets a whole tile instead
 // of a hole or a crash.
-const NAMES: Record<string, string> = { gpui: 'GPUI', slint: 'Slint', iced: 'Iced' };
+const NAMES: Record<string, string> = { gpui: 'GPUI', slint: 'Slint', iced: 'Iced', nsh: 'NSH' };
 const MARKS = toggleLogos as Record<
   string,
   { viewBox: string; paths: { d: string; fill: string; accent?: boolean }[] }
@@ -178,12 +178,13 @@ const supported = frameworks.split(/\s+/).filter(Boolean);
     display: block;
   }
 
-  /* One tile per framework the component has a page in. The list is data — a
-     framework added to `frameworkAvailable` adds a tile — so the row wraps and
-     each tile keeps a card measure rather than being stretched by the count. */
+  /* One tile per framework the component has a page in. A grid keeps the
+     columns aligned when the page carries three tiles: previously the third
+     card dropped to a second row while the first two kept half-width cards. */
   .framework-support {
-    display: flex;
-    flex-wrap: wrap;
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(11.5rem, 1fr));
+    align-items: stretch;
     gap: 0.75rem;
     max-width: none;
     margin: 0.9rem 0 0;
@@ -194,8 +195,11 @@ const supported = frameworks.split(/\s+/).filter(Boolean);
   /* The tile shares the previous/next card's measure, so the two closing
      sections keep one column rhythm however many frameworks there are. */
   .framework-support__item {
-    display: list-item;
-    flex: 1 1 15rem;
+    display: flex;
+    height: 4.5rem;
+    /* The prose stylesheet gives every `li + li` a top margin; these are grid
+       columns, not list prose, and the offset broke the row alignment. */
+    margin: 0;
     min-width: 0;
     max-width: 22rem;
   }
@@ -204,7 +208,8 @@ const supported = frameworks.split(/\s+/).filter(Boolean);
      out, so the section names only the frameworks that are a real move. */
   :global(html[data-framework='gpui']) .framework-support__item[data-framework-support='gpui'],
   :global(html[data-framework='slint']) .framework-support__item[data-framework-support='slint'],
-  :global(html[data-framework='iced']) .framework-support__item[data-framework-support='iced'] {
+  :global(html[data-framework='iced']) .framework-support__item[data-framework-support='iced'],
+  :global(html[data-framework='nsh']) .framework-support__item[data-framework-support='nsh'] {
     display: none;
   }
 
@@ -213,9 +218,11 @@ const supported = frameworks.split(/\s+/).filter(Boolean);
      whole tile is the affordance and not just the arrow. */
   .framework-support__link {
     display: flex;
+    flex: 1;
     align-items: center;
     gap: 0.75rem;
-    height: 100%;
+    height: 4.5rem;
+    min-height: 4.5rem;
     padding: 0.7rem 0.75rem;
     border: 1px solid var(--border);
     border-radius: var(--radius-card);

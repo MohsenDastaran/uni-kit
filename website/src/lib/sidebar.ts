@@ -4,12 +4,14 @@ import {
   exampleSourcesAvailable,
   galleryCounts,
   icedExampleSourcesAvailable,
+  nshExampleSourcesAvailable,
   type GalleryCounts,
 } from './example-counts';
 import { hasIcedPage } from './remark-iced-source.js';
+import { hasNshPage } from './remark-nsh-source.js';
 import { hasSlintPage } from './remark-slint-source.js';
 
-export type FrameworkText = Partial<Record<'gpui' | 'slint' | 'iced', string>>;
+export type FrameworkText = Partial<Record<'gpui' | 'slint' | 'iced' | 'nsh', string>>;
 
 export interface SidebarItem {
   text: string;
@@ -139,6 +141,7 @@ function pageFrameworks(slug: string, example: string | false | undefined): stri
   const frameworks = ['gpui'];
   if (!exampleSourcesAvailable || hasSlintPage(slug, example)) frameworks.push('slint');
   if (!icedExampleSourcesAvailable || hasIcedPage(slug, example)) frameworks.push('iced');
+  if (!nshExampleSourcesAvailable || hasNshPage(slug, example)) frameworks.push('nsh');
   return frameworks.join(' ');
 }
 
@@ -375,6 +378,7 @@ export const enComponentSidebar = generateSidebar({
     gpui: 'GPUI Component',
     slint: 'Slint Component',
     iced: 'Iced Component',
+    nsh: 'NSH Component',
   },
   rootLinkText: 'Components',
   countExamples: true,

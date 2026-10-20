@@ -36,7 +36,7 @@ Following the Slint integration, which is the reference for all of it:
 | `registry/components.json` | Generated. Gains `iced`, with `default_target_dir: src/components` and `mod_file: src/components/mod.rs`, like GPUI. |
 | `website/src/lib/registry-slugs.json` | Generated alongside it; the site reads the framework's component list from here. |
 | `registry/index.js` | Help text and the framework-specific hint after installing (Slint's build-script include path; iced's dependency line). |
-| `website/src/lib/framework-switch.ts` | `FRAMEWORKS` gains `iced`. The default stays Slint. |
+| `website/src/lib/framework-switch.ts` | `FRAMEWORKS` gains `iced`. The default is NSH. |
 | `website/src/components/FrameworkSelect.astro` | A third option in the selector, and the styles that go with it. |
 | `website/src/components/ComponentExample.vue` | The frame for the iced view. |
 | `website/src/lib/example-counts.ts` | Example counts per framework, from the iced examples. |

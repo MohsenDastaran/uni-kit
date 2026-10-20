@@ -1,0 +1,8 @@
+{
+  "product": "Native Shell",
+  "origin": "https://nsh.dev",
+  "entry": "https://nsh.dev/llms.txt",
+  "version": "v0.1.1",
+  "vendored": "2026-10-18",
+  "pages": 182
+}
