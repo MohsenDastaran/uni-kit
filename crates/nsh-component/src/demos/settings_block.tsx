@@ -92,8 +92,8 @@ export function Demo() {
         <Text style={{ fontSize: 13, fontWeight: "600", color: tokens.foreground }}>Workspace</Text>
         <Text style={{ fontSize: 11, color: tokens.mutedForeground }}>/ Settings</Text>
         <View style={{ flex: 1 }} />
-        <Button label="Cancel" size="small" variant="ghost" onPress={() => {}} />
-        <Button label="Save changes" size="small" variant="primary" onPress={() => {}} />
+        <Button label="Cancel" size="small" variant="ghost" onPress={() => {}} style={{ alignSelf: "center" }} />
+        <Button label="Save changes" size="small" variant="primary" onPress={() => {}} style={{ alignSelf: "center" }} />
       </View>
       <Scroll style={{ flex: 1 }}>
         <View style={{ padding: 28, paddingBottom: 56, alignItems: "center" }}>

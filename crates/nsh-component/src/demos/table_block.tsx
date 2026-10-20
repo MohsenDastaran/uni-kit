@@ -36,8 +36,8 @@ export function Demo() {
         <Text style={{ fontSize: 13, fontWeight: "600", color: tokens.foreground }}>Billing</Text>
         <Text style={{ fontSize: 11, color: tokens.mutedForeground }}>/ Invoices</Text>
         <View style={{ flex: 1 }} />
-        <Button label="Export" size="small" variant="secondary" icon="download" onPress={() => {}} />
-        <Button label="New invoice" size="small" variant="primary" icon="plus" onPress={() => {}} />
+        <Button label="Export" size="small" variant="secondary" icon="download" onPress={() => {}} style={{ alignSelf: "center" }} />
+        <Button label="New invoice" size="small" variant="primary" icon="plus" onPress={() => {}} style={{ alignSelf: "center" }} />
       </View>
       <Scroll style={{ flex: 1 }}>
         <View style={{ padding: 24, gap: 16, alignItems: "center" }}>
