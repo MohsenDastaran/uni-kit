@@ -75,9 +75,11 @@ const loading = document.getElementById('loading');
 const errorBox = document.getElementById('error');
 const app = document.getElementById('app');
 
+let finished = false;
 function finish() {
+  if (finished) return;
+  finished = true;
   loading.remove();
-  observer.disconnect();
 }
 
 function fail(message) {
@@ -138,10 +140,45 @@ const initialDark =
     (parentIsDark() ?? window.matchMedia('(prefers-color-scheme: dark)').matches));
 applyChrome(initialDark);
 
-const observer = new MutationObserver(() => {
-  if (app.childElementCount > 0) finish();
-});
-observer.observe(app, { childList: true });
+/**
+ * Hold the loading screen until there is a painted frame, not merely a DOM
+ * child. The runtime hides the app root (`nsh-hidden`) while its fonts load;
+ * removing the loader at the first child used to expose that hidden gap before
+ * the first real paint. Poll the two conditions that matter, then wait two
+ * animation frames so layout and paint have both happened.
+ */
+function startReveal() {
+  const started = performance.now();
+  const revealWhenReady = () => {
+    if (finished) return;
+    const root = player?.root;
+    const ready =
+      app.childElementCount > 0 &&
+      root &&
+      root.isConnected &&
+      !root.classList.contains('nsh-hidden');
+    if (ready) {
+      requestAnimationFrame(() => {
+        requestAnimationFrame(() => {
+          if (
+            !finished &&
+            root.isConnected &&
+            !root.classList.contains('nsh-hidden')
+          ) {
+            finish();
+          } else if (!finished) {
+            revealWhenReady();
+          }
+        });
+      });
+      return;
+    }
+    if (performance.now() - started < 20000) {
+      requestAnimationFrame(revealWhenReady);
+    }
+  };
+  requestAnimationFrame(revealWhenReady);
+}
 
 // ---------------------------------------------------------------------------
 // Website theme bridge.
@@ -319,6 +356,7 @@ try {
     return response.arrayBuffer();
   });
   player.run(code, { chunkBase: mounted + 'demos/' });
+  startReveal();
   new MutationObserver(scheduleTheme).observe(app, { childList: true, subtree: true });
   setTimeout(scheduleTheme, 30);
 } catch (error) {
