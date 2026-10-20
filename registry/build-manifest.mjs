@@ -215,6 +215,10 @@ if (fs.existsSync(icedUi)) {
 const nshUi = path.join(root, 'crates/nsh-component/src/components');
 const nsh = {
   default_target_dir: 'src/components',
+  // NSH is developed on its own branch before it lands on `main`; a published
+  // package can still read these sources from the right ref if its bundled
+  // copy is unavailable.
+  source_ref: 'nsh',
   components: {},
 };
 
@@ -279,6 +283,35 @@ if (fs.existsSync(nshUi)) {
   // The theme is also a catalog page: `add nsh theme` installs the token file
   // (and the mobile theme) without a component that imports it.
   nsh.components.theme = themeEntries.map((entry) => ({ ...entry }));
+
+  // A block is a finished screen, not a single primitive. These entries copy
+  // the screen beside the components it imports, so `add nsh settings-block`
+  // installs a runnable composition instead of only the settings control.
+  const nshDemos = path.join(root, 'crates/nsh-component/src/demos');
+  const blockFiles = fs.existsSync(nshDemos)
+    ? fs.readdirSync(nshDemos).filter((name) => name.endsWith('_block.tsx')).sort()
+    : [];
+  for (const file of blockFiles) {
+    const name = file.replace(/\.tsx$/, '').replace(/_/g, '-');
+    const source = fs.readFileSync(path.join(nshDemos, file), 'utf8');
+    const deps = [...source.matchAll(/from\s+["']\.\.\/components\/([^"']+)["']/g)]
+      .map((match) => match[1].replace(/_/g, '-'));
+    const entries = [
+      { src: `crates/nsh-component/src/demos/${file}`, target: file },
+      ...deps.flatMap((dep) => {
+        if (!nsh.components[dep]) {
+          throw new Error(`NSH block "${name}" imports "${dep}", which has no registry entry.`);
+        }
+        return nsh.components[dep];
+      }),
+    ];
+    const seen = new Set();
+    nsh.components[name] = entries.filter((entry) => {
+      if (seen.has(entry.target)) return false;
+      seen.add(entry.target);
+      return true;
+    });
+  }
 }
 
 const registry = {

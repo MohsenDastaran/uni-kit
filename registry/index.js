@@ -7,7 +7,8 @@ import { fileURLToPath } from 'node:url';
 
 const REGISTRY_URL =
   'https://raw.githubusercontent.com/MohsenDastaran/uni-kit/main/registry/components.json';
-const RAW_REPO_BASE = 'https://raw.githubusercontent.com/MohsenDastaran/uni-kit/main';
+const RAW_REPO_ROOT = 'https://raw.githubusercontent.com/MohsenDastaran/uni-kit';
+const RAW_REPO_BASE = `${RAW_REPO_ROOT}/main`;
 
 const here = path.dirname(fileURLToPath(import.meta.url));
 const localRegistry = path.resolve(here, 'components.json');
@@ -45,6 +46,32 @@ function bundledRegistry() {
     : null;
 }
 
+/**
+ * The manifest on `main` is the shared registry, but a framework can be ready
+ * before that branch is: the bundled copy is then the only place its entries
+ * exist. Merge per framework and per component, keeping the remote copy's newer
+ * fields while filling anything it does not know about from the package.
+ */
+function mergeRegistry(remote) {
+  const bundled = bundledRegistry();
+  if (!bundled) return remote;
+  const merged = { ...remote };
+  for (const [name, config] of Object.entries(bundled)) {
+    const current = remote[name];
+    merged[name] = current
+      ? {
+          ...config,
+          ...current,
+          components: {
+            ...(config.components ?? {}),
+            ...(current.components ?? {}),
+          },
+        }
+      : config;
+  }
+  return merged;
+}
+
 async function loadRegistry() {
   if (process.env.UNI_KIT_REGISTRY) {
     const given = process.env.UNI_KIT_REGISTRY;
@@ -62,7 +89,7 @@ async function loadRegistry() {
     return bundledRegistry() ?? JSON.parse((await fetchBuffer(REGISTRY_URL)).toString('utf8'));
   }
   try {
-    return JSON.parse((await fetchBuffer(REGISTRY_URL)).toString('utf8'));
+    return mergeRegistry(JSON.parse((await fetchBuffer(REGISTRY_URL)).toString('utf8')));
   } catch (error) {
     const bundled = bundledRegistry();
     if (!bundled) throw error;
@@ -74,14 +101,18 @@ async function loadRegistry() {
 // Reads one source and returns its bytes. Nothing is written here: the caller
 // collects every file first, so a missing source stops the install instead of
 // leaving half a screen behind.
-async function readSource(item) {
+async function readSource(item, sourceRef = 'main') {
   const root = process.env.UNI_KIT_ROOT;
   if (root) return fs.readFileSync(path.join(root, item.src));
   if (localRoot) {
     const local = path.join(localRoot, item.src);
     if (fs.existsSync(local)) return fs.readFileSync(local);
   }
-  const base = process.env.UNI_KIT_RAW ?? RAW_REPO_BASE;
+  // Published packages carry the NSH sources in `sources/`, so an installed
+  // command does not depend on a branch or on GitHub being reachable.
+  const packaged = path.join(here, 'sources', item.src);
+  if (fs.existsSync(packaged)) return fs.readFileSync(packaged);
+  const base = process.env.UNI_KIT_RAW ?? `${RAW_REPO_ROOT}/${sourceRef}`;
   return await fetchBuffer(`${base}/${item.src}`);
 }
 
@@ -340,7 +371,7 @@ async function main() {
   for (const { item, destination } of plan) {
     let data;
     try {
-      data = await readSource(item);
+      data = await readSource(item, frameworkConfig.source_ref);
     } catch (error) {
       throw new Error(`Could not read ${item.src}: ${error.message}`);
     }

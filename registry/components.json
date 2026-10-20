@@ -23624,6 +23624,7 @@
   },
   "nsh": {
     "default_target_dir": "src/components",
+    "source_ref": "nsh",
     "components": {
       "accordion": [
         {
@@ -25619,6 +25620,210 @@
         {
           "src": "crates/nsh-component/src/components/theme.json",
           "target": "theme.json"
+        }
+      ],
+      "paginated-table-block": [
+        {
+          "src": "crates/nsh-component/src/demos/paginated_table_block.tsx",
+          "target": "paginated_table_block.tsx"
+        },
+        {
+          "src": "crates/nsh-component/src/components/avatar.tsx",
+          "target": "avatar.tsx"
+        },
+        {
+          "src": "crates/nsh-component/src/components/icon.tsx",
+          "target": "icon.tsx"
+        },
+        {
+          "src": "crates/nsh-component/src/components/icons.ts",
+          "target": "icons.ts"
+        },
+        {
+          "src": "crates/nsh-component/src/components/theme.ts",
+          "target": "theme.ts"
+        },
+        {
+          "src": "crates/nsh-component/src/components/tokens.ts",
+          "target": "tokens.ts"
+        },
+        {
+          "src": "crates/nsh-component/src/components/theme.json",
+          "target": "theme.json"
+        },
+        {
+          "src": "crates/nsh-component/src/components/badge.tsx",
+          "target": "badge.tsx"
+        },
+        {
+          "src": "crates/nsh-component/src/components/input.tsx",
+          "target": "input.tsx"
+        },
+        {
+          "src": "crates/nsh-component/src/components/button.tsx",
+          "target": "button.tsx"
+        },
+        {
+          "src": "crates/nsh-component/src/components/pagination.tsx",
+          "target": "pagination.tsx"
+        },
+        {
+          "src": "crates/nsh-component/src/components/select.tsx",
+          "target": "select.tsx"
+        },
+        {
+          "src": "crates/nsh-component/src/components/table.tsx",
+          "target": "table.tsx"
+        }
+      ],
+      "settings-block": [
+        {
+          "src": "crates/nsh-component/src/demos/settings_block.tsx",
+          "target": "settings_block.tsx"
+        },
+        {
+          "src": "crates/nsh-component/src/components/button.tsx",
+          "target": "button.tsx"
+        },
+        {
+          "src": "crates/nsh-component/src/components/icon.tsx",
+          "target": "icon.tsx"
+        },
+        {
+          "src": "crates/nsh-component/src/components/icons.ts",
+          "target": "icons.ts"
+        },
+        {
+          "src": "crates/nsh-component/src/components/theme.ts",
+          "target": "theme.ts"
+        },
+        {
+          "src": "crates/nsh-component/src/components/tokens.ts",
+          "target": "tokens.ts"
+        },
+        {
+          "src": "crates/nsh-component/src/components/theme.json",
+          "target": "theme.json"
+        },
+        {
+          "src": "crates/nsh-component/src/components/input.tsx",
+          "target": "input.tsx"
+        },
+        {
+          "src": "crates/nsh-component/src/components/select.tsx",
+          "target": "select.tsx"
+        },
+        {
+          "src": "crates/nsh-component/src/components/settings.tsx",
+          "target": "settings.tsx"
+        },
+        {
+          "src": "crates/nsh-component/src/components/switch.tsx",
+          "target": "switch.tsx"
+        }
+      ],
+      "sidebar-block": [
+        {
+          "src": "crates/nsh-component/src/demos/sidebar_block.tsx",
+          "target": "sidebar_block.tsx"
+        },
+        {
+          "src": "crates/nsh-component/src/components/avatar.tsx",
+          "target": "avatar.tsx"
+        },
+        {
+          "src": "crates/nsh-component/src/components/icon.tsx",
+          "target": "icon.tsx"
+        },
+        {
+          "src": "crates/nsh-component/src/components/icons.ts",
+          "target": "icons.ts"
+        },
+        {
+          "src": "crates/nsh-component/src/components/theme.ts",
+          "target": "theme.ts"
+        },
+        {
+          "src": "crates/nsh-component/src/components/tokens.ts",
+          "target": "tokens.ts"
+        },
+        {
+          "src": "crates/nsh-component/src/components/theme.json",
+          "target": "theme.json"
+        },
+        {
+          "src": "crates/nsh-component/src/components/badge.tsx",
+          "target": "badge.tsx"
+        },
+        {
+          "src": "crates/nsh-component/src/components/button.tsx",
+          "target": "button.tsx"
+        },
+        {
+          "src": "crates/nsh-component/src/components/card.tsx",
+          "target": "card.tsx"
+        },
+        {
+          "src": "crates/nsh-component/src/components/menu.tsx",
+          "target": "menu.tsx"
+        },
+        {
+          "src": "crates/nsh-component/src/components/progress.tsx",
+          "target": "progress.tsx"
+        },
+        {
+          "src": "crates/nsh-component/src/components/sidebar.tsx",
+          "target": "sidebar.tsx"
+        }
+      ],
+      "table-block": [
+        {
+          "src": "crates/nsh-component/src/demos/table_block.tsx",
+          "target": "table_block.tsx"
+        },
+        {
+          "src": "crates/nsh-component/src/components/badge.tsx",
+          "target": "badge.tsx"
+        },
+        {
+          "src": "crates/nsh-component/src/components/icon.tsx",
+          "target": "icon.tsx"
+        },
+        {
+          "src": "crates/nsh-component/src/components/icons.ts",
+          "target": "icons.ts"
+        },
+        {
+          "src": "crates/nsh-component/src/components/theme.ts",
+          "target": "theme.ts"
+        },
+        {
+          "src": "crates/nsh-component/src/components/tokens.ts",
+          "target": "tokens.ts"
+        },
+        {
+          "src": "crates/nsh-component/src/components/theme.json",
+          "target": "theme.json"
+        },
+        {
+          "src": "crates/nsh-component/src/components/button.tsx",
+          "target": "button.tsx"
+        },
+        {
+          "src": "crates/nsh-component/src/components/input.tsx",
+          "target": "input.tsx"
+        },
+        {
+          "src": "crates/nsh-component/src/components/pagination.tsx",
+          "target": "pagination.tsx"
+        },
+        {
+          "src": "crates/nsh-component/src/components/select.tsx",
+          "target": "select.tsx"
+        },
+        {
+          "src": "crates/nsh-component/src/components/table.tsx",
+          "target": "table.tsx"
         }
       ]
     }

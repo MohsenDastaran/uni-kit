@@ -62,6 +62,10 @@ Without the key the mobile components use NSH's own default palette.
 
 ```bash
 npx uni-kit add nsh button
+
+# Finished NSH screens copy the screen and every component it composes.
+npx uni-kit add nsh settings-block
+npx uni-kit add nsh paginated-table-block
 ```
 
 ## GPUI
@@ -83,9 +87,9 @@ npx uni-kit add gpui sidebar
 
 ## Where the manifest comes from
 
-From this repository, the command reads `components.json` and the source files on disk. The published package reads the manifest from [MohsenDastaran/uni-kit](https://github.com/MohsenDastaran/uni-kit) `main`, and falls back to the copy shipped in the tarball when the network is unavailable. The manifest is in the tarball, but it is not authoritative there — landing a new entry on `main` is enough to publish it to `npx` users, and the sources it names are fetched from `main` too.
+From this repository, the command reads `components.json` and the source files on disk. The published package reads the manifest from [MohsenDastaran/uni-kit](https://github.com/MohsenDastaran/uni-kit) `main` and merges it with the copy shipped in the tarball, so a framework that is ready on a branch still installs while `main` catches up. The NSH sources are copied into the tarball by `prepack`, so installing NSH components and blocks does not depend on that branch being reachable. When the bundled sources are absent, NSH reads from its declared `source_ref` branch.
 
-Publish this folder when the command itself changes:
+Publish this folder when the command itself changes. `prepack` bundles the NSH catalogue and `postpack` removes the temporary copy:
 
 ```bash
 cd registry
