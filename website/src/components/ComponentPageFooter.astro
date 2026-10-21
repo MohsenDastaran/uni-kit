@@ -33,7 +33,7 @@ interface Props {
 
 const { frameworks, pagers, slug, frameworkPrefix } = Astro.props;
 const frameworkLink = (key: string) =>
-  slug ? `/frameworks/${key}/${slug}` : `?framework=${key}`;
+  slug ? `/frameworks/${key}/${slug}` : `/frameworks/${key}`;
 const pagerLink = (link?: string, framework?: string) =>
   link?.startsWith('/component/') && framework && frameworkPrefix
     ? `/frameworks/${framework}/${link.slice('/component/'.length)}`

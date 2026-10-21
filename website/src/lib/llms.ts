@@ -204,7 +204,7 @@ const SECTIONS = (root: string) => [
 const FRAMEWORK_NOTICE = [
   '## Frameworks',
   '',
-  'Every component page documents the same control for the frameworks that have a view of it: GPUI as a Rust crate, Slint as `.slint`, iced as Rust, and NSH as TSX. NSH is the default view; `?framework=<name>` pins a view of any page, and every page carries a canonical link to the URL without the parameter. The Markdown of a page holds the views it has, so nothing is hidden by the choice.',
+  'Every component page documents the same control for the frameworks that have a view of it: GPUI as a Rust crate, Slint as `.slint`, iced as Rust, and NSH as TSX. NSH is the default view; framework pages use `/frameworks/<name>` and `/frameworks/<name>/<component>` as their canonical, indexable addresses. The Markdown of a page holds the views it has, so nothing is hidden by the choice.',
   '',
 ].join('\n');
 

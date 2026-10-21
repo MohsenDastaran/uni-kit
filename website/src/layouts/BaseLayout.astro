@@ -153,8 +153,8 @@ const jsonLd = JSON.stringify(structuredData ?? defaultStructuredData).replace(
             })();
         </script>
         <!-- Framework: pick the code blocks before paint so they never flash.
-         A `?framework=` in the address bar is the view being asked for, which
-         is what makes one shareable and citable; the stored choice is what the
+         A `?framework=` in the address bar is an old share link; it is moved to
+         the clean framework route before paint. The stored choice is what the
          reader last asked for; NSH is what a first visit gets. -->
         <script is:inline>
             (function () {
@@ -165,6 +165,29 @@ const jsonLd = JSON.stringify(structuredData ?? defaultStructuredData).replace(
                 const asked = new URLSearchParams(location.search).get(
                     "framework",
                 );
+                // The query form was the old way to pin a framework. Move it
+                // to the clean, indexable framework route before paint.
+                const componentPage = location.pathname.match(
+                    /^\/component(?:\/([^/]+))?$/,
+                );
+                if (
+                    asked &&
+                    FRAMEWORKS.includes(asked) &&
+                    componentPage
+                ) {
+                    const available = (
+                        root.dataset.frameworkAvailable || ""
+                    ).split(/\s+/);
+                    const slug = componentPage[1]
+                        ? `/${componentPage[1]}`
+                        : "";
+                    const suffix =
+                        slug && available.length > 1 && !available.includes(asked)
+                            ? ""
+                            : slug;
+                    location.replace(`/frameworks/${asked}${suffix}`);
+                    return;
+                }
                 let stored = null;
                 try {
                     stored = localStorage.getItem("selected-framework");

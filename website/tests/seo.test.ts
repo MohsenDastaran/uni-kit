@@ -216,3 +216,16 @@ test('deployment config exposes discovery files and redirects www', () => {
   assert.match(nginx, /default_type application\/xml/);
   assert.match(nginx, /Cache-Control "no-cache"/);
 });
+
+test('query-based framework links are removed from generated pages', () => {
+  for (const file of ['index.html', 'component/kbd/index.html', 'component/button/index.html']) {
+    const html = read(file);
+    assert.doesNotMatch(html, /href="[^"]*\?framework=/, `${file} still carries a query framework link`);
+  }
+});
+
+test('nginx redirects old query framework URLs to clean routes', () => {
+  const nginx = readFileSync(new URL('../../deploy/nginx.conf', import.meta.url), 'utf8');
+  assert.match(nginx, /\$arg_framework/);
+  assert.match(nginx, /\/frameworks\/\$arg_framework/);
+});
