@@ -44,7 +44,7 @@ const sizes = (() => {
     ...(slug === 'index' ? {} : { 'nsh-gallery': all['nsh-gallery'] }),
   };
 })();
-const seoTitle = entry.id.replace(/\.md$/, '') === 'index' ? entry.data.title : `${entry.data.title} — GPUI Component`;
+const seoTitle = entry.id.replace(/\.md$/, '') === 'index' ? entry.data.title : `${entry.data.title} — NSH Component`;
 
 // The index lists every component, so it reads in the frameworks that have
 // components; a component with no Slint or iced side says so, and the framework
@@ -95,6 +95,7 @@ const pagers = FRAMEWORKS.map((framework) => ({
     <ComponentPageFooter
       frameworks={footerFrameworks}
       pagers={pagers}
+      slug={slug}
     />
   )}
   {entry.data.example !== false && (

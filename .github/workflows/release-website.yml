@@ -123,6 +123,10 @@ jobs:
           mkdir -p website/dist/nsh-gallery
           cp -r crates/nsh-component/www/dist/* website/dist/nsh-gallery/
 
+      - name: Validate SEO discovery files
+        working-directory: website
+        run: bun run check:seo
+
       - name: Setup Pages
         uses: actions/configure-pages@v5
 

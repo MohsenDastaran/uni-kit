@@ -122,6 +122,9 @@ const progress = (() => {
  * does not, and every page's canonical points at the clean one.
  */
 function syncUrl(framework: Framework) {
+  // A framework page is already the canonical URL; adding ?framework= would
+  // make the clean route and its query variant compete in search.
+  if (root.dataset.frameworkFixed === 'true') return;
   const url = new URL(location.href);
   if (framework === DEFAULT_FRAMEWORK) url.searchParams.delete(FRAMEWORK_PARAM);
   else url.searchParams.set(FRAMEWORK_PARAM, framework);
@@ -169,8 +172,26 @@ function show(framework: Framework) {
   document.dispatchEvent(new Event('framework-change'));
 }
 
+/** On a fixed framework URL, switching means moving to the matching route. */
+function navigateFrameworkRoute(framework: Framework, persist: boolean): boolean {
+  if (root.dataset.frameworkFixed !== 'true') return false;
+  const match = location.pathname.match(/^\/frameworks\/([^/]+)(\/.*)?$/);
+  if (!match) return false;
+  const suffix = match[2] ?? '';
+  const available = (root.dataset.frameworkAvailable ?? '').split(/\s+/);
+  const targetPath =
+    suffix && !available.includes(framework)
+      ? `/frameworks/${framework}`
+      : `/frameworks/${framework}${suffix}`;
+  if (targetPath === location.pathname) return true;
+  if (persist) localStorage.setItem(STORAGE_KEY, framework);
+  location.assign(targetPath);
+  return true;
+}
+
 function select(framework: Framework, persist = true) {
   if (framework === target) return;
+  if (navigateFrameworkRoute(framework, persist)) return;
   if (redirectToAvailable(framework, persist)) return;
   target = framework;
   syncSwitches(framework);

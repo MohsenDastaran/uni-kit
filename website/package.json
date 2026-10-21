@@ -8,7 +8,8 @@
     "dev": "bunx --bun astro dev",
     "preview": "bunx --bun astro preview",
     "test:links": "bun test tests/links.test.ts",
-    "test:seo": "bun test tests/seo.test.ts"
+    "test:seo": "bun test tests/seo.test.ts",
+    "check:seo": "node scripts/check-seo.mjs"
   },
   "dependencies": {
     "@astrojs/markdown-remark": "^7.3.0",

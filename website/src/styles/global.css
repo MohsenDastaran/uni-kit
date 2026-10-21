@@ -3474,3 +3474,130 @@ html[data-framework="nsh"] .starter__grid {
   align-items: center;
   gap: 0.5rem;
 }
+
+/* ====================================================================
+   Framework-specific catalog pages
+   ==================================================================== */
+
+.framework-index {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 1rem;
+  margin: 1.75rem 0 0;
+}
+
+.framework-index__card {
+  display: flex;
+  flex-direction: column;
+  gap: 0.55rem;
+  min-height: 11rem;
+  padding: 1.15rem;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-card);
+  background: var(--background);
+  color: var(--foreground);
+  text-decoration: none;
+  transition: border-color 160ms ease, background 160ms ease;
+}
+
+.framework-index__card:hover {
+  border-color: var(--border-hover);
+  background: var(--secondary);
+}
+
+.framework-index__name {
+  font-size: 1.2rem;
+  font-weight: 650;
+  letter-spacing: -0.02em;
+}
+
+.framework-index__tagline {
+  color: var(--muted-foreground);
+  font-size: 0.82rem;
+  font-weight: 560;
+}
+
+.framework-index__description {
+  flex: 1;
+  color: var(--muted-foreground);
+  font-size: 0.88rem;
+  line-height: 1.55;
+}
+
+.framework-index__action {
+  color: var(--brand);
+  font-size: 0.82rem;
+  font-weight: 600;
+}
+
+.framework-page__eyebrow {
+  margin: 0;
+  color: var(--muted-foreground);
+  font-size: 0.72rem;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.framework-page__context {
+  color: var(--muted-foreground);
+  font-size: 0.92rem;
+}
+
+.framework-page__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.55rem;
+  margin: 1.25rem 0 1.75rem;
+}
+
+.framework-page__primary,
+.framework-page__secondary {
+  display: inline-flex;
+  align-items: center;
+  min-height: 2.25rem;
+  padding: 0 0.9rem;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-control);
+  font-size: 0.82rem;
+  font-weight: 600;
+  text-decoration: none;
+}
+
+.framework-page__primary {
+  border-color: var(--brand);
+  background: var(--brand);
+  color: var(--brand-contrast);
+}
+
+.framework-page__secondary:hover {
+  border-color: var(--border-hover);
+  background: var(--secondary);
+}
+
+.framework-page__catalog {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+  margin-bottom: 1.5rem;
+}
+
+.framework-page__catalog a {
+  padding: 0.3rem 0.55rem;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  color: var(--foreground);
+  font-size: 0.78rem;
+  text-decoration: none;
+}
+
+.framework-page__catalog a:hover {
+  border-color: var(--brand);
+  background: var(--secondary);
+}
+
+@media (max-width: 760px) {
+  .framework-index {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}

@@ -25,9 +25,19 @@ interface Props {
   frameworks: string;
   /** One previous/next pair per framework the page has a view in. */
   pagers: Pager[];
+  /** The component slug, used to build clean framework links. */
+  slug?: string;
+  /** A framework-specific prefix for previous/next links. */
+  frameworkPrefix?: string;
 }
 
-const { frameworks, pagers } = Astro.props;
+const { frameworks, pagers, slug, frameworkPrefix } = Astro.props;
+const frameworkLink = (key: string) =>
+  slug ? `/frameworks/${key}/${slug}` : `?framework=${key}`;
+const pagerLink = (link?: string, framework?: string) =>
+  link?.startsWith('/component/') && framework && frameworkPrefix
+    ? `/frameworks/${framework}/${link.slice('/component/'.length)}`
+    : link;
 
 // The two lookups are data, not markup: a framework added to the page's
 // `frameworkAvailable` renders a tile from its key alone. The name is known for
@@ -54,11 +64,7 @@ const supported = frameworks.split(/\s+/).filter(Boolean);
           const name = nameOf(key);
           return (
             <li class="framework-support__item" data-framework-support={key}>
-              {/* A query-only link: it is already the same component, and the
-                  framework switch's URL sync only rewrites `a[href^="/"]`, so
-                  this one keeps the framework it names instead of being given
-                  the one in force. */}
-              <a class="framework-support__link" href={`?framework=${key}`}>
+              <a class="framework-support__link" href={frameworkLink(key)}>
                 <span class="framework-support__mark" aria-hidden="true">
                   {mark ? (
                     <svg class="framework-support__logo" viewBox={mark.viewBox}>
@@ -116,7 +122,7 @@ const supported = frameworks.split(/\s+/).filter(Boolean);
         {previous ? (
           <a
             class="component-nav__link component-nav__link--previous"
-            href={previous.link}
+            href={pagerLink(previous.link, framework)}
             rel="prev"
           >
             <svg
@@ -143,7 +149,7 @@ const supported = frameworks.split(/\s+/).filter(Boolean);
         {next ? (
           <a
             class="component-nav__link component-nav__link--next"
-            href={next.link}
+            href={pagerLink(next.link, framework)}
             rel="next"
           >
             <span class="component-nav__text">

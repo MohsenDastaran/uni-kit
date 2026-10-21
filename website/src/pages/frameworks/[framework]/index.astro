@@ -1,0 +1,91 @@
+---
+import DocsLayout from '../../../layouts/DocsLayout.astro';
+import {
+  FRAMEWORK_KEYS,
+  FRAMEWORKS_INFO,
+  frameworkComponentPages,
+  frameworkSidebar,
+  type FrameworkKey,
+} from '../../../lib/frameworks';
+import { enComponentSidebar } from '../../../lib/sidebar';
+
+export function getStaticPaths() {
+  return FRAMEWORK_KEYS.map((framework) => ({
+    params: { framework },
+    props: { framework },
+  }));
+}
+
+const { framework } = Astro.props as { framework: FrameworkKey };
+const info = FRAMEWORKS_INFO[framework];
+const sidebar = frameworkSidebar(enComponentSidebar, framework);
+const pages = frameworkComponentPages(enComponentSidebar, framework);
+const structuredData = [
+  {
+    '@context': 'https://schema.org',
+    '@type': 'CollectionPage',
+    name: info.seoTitle,
+    description: info.seoDescription,
+    url: `https://uni-kit.dastaran.com/frameworks/${framework}`,
+    about: info.name,
+    hasPart: pages.map((page) => ({
+      '@type': 'WebPage',
+      name: page.title,
+      url: `https://uni-kit.dastaran.com${page.path}`,
+    })),
+  },
+  {
+    '@context': 'https://schema.org',
+    '@type': 'SoftwareApplication',
+    name: `${info.name} Component Library`,
+    applicationCategory: 'DeveloperApplication',
+    operatingSystem: info.platforms.join(', '),
+    url: `https://uni-kit.dastaran.com/frameworks/${framework}`,
+    sameAs: [info.docs, info.repo],
+  },
+];
+---
+
+<DocsLayout
+  title={info.seoTitle}
+  description={info.seoDescription}
+  sidebar={sidebar}
+  framework={framework}
+  frameworkFixed
+  frameworkAvailable={FRAMEWORK_KEYS.join(' ')}
+  structuredData={structuredData}
+  contentClass="framework-page"
+>
+  <p class="framework-page__eyebrow">{info.name} · {info.tagline}</p>
+  <h1>{info.name} component library</h1>
+  <p>{info.seoDescription}</p>
+  <p>{info.description}</p>
+
+  <div class="framework-page__actions">
+    <a class="framework-page__primary" href="/component">Browse all components</a>
+    <a class="framework-page__secondary" href={info.docs} target="_blank" rel="noopener noreferrer">
+      {info.name} documentation
+    </a>
+    <a class="framework-page__secondary" href={info.repo} target="_blank" rel="noopener noreferrer">
+      Source on GitHub
+    </a>
+  </div>
+
+  <h2>Supported platforms</h2>
+  <p>{info.platforms.join(' · ')}</p>
+
+  <h2>Components</h2>
+  <p>{pages.length} component pages have a {info.name} implementation.</p>
+  <div class="framework-page__catalog">
+    {pages.map((page) => (
+      <a href={page.path}>{page.title}</a>
+    ))}
+  </div>
+
+  <h2>Install</h2>
+  <pre><code>{`npx @dastaran/uni-kit@latest add ${info.installFramework} <component>`}</code></pre>
+  <p>
+    Each component is copied into your app as source you own. The same catalog
+    is available in the other frameworks through the framework selector.
+  </p>
+</DocsLayout>

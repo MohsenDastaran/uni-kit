@@ -10,6 +10,12 @@ export interface Props {
     canonical?: string;
     robots?: string;
     alternates?: boolean;
+    /** The server-rendered framework for a framework-specific page. */
+    framework?: string;
+    /** Framework pages keep the URL's framework instead of a stored choice. */
+    frameworkFixed?: boolean;
+    /** The framework/component combinations available on this page. */
+    frameworkAvailable?: string;
     structuredData?: Record<string, unknown> | Record<string, unknown>[];
 }
 
@@ -21,6 +27,9 @@ const {
     canonical = new URL(Astro.url.pathname, SITE_URL).href,
     robots,
     alternates = true,
+    framework,
+    frameworkFixed = false,
+    frameworkAvailable,
     structuredData,
 } = Astro.props;
 
@@ -53,7 +62,12 @@ const jsonLd = JSON.stringify(structuredData ?? defaultStructuredData).replace(
 ---
 
 <!doctype html>
-<html lang={lang} data-framework="nsh">
+<html
+    lang={lang}
+    data-framework={framework ?? "nsh"}
+    data-framework-fixed={frameworkFixed ? "true" : undefined}
+    data-framework-available={frameworkAvailable}
+>
     <head>
         <meta charset="UTF-8" />
         <meta name="viewport" content="width=device-width, initial-scale=1.0" />
@@ -145,6 +159,9 @@ const jsonLd = JSON.stringify(structuredData ?? defaultStructuredData).replace(
         <script is:inline>
             (function () {
                 const FRAMEWORKS = ["gpui", "slint", "iced", "nsh"];
+                const root = document.documentElement;
+                const server = root.dataset.framework || "nsh";
+                const fixed = root.dataset.frameworkFixed === "true";
                 const asked = new URLSearchParams(location.search).get(
                     "framework",
                 );
@@ -153,9 +170,11 @@ const jsonLd = JSON.stringify(structuredData ?? defaultStructuredData).replace(
                     stored = localStorage.getItem("selected-framework");
                 } catch {}
                 const chosen = FRAMEWORKS.includes(asked) ? asked : stored;
-                const framework = FRAMEWORKS.includes(chosen)
-                    ? chosen
-                    : "nsh";
+                const framework = fixed
+                    ? server
+                    : FRAMEWORKS.includes(chosen)
+                      ? chosen
+                      : server;
                 document.documentElement.dataset.framework = framework;
                 // The document title is rendered with the GPUI suffix in the
                 // static HTML. Rewrite it before paint so a reader whose stored
@@ -176,7 +195,7 @@ const jsonLd = JSON.stringify(structuredData ?? defaultStructuredData).replace(
                 }
                 // A pinned view becomes the choice for the pages that follow it, so a
                 // link shared with the parameter keeps its meaning after a click.
-                if (FRAMEWORKS.includes(asked)) {
+                if (!fixed && FRAMEWORKS.includes(asked)) {
                     try {
                         localStorage.setItem("selected-framework", framework);
                     } catch {}

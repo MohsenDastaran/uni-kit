@@ -37,13 +37,15 @@ const component = computed(() => {
   if (props.frontmatter.example === false) return undefined;
 
   const match = props.pathname.match(
-    /\/(?:component|base\/primitives)\/([^/]+)$/,
+    /\/(?:component|base\/primitives|frameworks\/[^/]+)\/([^/]+)$/,
   );
   return match?.[1] === "index" ? undefined : match?.[1];
 });
 
 const pageSlug = computed(() => {
-  const match = props.pathname.match(/\/component\/([^/]+)$/);
+  const match = props.pathname.match(
+    /\/(?:component|frameworks\/[^/]+)\/([^/]+)$/,
+  );
   return match?.[1] === "index" ? undefined : match?.[1];
 });
 

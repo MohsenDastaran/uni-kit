@@ -1,0 +1,97 @@
+---
+import { getCollection, render, type CollectionEntry } from 'astro:content';
+import DocsLayout from '../../../layouts/DocsLayout.astro';
+import ComponentPageFooter from '../../../components/ComponentPageFooter.astro';
+import ComponentExample from '../../../components/ComponentExample.vue';
+import { componentNeighbours, enComponentSidebar } from '../../../lib/sidebar';
+import {
+  FRAMEWORKS_INFO,
+  availableFrameworks,
+  frameworkComponentPages,
+  frameworkSidebar,
+  type FrameworkKey,
+} from '../../../lib/frameworks';
+import { gallerySizes } from '../../../lib/gallery-sizes';
+import { FRAMEWORKS } from '../../../lib/rehype-framework-code.js';
+
+export async function getStaticPaths() {
+  const entries = await getCollection('component');
+  const bySlug = new Map(
+    entries
+      .map((entry) => [entry.id.replace(/\.md$/, ''), entry] as const)
+      .filter(([slug]) => slug !== 'index'),
+  );
+  return [...bySlug.entries()].flatMap(([slug, entry]) =>
+    availableFrameworks(slug, entry.data.example).map((framework) => ({
+      params: { framework, slug },
+      props: { framework, entry },
+    })),
+  );
+}
+
+const { framework, entry } = Astro.props as {
+  framework: FrameworkKey;
+  entry: CollectionEntry<'component'>;
+};
+const { Content } = await render(entry);
+const slug = entry.id.replace(/\.md$/, '');
+const info = FRAMEWORKS_INFO[framework];
+const pathname = Astro.url.pathname;
+const examplesBase = '/';
+const devVersion = import.meta.env.DEV ? 'dev' : undefined;
+const sizes = (() => {
+  const all = gallerySizes();
+  return {
+    gallery: all.gallery,
+    ...(slug === 'index' ? {} : { [`slint-gallery/pages/${slug}`]: all[`slint-gallery/pages/${slug}`] }),
+    ...(slug === 'index' ? {} : { 'nsh-gallery': all['nsh-gallery'] }),
+  };
+})();
+const sidebar = frameworkSidebar(enComponentSidebar, framework);
+const available = availableFrameworks(slug, entry.data.example);
+const pagers = FRAMEWORKS.filter((key) => available.includes(key)).map((key) => ({
+  framework: key,
+  ...componentNeighbours(enComponentSidebar, `/component/${slug}`, key),
+}));
+const contentData = {
+  'data-framework-available': available.join(' '),
+  'data-framework-fallback': `/frameworks/${framework}`,
+};
+---
+
+<DocsLayout
+  title={`${entry.data.title} — ${info.name} component`}
+  description={`${entry.data.description} The ${info.name} implementation, with live examples and copy-paste source.`}
+  sidebar={sidebar}
+  framework={framework}
+  frameworkFixed
+  frameworkAvailable={available.join(' ')}
+  installSlug={slug}
+  contentClass="framework-page"
+  contentData={contentData}
+>
+  <p class="framework-page__eyebrow">
+    {info.name} · <a href={`/frameworks/${framework}`}>{info.name} components</a>
+  </p>
+  <p class="framework-page__context">
+    This page shows the {info.name} implementation. {info.description}
+  </p>
+  <Content />
+  <ComponentPageFooter
+    frameworks={available.join(' ')}
+    pagers={pagers}
+    slug={slug}
+    frameworkPrefix={`/frameworks/${framework}`}
+  />
+  {entry.data.example !== false && (
+    <ComponentExample
+      client:load
+      frontmatter={entry.data}
+      pathname={pathname}
+      baseUrl={examplesBase}
+      devVersion={devVersion}
+      frameworks={available}
+      sizes={sizes}
+    />
+  )}
+</DocsLayout>

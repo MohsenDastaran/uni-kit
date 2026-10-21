@@ -7,4 +7,6 @@
 // renamed. The literal is the fallback for a context without the env.
 const configured = import.meta.env?.SITE ?? 'https://uni-kit.dastaran.com';
 
-export const SITE_URL = configured.replace(/\/+$/, '');
+export const SITE_ORIGIN = new URL(configured).origin;
+
+export const SITE_URL = SITE_ORIGIN;

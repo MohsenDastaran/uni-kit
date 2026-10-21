@@ -1,0 +1,47 @@
+---
+import DocsLayout from '../layouts/DocsLayout.astro';
+import {
+  FRAMEWORK_KEYS,
+  FRAMEWORKS_INFO,
+  frameworkLandingPath,
+} from '../lib/frameworks';
+
+const cards = FRAMEWORK_KEYS.map((key) => FRAMEWORKS_INFO[key]);
+const structuredData = {
+  '@context': 'https://schema.org',
+  '@type': 'CollectionPage',
+  name: 'Framework-specific component libraries',
+  description:
+    'Browse the uni-kit component catalog by framework: GPUI, Slint, Iced and NSH.',
+  url: 'https://uni-kit.dastaran.com/frameworks',
+  hasPart: cards.map((card) => ({
+    '@type': 'WebPage',
+    name: card.seoTitle,
+    url: `https://uni-kit.dastaran.com${frameworkLandingPath(card.slug)}`,
+  })),
+};
+---
+
+<DocsLayout
+  title="Component libraries by framework — uni-kit"
+  description="Browse the same copy-paste component catalog by framework: GPUI, Slint, Iced and NSH."
+  structuredData={structuredData}
+>
+  <h1>Component libraries by framework</h1>
+  <p>
+    Every framework gets its own native component library page. The catalog is
+    the same source, but the examples, install command and platform guidance
+    follow the framework you choose.
+  </p>
+
+  <div class="framework-index">
+    {cards.map((card) => (
+      <a class="framework-index__card" href={frameworkLandingPath(card.slug)}>
+        <span class="framework-index__name">{card.name}</span>
+        <span class="framework-index__tagline">{card.tagline}</span>
+        <span class="framework-index__description">{card.description}</span>
+        <span class="framework-index__action">Browse {card.name} components →</span>
+      </a>
+    ))}
+  </div>
+</DocsLayout>

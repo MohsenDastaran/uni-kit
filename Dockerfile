@@ -179,7 +179,8 @@ RUN --mount=type=secret,id=github_token \
       fi; \
       mkdir -p "dist/$target_dir" \
       && cp -r "$source_dir/." "dist/$target_dir/"; \
-    done
+    done \
+ && bun run check:seo
 
 # ---- server ----------------------------------------------------------------
 FROM nginx:alpine AS runtime

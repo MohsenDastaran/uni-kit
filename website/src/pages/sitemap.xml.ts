@@ -1,31 +1,65 @@
 import type { APIRoute } from 'astro';
 import { getCollection } from 'astro:content';
 import { SITE_URL } from '../lib/site';
+import {
+  FRAMEWORK_KEYS,
+  availableFrameworks,
+  frameworkLandingPath,
+} from '../lib/frameworks';
 
-const collections = ['component'] as const;
-const standalone = ['', 'blocks', 'starter', 'skills'];
+/** Public static routes. Keep in step with `website/src/pages`. */
+const STATIC_PATHS = ['/', '/blocks', '/starter', '/frameworks', '/skills'] as const;
 
 function escapeXml(value: string) {
-  return value.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+  return value
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&apos;');
+}
+
+/** Always build from the canonical origin; never concatenate origins. */
+export function absoluteUrl(path: string): string {
+  const pathname = path.replace(/^\/+/, '');
+  return new URL(pathname ? `/${pathname}` : '/', `${SITE_URL}/`).href;
+}
+
+function urlEntry(path: string) {
+  const loc = escapeXml(absoluteUrl(path));
+  return `<url><loc>${loc}</loc><xhtml:link rel="alternate" hreflang="en" href="${loc}"/><xhtml:link rel="alternate" hreflang="x-default" href="${loc}"/></url>`;
 }
 
 export const GET: APIRoute = async () => {
-  const paths = new Set(standalone);
+  const paths = new Set<string>(STATIC_PATHS);
 
-  for (const collection of collections) {
-    const entries = await getCollection(collection);
-    for (const entry of entries) {
-      const slug = entry.id.replace(/\.md$/, '');
-      paths.add(`${collection}${slug === 'index' ? '' : `/${slug}`}`);
+  const entries = await getCollection('component');
+  for (const entry of entries) {
+    const slug = entry.id.replace(/\.md$/, '');
+    paths.add(slug === 'index' ? '/component' : `/component/${slug}`);
+    if (slug !== 'index') {
+      for (const framework of availableFrameworks(slug, entry.data.example)) {
+        paths.add(`${frameworkLandingPath(framework)}/${slug}`);
+      }
     }
   }
 
-  const urls = [...paths].sort().map(path => {
-    const pathname = `/${path}`.replace(/\/$/, '') || '/';
-    const loc = new URL(pathname, SITE_URL).href;
-    return `<url><loc>${escapeXml(loc)}</loc><xhtml:link rel="alternate" hreflang="en" href="${escapeXml(loc)}"/><xhtml:link rel="alternate" hreflang="x-default" href="${escapeXml(loc)}"/></url>`;
-  }).join('');
+  for (const framework of FRAMEWORK_KEYS) {
+    paths.add(frameworkLandingPath(framework));
+  }
+
+  const urls = [...paths]
+    .map((path) => path.replace(/\/{2,}/g, '/'))
+    .filter((path) => !path.endsWith('.md'))
+    .sort()
+    .map(urlEntry)
+    .join('');
 
   const xml = `<?xml version="1.0" encoding="UTF-8"?><urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9" xmlns:xhtml="http://www.w3.org/1999/xhtml">${urls}</urlset>`;
-  return new Response(xml, { headers: { 'Content-Type': 'application/xml; charset=utf-8' } });
+  return new Response(xml, {
+    headers: {
+      'Content-Type': 'application/xml; charset=utf-8',
+      'Cache-Control': 'no-cache',
+    },
+  });
 };
