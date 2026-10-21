@@ -219,6 +219,7 @@ test('deployment config exposes discovery files and redirects www', () => {
   const nginx = readFileSync(new URL('../../deploy/nginx.conf', import.meta.url), 'utf8');
   assert.match(nginx, /server_name www\.uni-kit\.dastaran\.com/);
   assert.match(nginx, /return 301 https:\/\/uni-kit\.dastaran\.com\$request_uri/);
+  assert.match(nginx, /listen 80 default_server;\s*server_name _;/);
   assert.match(nginx, /location = \/robots\.txt/);
   assert.match(nginx, /location = \/sitemap\.xml/);
   assert.match(nginx, /default_type application\/xml/);
