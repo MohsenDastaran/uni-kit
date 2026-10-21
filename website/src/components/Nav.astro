@@ -26,6 +26,29 @@ const navLinks = [
     { text: "Frameworks", href: url("frameworks") },
 ];
 
+function isActive(link: { text: string; href: string }) {
+    const path = (currentPath || "/").replace(/\/+$/, "") || "/";
+    const frameworkRoot = /^\/frameworks\/[^/]+$/.test(path);
+    const frameworkChild = path.match(/^\/frameworks\/[^/]+\/([^/]+)$/)?.[1];
+
+    if (link.text === "Frameworks") return path === "/frameworks";
+    if (link.text === "Component") {
+        return (
+            path === "/component" ||
+            path.startsWith("/component/") ||
+            frameworkRoot ||
+            Boolean(frameworkChild && frameworkChild !== "blocks" && frameworkChild !== "starter")
+        );
+    }
+    if (link.text === "Blocks") {
+        return path === "/blocks" || frameworkChild === "blocks";
+    }
+    if (link.text === "Starter") {
+        return path === "/starter" || frameworkChild === "starter";
+    }
+    return path === link.href || path.startsWith(`${link.href}/`);
+}
+
 const resourceLinks = [
     { text: "npm", href: "https://www.npmjs.com/package/@dastaran/uni-kit" },
     {
@@ -61,7 +84,7 @@ const resourcesLabel = "Resources";
             {navLinks.map((link) => (
                 <a
                     href={link.href}
-                    class={`site-nav__link${currentPath.startsWith(link.href) ? " active" : ""}`}
+                    class={`site-nav__link${isActive(link) ? " active" : ""}`}
                     data-framework-link={link.framework}
                 >
                     {link.text}
