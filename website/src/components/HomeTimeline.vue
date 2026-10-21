@@ -17,6 +17,8 @@ type Milestone = {
     period: string;
     title: string;
     body: string;
+    /** The framework page this milestone introduces, when it has one. */
+    href?: string;
     /**
      * Marks the stop where this project's own work begins: one emoji, one
      * line, and a dot that announces itself when the rail reaches it.
@@ -33,6 +35,7 @@ const milestones: Milestone[] = [
         period: "2024 · January",
         title: "GPUI",
         body: "A fast, hybrid immediate and retained mode, GPU-accelerated UI framework for Rust. From the creators of Zed & Delta.",
+        href: "/frameworks/gpui",
     },
     {
         id: "gpui-kit",
@@ -55,6 +58,21 @@ const milestones: Milestone[] = [
         period: "September 2026",
         title: "Slint support",
         body: "A second target: the components written for Slint, beside a registry that installs them into a project.",
+        href: "/frameworks/slint",
+    },
+    {
+        id: "iced",
+        period: "October 2026",
+        title: "Iced support",
+        body: "A third Rust target: the same catalogue written against iced 0.14, with live examples and copy-paste source.",
+        href: "/frameworks/iced",
+    },
+    {
+        id: "nsh",
+        period: "October 2026",
+        title: "NSH support",
+        body: "Native Shell joins with a TSX catalogue for iOS, Android, macOS, Windows, Linux, GPUI and the web — the shadcn-style NSH components.",
+        href: "/frameworks/nsh",
     },
     {
         id: "blocks",
@@ -337,7 +355,15 @@ onBeforeUnmount(() => {
                                     <p class="journey__period">
                                         {{ milestone.period }}
                                     </p>
-                                    <h3>{{ milestone.title }}</h3>
+                                    <h3>
+                                        <a
+                                            v-if="milestone.href"
+                                            :href="milestone.href"
+                                        >{{ milestone.title }}</a>
+                                        <template v-else>{{
+                                            milestone.title
+                                        }}</template>
+                                    </h3>
                                     <p class="journey__body">
                                         {{ milestone.body }}
                                     </p>
@@ -505,6 +531,16 @@ onBeforeUnmount(() => {
     font-size: 1.0625rem;
     font-weight: 640;
     letter-spacing: -0.014em;
+}
+
+.journey__card h3 a {
+    color: inherit;
+    text-decoration: none;
+    text-underline-offset: 0.18em;
+}
+
+.journey__card h3 a:hover {
+    text-decoration: underline;
 }
 
 .journey__body {
