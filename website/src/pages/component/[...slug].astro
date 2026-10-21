@@ -3,6 +3,8 @@ import { getCollection, render } from 'astro:content';
 import DocsLayout from '../../layouts/DocsLayout.astro';
 import ComponentPageFooter from '../../components/ComponentPageFooter.astro';
 import { componentNeighbours, enComponentSidebar } from '../../lib/sidebar';
+import { frameworkSidebar } from '../../lib/frameworks';
+import { SITE_URL } from '../../lib/site';
 import ComponentExample from '../../components/ComponentExample.vue';
 import { hasIcedExample, hasIcedPage } from '../../lib/remark-iced-source.js';
 import { hasNshExample, hasNshPage } from '../../lib/remark-nsh-source.js';
@@ -64,6 +66,13 @@ const contentData = {
   'data-framework-fallback': `${import.meta.env.BASE_URL}component`,
 };
 
+const componentCanonical = (() => {
+  const available = contentData['data-framework-available'].split(/\s+/);
+  const fallback = available.includes('nsh') ? 'nsh' : available[0] ?? 'gpui';
+  return slug === 'index'
+    ? `${SITE_URL}/frameworks/nsh`
+    : `${SITE_URL}/frameworks/${fallback}/${slug}`;
+})();
 // The two closing sections live on component pages only: the index is the
 // catalog, not a component, and the block and starter routes never reach this
 // page. Both read the sidebar's own ordered catalog, so the framework rows and
@@ -84,12 +93,15 @@ const pagers = FRAMEWORKS.map((framework) => ({
 <DocsLayout
   title={seoTitle}
   description={entry.data.description}
-  sidebar={enComponentSidebar}
+  sidebar={frameworkSidebar(enComponentSidebar, 'nsh')}
+  framework="nsh"
+  frameworkFixed
+  frameworkAvailable={contentData['data-framework-available']}
+  canonical={componentCanonical}
   contentClass={slug === 'index' ? 'doc-content--component-index' : undefined}
   layoutClass={slug === 'index' ? undefined : 'docs-layout--component'}
   mainClass={slug === 'index' ? undefined : 'docs-main--component'}
   contentData={contentData}
-  frameworkAvailable={contentData['data-framework-available']}
 >
   <Content />
   {slug !== 'index' && (

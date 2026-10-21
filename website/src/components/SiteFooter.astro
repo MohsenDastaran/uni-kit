@@ -1,5 +1,6 @@
 ---
 const base = import.meta.env.BASE_URL;
+const { framework = "nsh" } = Astro.props as { framework?: string };
 
 function url(path: string) {
     return `${base}${path}`.replace(/\/+/g, "/");
@@ -14,9 +15,9 @@ const columns = [
     {
         title: "Project",
         links: [
-            { text: "Components", href: url("component") },
-            { text: "Blocks", href: url("blocks") },
-            { text: "Starter", href: url("starter") },
+            { text: "Components", href: `/frameworks/${framework}` },
+            { text: "Blocks", href: `/frameworks/${framework}/blocks` },
+            { text: "Starter", href: `/frameworks/${framework}/starter` },
             { text: "Frameworks", href: url("frameworks") },
             { text: "Skills", href: url("skills") },
         ],

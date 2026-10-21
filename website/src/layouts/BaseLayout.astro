@@ -188,6 +188,38 @@ const jsonLd = JSON.stringify(structuredData ?? defaultStructuredData).replace(
                     location.replace(`/frameworks/${asked}${suffix}`);
                     return;
                 }
+                // The old section pages are the NSH instances now.
+                if (location.pathname === "/blocks") {
+                    location.replace("/frameworks/nsh/blocks");
+                    return;
+                }
+                if (location.pathname === "/starter") {
+                    location.replace("/frameworks/nsh/starter");
+                    return;
+                }
+                // Generic component URLs are legacy. Resolve them to the
+                // framework page that actually has the component, preferring
+                // NSH when it does.
+                if (componentPage) {
+                    const available = (
+                        root.dataset.frameworkAvailable || ""
+                    ).split(/\s+/);
+                    const fallback = available.includes("nsh")
+                        ? "nsh"
+                        : available.includes("gpui")
+                          ? "gpui"
+                          : available.find((name) => FRAMEWORKS.includes(name));
+                    if (!componentPage[1]) {
+                        location.replace("/frameworks/nsh");
+                        return;
+                    }
+                    if (fallback) {
+                        location.replace(
+                            `/frameworks/${fallback}/${componentPage[1]}`,
+                        );
+                        return;
+                    }
+                }
                 let stored = null;
                 try {
                     stored = localStorage.getItem("selected-framework");

@@ -51,9 +51,9 @@ function url(path: string) {
     return `${b}/${path}`.replace(/\/+/g, "/");
 }
 
-const gettingStartedHref = url("component");
-const componentsHref = url("component");
-const starterHref = url("starter");
+const gettingStartedHref = computed(() => url(`frameworks/${framework.value}`));
+const componentsHref = computed(() => url(`frameworks/${framework.value}`));
+const starterHref = computed(() => url(`frameworks/${framework.value}/starter`));
 const skillsHref = url("skills");
 const llmsHref = url("llms-full.txt");
 

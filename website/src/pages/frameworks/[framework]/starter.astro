@@ -1,0 +1,298 @@
+---
+import FolderAnimation from '../../../components/FolderAnimation.astro';
+
+const base = import.meta.env.BASE_URL;
+import DocsLayout from '../../../layouts/DocsLayout.astro';
+import { FRAMEWORK_KEYS, frameworkName, type FrameworkKey } from '../../../lib/frameworks';
+
+export function getStaticPaths() {
+    return FRAMEWORK_KEYS.map((framework) => ({
+        params: { framework },
+        props: { framework },
+    }));
+}
+
+const { framework } = Astro.props as { framework: FrameworkKey };
+
+// Starters, one set per framework: a blank NSH app, the two Slint templates to
+// fork, and the GPUI Kit guide, which is where GPUI Kit itself says to begin.
+// Every set is rendered and the framework selector's own CSS shows one — the
+// same mechanism the rest of the site uses, so the right set is there before
+// any script runs.
+//
+// `repo` is shown as written, `href` is where the card leads.
+const slintTemplates = [
+  {
+    id: 'blank',
+    title: 'Blank template',
+    repo: 'MohsenDastaran/slint-rust-template',
+    repoHref: 'https://github.com/MohsenDastaran/slint-rust-template',
+    href: 'https://github.com/MohsenDastaran/slint-rust-template/fork',
+    label: 'Fork this repo',
+    external: true,
+    description:
+      'One window, a build script, and the wiring between the .slint markup and Rust. The smallest thing that runs, with nothing to delete first.',
+  },
+  {
+    id: 'sidebar',
+    title: 'Sidebar example',
+    repo: 'MohsenDastaran/slint-rust-template-sidebar',
+    repoHref: 'https://github.com/MohsenDastaran/slint-rust-template-sidebar',
+    href: 'https://github.com/MohsenDastaran/slint-rust-template-sidebar/fork',
+    label: 'Fork this repo',
+    external: true,
+    description:
+      'The same template with a sidebar shell around it: grouped navigation beside the content it controls, and a components directory to grow into.',
+  },
+];
+
+const nshTemplates = [
+  {
+    id: 'blank',
+    title: 'Blank template',
+    repo: 'MohsenDastaran/nsh-blank-template',
+    repoHref: 'https://github.com/MohsenDastaran/nsh-blank-template',
+    href: 'https://github.com/MohsenDastaran/nsh-blank-template/fork',
+    label: 'Fork this repo',
+    external: true,
+    description:
+      'One window, one action, and nothing to delete first. The smallest NSH app that runs.',
+    image: {
+      src: 'starter/nsh-theme-dark.webp',
+      alt: 'NSH blank template in a dark theme',
+      fit: 'contain',
+    },
+  },
+  {
+    id: 'theme',
+    title: 'Theme template',
+    repo: 'MohsenDastaran/nsh-theme-template',
+    repoHref: 'https://github.com/MohsenDastaran/nsh-theme-template',
+    href: 'https://github.com/MohsenDastaran/nsh-theme-template/fork',
+    label: 'Fork this repo',
+    external: true,
+    description:
+      'The blank app with the website theme picker built in: all 36 palettes, System follow, and a live top-right control.',
+    image: {
+      src: 'starter/nsh-theme-light-crop.webp',
+      alt: 'NSH theme template in Everforest Light with the theme control',
+      fit: 'contain',
+      portrait: true,
+    },
+  },
+  {
+    id: 'sidebar',
+    title: 'Sidebar example',
+    repo: 'MohsenDastaran/nsh-sidebar-template',
+    repoHref: 'https://github.com/MohsenDastaran/nsh-sidebar-template',
+    href: 'https://github.com/MohsenDastaran/nsh-sidebar-template/fork',
+    label: 'Fork this repo',
+    external: true,
+    description:
+      'The workspace shell: grouped navigation beside the content it controls, with the catalog components already in place.',
+    image: {
+      src: 'starter/nsh-sidebar.webp',
+      alt: 'NSH sidebar template showing the Northstar workspace overview',
+      fit: 'cover',
+    },
+  },
+];
+
+const gpuiStart = {
+  repo: 'gpui-kit.com',
+  repoHref: 'https://gpui-kit.com/',
+  title: 'GPUI Kit quick start',
+  href: '/component',
+  label: 'Read the guide',
+  description:
+    'The getting-started guide for the toolkit: the dependency, the init call, and a first window in Rust.',
+};
+---
+
+<DocsLayout
+  framework={framework}
+  frameworkFixed
+  frameworkAvailable={FRAMEWORK_KEYS.join(" ")}
+  title={`${frameworkName(framework)} starter — uni-kit`}
+  description="Starters for the framework you are reading: NSH and Slint templates, and the GPUI Kit getting-started guide."
+>
+  <h1>Starter</h1>
+  <p data-framework-only="slint">
+    Two Slint applications to fork. Each is already wired — a window, a build
+    script, and the link between the <code>.slint</code> markup and Rust — so the
+    first change you make is your own rather than a deletion.
+  </p>
+  <p data-framework-only="gpui">
+    GPUI Kit starts from its own guide rather than a fork: the crate is
+    published, so a project adds it and follows along.
+  </p>
+  <p data-framework-only="nsh">
+    Three Native Shell applications: a blank window, the same app with the
+    website theme picker, and a workspace shell. Fork one and replace its screen
+    with your own.
+  </p>
+
+  <section class="starter">
+    <h2 data-framework-only="slint">Start from a template</h2>
+    <h2 data-framework-only="gpui">Start from the guide</h2>
+    <h2 data-framework-only="nsh">Start from a template</h2>
+    <p data-framework-only="slint">
+      Fork one and you have a Slint application already wired: <code>cargo run</code>
+      opens a window, so the first change you make is your own rather than a
+      deletion.
+    </p>
+    <p data-framework-only="gpui">
+      Add <code>gpui-kit</code> and follow the guide: there is nothing to fork,
+      and nothing to delete first.
+    </p>
+    <p data-framework-only="nsh">
+      Clone or download a starter, run <code>nsh run</code>, and replace
+      <code>App.tsx</code> with your first screen.
+    </p>
+
+    <div class="starter__grid">
+      <article class="starter-card" data-framework-only="gpui">
+        <FolderAnimation label="Getting started guide illustration" />
+        <a
+          class="starter-card__meta"
+          href={gpuiStart.repoHref}
+          target="_blank"
+          rel="noopener noreferrer">{gpuiStart.repo}</a
+        >
+        <h3 class="starter-card__title">{gpuiStart.title}</h3>
+        <p class="starter-card__body">{gpuiStart.description}</p>
+        <a
+          class="starter-card__link"
+          href={gpuiStart.href}
+          target="_blank"
+          rel="noopener noreferrer"
+        >
+          {gpuiStart.label}
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <path d="M5 12h14" />
+            <path d="m12 5 7 7-7 7" />
+          </svg>
+        </a>
+      </article>
+
+      {
+        nshTemplates.map((template) => (
+          <article class="starter-card" data-framework-only="nsh">
+            {template.image ? (
+              <div
+                class:list={[
+                  'starter-card__preview',
+                  {
+                    'starter-card__preview--portrait':
+                      template.image.portrait,
+                  },
+                ]}
+              >
+                <img
+                  src={`${base}${template.image.src}`}
+                  alt={template.image.alt}
+                  loading="lazy"
+                  style={{ objectFit: template.image.fit }}
+                />
+              </div>
+            ) : (
+              <FolderAnimation />
+            )}
+            <a
+              class="starter-card__meta"
+              href={template.repoHref}
+              target="_blank"
+              rel="noopener noreferrer">{template.repo}</a
+            >
+            <h3 class="starter-card__title">{template.title}</h3>
+            <p class="starter-card__body">{template.description}</p>
+            <div class="starter-card__actions">
+              <a
+                class="starter-card__link"
+                href={template.href}
+                target="_blank"
+                rel="noopener noreferrer"
+              >
+                {template.label}
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                  <path d="M5 12h14" />
+                  <path d="m12 5 7 7-7 7" />
+                </svg>
+              </a>
+              {template.repoHref.startsWith("https://github.com/") ? (
+                <a
+                  class="starter-card__repo"
+                  href={template.repoHref}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  aria-label={`Open ${template.repo} on GitHub`}
+                  title="Open repository"
+                >
+                  <svg
+                    width="15"
+                    height="15"
+                    viewBox="0 0 24 24"
+                    fill="currentColor"
+                    aria-hidden="true"
+                  >
+                    <path d="M12 .3a12 12 0 0 0-3.8 23.4c.6.1.8-.3.8-.6v-2c-3.3.7-4-1.6-4-1.6-.6-1.4-1.4-1.8-1.4-1.8-1.1-.8.1-.8.1-.8 1.2.1 1.9 1.3 1.9 1.3 1.1 1.9 2.9 1.3 3.6 1 .1-.8.4-1.3.8-1.6-2.7-.3-5.5-1.3-5.5-5.9 0-1.3.5-2.4 1.2-3.2-.1-.3-.5-1.5.1-3.2 0 0 1-.3 3.3 1.2a11.5 11.5 0 0 1 6 0C17.6 4.6 18.6 5 18.6 5c.6 1.7.2 2.9.1 3.2.8.8 1.2 1.9 1.2 3.2 0 4.6-2.8 5.6-5.5 5.9.4.4.8 1.1.8 2.2v3.3c0 .3.2.7.8.6A12 12 0 0 0 12 .3Z" />
+                  </svg>
+                </a>
+              ) : null}
+            </div>
+          </article>
+        ))
+      }
+
+      {
+        slintTemplates.map((template) => (
+          <article class="starter-card" data-framework-only="slint">
+            <FolderAnimation />
+            <a
+              class="starter-card__meta"
+              href={template.repoHref}
+              target="_blank"
+              rel="noopener noreferrer">{template.repo}</a
+            >
+            <h3 class="starter-card__title">{template.title}</h3>
+            <p class="starter-card__body">{template.description}</p>
+            <div class="starter-card__actions">
+              <a
+                class="starter-card__link"
+                href={template.href}
+                target="_blank"
+                rel="noopener noreferrer"
+              >
+                {template.label}
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                  <path d="M5 12h14" />
+                  <path d="m12 5 7 7-7 7" />
+                </svg>
+              </a>
+              {template.repoHref.startsWith("https://github.com/") ? (
+                <a
+                  class="starter-card__repo"
+                  href={template.repoHref}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  aria-label={`Open ${template.repo} on GitHub`}
+                  title="Open repository"
+                >
+                  <svg
+                    width="15"
+                    height="15"
+                    viewBox="0 0 24 24"
+                    fill="currentColor"
+                    aria-hidden="true"
+                  >
+                    <path d="M12 .3a12 12 0 0 0-3.8 23.4c.6.1.8-.3.8-.6v-2c-3.3.7-4-1.6-4-1.6-.6-1.4-1.4-1.8-1.4-1.8-1.1-.8.1-.8.1-.8 1.2.1 1.9 1.3 1.9 1.3 1.1 1.9 2.9 1.3 3.6 1 .1-.8.4-1.3.8-1.6-2.7-.3-5.5-1.3-5.5-5.9 0-1.3.5-2.4 1.2-3.2-.1-.3-.5-1.5.1-3.2 0 0 1-.3 3.3 1.2a11.5 11.5 0 0 1 6 0C17.6 4.6 18.6 5 18.6 5c.6 1.7.2 2.9.1 3.2.8.8 1.2 1.9 1.2 3.2 0 4.6-2.8 5.6-5.5 5.9.4.4.8 1.1.8 2.2v3.3c0 .3.2.7.8.6A12 12 0 0 0 12 .3Z" />
+                  </svg>
+                </a>
+              ) : null}
+            </div>
+          </article>
+        ))
+      }
+    </div>
+  </section>
+</DocsLayout>

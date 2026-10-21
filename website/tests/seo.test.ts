@@ -98,7 +98,13 @@ test('component pages have independent routes and readable legacy URLs', () => {
     const slug = name.slice(0, -3);
     const route = `component${slug === 'index' ? '' : `/${slug}`}`;
     const html = read(`${route}/index.html`);
-    assert.ok(html.includes(`rel="canonical" href="${origin}/${route}"`), route);
+    assert.match(
+      html,
+      new RegExp(
+        `rel="canonical" href="${origin}/frameworks/(?:gpui|slint|iced|nsh)(?:/[^"']+)?`,
+      ),
+      route,
+    );
     assert.match(html, /hreflang="en"/);
     assert.match(read(`${route}.md`), new RegExp(`^---\nurl: /${route}\\.md\n`));
     assert.match(read(`docs/components/${slug}/index.html`), /http-equiv="refresh"/);
@@ -110,7 +116,7 @@ test('component pages have independent routes and readable legacy URLs', () => {
 test('component pages keep their own sidebar, with no legacy docs links', () => {
   const html = read('component/button/index.html');
   const sidebar = html.match(/<aside class="docs-sidebar"[\s\S]*?<\/aside>/)?.[0] ?? '';
-  assert.ok(sidebar.includes('href="/component/input"'));
+  assert.ok(sidebar.includes('href="/frameworks/nsh/input"'));
   assert.ok(!sidebar.includes('href="/docs/'));
 });
 
@@ -118,11 +124,11 @@ test('component links and discovery use canonical routes', () => {
   const sitemap = read('sitemap.xml');
   const index = read('llms.txt');
   const full = read('llms-full.txt');
-  assert.ok(sitemap.includes(`${origin}/component/button`));
+  assert.ok(sitemap.includes(`${origin}/frameworks/nsh/button`));
   assert.ok(index.includes('/component.md'));
   assert.ok(index.includes('/component/button.md'));
   assert.ok(full.includes('Source: /component/button'));
-  assert.ok(read('component/index.html').includes('href="/component/button"'));
+  assert.ok(read('frameworks/nsh/button/index.html').includes('href="/frameworks/iced/button"'));
   assert.ok(!sitemap.includes('/docs/components'));
   assert.ok(!index.includes('/docs/components'));
   assert.ok(!full.includes('/docs/components'));
@@ -141,7 +147,7 @@ test('primary navigation follows the Kit section order', () => {
   const nav = html.match(/<nav class="site-nav"[\s\S]*?<\/nav>/)?.[0] ?? '';
   const links = [...nav.matchAll(/<a\s+href="([^"]+)"\s+class="site-nav__link[^"]*"[^>]*>\s*([^<]+?)\s*<\/a>/g)];
   assert.deepEqual(links.slice(0, 3).map(match => match[2]), ['Component', 'Blocks', 'Starter']);
-  assert.deepEqual(links.slice(0, 3).map(match => match[1]), ['/component', '/blocks', '/starter']);
+  assert.deepEqual(links.slice(0, 3).map(match => match[1]), ['/frameworks/nsh', '/frameworks/nsh/blocks', '/frameworks/nsh/starter']);
   assert.doesNotMatch(nav, /site-nav__lang-btn/);
 });
 
@@ -186,6 +192,8 @@ test('sitemap is valid, unique, absolute and has a built page for every URL', ()
     '/frameworks/slint',
     '/frameworks/iced',
     '/frameworks/nsh',
+    '/frameworks/nsh/blocks',
+    '/frameworks/nsh/starter',
     '/frameworks/nsh/button',
   ]) {
     assert.ok(locs.includes(`${origin}${path}`), `missing sitemap route: ${path}`);

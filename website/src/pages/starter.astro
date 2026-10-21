@@ -3,6 +3,7 @@ import FolderAnimation from '../components/FolderAnimation.astro';
 
 const base = import.meta.env.BASE_URL;
 import DocsLayout from '../layouts/DocsLayout.astro';
+import { SITE_URL } from '../lib/site';
 
 // Starters, one set per framework: a blank NSH app, the two Slint templates to
 // fork, and the GPUI Kit guide, which is where GPUI Kit itself says to begin.
@@ -100,6 +101,7 @@ const gpuiStart = {
 ---
 
 <DocsLayout
+  canonical={`${SITE_URL}/frameworks/nsh/starter`}
   title="Starter — uni-kit"
   description="Starters for the framework you are reading: NSH and Slint templates, and the GPUI Kit getting-started guide."
 >

@@ -29,6 +29,8 @@ export interface Props {
   frameworkAvailable?: string;
   /** The component slug used by the install command on a framework page. */
   installSlug?: string;
+  /** Override the canonical URL for legacy pages that redirect to a framework URL. */
+  canonical?: string;
 }
 
 const {
@@ -44,12 +46,13 @@ const {
   frameworkFixed = false,
   frameworkAvailable,
   installSlug,
+  canonical: canonicalOverride,
 } = Astro.props;
 const hasSidebar = sidebar.length > 0;
 const pathname = Astro.url.pathname;
 const base = import.meta.env.BASE_URL;
 
-const canonical = `${SITE_URL}${pathname}`;
+const canonical = canonicalOverride ?? `${SITE_URL}${pathname}`;
 
 let starCount = 0;
 try {
@@ -84,7 +87,7 @@ const structuredData = [
 ---
 
 <BaseLayout title={title} description={description} lang="en" canonical={canonical} framework={framework} frameworkFixed={frameworkFixed} frameworkAvailable={frameworkAvailable} structuredData={structuredData}>
-  <Nav currentPath={pathname} starCount={starCount} />
+  <Nav currentPath={pathname} starCount={starCount} framework={framework ?? "nsh"} />
 
   <div class:list={['docs-layout', layoutClass]}>
     {hasSidebar && <Sidebar items={sidebar} currentPath={pathname} />}
@@ -110,7 +113,7 @@ const structuredData = [
 
   <!-- Page-level, so it spans the shared content box rather than the
        article's reading measure. -->
-  <SiteFooter />
+  <SiteFooter framework={framework ?? "nsh"} />
 </BaseLayout>
 
 <style is:global>

@@ -55,16 +55,14 @@ for (const loc of locs) {
 
 for (const path of [
   '/',
-  '/blocks',
-  '/starter',
   '/skills',
-  '/component',
-  '/component/button',
   '/frameworks',
   '/frameworks/gpui',
   '/frameworks/slint',
   '/frameworks/iced',
   '/frameworks/nsh',
+  '/frameworks/nsh/blocks',
+  '/frameworks/nsh/starter',
   '/frameworks/nsh/button',
 ]) {
   assert(locs.includes(`${origin}${path}`), `expected sitemap URL missing: ${path}`);

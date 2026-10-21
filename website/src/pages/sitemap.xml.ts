@@ -8,7 +8,7 @@ import {
 } from '../lib/frameworks';
 
 /** Public static routes. Keep in step with `website/src/pages`. */
-const STATIC_PATHS = ['/', '/blocks', '/starter', '/frameworks', '/skills'] as const;
+const STATIC_PATHS = ['/', '/frameworks', '/skills'] as const;
 
 function escapeXml(value: string) {
   return value
@@ -36,16 +36,16 @@ export const GET: APIRoute = async () => {
   const entries = await getCollection('component');
   for (const entry of entries) {
     const slug = entry.id.replace(/\.md$/, '');
-    paths.add(slug === 'index' ? '/component' : `/component/${slug}`);
-    if (slug !== 'index') {
-      for (const framework of availableFrameworks(slug, entry.data.example)) {
-        paths.add(`${frameworkLandingPath(framework)}/${slug}`);
-      }
+    if (slug === 'index') continue;
+    for (const framework of availableFrameworks(slug, entry.data.example)) {
+      paths.add(`${frameworkLandingPath(framework)}/${slug}`);
     }
   }
 
   for (const framework of FRAMEWORK_KEYS) {
     paths.add(frameworkLandingPath(framework));
+    paths.add(`${frameworkLandingPath(framework)}/blocks`);
+    paths.add(`${frameworkLandingPath(framework)}/starter`);
   }
 
   const urls = [...paths]

@@ -3,6 +3,7 @@ import { readFileSync } from "node:fs";
 import { join } from "node:path";
 import BlocksGallery from "../components/BlocksGallery.vue";
 import DocsLayout from "../layouts/DocsLayout.astro";
+import { SITE_URL } from "../lib/site";
 import { gallerySizes } from "../lib/gallery-sizes";
 import { highlight } from "../lib/highlight.js";
 
@@ -256,6 +257,7 @@ const blocks = await Promise.all(
 ---
 
 <DocsLayout
+  canonical={`${SITE_URL}/frameworks/nsh/blocks`}
     title="Blocks — uni-kit"
     description="Composed screens built from the component layer, shown as live examples you can run, copy, and install."
 >
